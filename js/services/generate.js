@@ -17,11 +17,16 @@ export async function generateItinerary(wizardState) {
     } : undefined,
   };
 
-  const { data, error } = await supabase.functions.invoke('generate-itinerary', {
-    body: payload
-  });
+  let data, error;
+  try {
+    ({ data, error } = await supabase.functions.invoke('generate-itinerary', {
+      body: payload
+    }));
+  } catch (e) {
+    return { data: null, error: `Network error: ${e.message}` };
+  }
 
-  if (error) return { data: null, error: error.message || 'Generation failed' };
+  if (error) return { data: null, error: error.message || JSON.stringify(error) };
 
   if (!data?.days || !Array.isArray(data.days)) {
     return { data: null, error: 'Invalid itinerary format received' };
