@@ -190,21 +190,44 @@ function transportIcon(mode) {
   return TRANSPORT_ICONS[mode.toLowerCase().trim()] || TRANSPORT_ICONS.default;
 }
 
-function deriveTags(trip) {
-  const tags = [];
+const ACCOM_LABELS = {
+  hotel: '🏨 Hotel', hostel: '🏠 Hostel', airbnb: '🏡 Airbnb',
+  resort: '🏖️ Resort', villa: '🏡 Villa', boutique: '🏨 Boutique'
+};
+
+function renderTripFooter(trip) {
   const ws = trip.wizard_state;
-  if (!ws) return tags;
-  const pace = ws.style?.pace || 3;
-  if (pace >= 4) tags.push('fast-paced');
-  else if (pace <= 2) tags.push('relaxed');
-  else tags.push('balanced');
-  const budget = ws.budget?.dailyAmount || 0;
-  if (budget >= 300) tags.push('luxury');
-  else if (budget >= 100) tags.push('mid-range');
-  else if (budget > 0) tags.push('budget');
-  const interests = ws.style?.activities || [];
-  interests.slice(0, 3).forEach(i => tags.push(i));
-  return tags;
+  if (!ws) return '';
+  const pills = [];
+  const dest = ws.multiCity ? ws.destinations?.[0] : ws.destination;
+  if (dest?.name) {
+    const label = ws.multiCity && ws.destinations?.length > 1
+      ? ws.destinations.map(d => d.name).join(', ')
+      : dest.name;
+    pills.push(`<span class="td-footer-pill">${flagImg(dest.flag, 14)} <strong>${esc(label)}</strong></span>`);
+  }
+  if (trip.start_date && trip.end_date) {
+    const fmt = d => { const p = new Date(d + 'T00:00:00'); return p.toLocaleDateString(getLocale(), { day: 'numeric', month: 'short' }); };
+    pills.push(`<span class="td-footer-pill">${mdIcon(MD.calendarToday, 12)} ${fmt(trip.start_date)} - ${fmt(trip.end_date)}</span>`);
+  }
+  if (ws.budget?.dailyAmount > 0) {
+    const sym = dest?.currencySymbol || '$';
+    pills.push(`<span class="td-footer-pill">${mdIcon(MD.restaurant, 12)} ${sym}${formatNumber(ws.budget.dailyAmount)}/day</span>`);
+  }
+  if (ws.accommodation?.type) {
+    pills.push(`<span class="td-footer-pill">${ACCOM_LABELS[ws.accommodation.type] || ws.accommodation.type}</span>`);
+  }
+  if (ws.style?.activities?.length > 0) {
+    const label = ws.style.activities.length <= 3
+      ? ws.style.activities.join(', ')
+      : ws.style.activities.slice(0, 2).join(', ') + ` +${ws.style.activities.length - 2}`;
+    pills.push(`<span class="td-footer-pill">${mdIcon(MD.place, 12)} ${esc(label)}</span>`);
+  }
+  if (trip.travelers > 1) {
+    pills.push(`<span class="td-footer-pill">${mdIcon(MD.walk, 12)} ${trip.travelers}</span>`);
+  }
+  if (pills.length === 0) return '';
+  return `<div class="td-footer"><div class="td-footer-pills">${pills.join('')}</div></div>`;
 }
 
 function classifyTransportType(mode) {
@@ -442,7 +465,6 @@ function tripHeader(trip) {
   const ws = trip.wizard_state;
   const wsDest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
   const sym = wsDest?.currencySymbol || trip.budget_currency_symbol || '$';
-  const tags = deriveTags(trip);
   const shortTitle = ws?.multiCity && ws?.destinations?.length > 0
     ? ws.destinations.map(d => d.name).join(' → ')
     : ws?.destination?.name || trip.title || 'My Trip';
@@ -469,7 +491,7 @@ function tripHeader(trip) {
     ? Math.round((new Date(trip.end_date + 'T00:00:00') - new Date(trip.start_date + 'T00:00:00')) / 86400000) + 1
     : 0);
 
-  return { days, dayCount, sym, tags, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange };
+  return { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange };
 }
 
 export async function renderTripDetail(tripId) {
@@ -884,7 +906,7 @@ function buildSectionCards(extras, totalCards, trip) {
 }
 
 function renderDayPicker(app, trip) {
-  const { days, dayCount, sym, tags, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange } = tripHeader(trip);
+  const { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange } = tripHeader(trip);
   const heroFlag = flagImg(flag, 32);
 
   app.innerHTML = `
@@ -898,7 +920,6 @@ function renderDayPicker(app, trip) {
         <div class="td-hero">
           <img class="td-hero-img" src="${esc(heroImage)}" alt="${esc(shortTitle)}" loading="eager">
           <div class="td-hero-overlay"></div>
-          ${tags.length > 0 ? `<div class="td-hero-tags">${tags.map(t => `<span class="td-tag">${esc(t[0].toUpperCase() + t.slice(1))}</span>`).join('')}</div>` : ''}
           ${dateRange ? `<div class="td-hero-dates">${mdIcon(MD.calendarToday, 13)} ${esc(dateRange)}</div>` : ''}
           <div class="td-hero-caption">
             ${heroFlag ? `<span class="td-hero-flag">${heroFlag}</span>` : ''}
@@ -909,7 +930,6 @@ function renderDayPicker(app, trip) {
 
       <header class="td-header ${heroImage ? 'td-header--has-hero' : ''}">
         ${!heroImage ? `<span class="td-emoji">${heroFlag || trip.emoji || mdIcon(MD.place, 28)}</span><h1 class="td-title">${esc(shortTitle)}</h1>` : ''}
-        ${!heroImage && tags.length > 0 ? `<div class="td-tags">${tags.map(t => `<span class="td-tag">${esc(t[0].toUpperCase() + t.slice(1))}</span>`).join('')}</div>` : ''}
         <div class="td-meta-row">
           <div class="td-meta">
             ${trip.travelers ? `<span>${trip.travelers} traveler${trip.travelers > 1 ? 's' : ''}</span>` : ''}
@@ -1004,6 +1024,7 @@ function renderDayPicker(app, trip) {
 
       ${renderBookingChecklist(trip.extras, trip.id)}
     </div>
+    ${renderTripFooter(trip)}
   `;
 
   app.querySelector('[data-action="back"]')?.addEventListener('click', () => navigate('/'));

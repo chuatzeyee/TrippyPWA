@@ -96,24 +96,6 @@
   );
 }
 
-.td-hero-tags {
-  position: absolute;
-  top: var(--sp-4);
-  left: var(--sp-4);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  z-index: 1;
-}
-
-.td-hero-tags .td-tag {
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
 .td-hero-dates {
   position: absolute;
   bottom: var(--sp-4);
@@ -213,26 +195,6 @@
   line-height: 1.25;
   color: var(--ink);
   margin-bottom: var(--sp-3);
-}
-
-.td-tags {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-3);
-}
-
-.td-tag {
-  display: inline-block;
-  padding: 3px 12px;
-  border-radius: var(--r-pill);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: lowercase;
-  background: rgba(229, 225, 216, 0.08);
-  color: var(--ink-secondary);
-  border: 1px solid var(--border);
 }
 
 .td-meta {
@@ -1682,6 +1644,7 @@
 
   .td-getting-there-card { padding: var(--sp-2) var(--sp-3); }
   .td-getting-there-route { font-size: 0.82rem; }
+  .td-transport-grid { grid-template-columns: 1fr; }
 
   .td-flight-legs { grid-template-columns: 1fr; }
   .td-flight-code { font-size: 1.4rem; }
@@ -1738,4 +1701,63 @@
   height: 180px;
   object-fit: cover;
   display: block;
+}
+
+/* ===== Trip Detail Footer ===== */
+.td-footer {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(27, 26, 23, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(229, 225, 216, 0.06);
+  padding: var(--sp-2) var(--sp-4);
+  z-index: var(--z-sticky);
+  animation: tdFooterSlideUp 0.5s var(--ease-out) 0.3s both;
+}
+
+@keyframes tdFooterSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.td-footer-pills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-2);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.td-footer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--ink-secondary);
+  background: rgba(229, 225, 216, 0.06);
+  border: 1px solid rgba(229, 225, 216, 0.08);
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.td-footer-pill img {
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.td-footer-pill strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.td-footer-pill svg {
+  opacity: 0.6;
+  flex-shrink: 0;
 }
