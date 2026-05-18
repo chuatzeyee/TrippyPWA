@@ -68,6 +68,18 @@ function renderTripCard(trip, index) {
   `;
 }
 
+function renderFloaties(count = 14) {
+  const icons = ['✈', '✦', '◆', '✧', '⬥', '☀', '◈', '✶'];
+  return `<div class="landing-floaties">${Array.from({ length: count }, (_, i) => {
+    const icon = icons[i % icons.length];
+    const left = Math.random() * 100;
+    const dur = 18 + Math.random() * 22;
+    const delay = Math.random() * dur;
+    const size = 0.6 + Math.random() * 0.8;
+    return `<span class="landing-floaty" style="left:${left.toFixed(1)}%;animation-duration:${dur.toFixed(1)}s;animation-delay:-${delay.toFixed(1)}s;font-size:${size.toFixed(2)}rem">${icon}</span>`;
+  }).join('')}</div>`;
+}
+
 function renderAuthDashboard(trips) {
   const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto'];
   const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
@@ -79,6 +91,7 @@ function renderAuthDashboard(trips) {
         <div class="landing-glow landing-glow--2"></div>
         <div class="landing-glow landing-glow--3"></div>
         <div class="landing-grid-dots"></div>
+        ${renderFloaties()}
       </div>
       <div class="dashboard-merged-body">
         <div class="dashboard-header">
@@ -125,6 +138,7 @@ function renderEmpty() {
         <div class="landing-glow landing-glow--2"></div>
         <div class="landing-glow landing-glow--3"></div>
         <div class="landing-grid-dots"></div>
+        ${renderFloaties()}
       </div>
 
       <section class="landing-hero">
