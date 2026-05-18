@@ -312,5 +312,80 @@ async function saveProfile() {
   }
 
   setHomeCurrency(profileState.currency.code, profileState.currency.symbol);
-  navigate('/');
+  renderSuccess(document.getElementById('app'));
+}
+
+function renderSuccess(app) {
+  const firstName = profileState.displayName.split(' ')[0] || 'traveler';
+  const avatar = getCurrentUser()?.user_metadata?.avatar_url || '';
+
+  const pills = [];
+  if (profileState.homeCity && !profileState.isNomad) {
+    pills.push(`${flagImg(profileState.homeFlag, 18)} ${esc(profileState.homeCity)}`);
+  } else if (profileState.isNomad) {
+    pills.push('🌍 Digital Nomad');
+  }
+  if (profileState.currency) {
+    pills.push(`${esc(profileState.currency.symbol)} ${esc(profileState.currency.code)}`);
+  }
+
+  app.innerHTML = `
+    <div class="profile-success">
+      <div class="profile-success-glow profile-success-glow--1"></div>
+      <div class="profile-success-glow profile-success-glow--2"></div>
+      <div class="profile-success-sparkles" id="pf-sparkles"></div>
+
+      <div class="profile-success-inner">
+        <div class="profile-success-check">
+          <svg viewBox="0 0 52 52" class="profile-success-check-svg">
+            <circle cx="26" cy="26" r="25" fill="none" class="profile-success-circle"/>
+            <path d="M14.1 27.2l7.1 7.2 16.7-16.8" fill="none" class="profile-success-tick"/>
+          </svg>
+        </div>
+
+        ${avatar ? `<img class="profile-success-avatar" src="${esc(avatar)}" alt="" referrerpolicy="no-referrer">` : ''}
+
+        <h1 class="profile-success-title">Welcome to Trippy, ${esc(firstName)}!</h1>
+        <p class="profile-success-subtitle">Your travel profile is ready. Time to explore the world.</p>
+
+        <div class="profile-success-pills">
+          ${pills.map(p => `<span class="profile-success-pill">${p}</span>`).join('')}
+        </div>
+
+        <div class="profile-success-features">
+          <div class="profile-success-feature">
+            <span class="profile-success-feature-icon">✈️</span>
+            <span class="profile-success-feature-text">AI-powered trip planning</span>
+          </div>
+          <div class="profile-success-feature">
+            <span class="profile-success-feature-icon">💰</span>
+            <span class="profile-success-feature-text">Smart budget breakdowns</span>
+          </div>
+          <div class="profile-success-feature">
+            <span class="profile-success-feature-icon">📋</span>
+            <span class="profile-success-feature-text">Day-by-day itineraries</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary btn--lg btn--pill profile-success-cta" id="pf-success-go">
+          Start Planning
+        </button>
+      </div>
+    </div>
+  `;
+
+  const sparkleBox = app.querySelector('#pf-sparkles');
+  if (sparkleBox) {
+    for (let i = 0; i < 16; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'profile-success-sparkle';
+      dot.style.left = `${10 + Math.random() * 80}%`;
+      dot.style.bottom = `${Math.random() * 40}%`;
+      dot.style.animationDelay = `${0.8 + Math.random() * 2}s`;
+      dot.style.background = Math.random() > 0.5 ? 'var(--terracotta)' : 'var(--teal)';
+      sparkleBox.appendChild(dot);
+    }
+  }
+
+  app.querySelector('#pf-success-go')?.addEventListener('click', () => navigate('/wizard'));
 }

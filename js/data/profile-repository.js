@@ -19,8 +19,7 @@ export async function updateProfile(fields) {
 
   const { error } = await supabase
     .from('profiles')
-    .update(fields)
-    .eq('id', user.id);
+    .upsert({ id: user.id, ...fields });
 
   return { error: error?.message || null };
 }

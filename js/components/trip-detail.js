@@ -221,7 +221,7 @@ function parseTransportText(text) {
   const main = parts[0];
   const extra = parts.length > 1 ? parts.slice(1).join(', then ') : null;
 
-  const serviceMatch = main.match(/^(Tram|Bus|Train|Metro|Ferry|Subway|Line|Route)\s*(\d+\w*)?/i);
+  const serviceMatch = main.match(/^(Tram|Bus|Train|Metro|Ferry|Subway|Line|Route)\s*([\d\w]+(?:\s*,\s*[\d\w]+)*)?/i);
   if (!serviceMatch) {
     return { service: null, from: null, to: null, route: main, extra };
   }
