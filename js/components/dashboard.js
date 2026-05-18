@@ -2,11 +2,19 @@ import { navigate } from '../router.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { getAllTrips } from '../data/registry.js';
 import { DESTINATIONS } from '../wizard/destinations.js';
-import { isAuthenticated } from '../auth/auth.js';
-import { showAuthGate } from '../auth/auth-ui.js';
 import { formatNumber, formatWeekdayDate } from '../lib/locale.js';
-import { fetchAllTrips } from '../data/trip-repository.js';
-import { hasLocalSession } from '../lib/supabase.js';
+
+function hasLocalSession() {
+  try {
+    return Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+  } catch { return false; }
+}
+
+let _authModule = null;
+async function getAuth() {
+  if (!_authModule) _authModule = await import('../auth/auth.js');
+  return _authModule;
+}
 
 function flagImg(code, size = 20) {
   if (!code) return '';
@@ -70,31 +78,12 @@ function renderTripCard(trip, index) {
   `;
 }
 
-function renderFloaties(count = 14) {
-  const icons = ['✈', '✦', '◆', '✧', '⬥', '☀', '◈', '✶'];
-  return `<div class="landing-floaties">${Array.from({ length: count }, (_, i) => {
-    const icon = icons[i % icons.length];
-    const left = Math.random() * 100;
-    const dur = 18 + Math.random() * 22;
-    const delay = Math.random() * dur;
-    const size = 0.6 + Math.random() * 0.8;
-    return `<span class="landing-floaty" style="left:${left.toFixed(1)}%;animation-duration:${dur.toFixed(1)}s;animation-delay:-${delay.toFixed(1)}s;font-size:${size.toFixed(2)}rem">${icon}</span>`;
-  }).join('')}</div>`;
-}
-
 function renderAuthDashboard(trips) {
   const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto'];
   const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
 
   return `
     <div class="dashboard-merged">
-      <div class="landing-bg">
-        <div class="landing-glow landing-glow--1"></div>
-        <div class="landing-glow landing-glow--2"></div>
-        <div class="landing-glow landing-glow--3"></div>
-        <div class="landing-grid-dots"></div>
-        ${renderFloaties()}
-      </div>
       <div class="dashboard-merged-body">
         <div class="dashboard-header">
           <h1 class="dashboard-greeting">Where to next?</h1>
@@ -135,14 +124,6 @@ function renderEmpty() {
 
   return `
     <div class="dashboard-empty">
-      <div class="landing-bg">
-        <div class="landing-glow landing-glow--1"></div>
-        <div class="landing-glow landing-glow--2"></div>
-        <div class="landing-glow landing-glow--3"></div>
-        <div class="landing-grid-dots"></div>
-        ${renderFloaties()}
-      </div>
-
       <section class="landing-hero">
         <div class="landing-logo">
           <svg class="landing-logo-plane" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
@@ -243,11 +224,6 @@ function renderSkeleton() {
   return `
     <div class="dashboard container">
       <div class="dashboard-merged">
-        <div class="landing-bg">
-          <div class="landing-glow landing-glow--1"></div>
-          <div class="landing-glow landing-glow--2"></div>
-          <div class="landing-glow landing-glow--3"></div>
-        </div>
         <div class="dashboard-merged-body">
           <div class="dashboard-header">
             <div class="skel-line skel-line--heading skel-shimmer"></div>
@@ -265,12 +241,14 @@ export async function renderDashboard() {
   const app = document.getElementById('app');
 
   let trips = [];
-  const loggedIn = isAuthenticated();
+  let loggedIn = false;
+  try { loggedIn = (await getAuth()).isAuthenticated(); } catch {}
   const probablyLoggedIn = !loggedIn && hasLocalSession();
   if (loggedIn || probablyLoggedIn) {
     app.innerHTML = renderSkeleton();
     if (probablyLoggedIn) return;
     try {
+      const { fetchAllTrips } = await import('../data/trip-repository.js');
       const { data } = await fetchAllTrips();
       trips = (data || []).map(t => {
         const ws = t.wizard_state;
@@ -323,10 +301,11 @@ export async function renderDashboard() {
 
   app.innerHTML = `<div class="dashboard container">${content}</div>`;
 
-  app.addEventListener('click', (e) => {
+  app.addEventListener('click', async (e) => {
     const destCard = e.target.closest('.dest-circle[data-city]');
     if (destCard) {
-      if (!isAuthenticated()) { showAuthGate(); return; }
+      const auth = await getAuth();
+      if (!auth.isAuthenticated()) { const { showAuthGate } = await import('../auth/auth-ui.js'); showAuthGate(); return; }
       const dest = DESTINATIONS.find(d => d.name === destCard.dataset.city);
       if (dest) {
         import('../wizard/wizard.js').then(m => m.clearAndStart(dest));
@@ -336,7 +315,8 @@ export async function renderDashboard() {
     }
     const newTrip = e.target.closest('[data-action="new-trip"]');
     if (newTrip) {
-      if (!isAuthenticated()) { showAuthGate(); return; }
+      const auth = await getAuth();
+      if (!auth.isAuthenticated()) { const { showAuthGate } = await import('../auth/auth-ui.js'); showAuthGate(); return; }
       navigate('/wizard');
       return;
     }
