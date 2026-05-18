@@ -1,7 +1,7 @@
 import { supabase, getUser } from '../lib/supabase.js';
 
 export async function fetchProfile() {
-  const user = await getUser();
+  const user = getUser();
   if (!user) return { data: null, error: 'Not authenticated' };
 
   const { data, error } = await supabase
@@ -14,7 +14,7 @@ export async function fetchProfile() {
 }
 
 export async function updateProfile(fields) {
-  const user = await getUser();
+  const user = getUser();
   if (!user) return { error: 'Not authenticated' };
 
   const { error } = await supabase
@@ -25,7 +25,7 @@ export async function updateProfile(fields) {
 }
 
 export async function needsProfileSetup() {
-  const user = await getUser();
+  const user = getUser();
   if (!user) return false;
 
   const { data } = await supabase

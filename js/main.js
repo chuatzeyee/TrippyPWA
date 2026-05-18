@@ -8,9 +8,16 @@ import { needsProfileSetup } from './data/profile-repository.js';
 await initAuth();
 renderNav();
 
+let _profileChecked = false;
+let _needsSetup = false;
+
 async function guardProfileSetup() {
   if (!isAuthenticated()) return false;
-  if (await needsProfileSetup()) {
+  if (!_profileChecked) {
+    _needsSetup = await needsProfileSetup();
+    _profileChecked = true;
+  }
+  if (_needsSetup) {
     navigate('/profile');
     return true;
   }
@@ -18,6 +25,8 @@ async function guardProfileSetup() {
 }
 
 onAuthChange(async (event) => {
+  _profileChecked = false;
+  _needsSetup = false;
   if (event === 'SIGNED_IN') {
     renderNav();
     if (await needsProfileSetup()) {

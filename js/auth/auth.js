@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+import { supabase, setCachedUser } from '../lib/supabase.js';
 
 let currentUser = null;
 const listeners = new Set();
@@ -43,9 +43,11 @@ export async function initAuth() {
 
   const { data: { session } } = await supabase.auth.getSession();
   currentUser = session?.user || null;
+  setCachedUser(currentUser);
 
   supabase.auth.onAuthStateChange((event, session) => {
     currentUser = session?.user || null;
+    setCachedUser(currentUser);
     notifyListeners(event, session);
   });
 }
