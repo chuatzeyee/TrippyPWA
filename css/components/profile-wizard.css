@@ -1,0 +1,226 @@
+.profile-wizard {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+}
+
+.profile-wizard-inner {
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+
+.profile-wizard-avatar {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto var(--sp-4);
+  border: 2px solid var(--border);
+}
+
+.profile-wizard-greeting {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 2rem;
+  color: var(--ink);
+  margin-bottom: var(--sp-2);
+}
+
+.profile-wizard-subtitle {
+  color: var(--ink-secondary);
+  font-size: 0.95rem;
+  margin-bottom: var(--sp-8);
+}
+
+.profile-field {
+  text-align: left;
+  margin-bottom: var(--sp-6);
+}
+
+.profile-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--sp-2);
+}
+
+.profile-nomad-toggle {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.profile-nomad-note {
+  font-size: 0.85rem;
+  color: var(--ink-ghost);
+  font-style: italic;
+  margin: 0;
+  padding: var(--sp-3);
+  background: var(--surface-inset);
+  border-radius: var(--r-md);
+}
+
+/* City search */
+.profile-city-search {
+  position: relative;
+  z-index: 10;
+}
+
+.profile-city-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  margin-top: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.profile-city-dropdown--open {
+  display: block;
+}
+
+.profile-city-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--ink);
+  transition: background var(--duration-fast);
+}
+
+.profile-city-item:hover {
+  background: var(--surface-inset);
+}
+
+.profile-city-item img {
+  flex-shrink: 0;
+}
+
+/* Currency grid */
+.profile-currency-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--sp-2);
+}
+
+.profile-currency-grid--hidden {
+  display: none;
+}
+
+.profile-currency-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--sp-3) var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+
+.profile-currency-option:hover {
+  border-color: var(--ink-ghost);
+  background: var(--surface-inset);
+}
+
+.profile-currency-option--active {
+  border-color: var(--terracotta);
+  background: rgba(212, 115, 88, 0.08);
+}
+
+.profile-currency-option-symbol {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.profile-currency-option-code {
+  font-size: 0.75rem;
+  color: var(--ink-secondary);
+}
+
+.profile-currency-option-hint {
+  font-size: 0.65rem;
+  color: var(--teal);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Selected currency display */
+.profile-currency-selected {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--terracotta);
+  border-radius: var(--r-md);
+  background: rgba(212, 115, 88, 0.06);
+  margin-bottom: var(--sp-3);
+}
+
+.profile-currency-selected .profile-currency-symbol {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.profile-currency-selected .profile-currency-code {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.profile-currency-selected .profile-currency-name {
+  font-size: 0.85rem;
+  color: var(--ink-secondary);
+  flex: 1;
+}
+
+.profile-currency-change {
+  background: none;
+  border: none;
+  color: var(--terracotta);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.profile-currency-change:hover {
+  text-decoration: underline;
+}
+
+/* Save button */
+.profile-save-btn {
+  margin-top: var(--sp-4);
+}
+
+@media (max-width: 640px) {
+  .profile-wizard {
+    padding: var(--sp-4);
+    align-items: flex-start;
+    padding-top: var(--sp-8);
+  }
+
+  .profile-currency-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
