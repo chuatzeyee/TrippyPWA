@@ -5,6 +5,7 @@ import { DESTINATIONS } from '../wizard/destinations.js';
 import { isAuthenticated } from '../auth/auth.js';
 import { showAuthGate } from '../auth/auth-ui.js';
 import { formatNumber, formatWeekdayDate } from '../lib/locale.js';
+import { fetchAllTrips } from '../data/trip-repository.js';
 
 function flagImg(code, size = 20) {
   if (!code) return '';
@@ -228,14 +229,44 @@ function renderEmpty() {
   `;
 }
 
+function renderSkeleton() {
+  const card = `
+    <div class="skel-card">
+      <div class="skel-card-hero skel-shimmer"></div>
+      <div class="skel-card-body">
+        <div class="skel-line skel-line--title skel-shimmer"></div>
+        <div class="skel-line skel-line--meta skel-shimmer"></div>
+        <div class="skel-line skel-line--budget skel-shimmer"></div>
+      </div>
+    </div>`;
+  return `
+    <div class="dashboard container">
+      <div class="dashboard-merged">
+        <div class="landing-bg">
+          <div class="landing-glow landing-glow--1"></div>
+          <div class="landing-glow landing-glow--2"></div>
+          <div class="landing-glow landing-glow--3"></div>
+        </div>
+        <div class="dashboard-merged-body">
+          <div class="dashboard-header">
+            <div class="skel-line skel-line--heading skel-shimmer"></div>
+            <div class="skel-btn skel-shimmer"></div>
+          </div>
+          <div class="trip-grid">
+            ${card}${card}${card}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 export async function renderDashboard() {
   const app = document.getElementById('app');
 
   let trips = [];
   if (isAuthenticated()) {
-    app.innerHTML = `<div class="dashboard container"><div class="trip-detail-loading">Loading your trips...</div></div>`;
+    app.innerHTML = renderSkeleton();
     try {
-      const { fetchAllTrips } = await import('../data/trip-repository.js');
       const { data } = await fetchAllTrips();
       trips = (data || []).map(t => {
         const ws = t.wizard_state;

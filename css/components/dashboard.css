@@ -749,8 +749,74 @@
   .landing-proof-dot { display: none; }
 }
 
+/* ===== Skeleton Loading ===== */
+.skel-shimmer {
+  background: linear-gradient(
+    110deg,
+    var(--surface-solid) 30%,
+    rgba(229, 225, 216, 0.06) 50%,
+    var(--surface-solid) 70%
+  );
+  background-size: 200% 100%;
+  animation: skelShimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes skelShimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.skel-card {
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+}
+
+.skel-card-hero {
+  height: 160px;
+}
+
+.skel-card-body {
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.skel-line {
+  border-radius: var(--r-sm);
+  height: 14px;
+}
+
+.skel-line--heading {
+  width: 200px;
+  height: 32px;
+  border-radius: var(--r-md);
+}
+
+.skel-line--title {
+  width: 70%;
+  height: 18px;
+}
+
+.skel-line--meta {
+  width: 55%;
+}
+
+.skel-line--budget {
+  width: 40%;
+}
+
+.skel-btn {
+  width: 140px;
+  height: 40px;
+  border-radius: var(--r-pill);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing-glow { animation: none; opacity: 0.05; }
   .landing-logo-plane { animation: none; }
   .landing-reveal { opacity: 1; transform: none; transition: none; }
+  .skel-shimmer { animation: none; background: var(--surface-solid); }
 }

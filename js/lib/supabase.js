@@ -11,8 +11,12 @@ export const supabase = url && key
   ? createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } })
   : null;
 
-export async function getUser() {
-  if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+let _cachedUser = null;
+
+export function setCachedUser(user) {
+  _cachedUser = user;
+}
+
+export function getUser() {
+  return _cachedUser;
 }

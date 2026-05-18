@@ -1,7 +1,7 @@
 import { supabase, getUser } from '../lib/supabase.js';
 
 export async function fetchAllTrips() {
-  const user = await getUser();
+  const user = getUser();
   if (!user) return { data: [], error: 'Not authenticated' };
 
   const { data, error } = await supabase
@@ -14,7 +14,7 @@ export async function fetchAllTrips() {
 }
 
 export async function fetchTripById(id) {
-  const user = await getUser();
+  const user = getUser();
   if (!user) return { data: null, error: 'Not authenticated' };
 
   const { data, error } = await supabase
@@ -45,7 +45,7 @@ export async function fetchTripById(id) {
 }
 
 export async function createTrip(wizardState, status = 'planning') {
-  const user = await getUser();
+  const user = getUser();
   if (!user) return { data: null, error: 'Not authenticated' };
 
   const dest = wizardState.multiCity && wizardState.destinations.length > 0
@@ -74,7 +74,7 @@ export async function createTrip(wizardState, status = 'planning') {
 }
 
 export async function saveTripWithItinerary(wizardState, itinerary) {
-  const user = await getUser();
+  const user = getUser();
   if (!user) return { data: null, error: 'Not authenticated' };
 
   const dest = wizardState.multiCity && wizardState.destinations.length > 0
@@ -267,7 +267,7 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
 }
 
 export async function deleteTrip(id) {
-  const user = await getUser();
+  const user = getUser();
   if (!user) return { error: 'Not authenticated' };
 
   const { error } = await supabase
