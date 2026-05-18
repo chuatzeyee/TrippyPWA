@@ -68,51 +68,148 @@ function renderTripCard(trip, index) {
   `;
 }
 
+function renderAuthDashboard(trips) {
+  const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto'];
+  const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
+
+  return `
+    <div class="dashboard-merged">
+      <div class="landing-bg">
+        <div class="landing-glow landing-glow--1"></div>
+        <div class="landing-glow landing-glow--2"></div>
+        <div class="landing-glow landing-glow--3"></div>
+        <div class="landing-grid-dots"></div>
+      </div>
+      <div class="dashboard-merged-body">
+        <div class="dashboard-header">
+          <h1 class="dashboard-greeting">Where to next?</h1>
+          <button class="btn btn--primary btn--pill" data-action="new-trip">+ Plan a Trip</button>
+        </div>
+        ${trips.length > 0 ? `
+          <div class="trip-grid">
+            ${trips.map((t, i) => renderTripCard(t, i)).join('')}
+          </div>
+        ` : `
+          <div class="dashboard-no-trips">
+            <p class="dashboard-no-trips-text">Plan your first trip and we'll take it from there.</p>
+          </div>
+        `}
+        <section class="dashboard-dest-picks">
+          <h3 class="landing-section-title">Popular destinations</h3>
+          <div class="dest-circle-grid">
+            ${dests.map(d => `
+              <div class="dest-circle" data-city="${escapeHtml(d.name)}">
+                <img class="dest-circle-img" src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" loading="lazy">
+                <span class="dest-circle-label">
+                  ${d.flag ? `<img src="https://flagcdn.com/w40/${d.flag}.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;">` : ''}
+                  ${escapeHtml(d.name)}
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
 function renderEmpty() {
-  const thumbs = [
-    { city: 'Tokyo', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Skyscrapers_of_Shinjuku_2009_January.jpg/500px-Skyscrapers_of_Shinjuku_2009_January.jpg' },
-    { city: 'Guangzhou', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Canton_Tower_20241027.jpg/500px-Canton_Tower_20241027.jpg' },
-    { city: 'Bali', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/TanahLot_2014.JPG/500px-TanahLot_2014.JPG' },
-    { city: 'Zurich', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/Altstadt_Z%C3%BCrich_2015.jpg/500px-Altstadt_Z%C3%BCrich_2015.jpg' },
-    { city: 'Melbourne', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Melbourne_skyline_sor.jpg/500px-Melbourne_skyline_sor.jpg' },
-  ];
+  const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto'];
+  const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
+  const flap = ch => `<span class="flap-cell"><span class="flap-face">${ch}</span><span class="flap-top"><span class="flap-top-text">${ch}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${ch}</span></span></span>`;
 
   return `
     <div class="dashboard-empty">
       <div class="landing-bg">
-        <div class="landing-orb landing-orb--1"></div>
-        <div class="landing-orb landing-orb--2"></div>
-        <div class="landing-orb landing-orb--3"></div>
-        <div class="landing-icons">
-          <span class="landing-icon">&#9992;&#65039;</span>
-          <span class="landing-icon">&#127759;</span>
-          <span class="landing-icon">&#128247;</span>
-          <span class="landing-icon">&#9968;&#65039;</span>
-          <span class="landing-icon">&#127965;</span>
-          <span class="landing-icon">&#128717;&#65039;</span>
-          <span class="landing-icon">&#127758;</span>
-          <span class="landing-icon">&#128204;</span>
-        </div>
+        <div class="landing-glow landing-glow--1"></div>
+        <div class="landing-glow landing-glow--2"></div>
+        <div class="landing-glow landing-glow--3"></div>
+        <div class="landing-grid-dots"></div>
       </div>
-      <div class="landing-content">
+
+      <section class="landing-hero">
         <div class="landing-logo">
-          <svg class="landing-logo-plane" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
-          <span class="landing-logo-flaps">${'TRIPPY'.split('').map(ch => `<span class="flap-cell"><span class="flap-face">${ch}</span><span class="flap-top"><span class="flap-top-text">${ch}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${ch}</span></span></span>`).join('')}</span>
+          <svg class="landing-logo-plane" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+          <span class="landing-logo-flaps">${'TRIPPY'.split('').map(flap).join('')}</span>
         </div>
-        <h2 class="landing-title"><span class="landing-title-your">Your</span><span class="landing-title-city">next</span><span class="landing-title-accent">adventure</span></h2>
-        <p class="landing-desc">
-          Tell us where you want to go. We'll plan the rest.
-        </p>
+        <h1 class="landing-headline">
+          <span class="landing-hl-your">Your</span>
+          <span class="landing-hl-city">next</span>
+          <span class="landing-hl-accent">adventure</span>
+        </h1>
+        <p class="landing-tagline">Trip planning in minutes, not hours.<br>Pick a destination, set your style and we'll get your plans.</p>
         <div class="landing-cta">
-          <button class="btn btn--primary btn--lg btn--pill" data-action="new-trip">
-            Plan a Trip
-          </button>
+          <button class="btn btn--primary btn--lg btn--pill" data-action="new-trip">Start Planning</button>
         </div>
-        <div class="landing-destinations">
-          ${thumbs.map(t => `<div class="landing-dest-thumb" style="background-image: url('${t.img}')" data-city="${escapeHtml(t.city)}"></div>`).join('')}
+        <div class="landing-proof">
+          <span class="landing-proof-item"><strong>${DESTINATIONS.length}+</strong> destinations</span>
+          <span class="landing-proof-dot"></span>
+          <span class="landing-proof-item"><strong>7</strong> continents</span>
+          <span class="landing-proof-dot"></span>
+          <span class="landing-proof-item landing-proof-gemini"><svg class="landing-google-logo" width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09a6.97 6.97 0 010-4.17V7.07H2.18a11.01 11.01 0 000 9.86l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> <strong>Gemini 2.5 Flash</strong></span>
         </div>
-        <p class="landing-hint">124 destinations worldwide</p>
-      </div>
+      </section>
+
+      <section class="landing-features landing-reveal">
+        <div class="landing-feature">
+          <div class="landing-feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 5.6L10 7 8.6 4.5 10 2 7.5 3.4 5 2l1.4 2.5L5 7zm12 9.8L17 14l1.4 2.5L17 19l2.5-1.4L22 19l-1.4-2.5L22 14zM22 2l-2.5 1.4L17 2l1.4 2.5L17 7l2.5-1.4L22 7l-1.4-2.5zm-7.63 5.29a1 1 0 00-1.41 0L1.29 18.96a1 1 0 000 1.41l2.34 2.34c.39.39 1.02.39 1.41 0L16.7 11.05a1 1 0 000-1.41l-2.33-2.35z"/></svg></div>
+          <h3 class="landing-feature-title">AI Itineraries</h3>
+          <p class="landing-feature-desc">Day-by-day plans with activities, timings, dining spots, and insider tips</p>
+        </div>
+        <div class="landing-feature">
+          <div class="landing-feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
+          <h3 class="landing-feature-title">Smart Budgets</h3>
+          <p class="landing-feature-desc">Real cost estimates in local currency for flights, stays, food, and activities</p>
+        </div>
+        <div class="landing-feature">
+          <div class="landing-feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/></svg></div>
+          <h3 class="landing-feature-title">Your Style</h3>
+          <p class="landing-feature-desc">Pace, cuisine, nightlife, exploration — every trip adapts to how you travel</p>
+        </div>
+        <div class="landing-feature">
+          <div class="landing-feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.9-4.33-3.56zm2.95-8H5.08c.96-1.66 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg></div>
+          <h3 class="landing-feature-title">${DESTINATIONS.length}+ Destinations</h3>
+          <p class="landing-feature-desc">From Tokyo to Reykjavik — with cultural tips, visa info, and local insights</p>
+        </div>
+      </section>
+
+      <section class="landing-steps landing-reveal">
+        <h3 class="landing-section-title">How it works</h3>
+        <div class="landing-steps-row">
+          <div class="landing-step">
+            <span class="landing-step-num">1</span>
+            <h4 class="landing-step-title">Choose</h4>
+            <p class="landing-step-desc">Pick a destination and your travel dates</p>
+          </div>
+          <div class="landing-step-arrow"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg></div>
+          <div class="landing-step">
+            <span class="landing-step-num">2</span>
+            <h4 class="landing-step-title">Customize</h4>
+            <p class="landing-step-desc">Set budget, pace, and travel style</p>
+          </div>
+          <div class="landing-step-arrow"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg></div>
+          <div class="landing-step">
+            <span class="landing-step-num">3</span>
+            <h4 class="landing-step-title">Go</h4>
+            <p class="landing-step-desc">Get a full itinerary in seconds</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-explore landing-reveal">
+        <h3 class="landing-section-title">Popular destinations</h3>
+        <div class="dest-circle-grid">
+          ${dests.map(d => `
+            <div class="dest-circle" data-city="${escapeHtml(d.name)}">
+              <img class="dest-circle-img" src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" loading="lazy">
+              <span class="dest-circle-label">
+                ${d.flag ? `<img src="https://flagcdn.com/w40/${d.flag}.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;">` : ''}
+                ${escapeHtml(d.name)}
+              </span>
+            </div>
+          `).join('')}
+        </div>
+      </section>
     </div>
   `;
 }
@@ -156,9 +253,13 @@ export async function renderDashboard() {
     trips = getAllTrips();
   }
 
-  const content = trips.length === 0
-    ? renderEmpty()
-    : `
+  let content;
+  if (isAuthenticated()) {
+    content = renderAuthDashboard(trips);
+  } else if (trips.length === 0) {
+    content = renderEmpty();
+  } else {
+    content = `
       <div class="dashboard-header">
         <h1 class="dashboard-greeting">Where to next?</h1>
         <button class="btn btn--primary btn--pill" data-action="new-trip">
@@ -169,14 +270,15 @@ export async function renderDashboard() {
         ${trips.map((t, i) => renderTripCard(t, i)).join('')}
       </div>
     `;
+  }
 
   app.innerHTML = `<div class="dashboard container">${content}</div>`;
 
   app.addEventListener('click', (e) => {
-    const thumb = e.target.closest('.landing-dest-thumb[data-city]');
-    if (thumb) {
+    const destCard = e.target.closest('.dest-circle[data-city]');
+    if (destCard) {
       if (!isAuthenticated()) { showAuthGate(); return; }
-      const dest = DESTINATIONS.find(d => d.name === thumb.dataset.city);
+      const dest = DESTINATIONS.find(d => d.name === destCard.dataset.city);
       if (dest) {
         import('../wizard/wizard.js').then(m => m.clearAndStart(dest));
         history.replaceState(null, '', '#/wizard/2');
@@ -228,9 +330,11 @@ export async function renderDashboard() {
     });
   }
 
-  const citySpan = app.querySelector('.landing-title-city');
+  const citySpan = app.querySelector('.landing-hl-city');
   if (citySpan) {
     let currentText = '';
+    let hovered = false;
+    let cycleTimer = null;
 
     const buildCell = (ch) => {
       if (ch === ' ') return '<span class="flap-cell flap-cell--space"></span>';
@@ -293,9 +397,28 @@ export async function renderDashboard() {
 
     setImmediate('next');
 
-    app.querySelectorAll('.landing-dest-thumb[data-city]').forEach(thumb => {
-      thumb.addEventListener('mouseenter', () => flipTo(thumb.dataset.city));
-      thumb.addEventListener('mouseleave', () => flipTo('next'));
+    const cycleNames = ['Tokyo', 'Paris', 'Bali', 'Barcelona', 'Seoul', 'New York', 'Bangkok', 'Kyoto', 'next'];
+    let cycleIdx = 0;
+    const startCycle = () => {
+      clearInterval(cycleTimer);
+      cycleTimer = setInterval(() => {
+        if (hovered) return;
+        flipTo(cycleNames[cycleIdx]);
+        cycleIdx = (cycleIdx + 1) % cycleNames.length;
+      }, 2800);
+    };
+    startCycle();
+
+    app.querySelectorAll('.dest-circle[data-city]').forEach(card => {
+      card.addEventListener('mouseenter', () => { hovered = true; flipTo(card.dataset.city); });
+      card.addEventListener('mouseleave', () => { hovered = false; flipTo('next'); startCycle(); });
     });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('landing-reveal--visible');
+      });
+    }, { threshold: 0.15 });
+    app.querySelectorAll('.landing-reveal').forEach(el => observer.observe(el));
   }
 }

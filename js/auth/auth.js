@@ -23,6 +23,8 @@ export async function signInWithGoogle() {
 export async function signOut() {
   if (!supabase) return;
   await supabase.auth.signOut();
+  window.location.hash = '#/';
+  window.location.reload();
 }
 
 export function onAuthChange(callback) {
