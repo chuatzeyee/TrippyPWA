@@ -652,8 +652,7 @@
   color: var(--ink-secondary);
   line-height: 1.5;
   margin-top: var(--sp-3);
-  padding: var(--sp-2) var(--sp-3);
-  margin-left: calc(40px + var(--sp-3));
+  padding-left: calc(40px + var(--sp-3));
 }
 
 .td-tip-icon {
