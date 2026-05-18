@@ -207,13 +207,13 @@ textarea.input {
 }
 
 .chip--active {
-  background: rgba(241, 168, 59, 0.12);
+  background: rgba(234, 88, 12, 0.12);
   color: var(--terracotta);
   border-color: var(--terracotta);
 }
 
 .chip--active:hover {
-  background: rgba(241, 168, 59, 0.18);
+  background: rgba(234, 88, 12, 0.18);
   color: var(--terracotta);
 }
 

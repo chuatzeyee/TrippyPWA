@@ -495,6 +495,55 @@ function renderFlightContent(extras, trip) {
   `;
 }
 
+const TRANSPORT_MODE_ICONS = { ferry: '⛴️', bus: '🚌', train: '🚂', drive: '🚗' };
+
+function renderTransportContent(extras) {
+  const transport = extras?.transport;
+  if (!transport) return '';
+
+  const renderLeg = (leg, label) => {
+    if (!leg) return '';
+    const routeParts = (leg.route || '').split(/\s*[→➔>]\s*/);
+    const from = routeParts[0] || '???';
+    const to = routeParts[1] || '???';
+    const icon = TRANSPORT_MODE_ICONS[leg.mode] || '🚌';
+    return `
+      <div class="td-flight-leg">
+        <div class="td-flight-leg-header">
+          <span class="td-flight-leg-label">${esc(label)}</span>
+          <span class="td-flight-leg-airline">${icon} ${esc(leg.operator || '')}</span>
+        </div>
+        <div class="td-flight-route">
+          <div class="td-flight-endpoint">
+            <div class="td-flight-code">${esc(from)}</div>
+            ${leg.terminal ? `<div class="td-flight-flag" style="font-size: 0.65rem;">${esc(leg.terminal)}</div>` : ''}
+          </div>
+          <div class="td-flight-route-line">
+            <span class="td-flight-route-dash"></span>
+            <span class="td-flight-route-plane" style="font-size: 1.1rem;">${icon}</span>
+            <span class="td-flight-route-dash"></span>
+          </div>
+          <div class="td-flight-endpoint">
+            <div class="td-flight-code">${esc(to)}</div>
+          </div>
+        </div>
+        <div class="td-flight-duration">${esc(leg.duration)}${leg.frequency ? ` · ${esc(leg.frequency)}` : ''}</div>
+        <div class="td-flight-bottom">
+          <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
+        </div>
+        ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(leg.tips)}</div>` : ''}
+      </div>
+    `;
+  };
+
+  return `
+    <div class="td-flight-legs">
+      ${renderLeg(transport.outbound, 'Outbound')}
+      ${renderLeg(transport.inbound, 'Return')}
+    </div>
+  `;
+}
+
 const ACCOM_ICON_SEARCH = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 const ACCOM_ICON_EXTERNAL = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
 
@@ -609,6 +658,8 @@ function renderTripQuickChecklist(extras, tripId) {
   const items = [];
   if (extras?.flights) {
     items.push({ key: 'flights', label: 'Flights', icon: MD.flightTakeoff, target: 'flights' });
+  } else if (extras?.transport) {
+    items.push({ key: 'transport', label: 'Transport', icon: MD.tram, target: 'transport' });
   }
   if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) {
     items.push({ key: 'accommodation', label: 'Accommodation', icon: MD.hotel, target: 'accommodation' });
@@ -657,7 +708,7 @@ function bindQuickChecklist(container, tripId) {
       const iconEl = row.querySelector('.td-quick-check-icon');
       iconEl.classList.toggle('td-quick-check-icon--done', checkbox.checked);
       if (checkbox.checked) iconEl.innerHTML = mdIcon(MD.checkCircle, 20);
-      else iconEl.innerHTML = mdIcon(MD[{ flights: 'flightTakeoff', accommodation: 'hotel', reservations: 'ticket' }[key]] || 'place', 20);
+      else iconEl.innerHTML = mdIcon(MD[{ flights: 'flightTakeoff', transport: 'tram', accommodation: 'hotel', reservations: 'ticket' }[key]] || 'place', 20);
       if (checklist) {
         const total = checklist.querySelectorAll('.td-quick-check').length;
         const done = checklist.querySelectorAll('.td-quick-check--done').length;
@@ -698,7 +749,7 @@ function bindCollapsibleSections(container) {
 
 function countSectionCards(extras) {
   let n = 0;
-  if (extras?.flights) n++;
+  if (extras?.flights || extras?.transport) n++;
   if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) n++;
   return n;
 }
@@ -709,6 +760,7 @@ function calendarIcon(dayNum) {
 
 const SECTION_ICONS = {
   flights: mdIcon(MD.flightTakeoff, 28),
+  transport: mdIcon(MD.tram, 28),
   accommodation: mdIcon(MD.hotel, 28)
 };
 
@@ -728,6 +780,22 @@ function buildSectionCards(extras, totalCards, trip) {
         </div>
         <div class="td-day-card-body">
           ${renderFlightContent(extras, trip)}
+        </div>
+      </div>
+    `);
+  } else if (extras?.transport) {
+    i++;
+    cards.push(`
+      <div class="td-day-card td-day-card--section" data-section="transport" style="--i: ${i}; --total: ${totalCards}; animation-delay: ${(i - 1) * 80}ms">
+        <div class="td-day-card-header">
+          <div class="td-day-num td-day-num--section td-day-num--transport">${SECTION_ICONS.transport}</div>
+          <div class="td-day-info">
+            <h3 class="td-day-card-title">Transport</h3>
+          </div>
+          <span class="td-day-chevron">›</span>
+        </div>
+        <div class="td-day-card-body">
+          ${renderTransportContent(extras)}
         </div>
       </div>
     `);
