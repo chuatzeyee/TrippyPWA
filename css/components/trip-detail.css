@@ -563,10 +563,11 @@
   background: rgba(229, 225, 216, 0.03);
 }
 
-.td-activity-card-header {
+.td-activity-card-top {
   display: flex;
   align-items: flex-start;
-  gap: var(--sp-3);
+  justify-content: space-between;
+  margin-bottom: var(--sp-2);
 }
 
 .td-activity-icon {
@@ -581,11 +582,6 @@
   flex-shrink: 0;
 }
 
-.td-activity-card-info {
-  flex: 1;
-  min-width: 0;
-}
-
 .td-activity-title {
   font-size: 1rem;
   font-weight: 600;
@@ -596,7 +592,7 @@
 .td-activity-venue {
   font-size: 0.85rem;
   color: var(--ink-secondary);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .td-maps-link {
@@ -641,7 +637,6 @@
   color: var(--ink-ghost);
   line-height: 1.55;
   margin-top: var(--sp-3);
-  padding-left: calc(40px + var(--sp-3));
 }
 
 .td-activity-tip {
@@ -652,7 +647,6 @@
   color: var(--ink-secondary);
   line-height: 1.5;
   margin-top: var(--sp-3);
-  padding-left: calc(40px + var(--sp-3));
 }
 
 .td-tip-icon {
@@ -693,11 +687,8 @@
 .td-getting-there-card {
   grid-column: 3;
   margin: var(--sp-3) 0;
-  padding: var(--sp-4) var(--sp-5);
-  background: rgba(229, 225, 216, 0.04);
-  border: 1px dashed var(--border-strong);
+  padding: var(--sp-4) var(--sp-4);
   border-radius: var(--r-lg);
-  margin-left: var(--sp-3);
   overflow: hidden;
   min-width: 0;
 }
@@ -1686,8 +1677,8 @@
 
   .td-activity-time { font-size: 0.78rem; padding-right: var(--sp-2); }
   .td-activity-icon { width: 36px; height: 36px; font-size: 1.1rem; }
-  .td-activity-desc { padding-left: calc(36px + var(--sp-3)); font-size: 0.85rem; }
-  .td-activity-tip { margin-left: calc(36px + var(--sp-3)); font-size: 0.8rem; }
+  .td-activity-desc { font-size: 0.85rem; }
+  .td-activity-tip { font-size: 0.8rem; }
 
   .td-getting-there-card { padding: var(--sp-2) var(--sp-3); }
   .td-getting-there-route { font-size: 0.82rem; }
@@ -1730,7 +1721,6 @@
 /* ===== Activity Photos ===== */
 .td-activity-photo {
   margin-top: var(--sp-3);
-  margin-left: calc(40px + var(--sp-3));
   border-radius: var(--r-lg);
   overflow: hidden;
   max-height: 0;
@@ -1739,14 +1729,13 @@
 }
 
 .td-activity-photo--loaded {
-  max-height: 200px;
+  max-height: 300px;
   opacity: 1;
 }
 
 .td-activity-photo-img {
   width: 100%;
-  height: 160px;
+  height: 180px;
   object-fit: cover;
   display: block;
-  border-radius: var(--r-lg);
 }
