@@ -107,6 +107,52 @@ const INTERESTS = [
   'Coffee & Cafes', 'Wine & Bars'
 ];
 
+const NEARBY_THRESHOLD_KM = 500;
+
+const TRANSPORT_MODES = [
+  { key: 'ferry', icon: '⛴️', title: 'Ferry', desc: 'By sea' },
+  { key: 'bus', icon: '🚌', title: 'Bus', desc: 'Coach / express' },
+  { key: 'train', icon: '🚂', title: 'Train', desc: 'Rail / high-speed' },
+  { key: 'drive', icon: '🚗', title: 'Drive', desc: 'Self-drive / rental' },
+];
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+let _homeCoords = null;
+let _homeCoordsLoaded = false;
+
+async function loadHomeCoords() {
+  if (_homeCoordsLoaded) return _homeCoords;
+  _homeCoordsLoaded = true;
+  try {
+    const { fetchProfile } = await import('../data/profile-repository.js');
+    const { data: profile } = await fetchProfile();
+    if (profile?.home_city) {
+      const match = DESTINATIONS.find(d => d.name.toLowerCase() === profile.home_city.toLowerCase());
+      if (match) _homeCoords = { lat: match.lat, lng: match.lng };
+    }
+  } catch { /* no profile = default to flights */ }
+  return _homeCoords;
+}
+
+function computeNearby(dest) {
+  if (!dest?.lat || !dest?.lng || !_homeCoords) return false;
+  return haversineKm(_homeCoords.lat, _homeCoords.lng, dest.lat, dest.lng) < NEARBY_THRESHOLD_KM;
+}
+
+function isNearbyTrip() {
+  if (!state) return false;
+  const dest = state.multiCity ? state.destinations?.[0] : state.destination;
+  return computeNearby(dest);
+}
+
 let state = null;
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -173,9 +219,10 @@ function flagImg(code, size = 20) {
   return `<img src="https://flagcdn.com/w${w}/${code}.png" width="${size}" height="${Math.round(size * 0.75)}" alt="" style="border-radius:2px; object-fit:cover; display:block;">`;
 }
 
-export function clearAndStart(preselectedDest) {
+export async function clearAndStart(preselectedDest) {
   clearWizardState();
   state = loadWizardState();
+  await loadHomeCoords();
   if (preselectedDest) {
     state.destination = preselectedDest;
     state.currentStep = 2;
@@ -185,8 +232,9 @@ export function clearAndStart(preselectedDest) {
   renderShell();
 }
 
-export function renderWizard(step) {
+export async function renderWizard(step) {
   state = loadWizardState();
+  await loadHomeCoords();
   if (step && step >= 1 && step <= TOTAL_STEPS) {
     state.currentStep = step;
   }
@@ -216,7 +264,10 @@ function renderFooterPills() {
     const accom = ACCOM_TYPES.find(a => a.key === state.accommodation.type);
     if (accom) pills.push(`<span class="wizard-footer-pill">${accom.icon} ${accom.title}</span>`);
   }
-  if (state.flights.fareClass && state.flights.fareClass !== 'economy') {
+  if (isNearbyTrip() && state.transport?.mode) {
+    const tm = TRANSPORT_MODES.find(t => t.key === state.transport.mode);
+    if (tm) pills.push(`<span class="wizard-footer-pill">${tm.icon} ${tm.title}</span>`);
+  } else if (state.flights.fareClass && state.flights.fareClass !== 'economy') {
     pills.push(`<span class="wizard-footer-pill">✈️ ${state.flights.fareClass}</span>`);
   }
   if (state.style.activities.length > 0) {
@@ -314,7 +365,7 @@ function renderStep() {
     case 2: return renderStep2(container);
     case 3: return renderStep3(container);
     case 4: return renderStepAccommodation(container);
-    case 5: return renderStep4(container);
+    case 5: return isNearbyTrip() ? renderStepTransport(container) : renderStep4(container);
     case 6: return renderStep5(container);
     case 7: return renderStep6(container);
     case 8: return renderGeneration();
@@ -938,6 +989,38 @@ function renderStep4(el) {
   });
 }
 
+function renderStepTransport(el) {
+  const dest = state.multiCity ? state.destinations?.[0] : state.destination;
+  const destName = dest?.name || 'your destination';
+  const selected = state.transport?.mode || null;
+
+  el.innerHTML = `
+    <h2 class="wizard-step-title">How do you get there?</h2>
+    <p class="wizard-step-subtitle">${escapeHtml(destName)} is close by — no flights needed</p>
+
+    <div class="wizard-section-label">Transport mode</div>
+    <div class="fare-cards">
+      ${TRANSPORT_MODES.map(t => `
+        <div class="fare-card ${selected === t.key ? 'fare-card--active' : ''}" data-transport="${t.key}">
+          <span class="fare-card-seat">${t.icon}</span>
+          <span class="fare-card-title">${t.title}</span>
+          <span class="fare-card-desc">${t.desc}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  el.querySelectorAll('[data-transport]').forEach(card => {
+    card.addEventListener('click', () => {
+      state.transport = { ...state.transport, mode: card.dataset.transport };
+      state = updateWizardField(state, 'transport', state.transport);
+      renderStepTransport(el);
+      const btn = document.querySelector('[data-wizard="next"]');
+      if (btn) btn.disabled = false;
+    });
+  });
+}
+
 function renderStep5(el) {
   const sliders = [
     { key: 'nightlife', left: '🐓 Early bird', right: '🦉 Night owl' },
@@ -1054,11 +1137,17 @@ function renderStep6(el) {
         <span class="summary-tile-label">Stay</span>
         <span class="summary-tile-value">${starLabel}${accomType?.title || 'Not set'}</span>
       </div>
+      ${isNearbyTrip() ? `
+      <div class="summary-tile">
+        <span class="summary-tile-icon">${(TRANSPORT_MODES.find(t => t.key === state.transport?.mode) || {}).icon || '🚌'}</span>
+        <span class="summary-tile-label">Transport</span>
+        <span class="summary-tile-value">${(TRANSPORT_MODES.find(t => t.key === state.transport?.mode) || {}).title || 'Not set'}</span>
+      </div>` : `
       <div class="summary-tile">
         <span class="summary-tile-icon">✈️</span>
         <span class="summary-tile-label">Flight</span>
         <span class="summary-tile-value">${state.flights.fareClass}${state.flights.connectionPref !== 'any' ? ', ' + state.flights.connectionPref : ''}</span>
-      </div>
+      </div>`}
       <div class="summary-tile">
         <span class="summary-tile-icon">📐</span>
         <span class="summary-tile-label">Pace</span>

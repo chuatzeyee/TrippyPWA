@@ -58,8 +58,13 @@ serve(async (req: Request) => {
     const stars = wizardState.accommodation?.stars || 0;
     const priorities = wizardState.accommodation?.priorities?.join(", ") || "none specified";
 
+    const transportMode = wizardState.transport?.mode || null;
+    const isNearbyTrip = !!transportMode;
     const fareClass = wizardState.flights?.fareClass || "economy";
     const connectionPref = wizardState.flights?.connectionPref || "any";
+    const transportLabel: Record<string, string> = {
+      ferry: "ferry", bus: "bus / coach", train: "train / rail", drive: "self-drive / car rental"
+    };
 
     const paceMap: Record<number, string> = { 1: "very relaxed", 2: "relaxed", 3: "balanced", 4: "active", 5: "packed" };
     const paceVal = wizardState.style?.pace || 3;
@@ -103,7 +108,9 @@ TRIP DETAILS:
 - ${travelers} traveler${travelers > 1 ? "s" : ""}${departureCity ? `\n- Departing from: ${departureCity}${homeCountry ? `, ${homeCountry}` : ""}` : ""}
 - Daily budget: ${currencySymbol}${budget} per person (${currency})
 - Accommodation preference: ${accomType}${stars ? ` (${stars}-star)` : ""}, priorities: ${priorities}
-- Flights: ${fareClass} class, ${connectionPref} connections
+${isNearbyTrip
+  ? `- This is a NEARBY trip — NO FLIGHTS. Primary transport: ${transportLabel[transportMode] || transportMode}. Suggest ${transportLabel[transportMode] || transportMode} options with schedules, operators, duration, and pricing instead of flights.`
+  : `- Flights: ${fareClass} class, ${connectionPref} connections`}
 - Travel pace: ${pace} — plan ${activityGuidance}
 - Interests: ${interests}
 - ${foodStyle}
@@ -127,7 +134,9 @@ CRITICAL REQUIREMENTS:
 9. Add practical tips for each activity (booking advice, best times, what to order, etc).
 10. The timeSlot field should still categorize as morning/afternoon/evening for grouping.
 11. For EVERY day, include a "weather" object with the expected weather conditions for that day based on the destination, season, and travel dates. Include condition (e.g. "sunny", "partly cloudy", "rainy"), highC and lowC temperatures in Celsius.
-12. Include "flights" with suggested outbound and inbound flight options — recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing for ${fareClass} class.
+${isNearbyTrip
+  ? `12. Include "transport" (NOT flights) with suggested outbound and inbound ${transportLabel[transportMode] || "transport"} options — include operator name, route, duration, schedule frequency, and pricing. For ferries include terminal names. For buses include bus operator and station. For trains include train service name and station.`
+  : `12. Include "flights" with suggested outbound and inbound flight options — recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing for ${fareClass} class.`}
 13. Include "accommodation" with 2-3 hotel/apartment options at different price points matching the traveler's ${accomType} preference. Include name, neighborhood, price range, type, highlights, and a badge (Recommended, Best Value, Best Location, or Luxury Pick).
 14. Include "bookingChecklist" — scan every activity and identify which ones need advance booking (museum tickets, restaurant reservations, tours, shows). Group into "Must Book Ahead" (sells out or requires reservation) and "Good to Book" (walk-in possible but booking saves time). Include the day number and a practical booking note.`;
 
@@ -227,37 +236,75 @@ Respond ONLY with valid JSON matching the provided schema.`
                 required: ["dayNumber", "title", "activities"]
               }
             },
-            flights: {
-              type: "object",
-              description: "Suggested flight options for this trip",
-              properties: {
-                outbound: {
-                  type: "object",
-                  properties: {
-                    airline: { type: "string" },
-                    flightNumber: { type: "string", description: "e.g. SQ237, QF9, JL3" },
-                    route: { type: "string", description: "e.g. SIN → MEL" },
-                    duration: { type: "string", description: "e.g. 7h 15m" },
-                    priceRange: { type: "string", description: "e.g. $400-600" },
-                    tips: { type: "string", description: "Booking tips, best time to book, etc." }
+            ...(isNearbyTrip ? {
+              transport: {
+                type: "object",
+                description: `Suggested ${transportLabel[transportMode] || "transport"} options for this nearby trip`,
+                properties: {
+                  outbound: {
+                    type: "object",
+                    properties: {
+                      operator: { type: "string", description: "Transport operator name, e.g. Batam Fast, KLIA Express, StarMart" },
+                      mode: { type: "string", description: "ferry, bus, train, or drive" },
+                      route: { type: "string", description: "e.g. HarbourFront → Batam Centre" },
+                      terminal: { type: "string", description: "Departure terminal or station name" },
+                      duration: { type: "string", description: "e.g. 1h 15m" },
+                      frequency: { type: "string", description: "e.g. Every 30 min, 4 daily departures" },
+                      priceRange: { type: "string", description: "e.g. S$25-40" },
+                      tips: { type: "string" }
+                    },
+                    required: ["operator", "mode", "route", "duration", "priceRange"]
                   },
-                  required: ["airline", "flightNumber", "route", "duration", "priceRange"]
+                  inbound: {
+                    type: "object",
+                    properties: {
+                      operator: { type: "string" },
+                      mode: { type: "string" },
+                      route: { type: "string" },
+                      terminal: { type: "string" },
+                      duration: { type: "string" },
+                      frequency: { type: "string" },
+                      priceRange: { type: "string" },
+                      tips: { type: "string" }
+                    },
+                    required: ["operator", "mode", "route", "duration", "priceRange"]
+                  }
                 },
-                inbound: {
-                  type: "object",
-                  properties: {
-                    airline: { type: "string" },
-                    flightNumber: { type: "string", description: "e.g. SQ238, QF10" },
-                    route: { type: "string" },
-                    duration: { type: "string" },
-                    priceRange: { type: "string" },
-                    tips: { type: "string" }
+                required: ["outbound", "inbound"]
+              }
+            } : {
+              flights: {
+                type: "object",
+                description: "Suggested flight options for this trip",
+                properties: {
+                  outbound: {
+                    type: "object",
+                    properties: {
+                      airline: { type: "string" },
+                      flightNumber: { type: "string", description: "e.g. SQ237, QF9, JL3" },
+                      route: { type: "string", description: "e.g. SIN → MEL" },
+                      duration: { type: "string", description: "e.g. 7h 15m" },
+                      priceRange: { type: "string", description: "e.g. $400-600" },
+                      tips: { type: "string", description: "Booking tips, best time to book, etc." }
+                    },
+                    required: ["airline", "flightNumber", "route", "duration", "priceRange"]
                   },
-                  required: ["airline", "flightNumber", "route", "duration", "priceRange"]
-                }
-              },
-              required: ["outbound", "inbound"]
-            },
+                  inbound: {
+                    type: "object",
+                    properties: {
+                      airline: { type: "string" },
+                      flightNumber: { type: "string", description: "e.g. SQ238, QF10" },
+                      route: { type: "string" },
+                      duration: { type: "string" },
+                      priceRange: { type: "string" },
+                      tips: { type: "string" }
+                    },
+                    required: ["airline", "flightNumber", "route", "duration", "priceRange"]
+                  }
+                },
+                required: ["outbound", "inbound"]
+              }
+            }),
             accommodation: {
               type: "array",
               description: "2-3 accommodation options at different price points",

@@ -12,6 +12,7 @@ function defaultState() {
     budget: { preset: null, dailyAmount: 0 },
     accommodation: { type: null, stars: 0, priorities: [] },
     flights: { fareClass: 'economy', departureAirport: '', airlines: [], connectionPref: 'any', departureTimePref: [] },
+    transport: { mode: null, preferences: [] },
     style: { nightlife: 3, pace: 3, food: 3, exploration: 3, activities: [] },
     summary: { freeText: '', mustDo: '', dietary: '', prebooked: '', avoid: '' },
     travelers: 2
