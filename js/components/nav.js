@@ -1,5 +1,4 @@
 import { navigate } from '../router.js';
-import { renderAuthButton } from '../auth/auth-ui.js';
 
 const DESTINATIONS = [
   'SINGAPORE', 'KUALA LUMPUR', 'JAKARTA', 'HELSINKI',
@@ -95,5 +94,7 @@ export function renderNav() {
     }
   });
 
-  renderAuthButton(document.getElementById('auth-slot'));
+  import('../auth/auth-ui.js').then(({ renderAuthButton }) => {
+    renderAuthButton(document.getElementById('auth-slot'));
+  });
 }

@@ -1,73 +1,49 @@
 import { addRoute, start, navigate, onNotFound } from './router.js';
 import { renderNav } from './components/nav.js';
 import { renderDashboard } from './components/dashboard.js';
-import { initAuth, isAuthenticated, onAuthChange } from './auth/auth.js';
-import { showAuthGate } from './auth/auth-ui.js';
-import { needsProfileSetup } from './data/profile-repository.js';
-import { hasLocalSession } from './lib/supabase.js';
 
 renderNav();
 
-let _profileChecked = false;
-let _needsSetup = false;
-
-async function guardProfileSetup() {
-  if (!isAuthenticated()) return false;
-  if (!_profileChecked) {
-    _needsSetup = await needsProfileSetup();
-    _profileChecked = true;
-  }
-  if (_needsSetup) {
-    navigate('/profile');
-    return true;
-  }
-  return false;
-}
-
-onAuthChange(async (event) => {
-  _profileChecked = false;
-  _needsSetup = false;
-  if (event === 'SIGNED_IN') {
-    renderNav();
-    if (await needsProfileSetup()) {
-      navigate('/profile');
-    } else {
-      const { fetchProfile } = await import('./data/profile-repository.js');
-      const { setHomeCurrency } = await import('./data/user-prefs.js');
-      const { setLocaleFromFlag } = await import('./lib/locale.js');
-      const { data: profile } = await fetchProfile();
-      if (profile?.home_currency) {
-        setHomeCurrency(profile.home_currency, profile.home_currency_symbol || '$');
-      }
-      if (profile?.home_flag) {
-        setLocaleFromFlag(profile.home_flag);
-      }
-    }
-  }
-});
-
-addRoute('/', () => {
-  renderDashboard();
-});
+addRoute('/', () => renderDashboard());
 
 addRoute('/profile', async () => {
-  if (!isAuthenticated()) { showAuthGate(); navigate('/'); return; }
+  const { isAuthenticated } = await import('./auth/auth.js');
+  if (!isAuthenticated()) {
+    const { showAuthGate } = await import('./auth/auth-ui.js');
+    showAuthGate();
+    navigate('/');
+    return;
+  }
   const { renderProfileWizard } = await import('./profile/profile-wizard.js');
   renderProfileWizard();
 });
 
 addRoute('/wizard', async () => {
-  if (!isAuthenticated()) { showAuthGate(); navigate('/'); return; }
-  if (await guardProfileSetup()) return;
-  import('./wizard/wizard.js').then(m => {
-    m.clearAndStart();
-  });
+  const { isAuthenticated } = await import('./auth/auth.js');
+  if (!isAuthenticated()) {
+    const { showAuthGate } = await import('./auth/auth-ui.js');
+    showAuthGate();
+    navigate('/');
+    return;
+  }
+  const { needsProfileSetup } = await import('./data/profile-repository.js');
+  if (await needsProfileSetup()) { navigate('/profile'); return; }
+  const m = await import('./wizard/wizard.js');
+  m.clearAndStart();
 });
 
 addRoute('/wizard/:step', async (params) => {
-  if (!isAuthenticated()) { showAuthGate(); navigate('/'); return; }
-  if (await guardProfileSetup()) return;
-  import('./wizard/wizard.js').then(m => m.renderWizard(parseInt(params.step, 10)));
+  const { isAuthenticated } = await import('./auth/auth.js');
+  if (!isAuthenticated()) {
+    const { showAuthGate } = await import('./auth/auth-ui.js');
+    showAuthGate();
+    navigate('/');
+    return;
+  }
+  const { needsProfileSetup } = await import('./data/profile-repository.js');
+  if (await needsProfileSetup()) { navigate('/profile'); return; }
+  const m = await import('./wizard/wizard.js');
+  m.renderWizard(parseInt(params.step, 10));
 });
 
 addRoute('/trip/:id', async (params) => {
@@ -93,10 +69,31 @@ onNotFound((path) => {
 
 start();
 
-initAuth().then(() => {
+import('./auth/auth.js').then(async ({ initAuth, onAuthChange }) => {
+  await initAuth();
   renderNav();
   const hash = location.hash.slice(1) || '/';
   if (hash === '/') renderDashboard();
+
+  onAuthChange(async (event) => {
+    if (event === 'SIGNED_IN') {
+      renderNav();
+      const { needsProfileSetup, fetchProfile } = await import('./data/profile-repository.js');
+      if (await needsProfileSetup()) {
+        navigate('/profile');
+      } else {
+        const { setHomeCurrency } = await import('./data/user-prefs.js');
+        const { setLocaleFromFlag } = await import('./lib/locale.js');
+        const { data: profile } = await fetchProfile();
+        if (profile?.home_currency) {
+          setHomeCurrency(profile.home_currency, profile.home_currency_symbol || '$');
+        }
+        if (profile?.home_flag) {
+          setLocaleFromFlag(profile.home_flag);
+        }
+      }
+    }
+  });
 });
 
 const btt = document.createElement('button');
