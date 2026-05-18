@@ -219,7 +219,7 @@ export async function renderDashboard() {
           if (shimmer) shimmer.remove();
           const statusEl = el.querySelector('.trip-card-gen-status');
           if (statusEl) {
-            statusEl.innerHTML = `<span style="color: var(--error); font-size: 0.85rem;">Generation failed. Click to retry.</span>`;
+            statusEl.innerHTML = `<span style="color: var(--error); font-size: 0.85rem;">Generation failed: ${genStatus.error || 'Unknown error'}. Click to retry.</span>`;
           }
           const dot = el.querySelector('.status-dot');
           if (dot) { dot.className = 'status-dot status-dot--past'; }
