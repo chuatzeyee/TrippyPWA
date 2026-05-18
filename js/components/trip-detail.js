@@ -4,6 +4,7 @@ import { formatNumber, formatDateRange, formatWeekdayDate, getLocale } from '../
 import { convert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
+import { shortenTransitName } from '../data/transit-lines.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -78,7 +79,7 @@ const CATEGORY_ICONS = {
 
 const TRANSPORT_ICONS = {
   walk: mdIcon(MD.walk), tram: mdIcon(MD.tram), bus: mdIcon(MD.bus),
-  train: mdIcon(MD.train), taxi: mdIcon(MD.taxi),
+  train: mdIcon(MD.train), mrt: mdIcon(MD.subway), taxi: mdIcon(MD.taxi),
   uber: mdIcon(MD.car), grab: mdIcon(MD.car), didi: mdIcon(MD.car),
   gojek: mdIcon(MD.car), bolt: mdIcon(MD.car), lyft: mdIcon(MD.car),
   ferry: mdIcon(MD.ferry), drive: mdIcon(MD.car),
@@ -210,34 +211,114 @@ function classifyTransportType(mode) {
   if (!mode) return 'private';
   const m = mode.toLowerCase().trim();
   if (m === 'walk' || m === 'bicycle') return 'walk';
-  if (['tram', 'bus', 'train', 'metro', 'subway', 'ferry'].includes(m)) return 'public';
+  if (['tram', 'bus', 'train', 'metro', 'mrt', 'subway', 'ferry'].includes(m)) return 'public';
   return 'private';
+}
+
+function parseTransportLeg(text) {
+  if (!text) return null;
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+
+  if (/^walk\b/i.test(trimmed)) {
+    const toMatch = trimmed.match(/^walk\s+to\s+(.+)/i);
+    return {
+      service: 'Walk', from: null,
+      to: toMatch ? toMatch[1].trim() : null,
+      route: !toMatch ? trimmed.replace(/^walk\s*/i, '') : null
+    };
+  }
+
+  const modeRe = /^(Tram|Bus|Train|Metro|MRT|Ferry|Subway|Line|Route)\s+/i;
+  const modeMatch = trimmed.match(modeRe);
+
+  if (modeMatch) {
+    const mode = modeMatch[1];
+    let rest = trimmed.slice(modeMatch[0].length);
+    const ftIdx = rest.search(/\bfrom\b|\bto\b/i);
+
+    let service;
+    if (ftIdx > 0) {
+      service = (mode + ' ' + rest.slice(0, ftIdx).trim()).trim();
+      rest = rest.slice(ftIdx);
+    } else if (ftIdx === 0) {
+      service = mode;
+    } else {
+      return { service: (mode + ' ' + rest).trim(), from: null, to: null, route: null };
+    }
+
+    const fromTo = rest.match(/^from\s+(.+?)\s+to\s+(.+)$/i);
+    if (fromTo) return { service, from: fromTo[1].trim(), to: fromTo[2].trim(), route: null };
+    const toOnly = rest.match(/^to\s+(.+)$/i);
+    if (toOnly) return { service, from: null, to: toOnly[1].trim(), route: null };
+    const fromOnly = rest.match(/^from\s+(.+)$/i);
+    if (fromOnly) return { service, from: fromOnly[1].trim(), to: null, route: null };
+    return { service, from: null, to: null, route: rest || null };
+  }
+
+  const namedLine = trimmed.match(/^(.+?)\s+from\s+(.+?)\s+to\s+(.+)$/i);
+  if (namedLine) return { service: namedLine[1].trim(), from: namedLine[2].trim(), to: namedLine[3].trim(), route: null };
+
+  const namedLineTo = trimmed.match(/^(.+?)\s+to\s+(.+)$/i);
+  if (namedLineTo && /[a-z]{2}/i.test(namedLineTo[1])) {
+    return { service: namedLineTo[1].trim(), from: null, to: namedLineTo[2].trim(), route: null };
+  }
+
+  return { service: null, from: null, to: null, route: trimmed };
+}
+
+function parseTransportLegs(text) {
+  if (!text) return [];
+  const normalized = text
+    .replace(/\.\s+(?=[A-Z])/g, ', ')
+    .replace(/[.\s]+$/, '');
+
+  const segments = normalized.split(/,\s*(?=then\s|take\s|change\s+to\s|Walk\s)/i);
+
+  return segments
+    .map(s => s.trim())
+    .filter(s => s && !/^walk from (?:there|here)\.?$/i.test(s))
+    .map(s => {
+      const cleaned = s
+        .replace(/^then\s+change\s+to\s+/i, '')
+        .replace(/^then\s+take\s+/i, '')
+        .replace(/^then\s+/i, '')
+        .replace(/^take\s+/i, '')
+        .replace(/^change\s+to\s+/i, '')
+        .trim();
+      return parseTransportLeg(cleaned);
+    })
+    .filter(Boolean);
 }
 
 function parseTransportText(text) {
   if (!text) return null;
-
   const parts = text.split(/,?\s+then\s+/i);
   const main = parts[0];
   const extra = parts.length > 1 ? parts.slice(1).join(', then ') : null;
+  const parsed = parseTransportLeg(main);
+  if (!parsed) return { service: null, from: null, to: null, route: main, extra };
+  return { ...parsed, extra };
+}
 
-  const serviceMatch = main.match(/^(Tram|Bus|Train|Metro|Ferry|Subway|Line|Route)\s*([\d\w]+(?:\s*,\s*[\d\w]+)*)?/i);
-  if (!serviceMatch) {
-    return { service: null, from: null, to: null, route: main, extra };
-  }
-
-  const service = (serviceMatch[1] + (serviceMatch[2] ? ' ' + serviceMatch[2] : '')).trim();
-  let route = main.slice(serviceMatch[0].length).trim();
-  route = route.replace(/^from\s+/i, '');
-
-  const toMatch = route.match(/^(.+?)\s+to\s+(.+)$/i);
-  return {
-    service,
-    from: toMatch ? toMatch[1].trim() : null,
-    to: toMatch ? toMatch[2].trim() : null,
-    route: !toMatch ? route : null,
-    extra
-  };
+function renderTransportLeg(leg) {
+  const isWalk = leg.service === 'Walk';
+  const pillClass = isWalk ? ' td-transport-pill--walk' : '';
+  const { short, full } = shortenTransitName(leg.service);
+  const titleAttr = full !== short ? ` title="${esc(full)}"` : '';
+  return `<div class="td-getting-there-step">
+    ${leg.service ? `<span class="td-transport-pill${pillClass}"${titleAttr}>${esc(short)}</span>` : ''}
+    ${leg.from && leg.to
+      ? `<div class="td-transport-stops">
+          <div class="td-transport-stop"><span class="td-transport-stop-icon td-transport-stop-icon--board">${mdIcon(MD.tripOrigin, 12)}</span> ${esc(leg.from)}</div>
+          <div class="td-transport-stop"><span class="td-transport-stop-icon td-transport-stop-icon--alight">${mdIcon(MD.flag, 12)}</span> ${esc(leg.to)}</div>
+        </div>`
+      : leg.to
+        ? `<span class="td-transport-route-text">${esc(leg.to)}</span>`
+        : leg.route
+          ? `<span class="td-transport-route-text">${esc(leg.route)}</span>`
+          : ''}
+  </div>`;
 }
 
 function renderGettingThere(activity) {
@@ -259,26 +340,19 @@ function renderGettingThere(activity) {
           <div class="td-transport-grid">
             ${opts.map(o => {
               const type = classifyTransportType(o.mode);
-              const parsed = parseTransportText(o.label);
-              const routeHtml = parsed && parsed.service
-                ? (parsed.from && parsed.to
-                  ? `<div class="td-transport-stops">
-                      <div class="td-transport-stop"><span class="td-transport-stop-icon td-transport-stop-icon--board">${mdIcon(MD.tripOrigin, 12)}</span> ${esc(parsed.from)}</div>
-                      <div class="td-transport-stop"><span class="td-transport-stop-icon td-transport-stop-icon--alight">${mdIcon(MD.flag, 12)}</span> ${esc(parsed.to)}</div>
-                    </div>`
-                  : `<span class="td-transport-route-text">${esc(parsed.route || '')}</span>`)
-                : '';
-              const pillHtml = parsed && parsed.service
-                ? `<span class="td-transport-pill${type === 'walk' ? ' td-transport-pill--walk' : ''}">${esc(parsed.service)}</span>`
-                : '';
+              const legs = parseTransportLegs(o.label);
               const modeIcon = TRANSPORT_ICONS[o.mode?.toLowerCase()] || TRANSPORT_ICONS.default;
+
+              const legsHtml = legs.length > 0
+                ? `<div class="td-getting-there-steps">${legs.map(renderTransportLeg).join('')}</div>`
+                : `<span class="td-transport-route-text">${esc(o.label)}</span>`;
+
               return `
                 <div class="td-transport-option td-transport-option--${type}">
                   <div class="td-transport-option-top">
                     <span class="td-transport-option-icon">${modeIcon}</span>
                     <div class="td-transport-option-label">
-                      ${pillHtml || `<span class="td-transport-route-text">${esc(o.label)}</span>`}
-                      ${routeHtml}
+                      ${legsHtml}
                     </div>
                   </div>
                   <div class="td-transport-option-meta">
@@ -296,25 +370,10 @@ function renderGettingThere(activity) {
 
   const icon = transportIcon(activity.transport_mode);
   const hasMeta = activity.transport_duration || activity.transport_cost;
-  const parsed = parseTransportText(activity.getting_there);
+  const legs = parseTransportLegs(activity.getting_there);
 
-  const stepsHtml = parsed && (parsed.service || parsed.from)
-    ? `<div class="td-getting-there-steps">
-        <div class="td-getting-there-step">
-          ${parsed.service ? `<span class="td-transport-pill">${esc(parsed.service)}</span>` : ''}
-          ${parsed.from && parsed.to
-            ? `<div class="td-transport-stops">
-                <div class="td-transport-stop"><span class="td-transport-stop-icon td-transport-stop-icon--board">${mdIcon(MD.tripOrigin, 12)}</span> ${esc(parsed.from)}</div>
-                <div class="td-transport-stop"><span class="td-transport-stop-icon td-transport-stop-icon--alight">${mdIcon(MD.flag, 12)}</span> ${esc(parsed.to)}</div>
-              </div>`
-            : `<span class="td-transport-route-text">${esc(parsed.route || '')}</span>`}
-        </div>
-        ${parsed.extra ? `
-          <div class="td-getting-there-step">
-            <span class="td-transport-pill td-transport-pill--walk">${esc(parsed.extra[0].toUpperCase() + parsed.extra.slice(1))}</span>
-          </div>
-        ` : ''}
-      </div>`
+  const stepsHtml = legs.length > 0
+    ? `<div class="td-getting-there-steps">${legs.map(renderTransportLeg).join('')}</div>`
     : `<div class="td-getting-there-route">${esc(activity.getting_there)}</div>`;
 
   return `
