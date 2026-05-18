@@ -5,7 +5,7 @@ import { initAuth, isAuthenticated, onAuthChange } from './auth/auth.js';
 import { showAuthGate } from './auth/auth-ui.js';
 import { needsProfileSetup } from './data/profile-repository.js';
 
-initAuth();
+await initAuth();
 renderNav();
 
 async function guardProfileSetup() {
