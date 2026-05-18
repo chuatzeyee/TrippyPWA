@@ -4,8 +4,8 @@ import { renderDashboard } from './components/dashboard.js';
 import { initAuth, isAuthenticated, onAuthChange } from './auth/auth.js';
 import { showAuthGate } from './auth/auth-ui.js';
 import { needsProfileSetup } from './data/profile-repository.js';
+import { hasLocalSession } from './lib/supabase.js';
 
-await initAuth();
 renderNav();
 
 let _profileChecked = false;
@@ -92,6 +92,12 @@ onNotFound((path) => {
 });
 
 start();
+
+initAuth().then(() => {
+  renderNav();
+  const hash = location.hash.slice(1) || '/';
+  if (hash === '/') renderDashboard();
+});
 
 const btt = document.createElement('button');
 btt.className = 'back-to-top';

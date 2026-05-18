@@ -20,3 +20,10 @@ export function setCachedUser(user) {
 export function getUser() {
   return _cachedUser;
 }
+
+export function hasLocalSession() {
+  try {
+    const key = url ? `sb-${new URL(url).hostname.split('.')[0]}-auth-token` : '';
+    return key ? !!localStorage.getItem(key) : false;
+  } catch { return false; }
+}

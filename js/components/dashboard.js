@@ -6,6 +6,7 @@ import { isAuthenticated } from '../auth/auth.js';
 import { showAuthGate } from '../auth/auth-ui.js';
 import { formatNumber, formatWeekdayDate } from '../lib/locale.js';
 import { fetchAllTrips } from '../data/trip-repository.js';
+import { hasLocalSession } from '../lib/supabase.js';
 
 function flagImg(code, size = 20) {
   if (!code) return '';
@@ -264,8 +265,11 @@ export async function renderDashboard() {
   const app = document.getElementById('app');
 
   let trips = [];
-  if (isAuthenticated()) {
+  const loggedIn = isAuthenticated();
+  const probablyLoggedIn = !loggedIn && hasLocalSession();
+  if (loggedIn || probablyLoggedIn) {
     app.innerHTML = renderSkeleton();
+    if (probablyLoggedIn) return;
     try {
       const { data } = await fetchAllTrips();
       trips = (data || []).map(t => {
@@ -299,7 +303,7 @@ export async function renderDashboard() {
   }
 
   let content;
-  if (isAuthenticated()) {
+  if (loggedIn || probablyLoggedIn) {
     content = renderAuthDashboard(trips);
   } else if (trips.length === 0) {
     content = renderEmpty();
