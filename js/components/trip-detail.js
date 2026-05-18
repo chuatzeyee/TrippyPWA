@@ -420,17 +420,15 @@ function renderActivity(activity, currencySymbol, isFirst) {
       ${time ? `<div class="td-activity-time">${esc(time)}</div>` : '<div class="td-activity-time"></div>'}
       <div class="td-activity-dot"></div>
       <div class="td-activity-card">
-        <div class="td-activity-card-header">
+        <div class="td-activity-card-top">
           <span class="td-activity-icon">${icon}</span>
-          <div class="td-activity-card-info">
-            <div class="td-activity-title">${esc(activity.title)}</div>
-            ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
-          </div>
           <div class="td-activity-card-cost">
             <span class="td-cost-badge">${cost}</span>
             ${duration ? `<span class="td-duration">${duration}</span>` : ''}
           </div>
         </div>
+        <div class="td-activity-title">${esc(activity.title)}</div>
+        ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
         ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
