@@ -301,13 +301,19 @@ function parseTransportText(text) {
   return { ...parsed, extra };
 }
 
+function titleCase(s) {
+  if (!s) return s;
+  return s.replace(/\b[a-z]/g, c => c.toUpperCase());
+}
+
 function renderTransportLeg(leg) {
   const isWalk = leg.service === 'Walk';
   const pillClass = isWalk ? ' td-transport-pill--walk' : '';
   const { short, full } = shortenTransitName(leg.service);
-  const titleAttr = full !== short ? ` title="${esc(full)}"` : '';
+  const label = titleCase(short);
+  const titleAttr = full !== short ? ` title="${esc(titleCase(full))}"` : '';
   return `<div class="td-getting-there-step">
-    ${leg.service ? `<span class="td-transport-pill${pillClass}"${titleAttr}>${esc(short)}</span>` : ''}
+    ${leg.service ? `<span class="td-transport-pill${pillClass}"${titleAttr}>${esc(label)}</span>` : ''}
     ${leg.from && leg.to
       ? `<div class="td-transport-stops">
           <div class="td-transport-stop"><span class="td-transport-stop-icon td-transport-stop-icon--board">${mdIcon(MD.tripOrigin, 12)}</span> ${esc(leg.from)}</div>
