@@ -10,10 +10,10 @@
   --border: rgba(229, 225, 216, 0.08);
   --border-strong: rgba(229, 225, 216, 0.15);
 
-  /* Accents - warm coral + teal + amber */
-  --terracotta: #D47358;
-  --terracotta-hover: #C0654C;
-  --terracotta-light: rgba(212, 115, 88, 0.16);
+  /* Accents - Miffy orange + teal + amber */
+  --terracotta: #F1A83B;
+  --terracotta-hover: #D9952F;
+  --terracotta-light: rgba(241, 168, 59, 0.16);
   --teal: #4A9684;
   --teal-hover: #3E8573;
   --teal-light: rgba(74, 150, 132, 0.14);
@@ -25,7 +25,7 @@
   --plum: #7E6EAA;
 
   /* Day colors */
-  --day-1: #D47358;
+  --day-1: #F1A83B;
   --day-2: #4A9684;
   --day-3: #7E6EAA;
   --day-4: #D09A48;

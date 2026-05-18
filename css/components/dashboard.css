@@ -243,7 +243,7 @@
 .landing-orb--1 {
   width: 300px;
   height: 300px;
-  background: rgba(212, 115, 88, 0.12);
+  background: rgba(241, 168, 59, 0.12);
   top: 10%;
   left: -10%;
   animation-delay: 0s;
@@ -357,11 +357,11 @@
 
 @keyframes logoPulse {
   0%, 100% {
-    filter: drop-shadow(0 0 0 rgba(212, 115, 88, 0));
+    filter: drop-shadow(0 0 0 rgba(241, 168, 59, 0));
     transform: scale(1);
   }
   50% {
-    filter: drop-shadow(0 0 12px rgba(212, 115, 88, 0.2));
+    filter: drop-shadow(0 0 12px rgba(241, 168, 59, 0.2));
     transform: scale(1.03);
   }
 }
@@ -527,14 +527,14 @@
 }
 
 .landing-cta .btn {
-  box-shadow: 0 4px 24px rgba(212, 115, 88, 0.3);
+  box-shadow: 0 4px 24px rgba(241, 168, 59, 0.3);
   font-size: 1rem;
   padding: var(--sp-3) var(--sp-8);
   letter-spacing: 0.02em;
 }
 
 .landing-cta .btn:hover {
-  box-shadow: 0 6px 32px rgba(212, 115, 88, 0.4);
+  box-shadow: 0 6px 32px rgba(241, 168, 59, 0.4);
   transform: translateY(-2px);
 }
 
@@ -561,7 +561,7 @@
 
 .landing-dest-thumb:hover {
   border-color: var(--terracotta);
-  box-shadow: 0 0 12px rgba(212, 115, 88, 0.35);
+  box-shadow: 0 0 12px rgba(241, 168, 59, 0.35);
 }
 
 .landing-hint {
