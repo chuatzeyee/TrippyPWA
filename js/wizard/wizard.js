@@ -153,6 +153,13 @@ function isNearbyTrip() {
   return computeNearby(dest);
 }
 
+function isSameCityTrip() {
+  if (!state) return false;
+  const dest = state.multiCity ? state.destinations?.[0] : state.destination;
+  if (!dest?.lat || !dest?.lng || !_homeCoords) return false;
+  return haversineKm(_homeCoords.lat, _homeCoords.lng, dest.lat, dest.lng) < 10;
+}
+
 let state = null;
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -336,11 +343,13 @@ function bindWizardEvents() {
       navigate('/');
     } else if (action === 'back' && state.currentStep > 1) {
       state.currentStep--;
+      if (state.currentStep === 5 && isSameCityTrip()) state.currentStep--;
       saveWizardState(state);
       renderShell();
     } else if (action === 'next' && canAdvance(state)) {
       if (state.currentStep < TOTAL_STEPS) {
         state.currentStep++;
+        if (state.currentStep === 5 && isSameCityTrip()) state.currentStep++;
         state.furthestStep = Math.max(state.furthestStep, state.currentStep);
         saveWizardState(state);
         if (state.currentStep === 8) {

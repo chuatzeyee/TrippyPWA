@@ -58,8 +58,14 @@ serve(async (req: Request) => {
     const stars = wizardState.accommodation?.stars || 0;
     const priorities = wizardState.accommodation?.priorities?.join(", ") || "none specified";
 
+    const destName = wizardState.multiCity
+      ? (wizardState.destinations?.[0]?.name || "")
+      : (wizardState.destination?.name || "");
+    const isSameCity = departureCity && destName
+      && departureCity.toLowerCase() === destName.toLowerCase();
+
     const transportMode = wizardState.transport?.mode || null;
-    const isNearbyTrip = !!transportMode;
+    const isNearbyTrip = !!transportMode && !isSameCity;
     const fareClass = wizardState.flights?.fareClass || "economy";
     const connectionPref = wizardState.flights?.connectionPref || "any";
     const transportLabel: Record<string, string> = {
@@ -108,7 +114,9 @@ TRIP DETAILS:
 - ${travelers} traveler${travelers > 1 ? "s" : ""}${departureCity ? `\n- Departing from: ${departureCity}${homeCountry ? `, ${homeCountry}` : ""}` : ""}
 - Daily budget: ${currencySymbol}${budget} per person (${currency})
 - Accommodation preference: ${accomType}${stars ? ` (${stars}-star)` : ""}, priorities: ${priorities}
-${isNearbyTrip
+${isSameCity
+  ? `- The traveler LIVES in ${destName}. This is a LOCAL exploration trip. Do NOT include any flights, inter-city transport, or arrival logistics. Start the itinerary directly with Day 1 activities.`
+  : isNearbyTrip
   ? `- This is a NEARBY trip — NO FLIGHTS. Primary transport: ${transportLabel[transportMode] || transportMode}. Suggest ${transportLabel[transportMode] || transportMode} options with schedules, operators, duration, and pricing instead of flights.`
   : `- Flights: ${fareClass} class, ${connectionPref} connections`}
 - Travel pace: ${pace} — plan ${activityGuidance}
@@ -124,9 +132,9 @@ CRITICAL REQUIREMENTS:
 3. Include MEALS: breakfast, lunch, dinner, and coffee/snack breaks as separate activities with specific restaurant recommendations.
 4. For EVERY activity after the first of each day, include "transportOptions" — an array of UP TO 3 realistic ways to get from the previous venue:
    a) "walk" — walking directions (omit if distance > 25 min walk)
-   b) "public" — public transit (tram, metro, bus, train, ferry) with route number/name
+   b) "public" — public transit (tram, metro, mrt, bus, train, ferry) with route number/name and line name
    c) "private" — ride-share or taxi (Uber globally, Grab for Southeast Asia, DiDi for Australia/China, Gojek for Indonesia, Bolt for Europe/Africa)
-   Each option needs: mode (e.g. "walk", "tram", "uber"), label (human-readable, e.g. "Tram 96 from Bourke St"), duration (e.g. "8 min"), cost (e.g. "A$5", "Free"). Also keep "gettingThere" as a one-line summary of the recommended option.
+   Each option needs: mode (e.g. "walk", "tram", "mrt", "uber"), label (human-readable). For transit with lines, use format: "MRT Downtown Line from Fort Canning to Stevens" or "Bus 96 from Bourke St to Flinders". ALWAYS include "from [boarding] to [alighting]" for transit. Duration (e.g. "8 min"), cost (e.g. "A$5", "Free"). For multi-leg transit, use SEPARATE transport options per leg — do NOT combine legs into one label. Also keep "gettingThere" as a one-line summary of the recommended option.
 5. Include a mix: sightseeing, meals, coffee, shopping, cultural experiences, relaxation based on the traveler's interests.
 6. Use REAL venue names, addresses, and realistic current pricing in ${currency}.
 7. Include latitude and longitude for every venue.
@@ -220,8 +228,8 @@ Respond ONLY with valid JSON matching the provided schema.`
                           items: {
                             type: "object",
                             properties: {
-                              mode: { type: "string", description: "Transport mode: walk, tram, bus, metro, train, taxi, uber, grab, gojek, bolt, ferry, bicycle" },
-                              label: { type: "string", description: "Human-readable route, e.g. 'Tram 96 from Bourke St Mall' or 'Walk along Collins Street'" },
+                              mode: { type: "string", description: "Transport mode: walk, tram, bus, metro, mrt, train, taxi, uber, grab, gojek, bolt, ferry, bicycle" },
+                              label: { type: "string", description: "Human-readable route with from/to stations, e.g. 'MRT Downtown Line from Bugis to Bayfront', 'Tram 96 from Bourke St to Flinders', 'Walk along Collins Street'" },
                               duration: { type: "string", description: "e.g. 8 min, 15 min" },
                               cost: { type: "string", description: "e.g. Free, A$5, A$12-15" }
                             },
