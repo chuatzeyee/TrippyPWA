@@ -294,6 +294,29 @@
   background-size: 40px 40px;
 }
 
+.landing-floaties {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.landing-floaty {
+  position: absolute;
+  bottom: -40px;
+  opacity: 0;
+  animation: floatyRise linear infinite;
+  pointer-events: none;
+  font-size: 1rem;
+  will-change: transform, opacity;
+}
+
+@keyframes floatyRise {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  8%   { opacity: 0.25; }
+  80%  { opacity: 0.18; }
+  100% { transform: translateY(-110vh) rotate(45deg); opacity: 0; }
+}
+
 /* ===== Hero ===== */
 .landing-hero {
   position: relative;

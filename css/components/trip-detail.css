@@ -654,7 +654,6 @@
   margin-top: var(--sp-3);
   padding: var(--sp-2) var(--sp-3);
   margin-left: calc(40px + var(--sp-3));
-  border-left: 2px solid var(--border-strong);
 }
 
 .td-tip-icon {
