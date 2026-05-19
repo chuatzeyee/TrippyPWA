@@ -257,6 +257,12 @@
   padding: var(--sp-4) var(--sp-6);
 }
 
+@media (min-width: 1024px) {
+  .dashboard-merged-body {
+    max-width: 80%;
+  }
+}
+
 .dashboard-no-trips {
   text-align: center;
   padding: var(--sp-12) 0;
