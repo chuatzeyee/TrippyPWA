@@ -318,11 +318,11 @@ function renderShell() {
       </div>
       <div class="wizard-body">
         <div class="wizard-step" id="wizard-step-content"></div>
-        <div class="wizard-cta">
-          <button class="btn btn--primary btn--lg btn--pill w-full" data-wizard="next" ${canAdvance(state) ? '' : 'disabled'}>
-            ${ctaLabel}
-          </button>
-        </div>
+      </div>
+      <div class="wizard-cta-bar">
+        <button class="btn btn--primary btn--lg btn--pill wizard-cta-btn" data-wizard="next" ${canAdvance(state) ? '' : 'disabled'}>
+          ${ctaLabel}
+        </button>
       </div>
       ${renderFooterPills()}
     </div>
@@ -818,43 +818,82 @@ const ACCOM_PRIORITIES = [
 ];
 
 function renderStepAccommodation(el) {
+  const settled = !!state.accommodation.settled;
   const showStars = state.accommodation.type === 'hotel';
   const currentStars = state.accommodation.stars || 0;
 
   el.innerHTML = `
     <h2 class="wizard-step-title">Where will you stay?</h2>
-    <p class="wizard-step-subtitle">Pick your style, then what matters most</p>
+    <p class="wizard-step-subtitle">${settled ? 'Already booked — share details if you like' : 'Pick your style, then what matters most'}</p>
 
-    <div class="accom-grid">
-      ${ACCOM_TYPES.map(a => `
-        <div class="accom-card ${state.accommodation.type === a.key ? 'accom-card--active' : ''}" data-accom="${a.key}">
-          <span class="accom-card-icon">${a.icon}</span>
-          <span class="accom-card-title">${a.title}</span>
-          <span class="accom-card-desc">${a.desc}</span>
-          <span class="accom-card-vibe">${a.vibe}</span>
-        </div>
-      `).join('')}
-    </div>
+    <button class="settled-toggle ${settled ? 'settled-toggle--active' : ''}" data-settled-accom>
+      <span class="settled-toggle-icon">${settled ? '✓' : '✈️'}</span>
+      ${settled ? 'Already Settled' : 'Already booked?'}
+    </button>
 
-    ${showStars ? `
-      <div class="wizard-section-label">Hotel class</div>
-      <div class="accom-stars">
-        ${[3, 4, 5].map(s => `
-          <button class="accom-star-btn ${currentStars === s ? 'accom-star-btn--active' : ''}" data-stars="${s}">
-            <span class="accom-star-icons">${'★'.repeat(s)}</span>
-            <span class="accom-star-label">${s}-star</span>
-          </button>
+    ${settled ? `
+      <div class="settled-fields">
+        <label class="settled-field">
+          <span class="settled-field-label">Hotel / accommodation address</span>
+          <input type="text" class="settled-input" data-settled-field="hotelAddress"
+            placeholder="e.g. 123 Main St, Tokyo" value="${escapeHtml(state.accommodation.hotelAddress || '')}">
+        </label>
+        <label class="settled-field">
+          <span class="settled-field-label">Check-in date</span>
+          <input type="date" class="settled-input" data-settled-field="checkInDate"
+            value="${state.accommodation.checkInDate || ''}">
+        </label>
+        <p class="settled-hint">Both fields are optional</p>
+      </div>
+    ` : `
+      <div class="accom-grid">
+        ${ACCOM_TYPES.map(a => `
+          <div class="accom-card ${state.accommodation.type === a.key ? 'accom-card--active' : ''}" data-accom="${a.key}">
+            <span class="accom-card-icon">${a.icon}</span>
+            <span class="accom-card-title">${a.title}</span>
+            <span class="accom-card-desc">${a.desc}</span>
+            <span class="accom-card-vibe">${a.vibe}</span>
+          </div>
         `).join('')}
       </div>
-    ` : ''}
 
-    <div class="wizard-section-label">What matters most</div>
-    <div class="accom-priorities">
-      ${ACCOM_PRIORITIES.map(p => `
-        <button class="chip ${state.accommodation.priorities.includes(p) ? 'chip--active' : ''}" data-priority="${escapeHtml(p)}">${escapeHtml(p)}</button>
-      `).join('')}
-    </div>
+      ${showStars ? `
+        <div class="wizard-section-label">Hotel class</div>
+        <div class="accom-stars">
+          ${[3, 4, 5].map(s => `
+            <button class="accom-star-btn ${currentStars === s ? 'accom-star-btn--active' : ''}" data-stars="${s}">
+              <span class="accom-star-icons">${'★'.repeat(s)}</span>
+              <span class="accom-star-label">${s}-star</span>
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <div class="wizard-section-label">What matters most</div>
+      <div class="accom-priorities">
+        ${ACCOM_PRIORITIES.map(p => `
+          <button class="chip ${state.accommodation.priorities.includes(p) ? 'chip--active' : ''}" data-priority="${escapeHtml(p)}">${escapeHtml(p)}</button>
+        `).join('')}
+      </div>
+    `}
   `;
+
+  el.querySelector('[data-settled-accom]').addEventListener('click', () => {
+    state.accommodation = { ...state.accommodation, settled: !settled };
+    state = updateWizardField(state, 'accommodation', state.accommodation);
+    renderStepAccommodation(el);
+    updateNextButton();
+  });
+
+  if (settled) {
+    el.querySelectorAll('[data-settled-field]').forEach(input => {
+      input.addEventListener('input', () => {
+        state.accommodation = { ...state.accommodation, [input.dataset.settledField]: input.value };
+        state = updateWizardField(state, 'accommodation', state.accommodation);
+      });
+    });
+    return;
+  }
 
   el.querySelectorAll('[data-accom]').forEach(card => {
     card.addEventListener('click', () => {
@@ -904,6 +943,7 @@ function renderStepAccommodation(el) {
 }
 
 function renderStep4(el) {
+  const settled = !!state.flights.settled;
   const fares = [
     { key: 'economy', seat: '💺', title: 'Economy', desc: 'Get me there' },
     { key: 'premium', seat: '🛋️', title: 'Premium', desc: 'Extra legroom' },
@@ -924,46 +964,84 @@ function renderStep4(el) {
 
   el.innerHTML = `
     <h2 class="wizard-step-title">How do you fly?</h2>
-    <p class="wizard-step-subtitle">All optional. We'll find the best fit</p>
+    <p class="wizard-step-subtitle">${settled ? 'Already booked — share details if you like' : 'All optional. We\'ll find the best fit'}</p>
 
-    <div class="wizard-section-label">Cabin class</div>
-    <div class="fare-cards">
-      ${fares.map(f => `
-        <div class="fare-card ${state.flights.fareClass === f.key ? 'fare-card--active' : ''}" data-fare="${f.key}">
-          <span class="fare-card-seat">${f.seat}</span>
-          <span class="fare-card-title">${f.title}</span>
-          <span class="fare-card-desc">${f.desc}</span>
-        </div>
-      `).join('')}
-    </div>
+    <button class="settled-toggle ${settled ? 'settled-toggle--active' : ''}" data-settled-flights>
+      <span class="settled-toggle-icon">${settled ? '✓' : '✈️'}</span>
+      ${settled ? 'Already Settled' : 'Already booked?'}
+    </button>
 
-    <div class="wizard-section-label">Departure time</div>
-    <div class="departure-time-grid" style="margin-bottom: var(--sp-8);">
-      ${times.map(t => {
-        const isAny = t.value === 'any';
-        const active = isAny
-          ? state.flights.departureTimePref.length === 0
-          : state.flights.departureTimePref.includes(t.value);
-        return `
-          <div class="departure-time-card ${active ? 'departure-time-card--active' : ''}" data-time="${t.value}">
-            <span class="departure-time-icon">${t.icon}</span>
-            <span class="departure-time-label">${t.label}</span>
-            <span class="departure-time-range">${t.range}</span>
+    ${settled ? `
+      <div class="settled-fields">
+        <label class="settled-field">
+          <span class="settled-field-label">Flight number</span>
+          <input type="text" class="settled-input" data-settled-field="flightNumber"
+            placeholder="e.g. SQ 321" value="${escapeHtml(state.flights.flightNumber || '')}">
+        </label>
+        <label class="settled-field">
+          <span class="settled-field-label">Arrival date at destination</span>
+          <input type="date" class="settled-input" data-settled-field="arrivalDate"
+            value="${state.flights.arrivalDate || ''}">
+        </label>
+        <p class="settled-hint">Both fields are optional</p>
+      </div>
+    ` : `
+      <div class="wizard-section-label">Cabin class</div>
+      <div class="fare-cards">
+        ${fares.map(f => `
+          <div class="fare-card ${state.flights.fareClass === f.key ? 'fare-card--active' : ''}" data-fare="${f.key}">
+            <span class="fare-card-seat">${f.seat}</span>
+            <span class="fare-card-title">${f.title}</span>
+            <span class="fare-card-desc">${f.desc}</span>
           </div>
-        `;
-      }).join('')}
-    </div>
+        `).join('')}
+      </div>
 
-    <div class="wizard-section-label">Connections</div>
-    <div class="connection-cards">
-      ${connections.map(c => `
-        <div class="connection-card ${state.flights.connectionPref === c.key ? 'connection-card--active' : ''}" data-conn="${c.key}">
-          <span class="connection-card-icon">${c.icon}</span>
-          <span class="connection-card-label">${c.label}</span>
-        </div>
-      `).join('')}
-    </div>
+      <div class="wizard-section-label">Departure time</div>
+      <div class="departure-time-grid" style="margin-bottom: var(--sp-8);">
+        ${times.map(t => {
+          const isAny = t.value === 'any';
+          const active = isAny
+            ? state.flights.departureTimePref.length === 0
+            : state.flights.departureTimePref.includes(t.value);
+          return `
+            <div class="departure-time-card ${active ? 'departure-time-card--active' : ''}" data-time="${t.value}">
+              <span class="departure-time-icon">${t.icon}</span>
+              <span class="departure-time-label">${t.label}</span>
+              <span class="departure-time-range">${t.range}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div class="wizard-section-label">Connections</div>
+      <div class="connection-cards">
+        ${connections.map(c => `
+          <div class="connection-card ${state.flights.connectionPref === c.key ? 'connection-card--active' : ''}" data-conn="${c.key}">
+            <span class="connection-card-icon">${c.icon}</span>
+            <span class="connection-card-label">${c.label}</span>
+          </div>
+        `).join('')}
+      </div>
+    `}
   `;
+
+  el.querySelector('[data-settled-flights]').addEventListener('click', () => {
+    state.flights = { ...state.flights, settled: !settled };
+    state = updateWizardField(state, 'flights', state.flights);
+    renderStep4(el);
+    updateNextButton();
+  });
+
+  if (settled) {
+    el.querySelectorAll('[data-settled-field]').forEach(input => {
+      input.addEventListener('input', () => {
+        state.flights = { ...state.flights, [input.dataset.settledField]: input.value };
+        state = updateWizardField(state, 'flights', state.flights);
+      });
+    });
+    return;
+  }
 
   el.querySelectorAll('[data-fare]').forEach(card => {
     card.addEventListener('click', () => {

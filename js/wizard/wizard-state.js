@@ -53,7 +53,7 @@ export function canAdvance(state) {
     case 1: return state.multiCity ? state.destinations.length >= 2 : !!state.destination?.name;
     case 2: return (state.dates.start && state.dates.end) || (state.dates.duration && state.dates.season);
     case 3: return (state.budget.dailyAmount || 0) > 0;
-    case 4: return !!state.accommodation.type;
+    case 4: return !!state.accommodation.type || !!state.accommodation.settled;
     case 5: return true;
     case 6: return state.style.activities.length >= 1;
     case 7: return true;

@@ -441,7 +441,7 @@ function renderActivity(activity, currencySymbol, isFirst) {
     ${!isFirst ? renderGettingThere(activity) : ''}
     <div class="td-activity">
       ${time ? `<div class="td-activity-time">${esc(time)}</div>` : '<div class="td-activity-time"></div>'}
-      <div class="td-activity-dot"></div>
+      <div class="td-activity-dot" data-time="${esc(time)}"></div>
       <div class="td-activity-card">
         <div class="td-activity-card-top">
           <span class="td-activity-icon">${icon}</span>
@@ -494,7 +494,10 @@ function tripHeader(trip) {
   return { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange };
 }
 
-export async function renderTripDetail(tripId) {
+export async function renderTripDetail(rawTripId) {
+  const [tripId, qs] = rawTripId.split('?');
+  const jumpToToday = new URLSearchParams(qs || '').get('today') === '1';
+
   const app = document.getElementById('app');
   app.innerHTML = `<div class="td-wrap"><div class="td-loading">Loading trip...</div></div>`;
 
@@ -521,7 +524,7 @@ export async function renderTripDetail(tripId) {
     } catch {}
   }
 
-  renderDayPicker(app, trip);
+  renderDayPicker(app, trip, jumpToToday);
 }
 
 function renderFlightContent(extras, trip) {
@@ -581,6 +584,23 @@ function renderFlightContent(extras, trip) {
 }
 
 const TRANSPORT_MODE_ICONS = { ferry: '⛴️', bus: '🚌', train: '🚂', drive: '🚗' };
+const TRANSPORT_MODE_LABELS = { ferry: 'Ferry', bus: 'Bus', train: 'Rail', drive: 'Getting There' };
+const TRANSPORT_MODE_MD = { ferry: MD.ferry, bus: MD.bus, train: MD.train, drive: MD.car };
+
+function getTransportMode(extras) {
+  return extras?.transport?.outbound?.mode || extras?.transport?.inbound?.mode || 'bus';
+}
+
+function transportBookingLink(mode, from, to) {
+  const searchSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+  if (mode === 'drive') {
+    const url = `https://www.google.com/maps/dir/${encodeURIComponent(from)}/${encodeURIComponent(to)}`;
+    return `<a class="td-flight-book" href="${url}" target="_blank" rel="noopener noreferrer">${searchSvg} Google Maps</a>`;
+  }
+  const labels = { ferry: 'Search Ferries', bus: 'Search Routes', train: 'Search Trains' };
+  const url = `https://www.rome2rio.com/s/${encodeURIComponent(from)}/${encodeURIComponent(to)}`;
+  return `<a class="td-flight-book" href="${url}" target="_blank" rel="noopener noreferrer">${searchSvg} ${labels[mode] || 'Search Routes'}</a>`;
+}
 
 function renderTransportContent(extras) {
   const transport = extras?.transport;
@@ -615,6 +635,7 @@ function renderTransportContent(extras) {
         <div class="td-flight-duration">${esc(leg.duration)}${leg.frequency ? ` · ${esc(leg.frequency)}` : ''}</div>
         <div class="td-flight-bottom">
           <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
+          ${transportBookingLink(leg.mode, from, to)}
         </div>
         ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(leg.tips)}</div>` : ''}
       </div>
@@ -870,12 +891,15 @@ function buildSectionCards(extras, totalCards, trip) {
     `);
   } else if (extras?.transport) {
     i++;
+    const mode = getTransportMode(extras);
+    const modeLabel = TRANSPORT_MODE_LABELS[mode] || 'Transport';
+    const modeIcon = TRANSPORT_MODE_MD[mode] ? mdIcon(TRANSPORT_MODE_MD[mode], 28) : SECTION_ICONS.transport;
     cards.push(`
       <div class="td-day-card td-day-card--section" data-section="transport" style="--i: ${i}; --total: ${totalCards}; animation-delay: ${(i - 1) * 80}ms">
         <div class="td-day-card-header">
-          <div class="td-day-num td-day-num--section td-day-num--transport">${SECTION_ICONS.transport}</div>
+          <div class="td-day-num td-day-num--section td-day-num--transport">${modeIcon}</div>
           <div class="td-day-info">
-            <h3 class="td-day-card-title">Transport</h3>
+            <h3 class="td-day-card-title">${esc(modeLabel)}</h3>
           </div>
           <span class="td-day-chevron">›</span>
         </div>
@@ -905,7 +929,7 @@ function buildSectionCards(extras, totalCards, trip) {
   return cards.join('');
 }
 
-function renderDayPicker(app, trip) {
+function renderDayPicker(app, trip, jumpToToday = false) {
   const { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange } = tripHeader(trip);
   const heroFlag = flagImg(flag, 32);
 
@@ -956,7 +980,7 @@ function renderDayPicker(app, trip) {
           const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
           const dateStr = d.date ? formatDate(d.date) : '';
           return `
-            <div class="td-day-card" data-day-index="${i}" style="--i: ${i + offset + 1}; --total: ${total}; animation-delay: ${(i + offset) * 80}ms">
+            <div class="td-day-card" data-day-index="${i}" data-day-date="${d.date || ''}" style="--i: ${i + offset + 1}; --total: ${total}; animation-delay: ${(i + offset) * 80}ms">
               <div class="td-day-card-header">
                 ${calendarIcon(d.day_number)}
                 <div class="td-day-info">
@@ -1034,6 +1058,22 @@ function renderDayPicker(app, trip) {
   bindQuickChecklist(app, trip.id);
   bindCollapsibleSections(app);
   loadActivityPhotos(app);
+
+  if (jumpToToday && trip.start_date) {
+    const now = new Date();
+    const start = new Date(trip.start_date + 'T00:00:00');
+    const todayDayNum = Math.floor((now - start) / 86400000) + 1;
+    const dayCard = app.querySelector(`.td-day-card[data-day-index="${todayDayNum - 1}"]`);
+    if (dayCard) {
+      const grid = app.querySelector('.td-day-grid');
+      grid?.classList.add('td-day-grid--has-open');
+      dayCard.classList.add('td-day-card--open');
+      setTimeout(() => {
+        dayCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        injectNowKnob(dayCard);
+      }, 500);
+    }
+  }
 }
 
 function loadActivityPhotos(container) {
@@ -1066,6 +1106,74 @@ function loadActivityPhotos(container) {
   photoEls.forEach(el => observer.observe(el));
 }
 
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return -1;
+  const m = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!m) return -1;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  if (m[3]) {
+    const isPM = m[3].toUpperCase() === 'PM';
+    if (isPM && h !== 12) h += 12;
+    if (!isPM && h === 12) h = 0;
+  }
+  return h * 60 + min;
+}
+
+function injectNowKnob(card) {
+  card.querySelectorAll('.td-now-knob').forEach(el => el.remove());
+
+  const dayDate = card.dataset.dayDate;
+  if (!dayDate) return;
+  const today = new Date();
+  const cardDate = new Date(dayDate + 'T00:00:00');
+  if (today.toDateString() !== cardDate.toDateString()) return;
+
+  const nowMins = today.getHours() * 60 + today.getMinutes();
+  const dots = [...card.querySelectorAll('.td-activity-dot[data-time]')];
+  if (dots.length < 1) return;
+
+  const times = dots.map(d => parseTimeToMinutes(d.dataset.time));
+
+  if (nowMins <= times[0]) return;
+  if (nowMins >= times[times.length - 1]) return;
+
+  let beforeIdx = 0;
+  for (let i = 0; i < times.length - 1; i++) {
+    if (nowMins >= times[i] && nowMins < times[i + 1]) { beforeIdx = i; break; }
+  }
+
+  const beforeDot = dots[beforeIdx];
+  const afterDot = dots[beforeIdx + 1];
+  const range = times[beforeIdx + 1] - times[beforeIdx];
+  const progress = range > 0 ? (nowMins - times[beforeIdx]) / range : 0;
+
+  const beforeRect = beforeDot.getBoundingClientRect();
+  const afterRect = afterDot.getBoundingClientRect();
+  const timeline = card.querySelector('.td-timeline');
+  const timelineRect = timeline.getBoundingClientRect();
+
+  const beforeY = beforeRect.top + 18 - timelineRect.top;
+  const afterY = afterRect.top + 18 - timelineRect.top;
+  const knobY = beforeY + (afterY - beforeY) * progress;
+
+  const knob = document.createElement('div');
+  knob.className = 'td-now-knob';
+  knob.style.top = `${knobY}px`;
+
+  const label = document.createElement('span');
+  label.className = 'td-now-label';
+  const hh = today.getHours();
+  const mm = today.getMinutes();
+  const ampm = hh >= 12 ? 'PM' : 'AM';
+  const h12 = hh % 12 || 12;
+  label.textContent = `${h12}:${String(mm).padStart(2, '0')} ${ampm}`;
+  knob.appendChild(label);
+
+  timeline.style.position = 'relative';
+  timeline.appendChild(knob);
+}
+
 function bindDayCards(container) {
   const grid = container.querySelector('.td-day-grid');
   if (!grid) return;
@@ -1091,8 +1199,9 @@ function bindDayCards(container) {
         grid.classList.add('td-day-grid--has-open');
         card.classList.add('td-day-card--open');
         setTimeout(() => {
-          header.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 60);
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          injectNowKnob(card);
+        }, 380);
       }
     });
   });

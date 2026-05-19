@@ -73,6 +73,7 @@ function renderTripCard(trip, index) {
             </div>
           </div>
         ` : '<div class="trip-card-budget">Planning...</div>'}
+        ${status === 'active' ? `<button class="trip-card-now-btn" data-now-trip="${escapeHtml(trip.id)}">Current Activity &rarr;</button>` : ''}
       </div>
     </article>
   `;
@@ -320,6 +321,12 @@ export async function renderDashboard() {
       navigate('/wizard');
       return;
     }
+    const nowBtn = e.target.closest('[data-now-trip]');
+    if (nowBtn) {
+      e.stopPropagation();
+      navigate(`/trip/${nowBtn.dataset.nowTrip}?today=1`);
+      return;
+    }
     const card = e.target.closest('[data-trip-id]');
     if (card) {
       if (card.classList.contains('trip-card--generating')) return;
@@ -350,7 +357,7 @@ export async function renderDashboard() {
           if (shimmer) shimmer.remove();
           const statusEl = el.querySelector('.trip-card-gen-status');
           if (statusEl) {
-            statusEl.innerHTML = `<span style="color: var(--error); font-size: 0.85rem;">Generation failed: ${genStatus.error || 'Unknown error'}. Click to retry.</span>`;
+            statusEl.innerHTML = `<span style="color: var(--error); font-size: 0.85rem;">Generation failed: ${escapeHtml(genStatus.error || 'Unknown error')}. Click to retry.</span>`;
           }
           const dot = el.querySelector('.status-dot');
           if (dot) { dot.className = 'status-dot status-dot--past'; }

@@ -4,7 +4,7 @@ const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!url || !key) {
-  console.warn('Supabase credentials not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local');
+  if (import.meta.env.DEV) console.warn('Backend not configured — check .env.local');
 }
 
 export const supabase = url && key

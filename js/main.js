@@ -52,13 +52,14 @@ addRoute('/trip/:id', async (params) => {
 });
 
 onNotFound((path) => {
+  const safePath = path.split('?')[0].split('&')[0].replace(/[<>"']/g, '');
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="container" style="padding: var(--sp-16) 0; text-align: center;">
-      <div style="font-size: 4rem; margin-bottom: var(--sp-4);">🧭</div>
+      <div style="font-size: 4rem; margin-bottom: var(--sp-4);">&#x1F9ED;</div>
       <h1 class="text-h1">Lost in transit</h1>
       <p class="text-body" style="color: var(--ink-secondary); margin-top: var(--sp-2);">
-        We couldn't find "${path}". Let's get you back on track.
+        We couldn't find that page. Let's get you back on track.
       </p>
       <button class="btn btn--primary btn--pill" style="margin-top: var(--sp-6);" onclick="location.hash='/'">
         Back to Dashboard
@@ -73,10 +74,16 @@ import('./auth/auth.js').then(async ({ initAuth, onAuthChange }) => {
   await initAuth();
   renderNav();
   const hash = location.hash.slice(1) || '/';
-  if (hash === '/') renderDashboard();
+  if (hash === '/' || /(?:^|[&?])(?:access_token|refresh_token)=/.test(hash)) {
+    if (hash !== '/') history.replaceState(null, '', location.pathname + location.search + '#/');
+    renderDashboard();
+  }
 
   onAuthChange(async (event) => {
     if (event === 'SIGNED_IN') {
+      if (/(?:^|[&?])access_token=/.test(location.hash)) {
+        history.replaceState(null, '', location.pathname + location.search + '#/');
+      }
       renderNav();
       const { needsProfileSetup, fetchProfile } = await import('./data/profile-repository.js');
       if (await needsProfileSetup()) {
