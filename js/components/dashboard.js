@@ -113,7 +113,7 @@ function renderAuthDashboard(trips) {
           <div class="dest-circle-grid">
             ${dests.map(d => `
               <div class="dest-circle" data-city="${escapeHtml(d.name)}">
-                <img class="dest-circle-img" src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" loading="lazy">
+                <img class="dest-circle-img" src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" loading="lazy" decoding="async">
                 <span class="dest-circle-label">
                   ${d.flag ? `<img src="https://flagcdn.com/w40/${d.flag}.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;">` : ''}
                   ${escapeHtml(d.name)}
@@ -219,7 +219,7 @@ function renderEmpty() {
         <div class="dest-circle-grid">
           ${dests.map(d => `
             <div class="dest-circle" data-city="${escapeHtml(d.name)}">
-              <img class="dest-circle-img" src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" loading="lazy">
+              <img class="dest-circle-img" src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" loading="lazy" decoding="async">
               <span class="dest-circle-label">
                 ${d.flag ? `<img src="https://flagcdn.com/w40/${d.flag}.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;">` : ''}
                 ${escapeHtml(d.name)}
@@ -263,8 +263,11 @@ export async function renderDashboard() {
 
   let trips = [];
   let loggedIn = false;
-  try { loggedIn = (await getAuth()).isAuthenticated(); } catch {}
-  const probablyLoggedIn = !loggedIn && hasLocalSession();
+  const hasSession = hasLocalSession();
+  if (hasSession) {
+    try { loggedIn = (await getAuth()).isAuthenticated(); } catch {}
+  }
+  const probablyLoggedIn = !loggedIn && hasSession;
   if (loggedIn || probablyLoggedIn) {
     app.innerHTML = renderSkeleton();
     if (probablyLoggedIn) return;
@@ -422,35 +425,40 @@ export async function renderDashboard() {
     });
   }
 
-  const floatiesEl = app.querySelector('.landing-floaties');
-  if (floatiesEl) {
-    const emojis = ['✈️', '🗺️', '🏖️', '🗼', '🌏', '⛩️', '🌴', '🏔️', '🛫', '🧳', '🌺', '⛵'];
-    for (let i = 0; i < 18; i++) {
-      const el = document.createElement('span');
-      el.className = 'landing-floaty';
-      el.textContent = emojis[i % emojis.length];
-      el.style.left = `${4 + Math.random() * 92}%`;
-      el.style.animationDuration = `${10 + Math.random() * 14}s`;
-      el.style.animationDelay = `${Math.random() * 12}s`;
-      el.style.fontSize = `${0.8 + Math.random() * 0.5}rem`;
-      floatiesEl.appendChild(el);
-    }
-  }
+  const deferWork = (fn) => (typeof requestIdleCallback === 'function') ? requestIdleCallback(fn) : setTimeout(fn, 1);
 
-  const landingBg = app.querySelector('.landing-bg');
-  if (landingBg && window.innerWidth >= 768) {
-    let ticking = false;
-    document.addEventListener('mousemove', (e) => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const x = (e.clientX / window.innerWidth - 0.5) * 24;
-        const y = (e.clientY / window.innerHeight - 0.5) * 24;
-        landingBg.style.transform = `translate(${x}px, ${y}px)`;
-        ticking = false;
+  deferWork(() => {
+    const floatiesEl = app.querySelector('.landing-floaties');
+    if (floatiesEl) {
+      const emojis = ['✈️', '🗺️', '🏖️', '🗼', '🌏', '⛩️', '🌴', '🏔️', '🛫', '🧳', '🌺', '⛵'];
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < 18; i++) {
+        const el = document.createElement('span');
+        el.className = 'landing-floaty';
+        el.textContent = emojis[i % emojis.length];
+        el.style.cssText = `left:${4 + Math.random() * 92}%;animation-duration:${10 + Math.random() * 14}s;animation-delay:${Math.random() * 12}s;font-size:${0.8 + Math.random() * 0.5}rem`;
+        frag.appendChild(el);
+      }
+      floatiesEl.appendChild(frag);
+    }
+  });
+
+  deferWork(() => {
+    const landingBg = app.querySelector('.landing-bg');
+    if (landingBg && window.innerWidth >= 768) {
+      let ticking = false;
+      document.addEventListener('mousemove', (e) => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          const x = (e.clientX / window.innerWidth - 0.5) * 24;
+          const y = (e.clientY / window.innerHeight - 0.5) * 24;
+          landingBg.style.transform = `translate(${x}px, ${y}px)`;
+          ticking = false;
+        });
       });
-    });
-  }
+    }
+  });
 
   const citySpan = app.querySelector('.landing-hl-city');
   if (citySpan) {
@@ -519,28 +527,30 @@ export async function renderDashboard() {
 
     setImmediate('next');
 
-    const cycleNames = ['Tokyo', 'Paris', 'Bali', 'Barcelona', 'Seoul', 'New York', 'Bangkok', 'Kyoto', 'next'];
-    let cycleIdx = 0;
-    const startCycle = () => {
-      clearInterval(cycleTimer);
-      cycleTimer = setInterval(() => {
-        if (hovered) return;
-        flipTo(cycleNames[cycleIdx]);
-        cycleIdx = (cycleIdx + 1) % cycleNames.length;
-      }, 2800);
-    };
-    startCycle();
+    deferWork(() => {
+      const cycleNames = ['Tokyo', 'Paris', 'Bali', 'Barcelona', 'Seoul', 'New York', 'Bangkok', 'Kyoto', 'next'];
+      let cycleIdx = 0;
+      const startCycle = () => {
+        clearInterval(cycleTimer);
+        cycleTimer = setInterval(() => {
+          if (hovered) return;
+          flipTo(cycleNames[cycleIdx]);
+          cycleIdx = (cycleIdx + 1) % cycleNames.length;
+        }, 2800);
+      };
+      startCycle();
 
-    app.querySelectorAll('.dest-circle[data-city]').forEach(card => {
-      card.addEventListener('mouseenter', () => { hovered = true; flipTo(card.dataset.city); });
-      card.addEventListener('mouseleave', () => { hovered = false; flipTo('next'); startCycle(); });
-    });
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) e.target.classList.add('landing-reveal--visible');
+      app.querySelectorAll('.dest-circle[data-city]').forEach(card => {
+        card.addEventListener('mouseenter', () => { hovered = true; flipTo(card.dataset.city); });
+        card.addEventListener('mouseleave', () => { hovered = false; flipTo('next'); startCycle(); });
       });
-    }, { threshold: 0.15 });
-    app.querySelectorAll('.landing-reveal').forEach(el => observer.observe(el));
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) e.target.classList.add('landing-reveal--visible');
+        });
+      }, { threshold: 0.15 });
+      app.querySelectorAll('.landing-reveal').forEach(el => observer.observe(el));
+    });
   }
 }

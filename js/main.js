@@ -76,12 +76,15 @@ if (import.meta.env.DEV) {
   });
 }
 
-import('./auth/auth.js').then(async ({ initAuth, onAuthChange }) => {
+import('./auth/auth.js').then(async ({ initAuth, isAuthenticated, onAuthChange }) => {
   await initAuth();
   renderNav();
   const hash = location.hash.slice(1) || '/';
-  if (hash === '/' || /(?:^|[&?])(?:access_token|refresh_token)=/.test(hash)) {
-    if (hash !== '/') history.replaceState(null, '', location.pathname + location.search + '#/');
+  const hasOAuthTokens = /(?:^|[&?])(?:access_token|refresh_token)=/.test(hash);
+  if (hasOAuthTokens) {
+    history.replaceState(null, '', location.pathname + location.search + '#/');
+    renderDashboard();
+  } else if (hash === '/' && isAuthenticated()) {
     renderDashboard();
   }
 
