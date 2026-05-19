@@ -204,7 +204,7 @@ function renderFreeDayChips(container, el) {
 
   container.innerHTML = `
     <div class="wizard-section-label" style="margin-top: var(--sp-6);">Any free days?</div>
-    <p class="text-small" style="color: var(--ink-ghost); margin-bottom: var(--sp-3);">Tap days reserved for work or conferences — we'll keep them light</p>
+    <p class="text-small" style="color: var(--ink-ghost); margin-bottom: var(--sp-3);">Tap days reserved for work or conferences. We'll keep them light</p>
     <div class="free-day-chips">${chips.join('')}</div>
   `;
 
@@ -824,7 +824,7 @@ function renderStepAccommodation(el) {
 
   el.innerHTML = `
     <h2 class="wizard-step-title">Where will you stay?</h2>
-    <p class="wizard-step-subtitle">${settled ? 'Already booked — share details if you like' : 'Pick your style, then what matters most'}</p>
+    <p class="wizard-step-subtitle">${settled ? 'Already booked. Share details if you like' : 'Pick your style, then what matters most'}</p>
 
     <button class="settled-toggle ${settled ? 'settled-toggle--active' : ''}" data-settled-accom>
       <span class="settled-toggle-icon">${settled ? '✓' : '✈️'}</span>
@@ -964,7 +964,7 @@ function renderStep4(el) {
 
   el.innerHTML = `
     <h2 class="wizard-step-title">How do you fly?</h2>
-    <p class="wizard-step-subtitle">${settled ? 'Already booked — share details if you like' : 'All optional. We\'ll find the best fit'}</p>
+    <p class="wizard-step-subtitle">${settled ? 'Already booked. Share details if you like' : 'All optional. We\'ll find the best fit'}</p>
 
     <button class="settled-toggle ${settled ? 'settled-toggle--active' : ''}" data-settled-flights>
       <span class="settled-toggle-icon">${settled ? '✓' : '✈️'}</span>
@@ -1083,7 +1083,7 @@ function renderStepTransport(el) {
 
   el.innerHTML = `
     <h2 class="wizard-step-title">How do you get there?</h2>
-    <p class="wizard-step-subtitle">${escapeHtml(destName)} is close by — no flights needed</p>
+    <p class="wizard-step-subtitle">${escapeHtml(destName)} is close by, no flights needed</p>
 
     <div class="wizard-section-label">Transport mode</div>
     <div class="fare-cards">

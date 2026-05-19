@@ -894,6 +894,7 @@
     position: sticky;
     bottom: var(--sp-6);
     align-self: center;
+    margin-top: var(--sp-14, 56px);
     padding-bottom: var(--sp-4);
     border: none;
     background: none;
