@@ -80,3 +80,9 @@
 }
 
 .nav-user-btn:hover { border-color: var(--terracotta); }
+
+@media (display-mode: standalone) and (max-width: 768px) {
+  .app-nav {
+    display: none;
+  }
+}

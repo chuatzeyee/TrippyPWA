@@ -1,5 +1,5 @@
 .dashboard {
-  padding: var(--sp-8) 0;
+  padding: var(--sp-4) 0;
 }
 
 .dashboard-header {
@@ -181,6 +181,27 @@
 .trip-card-gen-ready {
   color: var(--teal);
   font-weight: 600;
+}
+
+.trip-card-now-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--teal);
+  border-radius: var(--r-pill);
+  background: rgba(74, 150, 132, 0.1);
+  color: var(--teal);
+  font: var(--text-small);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  text-align: center;
+}
+
+.trip-card-now-btn:hover {
+  background: rgba(74, 150, 132, 0.2);
+  box-shadow: 0 0 12px rgba(74, 150, 132, 0.15);
 }
 
 .status-dot--generating {
@@ -819,4 +840,10 @@
   .landing-logo-plane { animation: none; }
   .landing-reveal { opacity: 1; transform: none; transition: none; }
   .skel-shimmer { animation: none; background: var(--surface-solid); }
+}
+
+@media (display-mode: standalone) and (max-width: 768px) {
+  .dashboard {
+    padding-top: calc(env(safe-area-inset-top, 12px) + var(--sp-4));
+  }
 }

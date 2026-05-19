@@ -28,8 +28,13 @@ export function start() {
   resolve();
 }
 
+function isAuthCallback(hash) {
+  return /(?:^|[&?])(?:access_token|refresh_token|provider_token)=/.test(hash);
+}
+
 function resolve() {
   const hash = location.hash.slice(1) || '/';
+  if (isAuthCallback(hash)) return;
   for (const route of routes) {
     const match = hash.match(route.regex);
     if (match) {

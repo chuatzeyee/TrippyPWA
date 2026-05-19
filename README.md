@@ -43,7 +43,7 @@ Open `http://localhost:5173`.
 | Auth | Supabase Auth (Google OAuth) | Social login, session management |
 | AI | Gemini 2.5 Flash | Itinerary generation via structured JSON output |
 | Photos | Google Places API (New) | Venue photos by place ID or text search |
-| Routing | Hash-based SPA | `#/wizard/3`, `#/trip/:id` - works on static hosts |
+| Routing | Hash-based SPA | `#/wizard/3`, `#/trip/:id` - works on static hosts, auth callback guard |
 | Fonts | DM Serif Display + Figtree + JetBrains Mono | Editorial serif + clean sans + monospace data |
 | Deploy | GitHub Pages + GitHub Actions | Auto-deploy on push to main |
 
@@ -134,8 +134,8 @@ A 7-step wizard that collects trip preferences and feeds them to the AI:
 | 1 | Where to? | Single destination or multi-city route (124 cities, search + popular grid) |
 | 2 | When's the adventure? | Traveler count, exact dates (calendar picker) or flexible duration/season |
 | 3 | Comfort level | Budget preset (backpacker/comfortable/luxury) + daily amount in destination currency |
-| 4 | Where will you stay? | Accommodation type, hotel star rating, priority chips |
-| 5 | How do you fly? | Fare class, departure time prefs, connection preference |
+| 4 | Where will you stay? | Accommodation type, hotel star rating, priority chips. "Already Settled" toggle to skip if pre-booked |
+| 5 | How do you fly? | Fare class, departure time prefs, connection preference. "Already Settled" toggle to skip if pre-booked |
 | 6 | How do you travel? | Style sliders (nightlife, pace, food, exploration) + interest chips (max 8) |
 | 7 | Trip summary | Grid overview of all choices + collapsible extras (must-do, dietary, avoid) |
 
@@ -161,20 +161,26 @@ Once generated, each trip gets a full itinerary view with:
 - Multi-leg transport parsing - handles complex directions like "Walk to Fort Canning MRT, take DTL to Stevens, then change to TEL to Orchard Boulevard"
 - Transit line abbreviation system covering 20+ major cities (Singapore, Tokyo, London, NYC, etc.)
 - Getting-there cards with step-by-step transport legs and visual connectors
-- Flight/transport cards and accommodation recommendations
+- **Adaptive transport cards** - card title, icon, and booking links morph based on travel mode: "Ferry" (Rome2Rio), "Bus" (Rome2Rio), "Rail" (Rome2Rio), or "Getting There" (Google Maps). Flight trips show "Flights" with Google Flights links
+- Accommodation recommendations with booking links (Booking.com, Agoda, Google Hotels)
 - Booking checklist with priority grouping
+- **Live trip tracking** - pulsating teal timeline knob on today's activities, "Current Activity" button on dashboard cards
+- Floating back pill in standalone PWA mode (replaces hidden nav bar)
 
-### Authentication
+### Authentication & Security
 
-- Google OAuth via Supabase Auth
+- Google OAuth via Supabase Auth (implicit grant flow)
 - Auth gate modal for protected routes (wizard, profile)
 - Auto-create profile on first sign-in
 - Profile wizard for first-time setup (display name, home city/country, currency)
+- **3-layer OAuth token defense:** router skips auth callback hashes, 404 page never renders raw paths, hash cleaned after auth initialization
+- XSS-safe: all user-controlled strings passed through `escapeHtml()` before `innerHTML` injection
+- Console warnings suppressed in production builds (DEV-only logging)
 
 ### Dashboard
 
-- **Authenticated:** Trip cards grid with destination emoji, title, date range, status badge
-- **Unauthenticated:** Animated landing page with floating travel-icon particles, split-flap airport display animation, city thumbnail shortcuts
+- **Authenticated:** Trip cards grid with destination emoji, title, date range, status badge, "Current Activity" button on active trips
+- **Unauthenticated:** Animated landing page with split-flap airport display animation, city thumbnail shortcuts
 
 ---
 
@@ -335,4 +341,6 @@ Installable as a Progressive Web App:
 - `manifest.json` with app name, icons (192px, 512px), theme color (`#1B1A17`)
 - Viewport configured for mobile with `viewport-fit=cover`
 - Apple mobile web app meta tags for iOS home screen
-- Back-to-top floating button appears after 400px scroll
+- Back-to-top floating button appears after 400px scroll, positioned above the sticky footer
+- Nav bar hidden in standalone PWA mode on mobile, replaced with floating back pill
+- Wizard CTA pinned to glass-morphism fixed footer bar
