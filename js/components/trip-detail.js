@@ -839,7 +839,10 @@ function bindQuickChecklist(container, tripId) {
       } else {
         section.classList.remove('td-section-card--collapsed');
       }
-      setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      setTimeout(() => {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (section.classList.contains('td-day-card')) injectNowKnob(section);
+      }, 380);
     });
   });
 }
@@ -937,20 +940,20 @@ function renderDayPicker(app, trip, jumpToToday = false) {
     <div class="td-wrap td-fade-in">
       <div class="td-topbar">
         <button class="td-back" data-action="back">${ICONS.arrowBack} Trips</button>
-        <button class="td-delete" data-action="delete" data-trip-id="${trip.id}">${ICONS.delete} Delete</button>
       </div>
 
       ${heroImage ? `
         <div class="td-hero">
           <img class="td-hero-img" src="${esc(heroImage)}" alt="${esc(shortTitle)}" loading="eager">
           <div class="td-hero-overlay"></div>
+          <button class="td-delete" data-action="delete" data-trip-id="${trip.id}">${ICONS.delete} Delete</button>
           ${dateRange ? `<div class="td-hero-dates">${mdIcon(MD.calendarToday, 13)} ${esc(dateRange)}</div>` : ''}
           <div class="td-hero-caption">
             ${heroFlag ? `<span class="td-hero-flag">${heroFlag}</span>` : ''}
             <h1 class="td-hero-title">${esc(shortTitle)}</h1>
           </div>
         </div>
-      ` : ''}
+      ` : `<div style="position:relative"><button class="td-delete td-delete--no-hero" data-action="delete" data-trip-id="${trip.id}">${ICONS.delete} Delete</button></div>`}
 
       <header class="td-header ${heroImage ? 'td-header--has-hero' : ''}">
         ${!heroImage ? `<span class="td-emoji">${heroFlag || trip.emoji || mdIcon(MD.place, 28)}</span><h1 class="td-title">${esc(shortTitle)}</h1>` : ''}

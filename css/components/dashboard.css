@@ -209,6 +209,27 @@
   animation: pulse 1.2s infinite;
 }
 
+.trip-card--failed {
+  cursor: default;
+  opacity: 0.85;
+  border-color: var(--terracotta);
+}
+
+.trip-card--failed:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.trip-card-fail-actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.status-dot--failed {
+  background: var(--terracotta);
+}
+
 .trip-card--just-generated {
   cursor: pointer;
   animation: cardReady 0.6s ease-out;
