@@ -2397,22 +2397,7 @@
 }
 
 @media (display-mode: standalone) and (max-width: 768px) {
-  .td-back {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 4px) + 2px);
-    left: var(--sp-4);
-    z-index: var(--z-nav);
-    background: rgba(27, 26, 23, 0.8);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(229, 225, 216, 0.1);
-    color: var(--ink);
-    padding: var(--sp-2) var(--sp-4);
-    box-shadow: var(--shadow-md);
-    font-weight: 500;
-  }
-
   .td-topbar {
-    padding-top: env(safe-area-inset-top, 4px);
+    padding-top: 0;
   }
 }

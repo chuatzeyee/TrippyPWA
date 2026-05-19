@@ -260,8 +260,18 @@ function renderSkeleton() {
 
 export async function renderDashboard() {
   const app = document.getElementById('app');
-
   let trips = [];
+  let skipRender = false;
+
+  const preRendered = app.querySelector('[data-prerendered]');
+  if (preRendered && !hasLocalSession()) {
+    preRendered.removeAttribute('data-prerendered');
+    const skel = app.querySelector('.app-skel');
+    if (skel) skel.remove();
+    skipRender = true;
+  }
+
+  if (!skipRender) {
   let loggedIn = false;
   const hasSession = hasLocalSession();
   if (hasSession) {
@@ -324,6 +334,7 @@ export async function renderDashboard() {
   }
 
   app.innerHTML = `<div class="dashboard container">${content}</div>`;
+  }
 
   app.addEventListener('click', async (e) => {
     const destCard = e.target.closest('.dest-circle[data-city]');
