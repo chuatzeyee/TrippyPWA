@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const corsHeaders = {
@@ -370,8 +370,10 @@ Respond ONLY with valid JSON matching the provided schema.`
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
       console.error("Gemini API error:", errText);
+      let detail = "";
+      try { detail = JSON.parse(errText)?.error?.message || errText.substring(0, 200); } catch { detail = errText.substring(0, 200); }
       return new Response(
-        JSON.stringify({ error: "Failed to generate itinerary. Please try again." }),
+        JSON.stringify({ error: `Gemini ${geminiRes.status}: ${detail}` }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

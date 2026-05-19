@@ -287,3 +287,24 @@ export async function updateTripStatus(id, status) {
 
   return { error: error?.message || null };
 }
+
+export async function clearAllUserData() {
+  const user = getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const { error: tripsErr } = await supabase
+    .from('trips')
+    .delete()
+    .eq('user_id', user.id);
+
+  if (tripsErr) return { error: `Failed to delete trips: ${tripsErr.message}` };
+
+  const { error: profileErr } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', user.id);
+
+  if (profileErr) return { error: `Trips cleared, but profile delete failed: ${profileErr.message}` };
+
+  return { error: null };
+}

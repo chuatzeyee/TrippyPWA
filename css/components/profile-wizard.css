@@ -233,8 +233,15 @@
   align-items: center;
   justify-content: center;
   padding: var(--sp-6);
+  margin-inline: calc(-1 * var(--sp-4));
   position: relative;
   overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .profile-success {
+    margin-inline: calc(-1 * var(--sp-6));
+  }
 }
 
 .profile-success-glow {

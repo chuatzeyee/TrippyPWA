@@ -26,7 +26,14 @@ export async function generateItinerary(wizardState) {
     return { data: null, error: `Network error: ${e.message}` };
   }
 
-  if (error) return { data: null, error: error.message || JSON.stringify(error) };
+  if (error) {
+    let msg = error.message || JSON.stringify(error);
+    try {
+      const body = await error.context?.json?.();
+      if (body?.error) msg = body.error;
+    } catch {}
+    return { data: null, error: msg };
+  }
 
   if (!data?.days || !Array.isArray(data.days)) {
     return { data: null, error: 'Invalid itinerary format received' };
