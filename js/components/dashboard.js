@@ -337,7 +337,16 @@ export async function renderDashboard() {
     const newTrip = e.target.closest('[data-action="new-trip"]');
     if (newTrip) {
       const auth = await getAuth();
-      if (!auth.isAuthenticated()) { const { showAuthGate } = await import('../auth/auth-ui.js'); showAuthGate(); return; }
+      if (!auth.isAuthenticated()) {
+        if (newTrip.classList.contains('landing-cta-btn')) {
+          const { signInWithGoogle } = await import('../auth/auth.js');
+          signInWithGoogle();
+        } else {
+          const { showAuthGate } = await import('../auth/auth-ui.js');
+          showAuthGate();
+        }
+        return;
+      }
       navigate('/wizard');
       return;
     }
