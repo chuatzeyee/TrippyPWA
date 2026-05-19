@@ -41,13 +41,14 @@ function formatDates(trip) {
 
 function renderTripCard(trip, index) {
   const isGenerating = trip.status === 'generating';
-  const status = isGenerating ? 'generating' : getTripStatus(trip);
+  const isFailed = trip.status === 'failed';
+  const status = isGenerating ? 'generating' : isFailed ? 'failed' : getTripStatus(trip);
   const heroStyle = trip.coverImage
     ? `background-image: url('${escapeHtml(trip.coverImage)}')`
     : 'background: linear-gradient(135deg, var(--terracotta-light), var(--teal-light))';
 
   return `
-    <article class="trip-card ${isGenerating ? 'trip-card--generating' : ''} animate-in" style="animation-delay: ${index * 60}ms" data-trip-id="${escapeHtml(trip.id)}">
+    <article class="trip-card ${isGenerating ? 'trip-card--generating' : ''} ${isFailed ? 'trip-card--failed' : ''} animate-in" style="animation-delay: ${index * 60}ms" data-trip-id="${escapeHtml(trip.id)}">
       <div class="trip-card-hero" style="${heroStyle}">
         <span class="trip-card-emoji">${trip.emoji || '🌍'}</span>
         ${isGenerating ? '<div class="trip-card-gen-shimmer"></div>' : ''}
@@ -64,6 +65,14 @@ function renderTripCard(trip, index) {
           <div class="trip-card-gen-status">
             <span class="trip-card-gen-dots"><span></span><span></span><span></span></span>
             Planning your itinerary
+          </div>
+        ` : isFailed ? `
+          <div class="trip-card-gen-status">
+            <span style="color: var(--terracotta); font-size: 0.85rem;">Generation failed. Try again?</span>
+            <div class="trip-card-fail-actions">
+              <button class="btn btn--secondary btn--sm btn--pill" data-retry-trip="${escapeHtml(trip.id)}">Retry</button>
+              <button class="btn btn--ghost btn--sm btn--pill" data-delete-trip="${escapeHtml(trip.id)}">Delete</button>
+            </div>
           </div>
         ` : trip.budget?.total ? `
           <div class="trip-card-budget">
@@ -321,6 +330,33 @@ export async function renderDashboard() {
       navigate('/wizard');
       return;
     }
+    const retryBtn = e.target.closest('[data-retry-trip]');
+    if (retryBtn) {
+      e.stopPropagation();
+      const tripId = retryBtn.dataset.retryTrip;
+      const trip = trips.find(t => t.id === tripId);
+      if (trip) {
+        const { updateTripStatus } = await import('../data/trip-repository.js');
+        await updateTripStatus(tripId, 'generating');
+        const { startGeneration } = await import('../services/generation-manager.js');
+        const { fetchTripById } = await import('../data/trip-repository.js');
+        const { data: fullTrip } = await fetchTripById(tripId);
+        if (fullTrip?.wizard_state) {
+          startGeneration(tripId, fullTrip.wizard_state);
+        }
+        renderDashboard();
+      }
+      return;
+    }
+    const deleteBtn = e.target.closest('[data-delete-trip]');
+    if (deleteBtn) {
+      e.stopPropagation();
+      const tripId = deleteBtn.dataset.deleteTrip;
+      const { deleteTrip } = await import('../data/trip-repository.js');
+      await deleteTrip(tripId);
+      renderDashboard();
+      return;
+    }
     const nowBtn = e.target.closest('[data-now-trip]');
     if (nowBtn) {
       e.stopPropagation();
@@ -329,7 +365,7 @@ export async function renderDashboard() {
     }
     const card = e.target.closest('[data-trip-id]');
     if (card) {
-      if (card.classList.contains('trip-card--generating')) return;
+      if (card.classList.contains('trip-card--generating') || card.classList.contains('trip-card--failed')) return;
       navigate(`/trip/${card.dataset.tripId}`);
     }
   });

@@ -25,7 +25,6 @@
 /* ===== Top Bar ===== */
 .td-topbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: var(--sp-2);
 }
@@ -51,21 +50,42 @@
 }
 
 .td-delete {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.85rem;
-  color: var(--ink-ghost);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   border: none;
-  background: transparent;
-  padding: var(--sp-2) var(--sp-3);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 6px var(--sp-3);
   border-radius: var(--r-pill);
   transition: color var(--duration-fast), background var(--duration-fast);
   -webkit-tap-highlight-color: transparent;
+  z-index: 2;
 }
 
 .td-delete:hover {
+  color: #fff;
+  background: rgba(200, 82, 82, 0.6);
+}
+
+.td-delete--no-hero {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  color: var(--ink-ghost);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.td-delete--no-hero:hover {
   color: var(--error);
   background: rgba(200, 82, 82, 0.1);
 }
@@ -1807,7 +1827,7 @@
 @media (display-mode: standalone) and (max-width: 768px) {
   .td-back {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 12px) + 8px);
+    top: calc(env(safe-area-inset-top, 4px) + 2px);
     left: var(--sp-4);
     z-index: var(--z-nav);
     background: rgba(27, 26, 23, 0.8);
@@ -1821,6 +1841,6 @@
   }
 
   .td-topbar {
-    padding-top: calc(env(safe-area-inset-top, 12px) + 44px);
+    padding-top: calc(env(safe-area-inset-top, 4px) + 36px);
   }
 }

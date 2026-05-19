@@ -11,11 +11,13 @@ export function startGeneration(tripId, wizardState) {
 async function runGeneration(tripId, wizardState) {
   try {
     const { generateItinerary } = await import('./generate.js');
-    const { saveItineraryToTrip } = await import('../data/trip-repository.js');
+    const { saveItineraryToTrip, updateTripStatus } = await import('../data/trip-repository.js');
 
     const { data: itinerary, error: genError } = await generateItinerary(wizardState);
     if (genError) {
       activeGenerations.set(tripId, { status: 'failed', error: genError });
+      await updateTripStatus(tripId, 'failed').catch(() => {});
+      localStorage.removeItem(`gen-state-${tripId}`);
       notifyListeners(tripId);
       return;
     }
@@ -23,6 +25,7 @@ async function runGeneration(tripId, wizardState) {
     const { error: saveError } = await saveItineraryToTrip(tripId, wizardState, itinerary);
     if (saveError) {
       activeGenerations.set(tripId, { status: 'failed', error: saveError });
+      await updateTripStatus(tripId, 'failed').catch(() => {});
     } else {
       activeGenerations.set(tripId, { status: 'done' });
     }
@@ -30,6 +33,9 @@ async function runGeneration(tripId, wizardState) {
     notifyListeners(tripId);
   } catch (err) {
     activeGenerations.set(tripId, { status: 'failed', error: err.message || 'Unexpected error' });
+    const { updateTripStatus } = await import('../data/trip-repository.js').catch(() => ({}));
+    if (updateTripStatus) await updateTripStatus(tripId, 'failed').catch(() => {});
+    localStorage.removeItem(`gen-state-${tripId}`);
     notifyListeners(tripId);
   }
 }
@@ -53,7 +59,7 @@ export function clearGeneration(tripId) {
   localStorage.removeItem(`gen-state-${tripId}`);
 }
 
-export function resumeStaleGenerations(trips) {
+export async function resumeStaleGenerations(trips) {
   for (const trip of trips) {
     if (trip.status === 'generating' && !activeGenerations.has(trip.id)) {
       const saved = localStorage.getItem(`gen-state-${trip.id}`);
@@ -62,7 +68,17 @@ export function resumeStaleGenerations(trips) {
           const wizardState = JSON.parse(saved);
           activeGenerations.set(trip.id, { status: 'generating' });
           runGeneration(trip.id, wizardState);
-        } catch { /* ignore corrupt data */ }
+        } catch {
+          activeGenerations.set(trip.id, { status: 'failed', error: 'Corrupt saved state' });
+          const { updateTripStatus } = await import('../data/trip-repository.js').catch(() => ({}));
+          if (updateTripStatus) await updateTripStatus(trip.id, 'failed').catch(() => {});
+          notifyListeners(trip.id);
+        }
+      } else {
+        activeGenerations.set(trip.id, { status: 'failed', error: 'Generation was interrupted' });
+        const { updateTripStatus } = await import('../data/trip-repository.js').catch(() => ({}));
+        if (updateTripStatus) await updateTripStatus(trip.id, 'failed').catch(() => {});
+        notifyListeners(trip.id);
       }
     }
   }
