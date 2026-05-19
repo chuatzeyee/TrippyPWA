@@ -134,6 +134,13 @@ function renderEmpty() {
 
   return `
     <div class="dashboard-empty">
+      <div class="landing-bg">
+        <div class="landing-glow landing-glow--1"></div>
+        <div class="landing-glow landing-glow--2"></div>
+        <div class="landing-glow landing-glow--3"></div>
+        <div class="landing-grid-dots"></div>
+        <div class="landing-floaties"></div>
+      </div>
       <section class="landing-hero">
         <div class="landing-logo">
           <svg class="landing-logo-plane" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
@@ -398,6 +405,36 @@ export async function renderDashboard() {
           const dot = el.querySelector('.status-dot');
           if (dot) { dot.className = 'status-dot status-dot--past'; }
         }
+      });
+    });
+  }
+
+  const floatiesEl = app.querySelector('.landing-floaties');
+  if (floatiesEl) {
+    const emojis = ['✈️', '🗺️', '🏖️', '🗼', '🌏', '⛩️', '🌴', '🏔️', '🛫', '🧳', '🌺', '⛵'];
+    for (let i = 0; i < 18; i++) {
+      const el = document.createElement('span');
+      el.className = 'landing-floaty';
+      el.textContent = emojis[i % emojis.length];
+      el.style.left = `${4 + Math.random() * 92}%`;
+      el.style.animationDuration = `${10 + Math.random() * 14}s`;
+      el.style.animationDelay = `${Math.random() * 12}s`;
+      el.style.fontSize = `${0.8 + Math.random() * 0.5}rem`;
+      floatiesEl.appendChild(el);
+    }
+  }
+
+  const landingBg = app.querySelector('.landing-bg');
+  if (landingBg && window.innerWidth >= 768) {
+    let ticking = false;
+    document.addEventListener('mousemove', (e) => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 24;
+        const y = (e.clientY / window.innerHeight - 0.5) * 24;
+        landingBg.style.transform = `translate(${x}px, ${y}px)`;
+        ticking = false;
       });
     });
   }

@@ -21,7 +21,7 @@ body {
 }
 
 #app {
-  padding: 0 var(--sp-4);
+  padding: 0 var(--sp-3);
 }
 
 @media (min-width: 768px) {
@@ -227,7 +227,7 @@ textarea.input {
 
 @media (max-width: 640px) {
   .container {
-    padding: 0 var(--sp-4);
+    padding: 0 var(--sp-3);
   }
 }
 

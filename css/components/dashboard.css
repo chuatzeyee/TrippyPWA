@@ -254,7 +254,7 @@
   z-index: 1;
   max-width: 1100px;
   margin: 0 auto;
-  padding: var(--sp-8) var(--sp-6);
+  padding: var(--sp-4) var(--sp-6);
 }
 
 .dashboard-no-trips {
@@ -856,11 +856,24 @@
   border-radius: var(--r-pill);
 }
 
+/* ===== Desktop Splash Enhancements ===== */
+@media (min-width: 1024px) {
+  .landing-headline { font-size: 4.2rem; }
+  .landing-logo-flaps .flap-cell { font-size: 2.2rem; }
+  .landing-tagline { font-size: 1.1rem; max-width: 520px; }
+  .landing-glow--1 { width: 800px; height: 800px; }
+  .landing-glow--2 { width: 700px; height: 700px; }
+  .landing-glow--3 { width: 550px; height: 550px; }
+  .landing-bg { transition: transform 0.15s ease-out; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing-glow { animation: none; opacity: 0.05; }
   .landing-logo-plane { animation: none; }
   .landing-reveal { opacity: 1; transform: none; transition: none; }
   .skel-shimmer { animation: none; background: var(--surface-solid); }
+  .landing-floaty { animation: none; display: none; }
+  .landing-bg { transition: none; }
 }
 
 @media (display-mode: standalone) and (max-width: 768px) {

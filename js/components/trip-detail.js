@@ -365,9 +365,10 @@ function renderGettingThere(activity) {
           <div class="td-getting-there-header">
             <span class="td-getting-there-icon">${ICONS.chevronDown}</span>
             <span class="td-getting-there-label">Getting There</span>
+            ${opts.length > 1 ? `<span class="td-getting-there-count">${opts.length} options</span>` : ''}
           </div>
           <div class="td-transport-grid">
-            ${opts.map(o => {
+            ${opts.map((o, oi) => {
               const type = classifyTransportType(o.mode);
               const legs = parseTransportLegs(o.label);
               const modeIcon = TRANSPORT_ICONS[o.mode?.toLowerCase()] || TRANSPORT_ICONS.default;
@@ -378,6 +379,7 @@ function renderGettingThere(activity) {
 
               return `
                 <div class="td-transport-option td-transport-option--${type}">
+                  ${opts.length > 1 ? `<span class="td-transport-option-num">${oi + 1}</span>` : ''}
                   <div class="td-transport-option-top">
                     <span class="td-transport-option-icon">${modeIcon}</span>
                     <div class="td-transport-option-label">
@@ -826,23 +828,29 @@ function bindQuickChecklist(container, tripId) {
     });
     row.addEventListener('click', (e) => {
       if (e.target === checkbox) return;
+      dayCardManualSwitch = true;
+      setTimeout(() => { dayCardManualSwitch = false; }, 600);
       const target = row.dataset.scrollTo;
-      const section = container.querySelector(`[data-section="${target}"]`);
-      if (!section) return;
-      if (section.classList.contains('td-day-card')) {
-        const grid = section.closest('.td-day-grid');
-        if (grid) {
-          grid.querySelectorAll('.td-day-card--open').forEach(c => c.classList.remove('td-day-card--open'));
-          grid.classList.add('td-day-grid--has-open');
-          section.classList.add('td-day-card--open');
-        }
-      } else {
-        section.classList.remove('td-section-card--collapsed');
+      if (['flights', 'transport', 'accommodation'].includes(target)) {
+        const planTab = container.querySelector('[data-tab="plan"]');
+        if (planTab) planTab.click();
       }
       setTimeout(() => {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (section.classList.contains('td-day-card')) injectNowKnob(section);
-      }, 380);
+        const section = container.querySelector(`[data-section="${target}"]`);
+        if (!section) return;
+        if (section.classList.contains('td-day-card')) {
+          const grid = section.closest('.td-day-grid');
+          if (grid) {
+            grid.classList.add('td-day-grid--has-open');
+            grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+          }
+        } else {
+          section.classList.remove('td-section-card--collapsed');
+        }
+        setTimeout(() => {
+          (section.querySelector('.td-day-card-header') || section).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }, 50);
     });
   });
 }
@@ -932,7 +940,253 @@ function buildSectionCards(extras, totalCards, trip) {
   return cards.join('');
 }
 
+function renderSidebar(trip, days, sym, totalCost) {
+  const extras = trip.extras;
+  const sectionItems = [];
+
+  if (extras?.flights) {
+    sectionItems.push(`<div class="td-sidebar-item td-sidebar-item--section" data-sidebar-section="flights">
+      <span class="td-sidebar-item-icon td-sidebar-item-icon--flights">${mdIcon(MD.flightTakeoff, 16)}</span>
+      <span class="td-sidebar-item-label">Flights</span>
+    </div>`);
+  } else if (extras?.transport) {
+    const mode = getTransportMode(extras);
+    const label = TRANSPORT_MODE_LABELS[mode] || 'Transport';
+    sectionItems.push(`<div class="td-sidebar-item td-sidebar-item--section" data-sidebar-section="transport">
+      <span class="td-sidebar-item-icon">${mdIcon(TRANSPORT_MODE_MD[mode] || MD.tram, 16)}</span>
+      <span class="td-sidebar-item-label">${esc(label)}</span>
+    </div>`);
+  }
+
+  if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) {
+    sectionItems.push(`<div class="td-sidebar-item td-sidebar-item--section" data-sidebar-section="accommodation">
+      <span class="td-sidebar-item-icon td-sidebar-item-icon--accommodation">${mdIcon(MD.hotel, 16)}</span>
+      <span class="td-sidebar-item-label">Where to Stay</span>
+    </div>`);
+  }
+
+  const dayItems = days.map((d, i) => {
+    const acts = d.activities || [];
+    const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
+    return `<div class="td-sidebar-item td-sidebar-item--day" data-sidebar-day="${i}">
+      <span class="td-sidebar-item-num">${d.day_number}</span>
+      <div class="td-sidebar-item-info">
+        <div class="td-sidebar-item-title">${esc(d.title || `Day ${d.day_number}`)}</div>
+        <div class="td-sidebar-item-meta">${acts.length} activities</div>
+      </div>
+      <span class="td-sidebar-item-cost">${formatCost(dayCost, sym)}</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <aside class="td-sidebar">
+      <div class="td-sidebar-inner">
+        <nav class="td-sidebar-nav">
+          <div class="td-sidebar-label">Itinerary</div>
+          ${sectionItems.join('')}
+          ${dayItems}
+        </nav>
+        ${totalCost > 0 ? `
+          <div class="td-sidebar-total">
+            <span class="td-sidebar-total-label">Trip Total</span>
+            <span class="td-sidebar-total-amount">${formatCost(totalCost, sym)}</span>
+          </div>
+        ` : ''}
+      </div>
+    </aside>
+  `;
+}
+
+function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities) {
+  const ws = trip.wizard_state;
+  const wsDest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
+  const destCode = wsDest?.currencyCode || trip.budget_currency || 'USD';
+  const home = getHomeCurrency();
+  const homeCode = home?.code || '';
+  const homeSym = home?.symbol || '';
+  const showConversion = homeCode && homeCode !== destCode;
+  const homeTotal = showConversion ? convert(totalCost, destCode, homeCode) : 0;
+  const rate = showConversion ? (homeTotal / totalCost) : 0;
+  const refAmounts = [50, 100, 200, 500];
+  const destName = wsDest?.name || trip.title || '';
+
+  const dayRows = days.map(d => {
+    const acts = d.activities || [];
+    const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
+    return { dayNumber: d.day_number, title: d.title, actCount: acts.length, cost: dayCost };
+  });
+
+  const categories = {};
+  for (const d of days) {
+    for (const a of d.activities || []) {
+      const cat = a.category || 'other';
+      if (!categories[cat]) categories[cat] = 0;
+      categories[cat] += a.cost_amount || 0;
+    }
+  }
+  const sortedCats = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+
+  return `
+    ${totalCost > 0 ? `
+      <div class="td-total">
+        <div class="td-total-label">Estimated Trip Total</div>
+        <div class="td-total-amount">${formatCost(totalCost, sym)}</div>
+        <div class="td-total-sub">${dayCount} days · ${totalActivities} activities</div>
+        ${showConversion ? `
+          <div class="td-total-home">≈ ${homeSym}${formatNumber(homeTotal)} ${homeCode}</div>
+          <div class="td-exchange">
+            <div class="td-exchange-label">${mdIcon(MD.info, 14)} Exchange Rate</div>
+            <div class="td-exchange-hero">
+              <span class="td-exchange-from">${destCode} →</span>
+              <span class="td-exchange-value">${rate.toFixed(3)}</span>
+              <span class="td-exchange-to">→ ${homeCode}</span>
+            </div>
+            <div class="td-exchange-grid">
+              ${refAmounts.map(a => `
+                <div class="td-exchange-tile">
+                  <span class="td-exchange-tile-from">${sym}${formatNumber(a)}</span>
+                  <span class="td-exchange-tile-to">${homeSym}${formatNumber(convert(a, destCode, homeCode))}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    ` : ''}
+    ${dayRows.length > 0 ? `
+      <div class="td-spending-breakdown">
+        <h3 class="td-spending-title">${mdIcon(MD.calendarToday, 18)} Day-by-Day Spending</h3>
+        <div class="td-spending-table">
+          ${dayRows.map(r => `
+            <div class="td-spending-row">
+              <span class="td-spending-day">Day ${r.dayNumber}</span>
+              <span class="td-spending-day-title">${esc(r.title || 'Day ' + r.dayNumber)}</span>
+              <span class="td-spending-acts">${r.actCount} activities</span>
+              <span class="td-spending-cost">${formatCost(r.cost, sym)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+    ${sortedCats.length > 0 ? `
+      <div class="td-spending-categories">
+        <h3 class="td-spending-title">${mdIcon(MD.restaurant, 18)} By Category</h3>
+        <div class="td-spending-cat-grid">
+          ${sortedCats.map(([cat, amount]) => {
+            const pct = totalCost > 0 ? Math.round(amount / totalCost * 100) : 0;
+            return `
+              <div class="td-spending-cat">
+                <div class="td-spending-cat-top">
+                  <span class="td-spending-cat-icon">${catIcon(cat)}</span>
+                  <span class="td-spending-cat-name">${esc(titleCase(cat))}</span>
+                  <span class="td-spending-cat-pct">${pct}%</span>
+                </div>
+                <div class="td-spending-cat-bar">
+                  <div class="td-spending-cat-fill" style="width: ${pct}%"></div>
+                </div>
+                <span class="td-spending-cat-amount">${formatCost(amount, sym)}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    ` : ''}
+    <div class="td-savings-section">
+      <h3 class="td-spending-title">${mdIcon(MD.ticket, 18)} Potential Savings</h3>
+      <div class="td-savings-tips">
+        <div class="td-savings-tip">
+          <span class="td-savings-tip-icon">🎫</span>
+          <div class="td-savings-tip-content">
+            <div class="td-savings-tip-title">Tourist City Pass</div>
+            <div class="td-savings-tip-desc">Check if ${esc(destName)} offers a tourist pass covering public transport and major attractions at a bundled discount.</div>
+          </div>
+        </div>
+        <div class="td-savings-tip">
+          <span class="td-savings-tip-icon">🚇</span>
+          <div class="td-savings-tip-content">
+            <div class="td-savings-tip-title">Multi-Day Transport Pass</div>
+            <div class="td-savings-tip-desc">A ${dayCount}-day transit pass is often cheaper than buying individual tickets daily.</div>
+          </div>
+        </div>
+        <div class="td-savings-tip">
+          <span class="td-savings-tip-icon">🏛️</span>
+          <div class="td-savings-tip-content">
+            <div class="td-savings-tip-title">Free Admission Days</div>
+            <div class="td-savings-tip-desc">Many museums and galleries offer free or reduced entry on certain days or hours.</div>
+          </div>
+        </div>
+        <div class="td-savings-tip">
+          <span class="td-savings-tip-icon">🍽️</span>
+          <div class="td-savings-tip-content">
+            <div class="td-savings-tip-title">Lunch Set Menus</div>
+            <div class="td-savings-tip-desc">Restaurants often serve the same quality at lower lunch prices. Enjoy your main meal midday.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function updateSidebarActive(container, dayIndex) {
+  const sidebar = container.querySelector('.td-sidebar');
+  if (!sidebar) return;
+  sidebar.querySelectorAll('.td-sidebar-item--active').forEach(el => el.classList.remove('td-sidebar-item--active'));
+  const item = sidebar.querySelector(`[data-sidebar-day="${dayIndex}"]`);
+  if (item) {
+    item.classList.add('td-sidebar-item--active');
+    item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function bindSidebar(container) {
+  const sidebar = container.querySelector('.td-sidebar');
+  if (!sidebar) return;
+
+  sidebar.querySelectorAll('[data-sidebar-day]').forEach(item => {
+    item.addEventListener('click', () => {
+      const dayIndex = item.dataset.sidebarDay;
+      const grid = container.querySelector('.td-day-grid');
+      const card = grid?.querySelector(`.td-day-card[data-day-index="${dayIndex}"]`);
+      if (!card || !grid) return;
+
+      dayCardManualSwitch = true;
+      setTimeout(() => { dayCardManualSwitch = false; }, 600);
+
+      grid.classList.add('td-day-grid--has-open');
+      grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+      updateSidebarActive(container, dayIndex);
+
+      setTimeout(() => {
+        card.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        grid.querySelectorAll('.td-day-card[data-day-date]').forEach(c => injectNowKnob(c));
+      }, 100);
+    });
+  });
+
+  sidebar.querySelectorAll('[data-sidebar-section]').forEach(item => {
+    item.addEventListener('click', () => {
+      const sectionName = item.dataset.sidebarSection;
+      const section = container.querySelector(`[data-section="${sectionName}"]`);
+      if (!section) return;
+
+      dayCardManualSwitch = true;
+      setTimeout(() => { dayCardManualSwitch = false; }, 600);
+
+      const grid = section.closest('.td-day-grid');
+      if (grid) {
+        grid.classList.add('td-day-grid--has-open');
+        grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+      }
+
+      setTimeout(() => {
+        (section.querySelector('.td-day-card-header') || section).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    });
+  });
+}
+
 function renderDayPicker(app, trip, jumpToToday = false) {
+  if (scrollSpyCleanup) { scrollSpyCleanup(); scrollSpyCleanup = null; }
   const { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange } = tripHeader(trip);
   const heroFlag = flagImg(flag, 32);
 
@@ -942,125 +1196,110 @@ function renderDayPicker(app, trip, jumpToToday = false) {
         <button class="td-back" data-action="back">${ICONS.arrowBack} Trips</button>
       </div>
 
-      ${heroImage ? `
+      <nav class="td-tabs" role="tablist">
+        <button class="td-tab td-tab--active" data-tab="plan" role="tab" aria-selected="true">${mdIcon(MD.calendarToday, 15)} Plan</button>
+        <button class="td-tab" data-tab="spending" role="tab" aria-selected="false">${mdIcon(MD.ticket, 15)} Spending</button>
+        <button class="td-tab" data-tab="prep" role="tab" aria-selected="false">${mdIcon(MD.checklist, 15)} Prep</button>
+      </nav>
+
+      ${(() => {
+        let countdownHtml = '';
+        if (trip.start_date) {
+          const now = new Date();
+          const start = new Date(trip.start_date + 'T00:00:00');
+          const diff = Math.ceil((start - now) / 86400000);
+          if (diff >= 0) {
+            const label = diff === 0 ? 'Today!' : diff === 1 ? '1 day' : `${diff} days`;
+            countdownHtml = `<div class="td-countdown">${mdIcon(MD.flightTakeoff, 14)} ${label}</div>`;
+          }
+        }
+        return heroImage ? `
         <div class="td-hero">
           <img class="td-hero-img" src="${esc(heroImage)}" alt="${esc(shortTitle)}" loading="eager">
           <div class="td-hero-overlay"></div>
-          <button class="td-delete" data-action="delete" data-trip-id="${trip.id}">${ICONS.delete} Delete</button>
+          ${countdownHtml ? `<div class="td-hero-countdown">${countdownHtml}</div>` : ''}
           ${dateRange ? `<div class="td-hero-dates">${mdIcon(MD.calendarToday, 13)} ${esc(dateRange)}</div>` : ''}
           <div class="td-hero-caption">
             ${heroFlag ? `<span class="td-hero-flag">${heroFlag}</span>` : ''}
             <h1 class="td-hero-title">${esc(shortTitle)}</h1>
           </div>
         </div>
-      ` : `<div style="position:relative"><button class="td-delete td-delete--no-hero" data-action="delete" data-trip-id="${trip.id}">${ICONS.delete} Delete</button></div>`}
+      ` : countdownHtml;
+      })()}
 
-      <header class="td-header ${heroImage ? 'td-header--has-hero' : ''}">
-        ${!heroImage ? `<span class="td-emoji">${heroFlag || trip.emoji || mdIcon(MD.place, 28)}</span><h1 class="td-title">${esc(shortTitle)}</h1>` : ''}
-        <div class="td-meta-row">
-          <div class="td-meta">
-            ${trip.travelers ? `<span>${trip.travelers} traveler${trip.travelers > 1 ? 's' : ''}</span>` : ''}
-            <span>${dayCount} day${dayCount !== 1 ? 's' : ''}</span>
-            <span>${totalActivities} activities</span>
-          </div>
-          ${(() => {
-            if (!trip.start_date) return '';
-            const now = new Date();
-            const start = new Date(trip.start_date + 'T00:00:00');
-            const diff = Math.ceil((start - now) / 86400000);
-            if (diff < 0) return '';
-            const label = diff === 0 ? 'Departing today!' : diff === 1 ? '1 day to departure' : `${diff} days to departure`;
-            return `<div class="td-countdown">${mdIcon(MD.flightTakeoff, 14)} ${label}</div>`;
-          })()}
-        </div>
-      </header>
+      ${!heroImage ? `<header class="td-header"><span class="td-emoji">${heroFlag || trip.emoji || mdIcon(MD.place, 28)}</span><h1 class="td-title">${esc(shortTitle)}</h1></header>` : ''}
 
-      ${renderTripQuickChecklist(trip.extras, trip.id)}
-
-      <div class="td-day-grid">
-        ${(() => { const offset = countSectionCards(trip.extras); const total = days.length + offset; return buildSectionCards(trip.extras, total, trip) + days.map((d, i) => {
-          const acts = d.activities || [];
-          const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
-          const dateStr = d.date ? formatDate(d.date) : '';
-          return `
-            <div class="td-day-card" data-day-index="${i}" data-day-date="${d.date || ''}" style="--i: ${i + offset + 1}; --total: ${total}; animation-delay: ${(i + offset) * 80}ms">
-              <div class="td-day-card-header">
-                ${calendarIcon(d.day_number)}
-                <div class="td-day-info">
-                  <h3 class="td-day-card-title">${esc(d.title || `Day ${d.day_number}`)}</h3>
-                  ${dateStr ? `<span class="td-day-date">${dateStr}${d.weather?.highC != null ? ` <span class="td-day-weather">${d.weather.lowC}–${d.weather.highC}° ${weatherLabel(d.weather.condition)}</span>` : ''}</span>` : ''}
+      <div class="td-tab-panel td-tab-panel--active" data-panel="plan">
+        <div class="td-body">
+          ${renderSidebar(trip, days, sym, totalCost)}
+          <div class="td-main">
+            <div class="td-day-grid">
+          ${(() => { const offset = countSectionCards(trip.extras); const total = days.length + offset; return buildSectionCards(trip.extras, total, trip) + days.map((d, i) => {
+            const acts = d.activities || [];
+            const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
+            const dateStr = d.date ? formatDate(d.date) : '';
+            return `
+              <div class="td-day-card" data-day-index="${i}" data-day-date="${d.date || ''}" style="--i: ${i + offset + 1}; --total: ${total}; animation-delay: ${(i + offset) * 80}ms">
+                <div class="td-day-card-header">
+                  ${calendarIcon(d.day_number)}
+                  <div class="td-day-info">
+                    <h3 class="td-day-card-title">${esc(d.title || `Day ${d.day_number}`)}</h3>
+                    ${dateStr ? `<span class="td-day-date">${dateStr}${d.weather?.highC != null ? ` <span class="td-day-weather">${d.weather.lowC}–${d.weather.highC}° ${weatherLabel(d.weather.condition)}</span>` : ''}</span>` : ''}
+                  </div>
+                  <span class="td-day-chevron">›</span>
                 </div>
-                <div class="td-day-right">
-                  <span class="td-day-count">${acts.length} activities</span>
-                  <span class="td-day-cost">${formatCost(dayCost, sym)}</span>
-                </div>
-                <span class="td-day-chevron">›</span>
-              </div>
-              <div class="td-day-card-body">
-                <div class="td-timeline">
-                  ${acts.map((a, ai) => renderActivity(a, sym, ai === 0)).join('')}
-                </div>
-                <div class="td-day-footer">
-                  <span>Day ${d.day_number} total</span>
-                  <span class="td-day-footer-cost">${formatCost(dayCost, sym)}</span>
+                <div class="td-day-card-body">
+                  <div class="td-timeline">
+                    ${acts.map((a, ai) => renderActivity(a, sym, ai === 0)).join('')}
+                  </div>
+                  <div class="td-day-footer">
+                    <span class="td-day-footer-meta">${acts.length} activities</span>
+                    <span class="td-day-footer-cost">${formatCost(dayCost, sym)}</span>
+                  </div>
                 </div>
               </div>
+            `;
+          }).join(''); })()}
             </div>
-          `;
-        }).join(''); })()}
+          </div>
+        </div>
+        <div class="td-plan-delete">
+          <button class="td-delete td-delete--inline" data-action="delete" data-trip-id="${trip.id}">${ICONS.delete} Delete Trip</button>
+        </div>
       </div>
 
-      ${totalCost > 0 ? (() => {
-        const ws = trip.wizard_state;
-        const wsDest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
-        const destCode = wsDest?.currencyCode || trip.budget_currency || 'USD';
-        const home = getHomeCurrency();
-        const homeCode = home?.code || '';
-        const homeSym = home?.symbol || '';
-        const showConversion = homeCode && homeCode !== destCode;
-        const homeTotal = showConversion ? convert(totalCost, destCode, homeCode) : 0;
-        const rate = showConversion ? (homeTotal / totalCost) : 0;
-        const refAmounts = [50, 100, 200, 500];
-        return `
-        <div class="td-total">
-          <div class="td-total-label">Estimated Trip Total</div>
-          <div class="td-total-amount">${formatCost(totalCost, sym)}</div>
-          <div class="td-total-sub">${dayCount} days · ${totalActivities} activities</div>
-          ${showConversion ? `
-            <div class="td-total-home">≈ ${homeSym}${formatNumber(homeTotal)} ${homeCode}</div>
-            <div class="td-exchange">
-              <div class="td-exchange-label">${mdIcon(MD.info, 14)} Exchange Rate</div>
-              <div class="td-exchange-hero">
-                <span class="td-exchange-from">${destCode} →</span>
-                <span class="td-exchange-value">${rate.toFixed(3)}</span>
-                <span class="td-exchange-to">→ ${homeCode}</span>
-              </div>
-              <div class="td-exchange-grid">
-                ${refAmounts.map(a => `
-                  <div class="td-exchange-tile">
-                    <span class="td-exchange-tile-from">${sym}${formatNumber(a)}</span>
-                    <span class="td-exchange-tile-to">${homeSym}${formatNumber(convert(a, destCode, homeCode))}</span>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          ` : ''}
-        </div>
-      `;
-      })() : ''}
+      <div class="td-tab-panel" data-panel="spending">
+        ${renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities)}
+      </div>
 
-      ${renderBookingChecklist(trip.extras, trip.id)}
+      <div class="td-tab-panel" data-panel="prep">
+        ${renderTripQuickChecklist(trip.extras, trip.id)}
+        ${renderBookingChecklist(trip.extras, trip.id)}
+      </div>
     </div>
     ${renderTripFooter(trip)}
   `;
 
   app.querySelector('[data-action="back"]')?.addEventListener('click', () => navigate('/'));
   bindDelete(app);
+  bindTabs(app);
   bindDayCards(app);
   bindChecklist(app, trip.id);
   bindQuickChecklist(app, trip.id);
   bindCollapsibleSections(app);
+  bindSidebar(app);
   loadActivityPhotos(app);
+  scrollSpyCleanup = setupDayScrollSpy(app);
+
+  if (!jumpToToday && window.innerWidth >= 1024) {
+    const grid = app.querySelector('.td-day-grid');
+    if (grid) {
+      grid.classList.add('td-day-grid--has-open');
+      grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+      updateSidebarActive(app, '0');
+      grid.querySelectorAll('.td-day-card[data-day-date]').forEach(c => injectNowKnob(c));
+    }
+  }
 
   if (jumpToToday && trip.start_date) {
     const now = new Date();
@@ -1069,11 +1308,13 @@ function renderDayPicker(app, trip, jumpToToday = false) {
     const dayCard = app.querySelector(`.td-day-card[data-day-index="${todayDayNum - 1}"]`);
     if (dayCard) {
       const grid = app.querySelector('.td-day-grid');
-      grid?.classList.add('td-day-grid--has-open');
-      dayCard.classList.add('td-day-card--open');
+      if (grid) {
+        grid.classList.add('td-day-grid--has-open');
+        grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+      }
       setTimeout(() => {
-        dayCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        injectNowKnob(dayCard);
+        dayCard.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        grid?.querySelectorAll('.td-day-card[data-day-date]').forEach(c => injectNowKnob(c));
       }, 500);
     }
   }
@@ -1177,6 +1418,70 @@ function injectNowKnob(card) {
   timeline.appendChild(knob);
 }
 
+let scrollSpyCleanup = null;
+let dayCardManualSwitch = false;
+
+function getAdjacentDayCard(card, direction) {
+  let el = direction === 'next' ? card.nextElementSibling : card.previousElementSibling;
+  while (el) {
+    if (el.classList.contains('td-day-card') && !el.classList.contains('td-day-card--section')) return el;
+    el = direction === 'next' ? el.nextElementSibling : el.previousElementSibling;
+  }
+  return null;
+}
+
+function setupDayScrollSpy(container) {
+  const grid = container.querySelector('.td-day-grid');
+  if (!grid) return null;
+
+  let switching = false;
+  let rafId = null;
+
+  function switchDay(from, to) {
+    if (switching) return;
+    switching = true;
+
+    from.classList.remove('td-day-card--open');
+    to.classList.add('td-day-card--open');
+
+    const offset = to.getBoundingClientRect().top;
+    if (Math.abs(offset) > 2) window.scrollBy(0, offset);
+
+    const h = to.querySelector('.td-day-card-header');
+    h.classList.add('td-day-card-header--entering');
+    h.addEventListener('animationend', () => h.classList.remove('td-day-card-header--entering'), { once: true });
+
+    const dayIdx = to.dataset.dayIndex;
+    if (dayIdx != null) updateSidebarActive(container, dayIdx);
+
+    injectNowKnob(to);
+    setTimeout(() => { switching = false; }, 400);
+  }
+
+  function tick() {
+    rafId = null;
+    if (dayCardManualSwitch || !grid.classList.contains('td-day-grid--has-open')) return;
+
+    const dayCards = [...grid.querySelectorAll('.td-day-card:not(.td-day-card--section)')];
+    let activeIdx = null;
+    for (const card of dayCards) {
+      const rect = card.getBoundingClientRect();
+      if (rect.top <= 100) activeIdx = card.dataset.dayIndex;
+    }
+    if (activeIdx !== null) updateSidebarActive(container, activeIdx);
+  }
+
+  function onScroll() {
+    if (!rafId) rafId = requestAnimationFrame(tick);
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  return () => {
+    window.removeEventListener('scroll', onScroll);
+    if (rafId) cancelAnimationFrame(rafId);
+  };
+}
+
 function bindDayCards(container) {
   const grid = container.querySelector('.td-day-grid');
   if (!grid) return;
@@ -1189,23 +1494,40 @@ function bindDayCards(container) {
 
   grid.querySelectorAll('.td-day-card-header').forEach(header => {
     header.addEventListener('click', () => {
+      dayCardManualSwitch = true;
+      setTimeout(() => { dayCardManualSwitch = false; }, 600);
       const card = header.closest('.td-day-card');
-      const wasOpen = card.classList.contains('td-day-card--open');
+      const isExpanded = grid.classList.contains('td-day-grid--has-open');
 
-      grid.querySelectorAll('.td-day-card--open').forEach(c =>
-        c.classList.remove('td-day-card--open')
-      );
-
-      if (wasOpen) {
+      if (isExpanded) {
         grid.classList.remove('td-day-grid--has-open');
+        grid.querySelectorAll('.td-day-card--open').forEach(c => c.classList.remove('td-day-card--open'));
       } else {
         grid.classList.add('td-day-grid--has-open');
-        card.classList.add('td-day-card--open');
+        grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+        const dayIdx = card.dataset.dayIndex;
+        if (dayIdx != null) updateSidebarActive(container, dayIdx);
         setTimeout(() => {
-          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          injectNowKnob(card);
+          card.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          grid.querySelectorAll('.td-day-card[data-day-date]').forEach(c => injectNowKnob(c));
         }, 380);
       }
+    });
+  });
+}
+
+function bindTabs(container) {
+  const tabs = container.querySelectorAll('.td-tab');
+  const panels = container.querySelectorAll('.td-tab-panel');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      tabs.forEach(t => { t.classList.remove('td-tab--active'); t.setAttribute('aria-selected', 'false'); });
+      panels.forEach(p => p.classList.remove('td-tab-panel--active'));
+      tab.classList.add('td-tab--active');
+      tab.setAttribute('aria-selected', 'true');
+      const panel = container.querySelector(`[data-panel="${target}"]`);
+      if (panel) panel.classList.add('td-tab-panel--active');
     });
   });
 }
