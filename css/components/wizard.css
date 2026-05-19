@@ -61,7 +61,7 @@
   color: var(--ink-ghost);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
 }
 
 .wizard-back {
@@ -201,7 +201,7 @@
   color: var(--ink-ghost);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   margin-bottom: var(--sp-3);
   margin-top: var(--sp-6);
   display: flex;
@@ -491,7 +491,7 @@
   color: var(--ink-ghost);
   margin-top: 4px;
   display: block;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
 }
 
 /* ===== Season Cards ===== */
@@ -532,7 +532,7 @@
   font: var(--text-caption);
   font-weight: 700;
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
 }
 
 .season-card-desc {
@@ -612,7 +612,7 @@
   font: var(--text-caption);
   color: var(--ink-ghost);
   margin-top: 4px;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-family: var(--font-mono);
 }
 
@@ -678,7 +678,7 @@
   margin-top: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
 }
 
 .budget-stepper-home {
@@ -772,7 +772,7 @@
   font: var(--text-caption);
   color: var(--ink-ghost);
   display: block;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
 }
 
 /* ===== Departure Time ===== */
@@ -860,7 +860,7 @@
   font: var(--text-caption);
   font-weight: 600;
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
 }
 
 /* ===== Style Sliders ===== */
@@ -947,7 +947,7 @@
   font: var(--text-caption);
   font-weight: 600;
   letter-spacing: 0.02em;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
 }
 
 .cal-weekdays {
@@ -979,7 +979,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 500;
   cursor: default;
   transition: all var(--duration-fast);
@@ -1066,7 +1066,7 @@
   color: var(--ink-ghost);
   margin-top: 4px;
   display: block;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1181,7 +1181,7 @@
   padding: var(--sp-2) 0;
   font: var(--text-caption);
   color: var(--ink-secondary);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
 }
 
 .trip-summary-row + .trip-summary-row {
@@ -1294,7 +1294,7 @@
   }
 
   .wizard-footer-pill {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     padding: 4px 8px;
   }
 }
@@ -1428,7 +1428,7 @@
 .accom-card-desc {
   font: var(--text-caption);
   color: var(--ink-ghost);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   display: block;
 }
 
@@ -1572,7 +1572,7 @@
 .summary-tile-sub {
   font: var(--text-caption);
   color: var(--ink-ghost);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-family: var(--font-mono);
 }
 
@@ -1809,7 +1809,7 @@
   color: var(--ink-ghost);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
 }
 
 .settled-input {
