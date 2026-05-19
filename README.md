@@ -6,8 +6,6 @@ Built with vanilla JS, Vite, and Supabase. No frontend framework.
 
 **Live:** Deployed via GitHub Pages with CI/CD.
 
-![Trip Detail View](screenshot-trip.png)
-
 ---
 
 ## Quick Start
