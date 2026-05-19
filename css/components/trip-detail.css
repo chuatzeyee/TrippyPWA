@@ -26,7 +26,9 @@
 .td-topbar {
   display: flex;
   align-items: center;
-  margin-bottom: var(--sp-2);
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-6);
 }
 
 .td-back {
@@ -76,10 +78,35 @@
   background: rgba(200, 82, 82, 0.6);
 }
 
-.td-plan-delete {
+.td-plan-footer {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   padding: var(--sp-8) 0 var(--sp-4);
+}
+
+.td-back-inline {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  color: var(--ink-ghost);
+  border: none;
+  font-size: 0.82rem;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: color var(--duration-fast), background var(--duration-fast);
+}
+
+.td-back-inline:hover {
+  color: var(--ink-secondary);
+  background: rgba(229, 225, 216, 0.08);
+}
+
+.td-back-inline svg {
+  width: 16px;
+  height: 16px;
 }
 
 .td-delete--inline {
@@ -102,10 +129,10 @@
   display: flex;
   gap: var(--sp-1);
   padding: var(--sp-1);
-  margin-bottom: var(--sp-4);
   background: rgba(229, 225, 216, 0.04);
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
+  width: 100%;
 }
 
 .td-tab {
@@ -1732,6 +1759,20 @@
 .td-error { color: var(--error); }
 
 /* ===== Mobile ===== */
+@media (max-width: 1023px) {
+  .td-topbar .td-back {
+    display: none;
+  }
+
+  .td-topbar {
+    margin-bottom: var(--sp-4);
+  }
+
+  .td-back-inline {
+    display: inline-flex;
+  }
+}
+
 @media (max-width: 640px) {
   .td-wrap {
     padding: var(--sp-2) var(--sp-2) calc(var(--sp-16) + env(safe-area-inset-bottom, 0px));
@@ -2274,12 +2315,12 @@
 /* ===== Desktop Two-Panel Layout ===== */
 @media (min-width: 1024px) {
   .td-wrap {
-    max-width: 1200px;
+    max-width: 80%;
   }
 
   .td-body {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 420px 1fr;
     gap: 0 var(--sp-6);
     align-items: start;
   }
@@ -2312,7 +2353,34 @@
   }
 
   .td-footer-pills {
-    max-width: 1200px;
+    max-width: 80%;
+  }
+
+  .td-topbar {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  .td-tabs {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .td-tab {
+    flex: 0 0 auto;
+    padding: var(--sp-2) var(--sp-5);
+  }
+
+  .td-activity-photo {
+    width: 50%;
+  }
+
+  .td-accom-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .td-day-card-body {
+    min-width: 0;
   }
 }
 
@@ -2321,7 +2389,10 @@
     top: var(--sp-2);
   }
   .td-day-card--open .td-day-card-body {
-    padding-top: calc(var(--sp-4) + 48px);
+    padding-top: var(--sp-6);
+  }
+  .td-day-card--section .td-day-card-body {
+    padding-top: var(--sp-6);
   }
 }
 
@@ -2342,6 +2413,6 @@
   }
 
   .td-topbar {
-    padding-top: calc(env(safe-area-inset-top, 4px) + 36px);
+    padding-top: env(safe-area-inset-top, 4px);
   }
 }

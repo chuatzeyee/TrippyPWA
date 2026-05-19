@@ -1200,13 +1200,12 @@ function renderDayPicker(app, trip, jumpToToday = false) {
     <div class="td-wrap td-fade-in">
       <div class="td-topbar">
         <button class="td-back" data-action="back">${ICONS.arrowBack} Trips</button>
+        <nav class="td-tabs" role="tablist">
+          <button class="td-tab td-tab--active" data-tab="plan" role="tab" aria-selected="true">${mdIcon(MD.calendarToday, 15)} Plan</button>
+          <button class="td-tab" data-tab="spending" role="tab" aria-selected="false">${mdIcon(MD.ticket, 15)} Spending</button>
+          <button class="td-tab" data-tab="prep" role="tab" aria-selected="false">${mdIcon(MD.checklist, 15)} Prep</button>
+        </nav>
       </div>
-
-      <nav class="td-tabs" role="tablist">
-        <button class="td-tab td-tab--active" data-tab="plan" role="tab" aria-selected="true">${mdIcon(MD.calendarToday, 15)} Plan</button>
-        <button class="td-tab" data-tab="spending" role="tab" aria-selected="false">${mdIcon(MD.ticket, 15)} Spending</button>
-        <button class="td-tab" data-tab="prep" role="tab" aria-selected="false">${mdIcon(MD.checklist, 15)} Prep</button>
-      </nav>
 
       ${(() => {
         let countdownHtml = '';
@@ -1269,7 +1268,8 @@ function renderDayPicker(app, trip, jumpToToday = false) {
             </div>
           </div>
         </div>
-        <div class="td-plan-delete">
+        <div class="td-plan-footer">
+          <button class="td-back-inline" data-action="back">${ICONS.arrowBack} Back to Trips</button>
           <button class="td-delete td-delete--inline" data-action="delete" data-trip-id="${trip.id}">${ICONS.delete} Delete Trip</button>
         </div>
       </div>
@@ -1286,7 +1286,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
     ${renderTripFooter(trip)}
   `;
 
-  app.querySelector('[data-action="back"]')?.addEventListener('click', () => navigate('/'));
+  app.querySelectorAll('[data-action="back"]').forEach(el => el.addEventListener('click', () => navigate('/')));
   bindDelete(app);
   bindTabs(app);
   bindDayCards(app);
