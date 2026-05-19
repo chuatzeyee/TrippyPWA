@@ -65,7 +65,8 @@ export async function createTrip(wizardState, status = 'planning') {
       end_date: wizardState.dates.end || null,
       budget_daily: wizardState.budget.dailyAmount || 0,
       budget_currency: wizardState.destination?.currencyCode || 'USD',
-      budget_currency_symbol: wizardState.destination?.currencySymbol || '$'
+      budget_currency_symbol: wizardState.destination?.currencySymbol || '$',
+      timezone: wizardState.destination?.timezone || null
     })
     .select()
     .single();
@@ -94,7 +95,8 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
       end_date: wizardState.dates.end || null,
       budget_daily: wizardState.budget.dailyAmount || 0,
       budget_currency: wizardState.destination?.currencyCode || 'USD',
-      budget_currency_symbol: wizardState.destination?.currencySymbol || '$'
+      budget_currency_symbol: wizardState.destination?.currencySymbol || '$',
+      timezone: wizardState.destination?.timezone || null
     })
     .select()
     .single();

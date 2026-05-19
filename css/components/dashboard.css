@@ -462,6 +462,11 @@
   font-size: 1.05rem;
   padding: var(--sp-4) var(--sp-10);
   letter-spacing: 0.03em;
+  height: 56px;
+}
+
+.landing-cta-google {
+  flex-shrink: 0;
 }
 
 .landing-cta .btn:hover {
@@ -744,7 +749,7 @@
   display: flex;
   align-items: center;
   gap: var(--sp-1);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--ink-secondary);
   white-space: nowrap;
@@ -856,15 +861,59 @@
   border-radius: var(--r-pill);
 }
 
+/* ===== Scroll Hint ===== */
+.landing-scroll-hint {
+  display: none;
+}
+
 /* ===== Desktop Splash Enhancements ===== */
 @media (min-width: 1024px) {
-  .landing-headline { font-size: 4.2rem; }
-  .landing-logo-flaps .flap-cell { font-size: 2.2rem; }
-  .landing-tagline { font-size: 1.1rem; max-width: 520px; }
+  .landing-hero {
+    justify-content: flex-start;
+    min-height: 100dvh;
+    padding: 12vh var(--sp-6) var(--sp-4);
+  }
+  .landing-logo { margin-bottom: var(--sp-12); }
+  .landing-logo-plane { width: 48px; height: 48px; }
+  .landing-logo-flaps .flap-cell { font-size: 2.8rem; }
+  .landing-logo-flaps { gap: 6px; }
+  .landing-headline { font-size: 5rem; margin-bottom: var(--sp-10); }
+  .landing-tagline { font-size: 1.2rem; max-width: 560px; line-height: 1.8; margin-bottom: var(--sp-12); }
+  .landing-cta .btn { font-size: 1.15rem; padding: var(--sp-5) var(--sp-12); height: 64px; }
+  .landing-cta { margin-bottom: var(--sp-14, 56px); }
+  .landing-proof { font-size: 0.9rem; gap: var(--sp-5); }
   .landing-glow--1 { width: 800px; height: 800px; }
   .landing-glow--2 { width: 700px; height: 700px; }
   .landing-glow--3 { width: 550px; height: 550px; }
   .landing-bg { transition: transform 0.15s ease-out; }
+  .landing-scroll-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: sticky;
+    bottom: var(--sp-6);
+    align-self: center;
+    padding-bottom: var(--sp-4);
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--ink-ghost);
+    animation: scrollBounce 2.5s ease-in-out infinite;
+    transition: color var(--duration-fast);
+  }
+  .landing-scroll-hint:hover { color: var(--ink-secondary); }
+  .landing-scroll-hint-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+}
+
+@keyframes scrollBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(6px); opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

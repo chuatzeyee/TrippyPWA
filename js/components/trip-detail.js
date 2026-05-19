@@ -163,6 +163,12 @@ function esc(str) {
   return el.innerHTML;
 }
 
+function nowInTz(tz) {
+  if (!tz) return new Date();
+  const s = new Date().toLocaleString('en-US', { timeZone: tz });
+  return new Date(s);
+}
+
 function formatDate(dateStr) {
   return formatWeekdayDate(dateStr);
 }
@@ -1233,7 +1239,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
         <div class="td-body">
           ${renderSidebar(trip, days, sym, totalCost)}
           <div class="td-main">
-            <div class="td-day-grid">
+            <div class="td-day-grid" data-tz="${esc(trip.timezone || trip.wizard_state?.destination?.timezone || '')}">
           ${(() => { const offset = countSectionCards(trip.extras); const total = days.length + offset; return buildSectionCards(trip.extras, total, trip) + days.map((d, i) => {
             const acts = d.activities || [];
             const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
@@ -1291,18 +1297,9 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   loadActivityPhotos(app);
   scrollSpyCleanup = setupDayScrollSpy(app);
 
-  if (!jumpToToday && window.innerWidth >= 1024) {
-    const grid = app.querySelector('.td-day-grid');
-    if (grid) {
-      grid.classList.add('td-day-grid--has-open');
-      grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
-      updateSidebarActive(app, '0');
-      grid.querySelectorAll('.td-day-card[data-day-date]').forEach(c => injectNowKnob(c));
-    }
-  }
-
   if (jumpToToday && trip.start_date) {
-    const now = new Date();
+    const tripTz = trip.timezone || trip.wizard_state?.destination?.timezone;
+    const now = nowInTz(tripTz || undefined);
     const start = new Date(trip.start_date + 'T00:00:00');
     const todayDayNum = Math.floor((now - start) / 86400000) + 1;
     const dayCard = app.querySelector(`.td-day-card[data-day-index="${todayDayNum - 1}"]`);
@@ -1335,14 +1332,15 @@ function loadActivityPhotos(container) {
       const location = (!isNaN(lat) && !isNaN(lng) && lat !== 0) ? { lat, lng } : null;
 
       fetchPlacePhotoByQuery(venue, location, 600).then(url => {
-        if (!url) { el.remove(); return; }
+        if (!url) { el.classList.add('td-activity-photo--failed'); return; }
         const img = document.createElement('img');
         img.src = url;
         img.alt = venue;
         img.className = 'td-activity-photo-img';
         img.loading = 'lazy';
+        img.onload = () => el.classList.add('td-activity-photo--loaded');
+        img.onerror = () => el.classList.add('td-activity-photo--failed');
         el.appendChild(img);
-        el.classList.add('td-activity-photo--loaded');
       });
     }
   }, { rootMargin: '200px' });
@@ -1369,7 +1367,8 @@ function injectNowKnob(card) {
 
   const dayDate = card.dataset.dayDate;
   if (!dayDate) return;
-  const today = new Date();
+  const tz = card.closest('.td-day-grid')?.dataset.tz || '';
+  const today = nowInTz(tz || undefined);
   const cardDate = new Date(dayDate + 'T00:00:00');
   if (today.toDateString() !== cardDate.toDateString()) return;
 

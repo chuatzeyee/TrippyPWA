@@ -5,6 +5,7 @@
 }
 
 html {
+  font-size: 112.5%;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -150,7 +151,7 @@ ul, ol {
 
 .btn--sm {
   padding: var(--sp-1) var(--sp-3);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   height: 28px;
 }
 

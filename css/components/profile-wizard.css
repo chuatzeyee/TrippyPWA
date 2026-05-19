@@ -153,12 +153,12 @@
 }
 
 .profile-currency-option-code {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: var(--ink-secondary);
 }
 
 .profile-currency-option-hint {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: var(--teal);
   font-weight: 600;
   text-transform: uppercase;
