@@ -70,6 +70,12 @@ onNotFound((path) => {
 
 start();
 
+if (import.meta.env.DEV) {
+  import('./data/trip-repository.js').then(m => {
+    window.__clearAllUserData = m.clearAllUserData;
+  });
+}
+
 import('./auth/auth.js').then(async ({ initAuth, onAuthChange }) => {
   await initAuth();
   renderNav();
