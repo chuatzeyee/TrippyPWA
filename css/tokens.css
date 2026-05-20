@@ -96,3 +96,27 @@
   --z-modal: 400;
   --z-toast: 500;
 }
+
+/* ===== Light Mode ===== */
+[data-theme="light"] {
+  --parchment: #F5F1EA;
+  --surface: rgba(255, 255, 255, 0.85);
+  --surface-solid: #FFFFFF;
+  --surface-inset: #EDE9E1;
+  --ink: #2C2A25;
+  --ink-secondary: #6B6660;
+  --ink-ghost: #9A9488;
+  --border: rgba(44, 42, 37, 0.08);
+  --border-strong: rgba(44, 42, 37, 0.16);
+
+  --terracotta-light: rgba(234, 88, 12, 0.10);
+  --teal-light: rgba(74, 150, 132, 0.10);
+  --amber-light: rgba(208, 154, 72, 0.10);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+
+  --glass-bg: rgba(245, 241, 234, 0.92);
+  --glass-border: 1px solid rgba(44, 42, 37, 0.06);
+}

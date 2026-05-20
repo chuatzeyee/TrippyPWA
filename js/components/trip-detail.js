@@ -696,11 +696,9 @@ function renderAccommodationContent(extras) {
         return `
           <div class="td-accom-option">
             <div class="td-accom-head">
-              <div class="td-accom-head-text">
-                <div class="td-accom-name">${esc(a.name)}</div>
-                <div class="td-accom-area">${esc(a.area)} · ${esc(a.type)}</div>
-              </div>
               ${a.badge ? `<span class="td-accom-badge" style="background: ${BADGE_COLORS[a.badge] || 'var(--terracotta)'}">${esc(a.badge)}</span>` : ''}
+              <div class="td-accom-name">${esc(a.name)}</div>
+              <div class="td-accom-area">${esc(a.area)} · ${esc(a.type)}</div>
             </div>
             <div class="td-accom-price">${esc(a.priceRange)}</div>
             ${features.length > 0 ? `
@@ -1191,6 +1189,64 @@ function bindSidebar(container) {
   });
 }
 
+async function showShareModal(trip) {
+  const existing = document.querySelector('.td-share-overlay');
+  if (existing) existing.remove();
+
+  const { createShareLink } = await import('../data/share-repository.js');
+  const { data, error } = await createShareLink(trip.id);
+  if (error) { alert(`Share failed: ${error}`); return; }
+
+  const shareUrl = `${location.origin}${location.pathname}#/shared/${data.share_token}`;
+  const ws = trip.wizard_state;
+  const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
+  const tripLabel = dest?.name || trip.title || 'My Trip';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'td-share-overlay';
+  overlay.innerHTML = `
+    <div class="td-share-modal">
+      <div class="td-share-header">
+        <h3 class="td-share-title">Share Itinerary</h3>
+        <button class="td-share-close">&times;</button>
+      </div>
+      <div class="td-share-body">
+        <label class="td-share-label">Share link</label>
+        <div class="td-share-link-row">
+          <input type="text" class="td-share-url" value="${esc(shareUrl)}" readonly>
+          <button class="td-share-copy">Copy</button>
+        </div>
+        <div class="td-share-divider"><span>or send via email</span></div>
+        <label class="td-share-label">Recipient email</label>
+        <input type="email" class="td-share-email" placeholder="friend@example.com">
+        <button class="td-share-send btn btn--primary btn--pill" style="width:100%;margin-top:var(--sp-3)">Send Invite</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('td-share-overlay--open'));
+
+  const close = () => { overlay.classList.remove('td-share-overlay--open'); setTimeout(() => overlay.remove(), 200); };
+  overlay.querySelector('.td-share-close').addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+  overlay.querySelector('.td-share-copy').addEventListener('click', async () => {
+    const copyBtn = overlay.querySelector('.td-share-copy');
+    try { await navigator.clipboard.writeText(shareUrl); } catch { /* fallback below */ }
+    copyBtn.textContent = 'Copied!';
+    setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+  });
+
+  overlay.querySelector('.td-share-send').addEventListener('click', () => {
+    const email = overlay.querySelector('.td-share-email').value.trim();
+    if (!email) { overlay.querySelector('.td-share-email').focus(); return; }
+    const subject = encodeURIComponent(`Check out my ${tripLabel} itinerary`);
+    const body = encodeURIComponent(`Hey! I planned a trip to ${tripLabel} and wanted to share the itinerary with you:\n\n${shareUrl}\n\nPowered by Trippy`);
+    window.open(`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`, '_self');
+    close();
+  });
+}
+
 function renderDayPicker(app, trip, jumpToToday = false) {
   if (scrollSpyCleanup) { scrollSpyCleanup(); scrollSpyCleanup = null; }
   const { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange } = tripHeader(trip);
@@ -1205,6 +1261,17 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           <button class="td-tab" data-tab="spending" role="tab" aria-selected="false">${mdIcon(MD.ticket, 15)} Spending</button>
           <button class="td-tab" data-tab="prep" role="tab" aria-selected="false">${mdIcon(MD.checklist, 15)} Prep</button>
         </nav>
+        <div class="td-topbar-actions">
+          <button class="td-action-btn" data-action="share" title="Share itinerary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+          </button>
+          <button class="td-action-btn" data-action="pdf" title="Export PDF">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg>
+          </button>
+          <button class="td-action-btn" data-action="edit" title="Edit & Regenerate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          </button>
+        </div>
       </div>
 
       ${(() => {
@@ -1275,18 +1342,42 @@ function renderDayPicker(app, trip, jumpToToday = false) {
       </div>
 
       <div class="td-tab-panel" data-panel="spending">
-        ${renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities)}
+        <div class="td-spending-grid">
+          ${renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities)}
+        </div>
       </div>
 
       <div class="td-tab-panel" data-panel="prep">
-        ${renderTripQuickChecklist(trip.extras, trip.id)}
-        ${renderBookingChecklist(trip.extras, trip.id)}
+        <div class="td-prep-grid">
+          ${renderTripQuickChecklist(trip.extras, trip.id)}
+          ${renderBookingChecklist(trip.extras, trip.id)}
+        </div>
       </div>
     </div>
     ${renderTripFooter(trip)}
   `;
 
   app.querySelectorAll('[data-action="back"]').forEach(el => el.addEventListener('click', () => navigate('/')));
+
+  app.querySelector('[data-action="share"]')?.addEventListener('click', () => showShareModal(trip));
+
+  app.querySelector('[data-action="pdf"]')?.addEventListener('click', async () => {
+    const btn = app.querySelector('[data-action="pdf"]');
+    btn.disabled = true;
+    try {
+      const { exportTripPdf } = await import('../lib/pdf-export.js');
+      await exportTripPdf(trip);
+    } catch (err) {
+      alert(`PDF export failed: ${err.message || err}`);
+    }
+    btn.disabled = false;
+  });
+
+  app.querySelector('[data-action="edit"]')?.addEventListener('click', async () => {
+    const { showEditModal } = await import('./trip-edit.js');
+    showEditModal(trip);
+  });
+
   bindDelete(app);
   bindTabs(app);
   bindDayCards(app);

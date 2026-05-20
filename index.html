@@ -12,8 +12,9 @@
 
   <script>
     try{if(Object.keys(localStorage).some(function(k){return k.startsWith('sb-')&&k.endsWith('-auth-token')}))document.documentElement.className='has-session'}catch(e){}
+    try{var t=localStorage.getItem('trippy-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light')}catch(e){}
   </script>
-  <style>.app-skel{display:none}.has-session .app-splash{display:none!important}.has-session .app-skel{display:block}</style>
+  <style>.app-skel{display:none}.has-session .app-splash{display:none!important}.has-session .app-skel{display:block}[data-prerendered] .landing-hero,[data-prerendered] .landing-headline,[data-prerendered] .landing-tagline,[data-prerendered] .landing-cta,[data-prerendered] .landing-proof{animation:none!important;opacity:1!important;transform:none!important}[data-prerendered] .landing-reveal{opacity:1!important;transform:none!important}</style>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,6 +32,9 @@
   <link rel="stylesheet" href="/css/components/auth.css" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="/css/components/trip-detail.css" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="/css/components/profile-wizard.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/css/components/admin.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/css/components/shared.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/css/components/trip-edit.css" media="print" onload="this.media='all'">
 
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">

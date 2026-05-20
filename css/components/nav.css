@@ -81,6 +81,65 @@
 
 .nav-user-btn:hover { border-color: var(--terracotta); }
 
+.nav-theme-toggle {
+  background: none;
+  border: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  padding: var(--sp-1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  transition: color var(--duration-fast);
+}
+
+.nav-theme-toggle:hover { color: var(--terracotta); }
+
+.nav-theme-icon--moon { display: none; }
+[data-theme="light"] .nav-theme-icon--sun { display: none; }
+[data-theme="light"] .nav-theme-icon--moon { display: block; }
+
+.nav-admin-link {
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--terracotta);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-md);
+  transition: background var(--duration-fast);
+}
+
+.nav-admin-link:hover {
+  background: var(--terracotta-light);
+}
+
+.td-topbar-actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+
+.td-action-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--duration-fast), border-color var(--duration-fast);
+}
+
+.td-action-btn:hover {
+  color: var(--terracotta);
+  border-color: var(--terracotta);
+}
+
 @media (display-mode: standalone) and (max-width: 768px) {
   .app-nav {
     display: none;

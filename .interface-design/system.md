@@ -197,7 +197,10 @@ Slightly softer than standard - rounder corners match the lounge mood.
 - No pure white (#FFFFFF) for text - use `--ink` (cream)
 - #FFFFFF only for text ON terracotta/teal buttons and calendar selections
 - All borders rgba, never solid hex
-- Dark mode is the only mode (no light/dark toggle)
+- Dark mode is the default, light mode available via toggle (sun/moon icon in nav)
+- Light theme: warm cream foundation (#F5F1EA), dark ink (#2C2A25), white surfaces
+- Theme persisted in localStorage('trippy-theme'), respects prefers-color-scheme
+- All tokens are CSS custom properties, overridden under [data-theme="light"] selector
 - No Indian/Pakistani cities in destination list
 - Use `outline` instead of `border` on destination cards to prevent background-color bleed
 - GPU-promote elements that overlap animated backgrounds to prevent compositing glitches

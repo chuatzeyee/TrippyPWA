@@ -1,0 +1,228 @@
+.adm {
+  padding: var(--sp-8) 0 var(--sp-16);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.adm-denied {
+  padding: var(--sp-16) 0;
+  text-align: center;
+}
+
+.adm-loading {
+  text-align: center;
+  color: var(--ink-secondary);
+  padding: var(--sp-16) 0;
+}
+
+.adm-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-8);
+}
+
+.adm-back {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--ink-secondary);
+}
+
+.adm-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-8);
+}
+
+.adm-stat-card {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.adm-stat-value {
+  font: var(--text-hero);
+  color: var(--terracotta);
+}
+
+.adm-stat-label {
+  font: var(--text-small);
+  color: var(--ink);
+}
+
+.adm-stat-sub {
+  font: var(--text-caption);
+  color: var(--ink-ghost);
+}
+
+.adm-tabs {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-6);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--sp-2);
+}
+
+.adm-tab {
+  background: none;
+  border: none;
+  color: var(--ink-secondary);
+  font: var(--text-small);
+  padding: var(--sp-2) var(--sp-4);
+  cursor: pointer;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  transition: color var(--duration-fast), background var(--duration-fast);
+}
+
+.adm-tab:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.adm-tab--active {
+  color: var(--terracotta);
+  border-bottom: 2px solid var(--terracotta);
+}
+
+.adm-panel--hidden {
+  display: none;
+}
+
+.adm-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--text-small);
+}
+
+.adm-table th {
+  text-align: left;
+  color: var(--ink-ghost);
+  font: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+
+.adm-table td {
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.adm-table tr:hover td {
+  background: var(--surface);
+}
+
+.adm-user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.adm-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.adm-avatar--sm {
+  width: 22px;
+  height: 22px;
+}
+
+.adm-avatar--placeholder {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+}
+
+.adm-badge {
+  display: inline-block;
+  font: var(--text-caption);
+  font-weight: 600;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.adm-badge--muted {
+  background: var(--surface);
+  color: var(--ink-ghost);
+}
+
+.adm-badge--terracotta {
+  background: var(--terracotta-light);
+  color: var(--terracotta);
+}
+
+.adm-badge--teal {
+  background: var(--teal-light);
+  color: var(--teal);
+}
+
+.adm-badge--sage {
+  background: rgba(95, 160, 114, 0.14);
+  color: var(--sage);
+}
+
+.adm-badge--amber {
+  background: var(--amber-light);
+  color: var(--amber);
+}
+
+.adm-badge--error {
+  background: rgba(200, 82, 82, 0.14);
+  color: var(--error);
+}
+
+.adm-role-select {
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+  font: var(--text-caption);
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.adm-mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-secondary);
+}
+
+.btn--sm {
+  font-size: 0.75rem;
+  padding: var(--sp-1) var(--sp-2);
+}
+
+@media (max-width: 768px) {
+  .adm-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .adm-table {
+    font-size: 0.75rem;
+  }
+
+  .adm-table th,
+  .adm-table td {
+    padding: var(--sp-2);
+  }
+}
