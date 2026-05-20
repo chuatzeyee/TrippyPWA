@@ -361,24 +361,35 @@ Respond ONLY with valid JSON matching the provided schema.`
       }
     };
 
-    const geminiRes = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(geminiPayload)
-    });
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [5000, 10000, 20000];
+    let geminiRes: Response | null = null;
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      geminiRes = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(geminiPayload)
+      });
+
+      if (geminiRes.status !== 503 || attempt === MAX_RETRIES - 1) break;
+      console.log(`Gemini 503 on attempt ${attempt + 1}, retrying in ${RETRY_DELAYS[attempt]}ms...`);
+      await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+    }
+
+    if (!geminiRes!.ok) {
+      const errText = await geminiRes!.text();
       console.error("Gemini API error:", errText);
       let detail = "";
       try { detail = JSON.parse(errText)?.error?.message || errText.substring(0, 200); } catch { detail = errText.substring(0, 200); }
+      const retryable = geminiRes!.status === 503 || geminiRes!.status === 429;
       return new Response(
-        JSON.stringify({ error: `Gemini ${geminiRes.status}: ${detail}` }),
+        JSON.stringify({ error: `Gemini ${geminiRes!.status}: ${detail}`, retryable }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const geminiData = await geminiRes.json();
+    const geminiData = await geminiRes!.json();
     const textContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!textContent) {

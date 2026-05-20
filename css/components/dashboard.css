@@ -150,11 +150,27 @@
 
 .trip-card-gen-status {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-2);
   font-size: 0.85rem;
   color: var(--terracotta);
   margin-top: var(--sp-1);
+}
+
+.trip-card-gen-busy {
+  display: block;
+  width: 100%;
+  color: var(--amber);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.trip-card-gen-retry-hint {
+  display: block;
+  width: 100%;
+  color: var(--ink-ghost);
+  font-size: 0.75rem;
 }
 
 .trip-card-gen-dots {

@@ -129,6 +129,10 @@ import('./auth/auth.js').then(async ({ initAuth, isAuthenticated, onAuthChange }
   });
 });
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 const btt = document.createElement('button');
 btt.className = 'back-to-top';
 btt.setAttribute('aria-label', 'Back to top');
