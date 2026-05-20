@@ -421,6 +421,15 @@ export async function renderDashboard() {
           }
           const dot = el.querySelector('.status-dot');
           if (dot) { dot.className = 'status-dot status-dot--upcoming'; }
+        } else if (genStatus.status === 'generating' && genStatus.busy) {
+          const statusEl = el.querySelector('.trip-card-gen-status');
+          if (statusEl) {
+            statusEl.innerHTML = `
+              <span class="trip-card-gen-dots"><span></span><span></span><span></span></span>
+              <span class="trip-card-gen-busy">AI is busy right now and is taking longer than expected.</span>
+              <span class="trip-card-gen-retry-hint">Retrying automatically (attempt ${genStatus.attempt})&hellip;</span>
+            `;
+          }
         } else if (genStatus.status === 'failed') {
           el.classList.remove('trip-card--generating');
           const shimmer = el.querySelector('.trip-card-gen-shimmer');

@@ -1,20 +1,32 @@
 const activeGenerations = new Map();
 const listeners = new Set();
 
+const CLIENT_MAX_RETRIES = 4;
+const CLIENT_RETRY_DELAYS = [15000, 30000, 45000, 60000];
+
 export function startGeneration(tripId, wizardState) {
   localStorage.setItem(`gen-state-${tripId}`, JSON.stringify(wizardState));
-  activeGenerations.set(tripId, { status: 'generating' });
+  activeGenerations.set(tripId, { status: 'generating', busy: false, attempt: 0 });
   notifyListeners(tripId);
-  runGeneration(tripId, wizardState);
+  requestNotificationPermission();
+  runGeneration(tripId, wizardState, 0);
 }
 
-async function runGeneration(tripId, wizardState) {
+async function runGeneration(tripId, wizardState, attempt) {
   try {
     const { generateItinerary } = await import('./generate.js');
     const { saveItineraryToTrip, updateTripStatus } = await import('../data/trip-repository.js');
 
-    const { data: itinerary, error: genError } = await generateItinerary(wizardState);
+    const { data: itinerary, error: genError, retryable } = await generateItinerary(wizardState);
+
     if (genError) {
+      if (retryable && attempt < CLIENT_MAX_RETRIES) {
+        activeGenerations.set(tripId, { status: 'generating', busy: true, attempt: attempt + 1 });
+        notifyListeners(tripId);
+        await new Promise(r => setTimeout(r, CLIENT_RETRY_DELAYS[attempt]));
+        return runGeneration(tripId, wizardState, attempt + 1);
+      }
+
       activeGenerations.set(tripId, { status: 'failed', error: genError });
       await updateTripStatus(tripId, 'failed').catch(() => {});
       localStorage.removeItem(`gen-state-${tripId}`);
@@ -28,11 +40,21 @@ async function runGeneration(tripId, wizardState) {
       await updateTripStatus(tripId, 'failed').catch(() => {});
     } else {
       activeGenerations.set(tripId, { status: 'done' });
+      showCompletionNotification(wizardState);
     }
     localStorage.removeItem(`gen-state-${tripId}`);
     notifyListeners(tripId);
   } catch (err) {
-    activeGenerations.set(tripId, { status: 'failed', error: err.message || 'Unexpected error' });
+    const msg = err.message || 'Unexpected error';
+    const isRetryable = msg.includes('503') || msg.includes('Failed to fetch') || msg.includes('network');
+    if (isRetryable && attempt < CLIENT_MAX_RETRIES) {
+      activeGenerations.set(tripId, { status: 'generating', busy: true, attempt: attempt + 1 });
+      notifyListeners(tripId);
+      await new Promise(r => setTimeout(r, CLIENT_RETRY_DELAYS[attempt]));
+      return runGeneration(tripId, wizardState, attempt + 1);
+    }
+
+    activeGenerations.set(tripId, { status: 'failed', error: msg });
     const { updateTripStatus } = await import('../data/trip-repository.js').catch(() => ({}));
     if (updateTripStatus) await updateTripStatus(tripId, 'failed').catch(() => {});
     localStorage.removeItem(`gen-state-${tripId}`);
@@ -66,8 +88,8 @@ export async function resumeStaleGenerations(trips) {
       if (saved) {
         try {
           const wizardState = JSON.parse(saved);
-          activeGenerations.set(trip.id, { status: 'generating' });
-          runGeneration(trip.id, wizardState);
+          activeGenerations.set(trip.id, { status: 'generating', busy: false, attempt: 0 });
+          runGeneration(trip.id, wizardState, 0);
         } catch {
           activeGenerations.set(trip.id, { status: 'failed', error: 'Corrupt saved state' });
           const { updateTripStatus } = await import('../data/trip-repository.js').catch(() => ({}));
@@ -82,4 +104,41 @@ export async function resumeStaleGenerations(trips) {
       }
     }
   }
+}
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function showCompletionNotification(wizardState) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') return;
+
+  const destName = wizardState?.multiCity
+    ? wizardState.destinations?.map(d => d.name).join(', ')
+    : wizardState?.destination?.name || 'your trip';
+
+  try {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification('Trippy', {
+          body: `Your ${destName} itinerary is ready!`,
+          icon: '/icons/icon-192.png',
+          badge: '/icons/icon-192.png',
+          tag: 'gen-complete',
+          renotify: true,
+          data: { url: '/' }
+        });
+      });
+    } else {
+      new Notification('Trippy', {
+        body: `Your ${destName} itinerary is ready!`,
+        icon: '/icons/icon-192.png',
+        tag: 'gen-complete'
+      });
+    }
+  } catch {}
 }
