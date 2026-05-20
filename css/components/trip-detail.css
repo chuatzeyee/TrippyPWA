@@ -410,6 +410,10 @@
   background: #2a2824;
 }
 
+[data-theme="light"] .td-day-card--open .td-day-card-header:hover {
+  background: #e8e4dc;
+}
+
 .td-day-num {
   width: 48px;
   height: 48px;
@@ -521,6 +525,7 @@
 .td-day-card--open {
   z-index: calc(var(--total) + 2) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.20);
+  padding-top: var(--sp-2);
 }
 
 .td-day-card--open .td-day-card-body {
@@ -537,13 +542,13 @@
 /* Sticky floating header on open cards */
 .td-day-card--open .td-day-card-header {
   position: sticky;
-  top: calc(56px + var(--sp-2));
+  top: calc(56px + var(--sp-3));
   z-index: var(--z-sticky);
   background: var(--surface-solid);
   border-radius: var(--r-xl);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35),
               0 1px 3px rgba(0, 0, 0, 0.15);
-  margin: var(--sp-2);
+  margin: var(--sp-3) var(--sp-2) var(--sp-2);
   border: 1px solid var(--border);
 }
 

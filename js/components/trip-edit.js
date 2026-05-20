@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { generateItinerary } from '../services/generate.js';
-import { saveItineraryToTrip } from '../data/trip-repository.js';
+import { startGeneration } from '../services/generation-manager.js';
 import { navigate } from '../router.js';
 
 function esc(s) {
@@ -225,23 +224,9 @@ export function showEditModal(trip) {
       await supabase.from('itinerary_days').delete().eq('trip_id', trip.id);
     }
 
-    const { data: itinerary, error: genError } = await generateItinerary(updatedState);
-
-    if (genError || !itinerary) {
-      await supabase.from('trips').update({ status: 'failed' }).eq('id', trip.id);
-      regenBtn.disabled = false;
-      regenBtn.textContent = 'Regenerate Itinerary';
-      alert(`Generation failed: ${genError || 'Unknown error'}`);
-      return;
-    }
-
-    const { error: saveError } = await saveItineraryToTrip(trip.id, updatedState, itinerary);
-
-    if (saveError) {
-      alert(`Saved with issues: ${saveError}`);
-    }
-
     close();
-    navigate(`/trip/${trip.id}`);
+    navigate('/');
+
+    startGeneration(trip.id, updatedState);
   });
 }

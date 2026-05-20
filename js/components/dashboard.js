@@ -89,7 +89,7 @@ function renderTripCard(trip, index) {
 }
 
 function renderAuthDashboard(trips) {
-  const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto'];
+  const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto', 'Taipei'];
   const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
 
   return `
@@ -128,7 +128,7 @@ function renderAuthDashboard(trips) {
 }
 
 function renderEmpty() {
-  const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto'];
+  const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto', 'Taipei'];
   const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
   const flap = ch => `<span class="flap-cell"><span class="flap-face">${ch}</span><span class="flap-top"><span class="flap-top-text">${ch}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${ch}</span></span></span>`;
 
