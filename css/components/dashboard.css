@@ -937,3 +937,19 @@
     padding-top: calc(env(safe-area-inset-top, 12px) + var(--sp-4));
   }
 }
+
+/* ===== Light Mode: keep split-flap cells always dark ===== */
+[data-theme="light"] .flap-face,
+[data-theme="light"] .flap-top,
+[data-theme="light"] .flap-bottom {
+  color: #E5E1D8;
+}
+
+[data-theme="light"] .flap-top-text,
+[data-theme="light"] .flap-bottom-text {
+  color: #E5E1D8;
+}
+
+[data-theme="light"] .landing-hl-city .flap-cell {
+  color: #E5E1D8;
+}

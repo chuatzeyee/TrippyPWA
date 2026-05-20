@@ -358,7 +358,7 @@
   padding-bottom: 0;
 }
 
-/* Hover — dim siblings, lift hovered card */
+/* Hover — dim siblings, lift hovered card (no opacity — cards overlap so translucency breaks the illusion) */
 .td-day-grid:not(.td-day-grid--has-open):hover .td-day-card {
   filter: brightness(0.65);
 }
@@ -368,6 +368,14 @@
   transform: translateY(-16px);
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12),
               0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+[data-theme="light"] .td-day-grid:not(.td-day-grid--has-open):hover .td-day-card {
+  filter: brightness(0.78);
+}
+
+[data-theme="light"] .td-day-grid:not(.td-day-grid--has-open) .td-day-card:hover {
+  filter: brightness(1);
 }
 
 .td-day-grid:not(.td-day-grid--has-open) .td-day-card:active {
@@ -1062,13 +1070,13 @@
 
 /* ===== Trip Total ===== */
 .td-total {
-  margin-top: var(--sp-8);
+  margin-top: var(--sp-4);
   padding: var(--sp-8) var(--sp-6);
   border-radius: var(--r-xl);
   background: var(--surface-solid);
   border: 1px solid var(--border);
   text-align: center;
-  margin-bottom: var(--sp-8);
+  margin-bottom: var(--sp-4);
 }
 
 .td-total-label {
@@ -1552,15 +1560,10 @@
 
 .td-accom-head {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--sp-2);
+  gap: var(--sp-1);
   margin-bottom: var(--sp-2);
-}
-
-.td-accom-head-text {
-  flex: 1;
-  min-width: 0;
 }
 
 .td-accom-name {
@@ -1574,14 +1577,12 @@
   display: inline-block;
   padding: 2px 10px;
   border-radius: var(--r-pill);
-  font-size: 0.82rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
-  flex-shrink: 0;
-  margin-top: 2px;
 }
 
 .td-accom-area {
@@ -1940,13 +1941,24 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(27, 26, 23, 0.82);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(229, 225, 216, 0.06);
+  margin-left: calc(-1 * var(--sp-3));
+  margin-right: calc(-1 * var(--sp-3));
+  width: calc(100% + var(--sp-3) * 2);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: var(--glass-border);
   padding: var(--sp-2) var(--sp-4);
   z-index: var(--z-sticky);
   animation: tdFooterSlideUp 0.5s var(--ease-out) 0.3s both;
+}
+
+@media (min-width: 768px) {
+  .td-footer {
+    margin-left: calc(-1 * var(--sp-6));
+    margin-right: calc(-1 * var(--sp-6));
+    width: calc(100% + var(--sp-6) * 2);
+  }
 }
 
 @keyframes tdFooterSlideUp {
@@ -1970,8 +1982,8 @@
   gap: 4px;
   font-size: 0.78rem;
   color: var(--ink-secondary);
-  background: rgba(229, 225, 216, 0.06);
-  border: 1px solid rgba(229, 225, 216, 0.08);
+  background: var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--r-pill);
   padding: 3px 10px;
   white-space: nowrap;
@@ -2382,6 +2394,172 @@
   .td-day-card-body {
     min-width: 0;
   }
+
+  .td-spending-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-4);
+  }
+
+  .td-spending-grid > * {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .td-prep-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-4);
+    align-items: start;
+  }
+
+  .td-prep-grid > * {
+    margin-bottom: 0;
+  }
+}
+
+/* ===== Share Modal ===== */
+.td-share-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.td-share-overlay--open { opacity: 1; }
+
+.td-share-modal {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(12px);
+  transition: transform 0.2s var(--ease-out);
+}
+
+.td-share-overlay--open .td-share-modal {
+  transform: translateY(0);
+}
+
+.td-share-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.td-share-title {
+  font: var(--text-h3);
+  color: var(--ink);
+  margin: 0;
+}
+
+.td-share-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 1.4rem;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background var(--duration-fast);
+}
+
+.td-share-close:hover { background: var(--border); }
+
+.td-share-body {
+  padding: var(--sp-5);
+}
+
+.td-share-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-ghost);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--sp-2);
+}
+
+.td-share-link-row {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+}
+
+.td-share-url {
+  flex: 1;
+  min-width: 0;
+  font: var(--text-caption);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.td-share-copy {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--terracotta);
+  background: var(--terracotta-light);
+  border: 1px solid var(--terracotta);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.td-share-copy:hover { background: rgba(234, 88, 12, 0.24); }
+
+.td-share-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  color: var(--ink-ghost);
+  font-size: 0.75rem;
+}
+
+.td-share-divider::before,
+.td-share-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.td-share-email {
+  width: 100%;
+  font: var(--text-body);
+  color: var(--ink);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  outline: none;
+  transition: border-color var(--duration-fast);
+}
+
+.td-share-email:focus {
+  border-color: var(--terracotta);
 }
 
 @media (display-mode: standalone) {

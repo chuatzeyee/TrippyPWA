@@ -1,0 +1,196 @@
+.trip-edit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-out);
+  overscroll-behavior: contain;
+}
+
+.trip-edit-overlay--visible {
+  opacity: 1;
+}
+
+.trip-edit-modal {
+  background: var(--parchment);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.trip-edit-overlay--visible .trip-edit-modal {
+  transform: translateY(0);
+}
+
+.trip-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-5) var(--sp-5) var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.trip-edit-close {
+  background: none;
+  border: none;
+  color: var(--ink-ghost);
+  cursor: pointer;
+  padding: var(--sp-1);
+  border-radius: 50%;
+  transition: color var(--duration-fast);
+}
+
+.trip-edit-close:hover {
+  color: var(--ink);
+}
+
+.trip-edit-body {
+  padding: var(--sp-5);
+  overflow-y: auto;
+  flex: 1;
+  overscroll-behavior: contain;
+}
+
+.trip-edit-note {
+  font: var(--text-caption);
+  color: var(--ink-ghost);
+  margin-bottom: var(--sp-5);
+  padding: var(--sp-3);
+  background: var(--surface);
+  border-radius: var(--r-md);
+}
+
+.trip-edit-section {
+  margin-bottom: var(--sp-5);
+}
+
+.trip-edit-label {
+  display: block;
+  font: var(--text-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-secondary);
+  margin-bottom: var(--sp-2);
+}
+
+.trip-edit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.trip-edit-input {
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  color: var(--ink);
+  font: var(--text-small);
+  padding: var(--sp-2) var(--sp-3);
+  width: 100%;
+}
+
+.trip-edit-input:focus {
+  outline: none;
+  border-color: var(--terracotta);
+}
+
+.trip-edit-textarea {
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  color: var(--ink);
+  font: var(--text-small);
+  padding: var(--sp-3);
+  width: 100%;
+  resize: vertical;
+}
+
+.trip-edit-textarea:focus {
+  outline: none;
+  border-color: var(--terracotta);
+}
+
+.trip-edit-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.trip-edit-step-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-solid);
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--duration-fast);
+}
+
+.trip-edit-step-btn:hover {
+  border-color: var(--terracotta);
+  color: var(--terracotta);
+}
+
+.trip-edit-step-val {
+  font: var(--text-h1);
+  min-width: 32px;
+  text-align: center;
+}
+
+.trip-edit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.trip-edit-slider {
+  width: 100%;
+  accent-color: var(--terracotta);
+  height: 4px;
+}
+
+.trip-edit-pace-label {
+  font-weight: 400;
+  color: var(--terracotta);
+  margin-left: var(--sp-2);
+  text-transform: none;
+}
+
+.trip-edit-footer {
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: flex-end;
+  padding: var(--sp-4) var(--sp-5);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+@media (min-width: 769px) {
+  .trip-edit-modal {
+    border-radius: var(--r-xl);
+    max-height: 80vh;
+    margin-bottom: 5vh;
+  }
+
+  .trip-edit-overlay {
+    align-items: center;
+  }
+}

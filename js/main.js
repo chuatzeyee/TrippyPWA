@@ -51,6 +51,23 @@ addRoute('/trip/:id', async (params) => {
   renderTripDetail(params.id);
 });
 
+addRoute('/admin', async () => {
+  const { isAuthenticated } = await import('./auth/auth.js');
+  if (!isAuthenticated()) {
+    const { showAuthGate } = await import('./auth/auth-ui.js');
+    showAuthGate();
+    navigate('/');
+    return;
+  }
+  const { renderAdminDashboard } = await import('./admin/admin-dashboard.js');
+  renderAdminDashboard();
+});
+
+addRoute('/shared/:token', async (params) => {
+  const { renderSharedTrip } = await import('./components/shared-trip.js');
+  renderSharedTrip(params.token);
+});
+
 onNotFound((path) => {
   const safePath = path.split('?')[0].split('&')[0].replace(/[<>"']/g, '');
   const app = document.getElementById('app');
