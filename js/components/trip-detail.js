@@ -434,9 +434,12 @@ function renderGettingThere(activity) {
   `;
 }
 
+const NO_COST_CATEGORIES = new Set(['departure', 'arrival', 'flight', 'check-in', 'landing', 'transfer']);
+
 function renderActivity(activity, currencySymbol, isFirst) {
   const icon = catIcon(activity.category);
-  const cost = formatCost(activity.cost_amount, currencySymbol);
+  const cat = (activity.category || '').toLowerCase();
+  const cost = NO_COST_CATEGORIES.has(cat) && !activity.cost_amount ? '' : formatCost(activity.cost_amount, currencySymbol);
   const duration = formatDuration(activity.duration_minutes);
   const time = activity.start_time || '';
   const lat = Number(activity.latitude);

@@ -137,9 +137,11 @@ export async function exportTripPdf(trip) {
       const titleX = mx + (time ? 22 : 2);
       doc.text(act.title || '', titleX, y);
 
+      const noCostCats = new Set(['departure', 'arrival', 'flight', 'check-in', 'landing', 'transfer']);
+      const actCat = (act.category || '').toLowerCase();
       const rightParts = [];
       if (act.duration_minutes) rightParts.push(fmtDuration(act.duration_minutes));
-      rightParts.push(fmt(act.cost_amount, sym));
+      if (!(noCostCats.has(actCat) && !act.cost_amount)) rightParts.push(fmt(act.cost_amount, sym));
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(...COLORS.inkSecondary);

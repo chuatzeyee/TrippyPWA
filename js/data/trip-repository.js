@@ -192,6 +192,17 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
   if (itinerary.tripTitle) updates.title = itinerary.tripTitle;
   await supabase.from('trips').update(updates).eq('id', tripId);
 
+  const { data: oldDays } = await supabase
+    .from('itinerary_days')
+    .select('id')
+    .eq('trip_id', tripId);
+  if (oldDays?.length) {
+    for (const d of oldDays) {
+      await supabase.from('activities').delete().eq('day_id', d.id);
+    }
+    await supabase.from('itinerary_days').delete().eq('trip_id', tripId);
+  }
+
   const dayErrors = [];
   for (const day of itinerary.days) {
     let safeDate = null;
