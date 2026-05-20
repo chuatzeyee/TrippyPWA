@@ -874,19 +874,21 @@
 /* ===== Desktop Splash Enhancements ===== */
 @media (min-width: 1024px) {
   .landing-hero {
-    justify-content: flex-start;
-    min-height: 100dvh;
-    padding: 12vh var(--sp-6) var(--sp-4);
+    justify-content: center;
+    height: calc(100svh - 56px);
+    min-height: 0;
+    padding: 0 var(--sp-6);
+    box-sizing: border-box;
   }
-  .landing-logo { margin-bottom: var(--sp-12); }
-  .landing-logo-plane { width: 48px; height: 48px; }
-  .landing-logo-flaps .flap-cell { font-size: 2.8rem; }
-  .landing-logo-flaps { gap: 6px; }
-  .landing-headline { font-size: 5rem; margin-bottom: var(--sp-10); }
-  .landing-tagline { font-size: 1.2rem; max-width: 560px; line-height: 1.8; margin-bottom: var(--sp-12); }
-  .landing-cta .btn { font-size: 1.15rem; padding: var(--sp-5) var(--sp-12); height: 64px; }
-  .landing-cta { margin-bottom: var(--sp-14, 56px); }
-  .landing-proof { font-size: 0.9rem; gap: var(--sp-5); }
+  .landing-logo { margin-bottom: var(--sp-10); }
+  .landing-logo-plane { width: 40px; height: 40px; }
+  .landing-logo-flaps .flap-cell { font-size: 2.2rem; }
+  .landing-logo-flaps { gap: 5px; }
+  .landing-headline { font-size: clamp(2.4rem, 3.5vw, 3.2rem); margin-bottom: var(--sp-8); line-height: 1.3; }
+  .landing-tagline { font-size: 1rem; max-width: 480px; line-height: 1.85; margin-bottom: var(--sp-10); }
+  .landing-cta .btn { font-size: 1rem; padding: var(--sp-4) var(--sp-10); height: 52px; }
+  .landing-cta { margin-bottom: var(--sp-8); }
+  .landing-proof { font-size: 0.85rem; gap: var(--sp-5); }
   .landing-glow--1 { width: 800px; height: 800px; }
   .landing-glow--2 { width: 700px; height: 700px; }
   .landing-glow--3 { width: 550px; height: 550px; }
@@ -896,11 +898,8 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    position: sticky;
-    bottom: var(--sp-6);
     align-self: center;
-    margin-top: var(--sp-14, 56px);
-    padding-bottom: var(--sp-4);
+    margin-top: var(--sp-6);
     border: none;
     background: none;
     cursor: pointer;
