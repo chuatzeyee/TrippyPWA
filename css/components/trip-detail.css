@@ -2564,7 +2564,7 @@
 
 @media (display-mode: standalone) {
   .td-day-card--open .td-day-card-header {
-    top: var(--sp-2);
+    top: calc(env(safe-area-inset-top, 0px) + var(--sp-2));
   }
   .td-day-card--open .td-day-card-body {
     padding-top: var(--sp-6);
@@ -2575,7 +2575,7 @@
 }
 
 @media (display-mode: standalone) and (max-width: 768px) {
-  .td-topbar {
-    padding-top: 0;
+  .td-wrap {
+    padding-top: calc(env(safe-area-inset-top, 12px) + var(--sp-4));
   }
 }
