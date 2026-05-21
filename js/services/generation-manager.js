@@ -1,8 +1,8 @@
 const activeGenerations = new Map();
 const listeners = new Set();
 
-const CLIENT_MAX_RETRIES = 4;
-const CLIENT_RETRY_DELAYS = [15000, 30000, 45000, 60000];
+const CLIENT_MAX_RETRIES = 6;
+const CLIENT_RETRY_DELAYS = [10000, 20000, 30000, 45000, 60000, 90000];
 
 export function startGeneration(tripId, wizardState) {
   localStorage.setItem(`gen-state-${tripId}`, JSON.stringify(wizardState));
@@ -41,7 +41,7 @@ async function runGeneration(tripId, wizardState, attempt) {
     notifyListeners(tripId);
   } catch (err) {
     const msg = err.message || 'Unexpected error';
-    const isRetryable = msg.includes('503') || msg.includes('Failed to fetch') || msg.includes('network');
+    const isRetryable = /503|502|429|Failed to fetch|network|non-2xx|Edge function/i.test(msg);
     if (isRetryable && attempt < CLIENT_MAX_RETRIES) {
       activeGenerations.set(tripId, { status: 'generating', busy: true, attempt: attempt + 1 });
       notifyListeners(tripId);
