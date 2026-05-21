@@ -97,10 +97,24 @@ export async function resumeStaleGenerations(trips) {
           notifyListeners(trip.id);
         }
       } else {
-        activeGenerations.set(trip.id, { status: 'failed', error: 'Generation was interrupted' });
-        const { updateTripStatus } = await import('../data/trip-repository.js').catch(() => ({}));
-        if (updateTripStatus) await updateTripStatus(trip.id, 'failed').catch(() => {});
-        notifyListeners(trip.id);
+        try {
+          const { fetchTripById } = await import('../data/trip-repository.js');
+          const { data: fullTrip } = await fetchTripById(trip.id);
+          if (fullTrip?.wizard_state) {
+            activeGenerations.set(trip.id, { status: 'generating', busy: false, attempt: 0 });
+            runGeneration(trip.id, fullTrip.wizard_state, 0);
+          } else {
+            activeGenerations.set(trip.id, { status: 'failed', error: 'Generation was interrupted' });
+            const { updateTripStatus } = await import('../data/trip-repository.js').catch(() => ({}));
+            if (updateTripStatus) await updateTripStatus(trip.id, 'failed').catch(() => {});
+            notifyListeners(trip.id);
+          }
+        } catch {
+          activeGenerations.set(trip.id, { status: 'failed', error: 'Generation was interrupted' });
+          const { updateTripStatus } = await import('../data/trip-repository.js').catch(() => ({}));
+          if (updateTripStatus) await updateTripStatus(trip.id, 'failed').catch(() => {});
+          notifyListeners(trip.id);
+        }
       }
     }
   }

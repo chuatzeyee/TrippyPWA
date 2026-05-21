@@ -58,6 +58,13 @@ serve(async (req: Request) => {
     const accomType = wizardState.accommodation?.type || "hotel";
     const stars = wizardState.accommodation?.stars || 0;
     const priorities = wizardState.accommodation?.priorities?.join(", ") || "none specified";
+    const accomSettled = !!wizardState.accommodation?.settled;
+    const accomAddress = wizardState.accommodation?.hotelAddress || "";
+    const accomCheckIn = wizardState.accommodation?.checkInDate || "";
+
+    const flightsSettled = !!wizardState.flights?.settled;
+    const settledFlightNumber = wizardState.flights?.flightNumber || "";
+    const settledArrivalDate = wizardState.flights?.arrivalDate || "";
 
     const destName = wizardState.multiCity
       ? (wizardState.destinations?.[0]?.name || "")
@@ -114,11 +121,15 @@ TRIP DETAILS:
 - ${dateInfo}
 - ${travelers} traveler${travelers > 1 ? "s" : ""}${departureCity ? `\n- Departing from: ${departureCity}${homeCountry ? `, ${homeCountry}` : ""}` : ""}
 - Daily budget: ${currencySymbol}${budget} per person (${currency})
-- Accommodation preference: ${accomType}${stars ? ` (${stars}-star)` : ""}, priorities: ${priorities}
+${accomSettled && accomAddress
+  ? `- ACCOMMODATION (PRE-BOOKED): The traveler has ALREADY booked accommodation at "${accomAddress}"${accomCheckIn ? `, checking in ${accomCheckIn}` : ""}. Look up this property and return it as the ONLY accommodation option with badge "Pre-booked". Do NOT suggest alternative accommodation.`
+  : `- Accommodation preference: ${accomType}${stars ? ` (${stars}-star)` : ""}, priorities: ${priorities}`}
 ${isSameCity
   ? `- The traveler LIVES in ${destName}. This is a LOCAL exploration trip. Do NOT include any flights, inter-city transport, or arrival logistics. Start the itinerary directly with Day 1 activities.`
   : isNearbyTrip
   ? `- This is a NEARBY trip — NO FLIGHTS. Primary transport: ${transportLabel[transportMode] || transportMode}. Suggest ${transportLabel[transportMode] || transportMode} options with schedules, operators, duration, and pricing instead of flights.`
+  : flightsSettled && settledFlightNumber
+  ? `- FLIGHTS (PRE-BOOKED): The traveler has ALREADY booked flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight number and details for the inbound flight. Do NOT suggest a different airline or flight. For the return flight, suggest a realistic option from the same airline if possible.`
   : `- Flights: ${fareClass} class, ${connectionPref} connections`}
 - Travel pace: ${pace} — plan ${activityGuidance}
 - Interests: ${interests}
@@ -145,8 +156,12 @@ CRITICAL REQUIREMENTS:
 11. For EVERY day, include a "weather" object with the expected weather conditions for that day based on the destination, season, and travel dates. Include condition (e.g. "sunny", "partly cloudy", "rainy"), highC and lowC temperatures in Celsius.
 ${isNearbyTrip
   ? `12. Include "transport" (NOT flights) with suggested outbound and inbound ${transportLabel[transportMode] || "transport"} options — include operator name, route, duration, schedule frequency, and pricing. For ferries include terminal names. For buses include bus operator and station. For trains include train service name and station.`
+  : flightsSettled && settledFlightNumber
+  ? `12. Include "flights" — the traveler has PRE-BOOKED flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight for the outbound/inbound entry. For the other direction, suggest a realistic return flight from the same airline.`
   : `12. Include "flights" with suggested outbound and inbound flight options — recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing for ${fareClass} class.`}
-13. Include "accommodation" with 2-3 hotel/apartment options at different price points matching the traveler's ${accomType} preference. Include name, neighborhood, price range, type, highlights, and a badge (Recommended, Best Value, Best Location, or Luxury Pick).
+${accomSettled && accomAddress
+  ? `13. Include "accommodation" with ONLY the pre-booked property: "${accomAddress}". Look up the actual name, neighborhood, and details of this property. Return it as a single item with badge "Pre-booked". Do NOT add alternative options.`
+  : `13. Include "accommodation" with 2-3 hotel/apartment options at different price points matching the traveler's ${accomType} preference. Include name, neighborhood, price range, type, highlights, and a badge (Recommended, Best Value, Best Location, or Luxury Pick).`}
 14. Include "bookingChecklist" — scan every activity and identify which ones need advance booking (museum tickets, restaurant reservations, tours, shows). Group into "Must Book Ahead" (sells out or requires reservation) and "Good to Book" (walk-in possible but booking saves time). Include the day number and a practical booking note.`;
 
     const geminiPayload = {
@@ -242,7 +257,7 @@ Respond ONLY with valid JSON matching the provided schema.`
                     }
                   }
                 },
-                required: ["dayNumber", "title", "activities"]
+                required: ["dayNumber", "date", "title", "activities"]
               }
             },
             ...(isNearbyTrip ? {

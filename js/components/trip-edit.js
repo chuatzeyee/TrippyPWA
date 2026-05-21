@@ -224,9 +224,8 @@ export function showEditModal(trip) {
       await supabase.from('itinerary_days').delete().eq('trip_id', trip.id);
     }
 
+    startGeneration(trip.id, updatedState);
     close();
     navigate('/');
-
-    startGeneration(trip.id, updatedState);
   });
 }

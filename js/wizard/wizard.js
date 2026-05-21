@@ -193,7 +193,7 @@ function renderFreeDayChips(container, el) {
     if (isFixed) {
       const d = new Date(new Date(state.dates.start + 'T00:00:00').getTime() + i * 86400000);
       label = `${WEEKDAYS_SHORT[d.getDay()]} ${d.getDate()}`;
-      value = d.toISOString().slice(0, 10);
+      value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     } else {
       label = `Day ${i + 1}`;
       value = String(i + 1);
