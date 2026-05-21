@@ -106,7 +106,7 @@ serve(async (req: Request) => {
 
     const freeDays = Array.isArray(wizardState.dates?.freeDays) ? wizardState.dates.freeDays : [];
     const freeDayNote = freeDays.length > 0
-      ? `\n- FREE/WORK DAYS: The traveler has commitments on ${freeDays.join(", ")}. Keep these days very light — only suggest a breakfast spot, a lunch option, and an evening dinner/activity. Leave the rest of the day free for work or conferences.`
+      ? `\n- FREE/WORK DAYS: The traveler has commitments ONLY on these specific dates: ${freeDays.join(", ")}. Keep ONLY these exact dates very light — only suggest a breakfast spot, a lunch option, and an evening dinner/activity. Leave the rest of each free day open. All OTHER days must be full itinerary days with normal activity planning. Do NOT make any other day light.`
       : "";
 
     const extras = [];
