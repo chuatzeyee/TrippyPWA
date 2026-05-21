@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trippy-v1';
+const CACHE_NAME = 'trippy-v2';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -49,14 +49,13 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname.match(/\/assets\/.*-[a-zA-Z0-9]{8}\./)) {
     event.respondWith(
-      caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request).then(resp => {
+      fetch(event.request)
+        .then(resp => {
           const clone = resp.clone();
           caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
           return resp;
-        });
-      })
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
