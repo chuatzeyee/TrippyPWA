@@ -104,7 +104,7 @@ const INTERESTS = [
   'Museums', 'Markets', 'Nature', 'Temples', 'Beaches', 'Hiking',
   'Photography', 'Cooking Classes', 'Live Music', 'Sports',
   'Wellness', 'Architecture', 'Street Art', 'Local Workshops',
-  'Coffee & Cafes', 'Wine & Bars'
+  'Coffee & Cafes', 'Wine & Bars', 'Vinyl Records'
 ];
 
 const NEARBY_THRESHOLD_KM = 500;
