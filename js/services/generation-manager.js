@@ -35,13 +35,8 @@ async function runGeneration(tripId, wizardState, attempt) {
     }
 
     const { error: saveError } = await saveItineraryToTrip(tripId, wizardState, itinerary);
-    if (saveError) {
-      activeGenerations.set(tripId, { status: 'failed', error: saveError });
-      await updateTripStatus(tripId, 'failed').catch(() => {});
-    } else {
-      activeGenerations.set(tripId, { status: 'done' });
-      showCompletionNotification(wizardState);
-    }
+    activeGenerations.set(tripId, { status: 'done', partialError: saveError || null });
+    showCompletionNotification(wizardState);
     localStorage.removeItem(`gen-state-${tripId}`);
     notifyListeners(tripId);
   } catch (err) {
