@@ -30,11 +30,14 @@ export async function generateItinerary(wizardState) {
     let msg = error.message || JSON.stringify(error);
     let retryable = false;
     try {
-      const body = await error.context?.json?.();
-      if (body?.error) msg = body.error;
-      if (body?.retryable) retryable = true;
+      const resp = error.context;
+      if (resp && typeof resp.json === 'function') {
+        const body = await resp.json();
+        if (body?.error) msg = body.error;
+        if (body?.retryable) retryable = true;
+      }
     } catch {}
-    if (!retryable && (msg.includes('503') || msg.includes('high demand') || msg.includes('overloaded') || msg.includes('429'))) {
+    if (!retryable && /503|429|502|high demand|overloaded|non-2xx/i.test(msg)) {
       retryable = true;
     }
     return { data: null, error: msg, retryable };
