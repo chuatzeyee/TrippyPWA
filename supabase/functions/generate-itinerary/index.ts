@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -9,113 +10,93 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+const FETCH_TIMEOUT = 120_000;
 
-  try {
-    if (!GEMINI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "GEMINI_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+function buildPromptAndSchema(wizardState: any) {
+  const dest = wizardState.multiCity && wizardState.destinations?.length > 0
+    ? wizardState.destinations.map((d: any) => d.name).join(", ")
+    : wizardState.destination?.name;
 
-    const wizardState = await req.json();
+  const dateInfo = wizardState.dates?.start
+    ? `Fixed dates: ${wizardState.dates.start} to ${wizardState.dates.end}`
+    : `Flexible: approximately ${wizardState.dates?.duration || 7} days, ${wizardState.dates?.season || "any season"}`;
 
-    if (!wizardState?.destination?.name && !(wizardState?.destinations?.length > 0)) {
-      return new Response(
-        JSON.stringify({ error: "Destination is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+  const days = wizardState.dates?.duration || (
+    wizardState.dates?.start && wizardState.dates?.end
+      ? Math.round((new Date(wizardState.dates.end).getTime() - new Date(wizardState.dates.start).getTime()) / 86400000) + 1
+      : 7
+  );
 
-    const dest = wizardState.multiCity && wizardState.destinations?.length > 0
-      ? wizardState.destinations.map((d: any) => d.name).join(", ")
-      : wizardState.destination?.name;
+  const currency = wizardState.destination?.currencyCode || "USD";
+  const currencySymbol = wizardState.destination?.currencySymbol || "$";
+  const budget = wizardState.budget?.dailyAmount || 100;
+  const travelers = wizardState.travelers || 1;
 
-    const dateInfo = wizardState.dates?.start
-      ? `Fixed dates: ${wizardState.dates.start} to ${wizardState.dates.end}`
-      : `Flexible: approximately ${wizardState.dates?.duration || 7} days, ${wizardState.dates?.season || "any season"}`;
+  const homeCity = wizardState.profile?.homeCity || "";
+  const homeCountry = wizardState.profile?.homeCountry || "";
+  const departureCity = wizardState.departureCity || homeCity;
 
-    const days = wizardState.dates?.duration || (
-      wizardState.dates?.start && wizardState.dates?.end
-        ? Math.round((new Date(wizardState.dates.end).getTime() - new Date(wizardState.dates.start).getTime()) / 86400000) + 1
-        : 7
-    );
+  const accomType = wizardState.accommodation?.type || "hotel";
+  const stars = wizardState.accommodation?.stars || 0;
+  const priorities = wizardState.accommodation?.priorities?.join(", ") || "none specified";
+  const accomSettled = !!wizardState.accommodation?.settled;
+  const accomAddress = wizardState.accommodation?.hotelAddress || "";
+  const accomCheckIn = wizardState.accommodation?.checkInDate || "";
 
-    const currency = wizardState.destination?.currencyCode || "USD";
-    const currencySymbol = wizardState.destination?.currencySymbol || "$";
-    const budget = wizardState.budget?.dailyAmount || 100;
-    const travelers = wizardState.travelers || 1;
+  const flightsSettled = !!wizardState.flights?.settled;
+  const settledFlightNumber = wizardState.flights?.flightNumber || "";
+  const settledArrivalDate = wizardState.flights?.arrivalDate || "";
 
-    const homeCity = wizardState.profile?.homeCity || "";
-    const homeCountry = wizardState.profile?.homeCountry || "";
-    const departureCity = wizardState.departureCity || homeCity;
-    const isNomad = wizardState.profile?.isNomad || false;
+  const destName = wizardState.multiCity
+    ? (wizardState.destinations?.[0]?.name || "")
+    : (wizardState.destination?.name || "");
+  const isSameCity = departureCity && destName
+    && departureCity.toLowerCase() === destName.toLowerCase();
 
-    const accomType = wizardState.accommodation?.type || "hotel";
-    const stars = wizardState.accommodation?.stars || 0;
-    const priorities = wizardState.accommodation?.priorities?.join(", ") || "none specified";
-    const accomSettled = !!wizardState.accommodation?.settled;
-    const accomAddress = wizardState.accommodation?.hotelAddress || "";
-    const accomCheckIn = wizardState.accommodation?.checkInDate || "";
+  const transportMode = wizardState.transport?.mode || null;
+  const isNearbyTrip = !!transportMode && !isSameCity;
+  const fareClass = wizardState.flights?.fareClass || "economy";
+  const connectionPref = wizardState.flights?.connectionPref || "any";
+  const transportLabel: Record<string, string> = {
+    ferry: "ferry", bus: "bus / coach", train: "train / rail", drive: "self-drive / car rental"
+  };
 
-    const flightsSettled = !!wizardState.flights?.settled;
-    const settledFlightNumber = wizardState.flights?.flightNumber || "";
-    const settledArrivalDate = wizardState.flights?.arrivalDate || "";
+  const paceMap: Record<number, string> = { 1: "very relaxed", 2: "relaxed", 3: "balanced", 4: "active", 5: "packed" };
+  const paceVal = wizardState.style?.pace || 3;
+  const pace = paceMap[paceVal] || "balanced";
 
-    const destName = wizardState.multiCity
-      ? (wizardState.destinations?.[0]?.name || "")
-      : (wizardState.destination?.name || "");
-    const isSameCity = departureCity && destName
-      && departureCity.toLowerCase() === destName.toLowerCase();
+  const activityCountMap: Record<number, string> = {
+    1: "5-6 activities per day with generous breaks and free time",
+    2: "6-7 activities per day with comfortable spacing",
+    3: "7-9 activities per day with moderate pacing",
+    4: "9-11 activities per day, efficiently scheduled",
+    5: "11-14 activities per day, hour-by-hour packed schedule"
+  };
+  const activityGuidance = activityCountMap[paceVal] || activityCountMap[3];
 
-    const transportMode = wizardState.transport?.mode || null;
-    const isNearbyTrip = !!transportMode && !isSameCity;
-    const fareClass = wizardState.flights?.fareClass || "economy";
-    const connectionPref = wizardState.flights?.connectionPref || "any";
-    const transportLabel: Record<string, string> = {
-      ferry: "ferry", bus: "bus / coach", train: "train / rail", drive: "self-drive / car rental"
-    };
+  const interests = wizardState.style?.activities?.join(", ") || "general sightseeing";
 
-    const paceMap: Record<number, string> = { 1: "very relaxed", 2: "relaxed", 3: "balanced", 4: "active", 5: "packed" };
-    const paceVal = wizardState.style?.pace || 3;
-    const pace = paceMap[paceVal] || "balanced";
+  const nightlifeVal = wizardState.style?.nightlife || 3;
+  const nightlife = nightlifeVal >= 4 ? "Include evening/nightlife activities until late (10-11 PM)." : nightlifeVal <= 2 ? "Early evenings preferred, wrap up by 8-9 PM." : "";
 
-    const activityCountMap: Record<number, string> = {
-      1: "5-6 activities per day with generous breaks and free time",
-      2: "6-7 activities per day with comfortable spacing",
-      3: "7-9 activities per day with moderate pacing",
-      4: "9-11 activities per day, efficiently scheduled",
-      5: "11-14 activities per day, hour-by-hour packed schedule"
-    };
-    const activityGuidance = activityCountMap[paceVal] || activityCountMap[3];
+  const foodVal = wizardState.style?.food || 3;
+  const foodStyle = foodVal >= 4 ? "Recommend upscale restaurants and fine dining." : foodVal <= 2 ? "Focus on local street food, markets, and casual eateries." : "Mix of casual and nice restaurants.";
 
-    const interests = wizardState.style?.activities?.join(", ") || "general sightseeing";
+  const explorationVal = wizardState.style?.exploration || 3;
+  const exploration = explorationVal >= 4 ? "Prioritize hidden gems, local neighborhoods, and off-the-beaten-path spots over tourist attractions." : explorationVal <= 2 ? "Focus on must-see landmarks and popular tourist attractions." : "Balance tourist highlights with local discoveries.";
 
-    const nightlifeVal = wizardState.style?.nightlife || 3;
-    const nightlife = nightlifeVal >= 4 ? "Include evening/nightlife activities until late (10-11 PM)." : nightlifeVal <= 2 ? "Early evenings preferred, wrap up by 8-9 PM." : "";
+  const freeDays = Array.isArray(wizardState.dates?.freeDays) ? wizardState.dates.freeDays : [];
+  const freeDayNote = freeDays.length > 0
+    ? `\n- FREE/WORK DAYS: The traveler has commitments ONLY on these specific dates: ${freeDays.join(", ")}. Keep ONLY these exact dates very light — only suggest a breakfast spot, a lunch option, and an evening dinner/activity. Leave the rest of each free day open. All OTHER days must be full itinerary days with normal activity planning. Do NOT make any other day light.`
+    : "";
 
-    const foodVal = wizardState.style?.food || 3;
-    const foodStyle = foodVal >= 4 ? "Recommend upscale restaurants and fine dining." : foodVal <= 2 ? "Focus on local street food, markets, and casual eateries." : "Mix of casual and nice restaurants.";
+  const extras: string[] = [];
+  if (wizardState.summary?.mustDo) extras.push(`Must-do: ${wizardState.summary.mustDo}`);
+  if (wizardState.summary?.dietary) extras.push(`Dietary needs: ${wizardState.summary.dietary}`);
+  if (wizardState.summary?.avoid) extras.push(`Avoid: ${wizardState.summary.avoid}`);
+  if (wizardState.summary?.freeText) extras.push(`Additional notes: ${wizardState.summary.freeText}`);
 
-    const explorationVal = wizardState.style?.exploration || 3;
-    const exploration = explorationVal >= 4 ? "Prioritize hidden gems, local neighborhoods, and off-the-beaten-path spots over tourist attractions." : explorationVal <= 2 ? "Focus on must-see landmarks and popular tourist attractions." : "Balance tourist highlights with local discoveries.";
-
-    const freeDays = Array.isArray(wizardState.dates?.freeDays) ? wizardState.dates.freeDays : [];
-    const freeDayNote = freeDays.length > 0
-      ? `\n- FREE/WORK DAYS: The traveler has commitments ONLY on these specific dates: ${freeDays.join(", ")}. Keep ONLY these exact dates very light — only suggest a breakfast spot, a lunch option, and an evening dinner/activity. Leave the rest of each free day open. All OTHER days must be full itinerary days with normal activity planning. Do NOT make any other day light.`
-      : "";
-
-    const extras = [];
-    if (wizardState.summary?.mustDo) extras.push(`Must-do: ${wizardState.summary.mustDo}`);
-    if (wizardState.summary?.dietary) extras.push(`Dietary needs: ${wizardState.summary.dietary}`);
-    if (wizardState.summary?.avoid) extras.push(`Avoid: ${wizardState.summary.avoid}`);
-    if (wizardState.summary?.freeText) extras.push(`Additional notes: ${wizardState.summary.freeText}`);
-
-    const prompt = `Create a comprehensive hour-by-hour ${days}-day travel itinerary for ${dest}.
+  const prompt = `Create a comprehensive hour-by-hour ${days}-day travel itinerary for ${dest}.
 
 TRIP DETAILS:
 - ${dateInfo}
@@ -164,16 +145,7 @@ ${accomSettled && accomAddress
   : `13. Include "accommodation" with 2-3 hotel/apartment options at different price points matching the traveler's ${accomType} preference. Include name, neighborhood, price range, type, highlights, and a badge (Recommended, Best Value, Best Location, or Luxury Pick).`}
 14. Include "bookingChecklist" — scan every activity and identify which ones need advance booking (museum tickets, restaurant reservations, tours, shows). Group into "Must Book Ahead" (sells out or requires reservation) and "Good to Book" (walk-in possible but booking saves time). Include the day number and a practical booking note.`;
 
-    const geminiPayload = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }]
-        }
-      ],
-      systemInstruction: {
-        parts: [{
-          text: `You are a world-class travel planner who creates incredibly detailed, practical itineraries. Your itineraries read like a knowledgeable local friend guiding someone through the city hour by hour.
+  const systemPrompt = `You are a world-class travel planner who creates incredibly detailed, practical itineraries. Your itineraries read like a knowledgeable local friend guiding someone through the city hour by hour.
 
 Key principles:
 - Every activity has a specific start time and transport instructions from the previous location
@@ -186,254 +158,324 @@ Key principles:
 
 The "tripTitle" should be SHORT: just the city or region name (e.g. "Melbourne", "Tokyo", "Barcelona to Madrid"). Do NOT include duration, day count, or long descriptive subtitles.
 
-Respond ONLY with valid JSON matching the provided schema.`
-        }]
-      },
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
+Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON only.`;
+
+  const jsonSchema = {
+    tripTitle: "string",
+    days: [{
+      dayNumber: "integer",
+      date: "string (ISO 8601: YYYY-MM-DD)",
+      title: "string",
+      theme: "string",
+      weather: { condition: "string", highC: "integer", lowC: "integer" },
+      activities: [{
+        startTime: "string (24h: 09:00)",
+        timeSlot: "morning|afternoon|evening",
+        sortOrder: "integer",
+        title: "string",
+        description: "string (2-3 sentences)",
+        venueName: "string",
+        venueAddress: "string",
+        category: "string",
+        durationMinutes: "integer",
+        costAmount: "integer",
+        costCurrency: "string",
+        costNote: "string",
+        latitude: "number",
+        longitude: "number",
+        tips: "string",
+        gettingThere: "string",
+        transportMode: "string",
+        transportDuration: "string",
+        transportCost: "string",
+        transportOptions: [{ mode: "string", label: "string", duration: "string", cost: "string" }]
+      }]
+    }],
+    flights: { outbound: { airline: "string", flightNumber: "string", route: "string", duration: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } },
+    transport: { outbound: { operator: "string", mode: "string", route: "string", terminal: "string", duration: "string", frequency: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } },
+    accommodation: [{ name: "string", area: "string", priceRange: "string", type: "string", highlights: "string", badge: "string" }],
+    bookingChecklist: [{ group: "string", items: [{ label: "string", day: "integer", note: "string", url: "string (optional)" }] }]
+  };
+
+  const geminiSchema = {
+    type: "object" as const,
+    properties: {
+      tripTitle: { type: "string" },
+      days: {
+        type: "array",
+        items: {
           type: "object",
           properties: {
-            tripTitle: { type: "string" },
-            days: {
+            dayNumber: { type: "integer" },
+            date: { type: "string", description: "ISO 8601 date: YYYY-MM-DD" },
+            title: { type: "string" },
+            theme: { type: "string" },
+            weather: {
+              type: "object",
+              properties: {
+                condition: { type: "string" },
+                highC: { type: "integer" },
+                lowC: { type: "integer" }
+              },
+              required: ["condition", "highC", "lowC"]
+            },
+            activities: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  dayNumber: { type: "integer" },
-                  date: { type: "string", description: "ISO 8601 date: YYYY-MM-DD" },
-                  title: { type: "string" },
-                  theme: { type: "string" },
-                  weather: {
-                    type: "object",
-                    description: "Expected weather for this day",
-                    properties: {
-                      condition: { type: "string", description: "Weather condition: sunny, partly cloudy, cloudy, rainy, stormy, snowy" },
-                      highC: { type: "integer", description: "Expected high temperature in Celsius" },
-                      lowC: { type: "integer", description: "Expected low temperature in Celsius" }
-                    },
-                    required: ["condition", "highC", "lowC"]
-                  },
-                  activities: {
+                  startTime: { type: "string" }, timeSlot: { type: "string", enum: ["morning", "afternoon", "evening"] },
+                  sortOrder: { type: "integer" }, title: { type: "string" },
+                  description: { type: "string" }, venueName: { type: "string" },
+                  venueAddress: { type: "string" }, category: { type: "string" },
+                  durationMinutes: { type: "integer" }, costAmount: { type: "integer" },
+                  costCurrency: { type: "string" }, costNote: { type: "string" },
+                  latitude: { type: "number" }, longitude: { type: "number" },
+                  tips: { type: "string" }, gettingThere: { type: "string" },
+                  transportMode: { type: "string" }, transportDuration: { type: "string" },
+                  transportCost: { type: "string" },
+                  transportOptions: {
                     type: "array",
                     items: {
                       type: "object",
-                      properties: {
-                        startTime: { type: "string", description: "24h time e.g. 09:00, 14:30" },
-                        timeSlot: { type: "string", enum: ["morning", "afternoon", "evening"] },
-                        sortOrder: { type: "integer" },
-                        title: { type: "string" },
-                        description: { type: "string", description: "2-3 sentences about what makes this place special" },
-                        venueName: { type: "string" },
-                        venueAddress: { type: "string" },
-                        category: { type: "string" },
-                        durationMinutes: { type: "integer" },
-                        costAmount: { type: "integer" },
-                        costCurrency: { type: "string" },
-                        costNote: { type: "string" },
-                        latitude: { type: "number" },
-                        longitude: { type: "number" },
-                        tips: { type: "string" },
-                        gettingThere: { type: "string", description: "One-line summary of recommended transport, e.g. 'Tram 96, 15 min, A$5'" },
-                        transportMode: { type: "string", description: "Primary mode: walk, tram, bus, train, taxi, uber, ferry, drive" },
-                        transportDuration: { type: "string", description: "e.g. 10 min, 25 min" },
-                        transportCost: { type: "string", description: "e.g. Free, A$5, included in day pass" },
-                        transportOptions: {
-                          type: "array",
-                          description: "Up to 3 transport alternatives: walk, public transit, private hire",
-                          items: {
-                            type: "object",
-                            properties: {
-                              mode: { type: "string", description: "Transport mode: walk, tram, bus, metro, mrt, train, taxi, uber, grab, gojek, bolt, ferry, bicycle" },
-                              label: { type: "string", description: "Human-readable route with from/to stations, e.g. 'MRT Downtown Line from Bugis to Bayfront', 'Tram 96 from Bourke St to Flinders', 'Walk along Collins Street'" },
-                              duration: { type: "string", description: "e.g. 8 min, 15 min" },
-                              cost: { type: "string", description: "e.g. Free, A$5, A$12-15" }
-                            },
-                            required: ["mode", "label", "duration", "cost"]
-                          }
-                        }
-                      },
-                      required: ["startTime", "timeSlot", "sortOrder", "title", "description", "venueName", "category", "durationMinutes", "costAmount", "costCurrency"]
+                      properties: { mode: { type: "string" }, label: { type: "string" }, duration: { type: "string" }, cost: { type: "string" } },
+                      required: ["mode", "label", "duration", "cost"]
                     }
                   }
                 },
-                required: ["dayNumber", "date", "title", "activities"]
-              }
-            },
-            ...(isNearbyTrip ? {
-              transport: {
-                type: "object",
-                description: `Suggested ${transportLabel[transportMode] || "transport"} options for this nearby trip`,
-                properties: {
-                  outbound: {
-                    type: "object",
-                    properties: {
-                      operator: { type: "string", description: "Transport operator name, e.g. Batam Fast, KLIA Express, StarMart" },
-                      mode: { type: "string", description: "ferry, bus, train, or drive" },
-                      route: { type: "string", description: "e.g. HarbourFront → Batam Centre" },
-                      terminal: { type: "string", description: "Departure terminal or station name" },
-                      duration: { type: "string", description: "e.g. 1h 15m" },
-                      frequency: { type: "string", description: "e.g. Every 30 min, 4 daily departures" },
-                      priceRange: { type: "string", description: "e.g. S$25-40" },
-                      tips: { type: "string" }
-                    },
-                    required: ["operator", "mode", "route", "duration", "priceRange"]
-                  },
-                  inbound: {
-                    type: "object",
-                    properties: {
-                      operator: { type: "string" },
-                      mode: { type: "string" },
-                      route: { type: "string" },
-                      terminal: { type: "string" },
-                      duration: { type: "string" },
-                      frequency: { type: "string" },
-                      priceRange: { type: "string" },
-                      tips: { type: "string" }
-                    },
-                    required: ["operator", "mode", "route", "duration", "priceRange"]
-                  }
-                },
-                required: ["outbound", "inbound"]
-              }
-            } : {
-              flights: {
-                type: "object",
-                description: "Suggested flight options for this trip",
-                properties: {
-                  outbound: {
-                    type: "object",
-                    properties: {
-                      airline: { type: "string" },
-                      flightNumber: { type: "string", description: "e.g. SQ237, QF9, JL3" },
-                      route: { type: "string", description: "e.g. SIN → MEL" },
-                      duration: { type: "string", description: "e.g. 7h 15m" },
-                      priceRange: { type: "string", description: "e.g. $400-600" },
-                      tips: { type: "string", description: "Booking tips, best time to book, etc." }
-                    },
-                    required: ["airline", "flightNumber", "route", "duration", "priceRange"]
-                  },
-                  inbound: {
-                    type: "object",
-                    properties: {
-                      airline: { type: "string" },
-                      flightNumber: { type: "string", description: "e.g. SQ238, QF10" },
-                      route: { type: "string" },
-                      duration: { type: "string" },
-                      priceRange: { type: "string" },
-                      tips: { type: "string" }
-                    },
-                    required: ["airline", "flightNumber", "route", "duration", "priceRange"]
-                  }
-                },
-                required: ["outbound", "inbound"]
-              }
-            }),
-            accommodation: {
-              type: "array",
-              description: "2-3 accommodation options at different price points",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  area: { type: "string", description: "Neighborhood, e.g. CBD, Shibuya" },
-                  priceRange: { type: "string", description: "e.g. $120-200/night" },
-                  type: { type: "string", description: "e.g. boutique hotel, apartment, hostel" },
-                  highlights: { type: "string", description: "Key features, 1-2 sentences" },
-                  badge: { type: "string", description: "One of: Recommended, Best Value, Best Location, Luxury Pick" }
-                },
-                required: ["name", "area", "priceRange", "type", "highlights", "badge"]
-              }
-            },
-            bookingChecklist: {
-              type: "array",
-              description: "Items that need advance booking, grouped by priority",
-              items: {
-                type: "object",
-                properties: {
-                  group: { type: "string", description: "Group name: Must Book Ahead, Good to Book, No Booking Needed" },
-                  items: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        label: { type: "string", description: "Activity or restaurant name" },
-                        day: { type: "integer", description: "Which day number this is on" },
-                        note: { type: "string", description: "Booking tip, e.g. 'Sells out weeks ahead', 'Walk-in OK but long wait'" },
-                        url: { type: "string", description: "Official booking URL if known" }
-                      },
-                      required: ["label", "day", "note"]
-                    }
-                  }
-                },
-                required: ["group", "items"]
+                required: ["startTime", "timeSlot", "sortOrder", "title", "description", "venueName", "category", "durationMinutes", "costAmount", "costCurrency"]
               }
             }
           },
-          required: ["tripTitle", "days"]
-        },
-        temperature: 0.7
+          required: ["dayNumber", "date", "title", "activities"]
+        }
+      },
+      ...(isNearbyTrip ? {
+        transport: {
+          type: "object",
+          properties: {
+            outbound: { type: "object", properties: { operator: { type: "string" }, mode: { type: "string" }, route: { type: "string" }, terminal: { type: "string" }, duration: { type: "string" }, frequency: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["operator", "mode", "route", "duration", "priceRange"] },
+            inbound: { type: "object", properties: { operator: { type: "string" }, mode: { type: "string" }, route: { type: "string" }, terminal: { type: "string" }, duration: { type: "string" }, frequency: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["operator", "mode", "route", "duration", "priceRange"] }
+          },
+          required: ["outbound", "inbound"]
+        }
+      } : {
+        flights: {
+          type: "object",
+          properties: {
+            outbound: { type: "object", properties: { airline: { type: "string" }, flightNumber: { type: "string" }, route: { type: "string" }, duration: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["airline", "flightNumber", "route", "duration", "priceRange"] },
+            inbound: { type: "object", properties: { airline: { type: "string" }, flightNumber: { type: "string" }, route: { type: "string" }, duration: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["airline", "flightNumber", "route", "duration", "priceRange"] }
+          },
+          required: ["outbound", "inbound"]
+        }
+      }),
+      accommodation: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { name: { type: "string" }, area: { type: "string" }, priceRange: { type: "string" }, type: { type: "string" }, highlights: { type: "string" }, badge: { type: "string" } },
+          required: ["name", "area", "priceRange", "type", "highlights", "badge"]
+        }
+      },
+      bookingChecklist: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { group: { type: "string" }, items: { type: "array", items: { type: "object", properties: { label: { type: "string" }, day: { type: "integer" }, note: { type: "string" }, url: { type: "string" } }, required: ["label", "day", "note"] } } },
+          required: ["group", "items"]
+        }
       }
-    };
+    },
+    required: ["tripTitle", "days"]
+  };
 
-    const MAX_RETRIES = 3;
-    const RETRY_DELAYS = [5000, 10000, 20000];
-    let geminiRes: Response | null = null;
+  return { prompt, systemPrompt, jsonSchema, geminiSchema };
+}
 
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      geminiRes = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+async function callMistral(prompt: string, systemPrompt: string, jsonSchema: any): Promise<{ data: any; error: string | null }> {
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [5000, 10000, 20000];
+
+  const schemaInstruction = `\n\nYou MUST return a JSON object matching this exact structure:\n${JSON.stringify(jsonSchema, null, 2)}\n\nReturn ONLY raw JSON. No markdown fences, no explanation.`;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetchWithTimeout("https://api.mistral.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${MISTRAL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "mistral-small-latest",
+          messages: [
+            { role: "system", content: systemPrompt + schemaInstruction },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      }, FETCH_TIMEOUT);
+
+      if (res.status === 429 || res.status === 503) {
+        console.error(`Mistral ${res.status} on attempt ${attempt + 1}`);
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+          continue;
+        }
+        const errText = await res.text();
+        return { data: null, error: `Mistral ${res.status}: ${errText.substring(0, 200)}` };
+      }
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("Mistral API error:", errText);
+        return { data: null, error: `Mistral ${res.status}: ${errText.substring(0, 200)}` };
+      }
+
+      const json = await res.json();
+      const content = json.choices?.[0]?.message?.content;
+      if (!content) return { data: null, error: "No content from Mistral" };
+
+      const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+      const parsed = JSON.parse(cleaned);
+      if (!parsed.days || !Array.isArray(parsed.days)) return { data: null, error: "Mistral returned incomplete itinerary" };
+
+      return { data: parsed, error: null };
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        console.error(`Mistral timeout on attempt ${attempt + 1}`);
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+          continue;
+        }
+        return { data: null, error: "Mistral request timed out" };
+      }
+      return { data: null, error: `Mistral error: ${err.message || "Unknown"}` };
+    }
+  }
+
+  return { data: null, error: "Mistral: all retries exhausted" };
+}
+
+async function callGemini(prompt: string, systemPrompt: string, geminiSchema: any): Promise<{ data: any; error: string | null }> {
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [5000, 10000, 20000];
+
+  const payload = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    systemInstruction: { parts: [{ text: systemPrompt + "\nRespond ONLY with valid JSON matching the provided schema." }] },
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: geminiSchema,
+      temperature: 0.7
+    }
+  };
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetchWithTimeout(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(geminiPayload)
-      });
+        body: JSON.stringify(payload)
+      }, FETCH_TIMEOUT);
 
-      if (geminiRes.status !== 503 || attempt === MAX_RETRIES - 1) break;
-      console.log(`Gemini 503 on attempt ${attempt + 1}, retrying in ${RETRY_DELAYS[attempt]}ms...`);
-      await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+      if (res.status === 429 || res.status === 503) {
+        console.error(`Gemini ${res.status} on attempt ${attempt + 1}`);
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+          continue;
+        }
+        const errText = await res.text();
+        return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}` };
+      }
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("Gemini API error:", errText);
+        return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}` };
+      }
+
+      const geminiData = await res.json();
+      const textContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!textContent) return { data: null, error: "No content from Gemini" };
+
+      const cleaned = textContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+      const parsed = JSON.parse(cleaned);
+      if (!parsed.days || !Array.isArray(parsed.days)) return { data: null, error: "Gemini returned incomplete itinerary" };
+
+      return { data: parsed, error: null };
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        console.error(`Gemini timeout on attempt ${attempt + 1}`);
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+          continue;
+        }
+        return { data: null, error: "Gemini request timed out" };
+      }
+      return { data: null, error: `Gemini error: ${err.message || "Unknown"}` };
+    }
+  }
+
+  return { data: null, error: "Gemini: all retries exhausted" };
+}
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    if (!MISTRAL_API_KEY && !GEMINI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "No AI provider configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    if (!geminiRes!.ok) {
-      const errText = await geminiRes!.text();
-      console.error("Gemini API error:", errText);
-      let detail = "";
-      try { detail = JSON.parse(errText)?.error?.message || errText.substring(0, 200); } catch { detail = errText.substring(0, 200); }
-      const retryable = geminiRes!.status === 503 || geminiRes!.status === 429;
+    const wizardState = await req.json();
+
+    if (!wizardState?.destination?.name && !(wizardState?.destinations?.length > 0)) {
       return new Response(
-        JSON.stringify({ error: `Gemini ${geminiRes!.status}: ${detail}`, retryable }),
+        JSON.stringify({ error: "Destination is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { prompt, systemPrompt, jsonSchema, geminiSchema } = buildPromptAndSchema(wizardState);
+
+    let result: { data: any; error: string | null } = { data: null, error: null };
+    let provider = "";
+
+    if (MISTRAL_API_KEY) {
+      provider = "Mistral";
+      console.log("Trying Mistral (primary)...");
+      result = await callMistral(prompt, systemPrompt, jsonSchema);
+    }
+
+    if (!result.data && GEMINI_API_KEY) {
+      if (provider) console.log(`${provider} failed: ${result.error}. Falling back to Gemini...`);
+      provider = "Gemini";
+      result = await callGemini(prompt, systemPrompt, geminiSchema);
+    }
+
+    if (!result.data) {
+      return new Response(
+        JSON.stringify({ error: result.error || "All AI providers failed", retryable: true }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const geminiData = await geminiRes!.json();
-    const textContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!textContent) {
-      return new Response(
-        JSON.stringify({ error: "No content returned from AI" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    let itinerary;
-    try {
-      itinerary = JSON.parse(textContent);
-    } catch {
-      console.error("Failed to parse Gemini JSON:", textContent.substring(0, 500));
-      return new Response(
-        JSON.stringify({ error: "Invalid response format from AI" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!itinerary.days || !Array.isArray(itinerary.days)) {
-      return new Response(
-        JSON.stringify({ error: "AI returned incomplete itinerary" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
+    console.log(`Itinerary generated via ${provider}`);
     return new Response(
-      JSON.stringify(itinerary),
+      JSON.stringify(result.data),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
