@@ -399,13 +399,15 @@
 }
 
 .landing-hl-city {
-  display: block;
+  display: flex;
+  justify-content: center;
+  gap: 3px;
   font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
+  letter-spacing: 0.02em;
   color: var(--terracotta);
-  margin: 0.2em 0 0.1em;
+  min-height: 1.3em;
+  margin: 0.25em 0 0.15em;
 }
 
 .landing-hl-accent {
