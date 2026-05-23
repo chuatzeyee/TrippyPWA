@@ -10,7 +10,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FETCH_TIMEOUT = 120_000;
+const FETCH_TIMEOUT = 140_000;
 
 function buildPromptAndSchema(wizardState: any) {
   const dest = wizardState.multiCity && wizardState.destinations?.length > 0
@@ -320,8 +320,8 @@ function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Pr
 }
 
 async function callMistral(prompt: string, systemPrompt: string, jsonSchema: any): Promise<{ data: any; error: string | null }> {
-  const MAX_RETRIES = 3;
-  const RETRY_DELAYS = [5000, 10000, 20000];
+  const MAX_RETRIES = 1;
+  const RETRY_DELAYS = [5000];
 
   const schemaInstruction = `\n\nYou MUST return a JSON object matching this exact structure:\n${JSON.stringify(jsonSchema, null, 2)}\n\nReturn ONLY raw JSON. No markdown fences, no explanation.`;
 
@@ -386,8 +386,8 @@ async function callMistral(prompt: string, systemPrompt: string, jsonSchema: any
 }
 
 async function callGemini(prompt: string, systemPrompt: string, geminiSchema: any): Promise<{ data: any; error: string | null }> {
-  const MAX_RETRIES = 3;
-  const RETRY_DELAYS = [5000, 10000, 20000];
+  const MAX_RETRIES = 1;
+  const RETRY_DELAYS: number[] = [];
 
   const payload = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -395,7 +395,8 @@ async function callGemini(prompt: string, systemPrompt: string, geminiSchema: an
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: geminiSchema,
-      temperature: 0.7
+      temperature: 0.7,
+      thinkingConfig: { thinkingBudget: 1024 }
     }
   };
 
@@ -475,16 +476,14 @@ serve(async (req: Request) => {
     let result: { data: any; error: string | null } = { data: null, error: null };
     let provider = "";
 
-    if (MISTRAL_API_KEY) {
-      provider = "Mistral";
-      console.log("Trying Mistral (primary)...");
-      result = await callMistral(prompt, systemPrompt, jsonSchema);
-    }
-
-    if (!result.data && GEMINI_API_KEY) {
-      if (provider) console.log(`${provider} failed: ${result.error}. Falling back to Gemini...`);
+    if (GEMINI_API_KEY) {
       provider = "Gemini";
+      console.log("Trying Gemini (primary)...");
       result = await callGemini(prompt, systemPrompt, geminiSchema);
+    } else if (MISTRAL_API_KEY) {
+      provider = "Mistral";
+      console.log("Trying Mistral (no Gemini key)...");
+      result = await callMistral(prompt, systemPrompt, jsonSchema);
     }
 
     if (!result.data) {
