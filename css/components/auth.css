@@ -103,3 +103,29 @@
   background: rgba(229, 225, 216, 0.05);
   color: var(--ink);
 }
+
+/* ===== Light Mode ===== */
+[data-theme="light"] .auth-btn {
+  border-color: rgba(44, 42, 37, 0.12);
+}
+
+[data-theme="light"] .auth-btn:hover {
+  border-color: rgba(44, 42, 37, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .auth-avatar {
+  border-color: rgba(44, 42, 37, 0.12);
+}
+
+[data-theme="light"] .auth-dropdown {
+  border-color: rgba(44, 42, 37, 0.1);
+}
+
+[data-theme="light"] .auth-dropdown-name {
+  border-bottom-color: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .auth-dropdown-item:hover {
+  background: rgba(44, 42, 37, 0.04);
+}

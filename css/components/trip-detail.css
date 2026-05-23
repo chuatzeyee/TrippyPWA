@@ -2675,3 +2675,45 @@
     padding-top: calc(env(safe-area-inset-top, 12px) + var(--sp-4));
   }
 }
+
+/* ===== Light Mode ===== */
+[data-theme="light"] .td-back:hover,
+[data-theme="light"] .td-back-inline:hover {
+  background: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .td-now-label {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(74, 150, 132, 0.3);
+}
+
+[data-theme="light"] .td-activity-card:active {
+  background: rgba(44, 42, 37, 0.03);
+}
+
+[data-theme="light"] .td-activity-icon,
+[data-theme="light"] .td-getting-there-chip {
+  background: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .td-tab:hover {
+  background: rgba(44, 42, 37, 0.04);
+}
+
+[data-theme="light"] .td-booking-item,
+[data-theme="light"] .td-savings-tip {
+  background: rgba(44, 42, 37, 0.03);
+}
+
+[data-theme="light"] .td-spending-card,
+[data-theme="light"] .td-budget-ring-card {
+  background: rgba(44, 42, 37, 0.03);
+}
+
+[data-theme="light"] .td-accom-card {
+  background: rgba(44, 42, 37, 0.03);
+}
+
+[data-theme="light"] .td-flight-card {
+  background: rgba(44, 42, 37, 0.03);
+}
