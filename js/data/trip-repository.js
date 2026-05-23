@@ -1,6 +1,44 @@
 import { supabase, getUser } from '../lib/supabase.js';
 import { logger } from '../lib/logger.js';
 
+function normDay(d) {
+  return {
+    dayNumber: d.dayNumber ?? d.day_number,
+    date: d.date,
+    title: d.title,
+    theme: d.theme,
+    weather: d.weather,
+    activities: (d.activities || []).map(normActivity)
+  };
+}
+
+function normActivity(a) {
+  return {
+    timeSlot: a.timeSlot ?? a.time_slot ?? 'morning',
+    sortOrder: a.sortOrder ?? a.sort_order ?? 0,
+    startTime: a.startTime ?? a.start_time ?? '',
+    title: a.title ?? '',
+    description: a.description ?? '',
+    venueName: a.venueName ?? a.venue_name ?? '',
+    venueAddress: a.venueAddress ?? a.venue_address ?? '',
+    placeId: a.placeId ?? a.place_id ?? '',
+    category: a.category ?? 'culture',
+    durationMinutes: a.durationMinutes ?? a.duration_minutes ?? 60,
+    costAmount: a.costAmount ?? a.cost_amount ?? 0,
+    costCurrency: a.costCurrency ?? a.cost_currency ?? '',
+    costNote: a.costNote ?? a.cost_note ?? '',
+    latitude: a.latitude ?? null,
+    longitude: a.longitude ?? null,
+    bookingUrl: a.bookingUrl ?? a.booking_url ?? '',
+    tips: a.tips ?? '',
+    gettingThere: a.gettingThere ?? a.getting_there ?? '',
+    transportMode: a.transportMode ?? a.transport_mode ?? '',
+    transportDuration: a.transportDuration ?? a.transport_duration ?? '',
+    transportCost: a.transportCost ?? a.transport_cost ?? '',
+    transportOptions: a.transportOptions ?? a.transport_options ?? []
+  };
+}
+
 export async function fetchAllTrips() {
   const user = getUser();
   if (!user) return { data: [], error: 'Not authenticated' };
@@ -105,7 +143,8 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
   if (tripError) { logger.error('data', 'Trip insert failed', { error: tripError.message }); return { data: null, error: tripError.message }; }
 
   const dayErrors = [];
-  for (const day of itinerary.days) {
+  for (const rawDay of itinerary.days) {
+    const day = normDay(rawDay);
     let safeDate = null;
     if (day.date) {
       const parsed = new Date(day.date);
@@ -138,28 +177,28 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
     if (day.activities?.length > 0) {
       const activityRows = day.activities.map(a => ({
         day_id: dayRow.id,
-        time_slot: a.timeSlot || 'morning',
-        sort_order: a.sortOrder || 0,
-        start_time: a.startTime || '',
-        title: a.title || '',
-        description: a.description || '',
-        venue_name: a.venueName || '',
-        venue_address: a.venueAddress || '',
-        place_id: a.placeId || '',
-        category: a.category || 'culture',
-        duration_minutes: a.durationMinutes || 60,
+        time_slot: a.timeSlot,
+        sort_order: a.sortOrder,
+        start_time: a.startTime,
+        title: a.title,
+        description: a.description,
+        venue_name: a.venueName,
+        venue_address: a.venueAddress,
+        place_id: a.placeId,
+        category: a.category,
+        duration_minutes: a.durationMinutes,
         cost_amount: Math.round(a.costAmount || 0),
         cost_currency: a.costCurrency || wizardState.destination?.currencyCode || 'USD',
-        cost_note: a.costNote || '',
-        latitude: a.latitude || null,
-        longitude: a.longitude || null,
-        booking_url: a.bookingUrl || '',
-        tips: a.tips || '',
-        getting_there: a.gettingThere || '',
-        transport_mode: a.transportMode || '',
-        transport_duration: a.transportDuration || '',
-        transport_cost: a.transportCost || '',
-        transport_options: a.transportOptions || []
+        cost_note: a.costNote,
+        latitude: a.latitude,
+        longitude: a.longitude,
+        booking_url: a.bookingUrl,
+        tips: a.tips,
+        getting_there: a.gettingThere,
+        transport_mode: a.transportMode,
+        transport_duration: a.transportDuration,
+        transport_cost: a.transportCost,
+        transport_options: a.transportOptions
       }));
 
       const { error: actError } = await supabase
@@ -206,7 +245,8 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
   }
 
   const dayErrors = [];
-  for (const day of itinerary.days) {
+  for (const rawDay of itinerary.days) {
+    const day = normDay(rawDay);
     let safeDate = null;
     if (day.date) {
       const parsed = new Date(day.date);
@@ -238,28 +278,28 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
     if (day.activities?.length > 0) {
       const activityRows = day.activities.map(a => ({
         day_id: dayRow.id,
-        time_slot: a.timeSlot || 'morning',
-        sort_order: a.sortOrder || 0,
-        start_time: a.startTime || '',
-        title: a.title || '',
-        description: a.description || '',
-        venue_name: a.venueName || '',
-        venue_address: a.venueAddress || '',
-        place_id: a.placeId || '',
-        category: a.category || 'culture',
-        duration_minutes: a.durationMinutes || 60,
+        time_slot: a.timeSlot,
+        sort_order: a.sortOrder,
+        start_time: a.startTime,
+        title: a.title,
+        description: a.description,
+        venue_name: a.venueName,
+        venue_address: a.venueAddress,
+        place_id: a.placeId,
+        category: a.category,
+        duration_minutes: a.durationMinutes,
         cost_amount: Math.round(a.costAmount || 0),
         cost_currency: a.costCurrency || wizardState.destination?.currencyCode || 'USD',
-        cost_note: a.costNote || '',
-        latitude: a.latitude || null,
-        longitude: a.longitude || null,
-        booking_url: a.bookingUrl || '',
-        tips: a.tips || '',
-        getting_there: a.gettingThere || '',
-        transport_mode: a.transportMode || '',
-        transport_duration: a.transportDuration || '',
-        transport_cost: a.transportCost || '',
-        transport_options: a.transportOptions || []
+        cost_note: a.costNote,
+        latitude: a.latitude,
+        longitude: a.longitude,
+        booking_url: a.bookingUrl,
+        tips: a.tips,
+        getting_there: a.gettingThere,
+        transport_mode: a.transportMode,
+        transport_duration: a.transportDuration,
+        transport_cost: a.transportCost,
+        transport_options: a.transportOptions
       }));
 
       const { error: actError } = await supabase
