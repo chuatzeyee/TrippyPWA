@@ -303,10 +303,31 @@
   margin-left: calc(50% - 50vw);
   min-height: calc(100dvh - 80px);
   overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(234, 88, 12, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(74, 150, 132, 0.04) 0%, transparent 50%);
+}
+
+.dashboard-empty::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23E5E1D8' fill-opacity='0.02'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23E5E1D8' fill-opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dashboard-empty::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 200px 60px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .landing-bg {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
@@ -315,8 +336,8 @@
 .landing-grid-dots {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(229, 225, 216, 0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-image: radial-gradient(rgba(229, 225, 216, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 /* ===== Hero ===== */
@@ -348,12 +369,7 @@
 .landing-logo-plane {
   color: var(--terracotta);
   flex-shrink: 0;
-  animation: planePulse 4s ease-in-out infinite;
-}
-
-@keyframes planePulse {
-  0%, 100% { filter: drop-shadow(0 0 0 rgba(234, 88, 12, 0)); transform: scale(1); }
-  50% { filter: drop-shadow(0 0 16px rgba(234, 88, 12, 0.3)); transform: scale(1.06); }
+  filter: drop-shadow(0 0 10px rgba(234, 88, 12, 0.25));
 }
 
 .landing-logo-flaps {
@@ -383,14 +399,13 @@
 }
 
 .landing-hl-city {
-  display: flex;
-  justify-content: center;
-  gap: 3px;
+  display: block;
   font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
-  min-height: 1.3em;
-  margin: 0.25em 0 0.15em;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  color: var(--terracotta);
+  margin: 0.2em 0 0.1em;
 }
 
 .landing-hl-accent {
@@ -558,21 +573,18 @@
 }
 
 .landing-feature {
-  background: var(--glass-bg);
-  border: 1px solid rgba(229, 225, 216, 0.06);
-  backdrop-filter: blur(8px);
+  background: rgba(37, 35, 32, 0.8);
+  border: 1px solid rgba(229, 225, 216, 0.08);
   border-radius: var(--r-lg);
   padding: var(--sp-6) var(--sp-4);
   text-align: center;
   transition: transform var(--duration-normal) var(--ease-out),
-              border-color var(--duration-normal) var(--ease-out),
-              box-shadow var(--duration-normal) var(--ease-out);
+              border-color var(--duration-normal) var(--ease-out);
 }
 
 .landing-feature:hover {
   transform: translateY(-4px);
-  border-color: rgba(234, 88, 12, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-color: rgba(234, 88, 12, 0.25);
 }
 
 .landing-feature-icon {
@@ -720,65 +732,62 @@
   color: var(--ink);
 }
 
-/* ===== Glitch Effect ===== */
+/* ===== Glitch Effect (static, no animation) ===== */
 .landing-glitch {
   position: relative;
   display: inline-block;
 }
 
-.landing-glitch::before,
+.landing-glitch::before {
+  content: attr(data-text);
+  position: absolute;
+  top: -1px;
+  left: 2px;
+  width: 100%;
+  height: 100%;
+  color: var(--teal);
+  clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%);
+  opacity: 0.15;
+  pointer-events: none;
+}
+
 .landing-glitch::after {
   content: attr(data-text);
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 1px;
+  left: -2px;
   width: 100%;
   height: 100%;
+  color: var(--terracotta);
+  clip-path: polygon(0 70%, 100% 70%, 100% 100%, 0 100%);
+  opacity: 0.2;
   pointer-events: none;
 }
 
-.landing-glitch::before {
-  color: var(--teal);
-  animation: glitch1 3s infinite linear alternate-reverse;
-  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+/* ===== Coordinates accent ===== */
+.landing-coords {
+  font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-ghost);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: var(--sp-6);
 }
 
-.landing-glitch::after {
-  color: var(--terracotta);
-  animation: glitch2 2.5s infinite linear alternate-reverse;
-  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
-}
-
-@keyframes glitch1 {
-  0%, 92% { transform: none; opacity: 0; }
-  93% { transform: translate(-3px, -1px); opacity: 0.7; }
-  94% { transform: translate(3px, 1px); opacity: 0.7; }
-  95% { transform: none; opacity: 0; }
-  96% { transform: translate(2px, -2px); opacity: 0.7; }
-  97% { transform: none; opacity: 0; }
-}
-
-@keyframes glitch2 {
-  0%, 94% { transform: none; opacity: 0; }
-  95% { transform: translate(3px, 2px); opacity: 0.6; }
-  96% { transform: translate(-2px, -1px); opacity: 0.6; }
-  97% { transform: none; opacity: 0; }
-}
-
-/* ===== Scanlines ===== */
+/* ===== Scanlines (scoped to hero only, not fixed) ===== */
 .landing-scanlines {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 2;
+  z-index: 1;
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
+    transparent 3px,
+    rgba(0, 0, 0, 0.02) 3px,
+    rgba(0, 0, 0, 0.02) 6px
   );
-  opacity: 0.6;
 }
 
 /* ===== Terminal cursor ===== */
@@ -976,7 +985,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-logo-plane { animation: none; }
   .landing-reveal { opacity: 1; transform: none; transition: none; }
   .skel-shimmer { animation: none; background: var(--surface-solid); }
   .landing-bg { transition: none; }
