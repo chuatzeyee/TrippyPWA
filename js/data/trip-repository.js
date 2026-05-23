@@ -170,9 +170,10 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
     }
   }
 
-  if (itinerary.flights || itinerary.accommodation || itinerary.bookingChecklist) {
+  if (itinerary.flights || itinerary.transport || itinerary.accommodation || itinerary.bookingChecklist) {
     const extras = {};
     if (itinerary.flights) extras.flights = itinerary.flights;
+    if (itinerary.transport) extras.transport = itinerary.transport;
     if (itinerary.accommodation) extras.accommodation = itinerary.accommodation;
     if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;
     await supabase
@@ -269,9 +270,10 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
     }
   }
 
-  if (itinerary.flights || itinerary.accommodation || itinerary.bookingChecklist || itinerary.savingsTips) {
+  if (itinerary.flights || itinerary.transport || itinerary.accommodation || itinerary.bookingChecklist || itinerary.savingsTips) {
     const extras = {};
     if (itinerary.flights) extras.flights = itinerary.flights;
+    if (itinerary.transport) extras.transport = itinerary.transport;
     if (itinerary.accommodation) extras.accommodation = itinerary.accommodation;
     if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;
     if (itinerary.savingsTips) extras.savingsTips = itinerary.savingsTips;
