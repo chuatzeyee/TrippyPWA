@@ -108,6 +108,34 @@ export async function fetchLogStats() {
   };
 }
 
+export async function fetchTripWizardState(tripId) {
+  const { data, error } = await supabase
+    .from('trips')
+    .select('id, wizard_state')
+    .eq('id', tripId)
+    .single();
+
+  return { data, error: error?.message || null };
+}
+
+export async function retryTripGeneration(tripId) {
+  const { data: trip, error: fetchErr } = await fetchTripWizardState(tripId);
+  if (fetchErr || !trip?.wizard_state) {
+    return { error: fetchErr || 'No wizard state found for this trip' };
+  }
+
+  const { error: statusErr } = await supabase
+    .from('trips')
+    .update({ status: 'generating' })
+    .eq('id', tripId);
+
+  if (statusErr) return { error: statusErr.message };
+
+  const { startGeneration } = await import('../services/generation-manager.js');
+  startGeneration(tripId, trip.wizard_state);
+  return { error: null };
+}
+
 export async function deleteOldLogs(daysToKeep = 90) {
   const cutoff = new Date(Date.now() - daysToKeep * 86400000).toISOString();
   const { error } = await supabase

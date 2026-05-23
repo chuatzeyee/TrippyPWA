@@ -1,5 +1,5 @@
 import { navigate } from '../router.js';
-import { isAdmin, fetchAdminStats, fetchAllUsers, fetchAllTrips, updateUserRole, deleteUserTrip } from '../data/admin-repository.js';
+import { isAdmin, fetchAdminStats, fetchAllUsers, fetchAllTrips, updateUserRole, deleteUserTrip, retryTripGeneration } from '../data/admin-repository.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from '../components/toast.js';
 import { renderLogsPanel, bindLogEvents, loadLogs, loadLogStats, stopAutoRefresh } from './admin-logs.js';
@@ -188,6 +188,9 @@ function buildTripRow(t, owner) {
           <button class="adm-btn adm-btn--ghost adm-view-trip" data-trip-id="${t.id}" title="View trip">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
+          ${t.status === 'failed' || t.status === 'generating' ? `<button class="adm-btn adm-btn--retry adm-retry-trip" data-trip-id="${t.id}" title="Retry generation">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          </button>` : ''}
           <button class="adm-btn adm-btn--danger adm-delete-trip" data-trip-id="${t.id}" title="Delete trip">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
           </button>
@@ -502,6 +505,24 @@ export async function renderAdminDashboard() {
 
       const viewBtn = e.target.closest('.adm-view-trip');
       if (viewBtn) { e.preventDefault(); navigate(`/trip/${viewBtn.dataset.tripId}`); return; }
+
+      const retryBtn = e.target.closest('.adm-retry-trip');
+      if (retryBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const tripId = retryBtn.dataset.tripId;
+        retryBtn.disabled = true;
+        retryBtn.classList.add('adm-btn--spinning');
+        retryTripGeneration(tripId).then(({ error }) => {
+          retryBtn.classList.remove('adm-btn--spinning');
+          if (error) { showToast(`Retry failed: ${error}`, 'error'); retryBtn.disabled = false; return; }
+          showToast('Generation restarted', 'success');
+          const badge = retryBtn.closest('tr')?.querySelector('.adm-badge');
+          if (badge) { badge.textContent = 'generating'; badge.className = 'adm-badge ' + (STATUS_BADGES['generating'] || 'adm-badge--muted'); }
+          retryBtn.disabled = false;
+        });
+        return;
+      }
 
       const deleteBtn = e.target.closest('.adm-delete-trip');
       if (deleteBtn) {
