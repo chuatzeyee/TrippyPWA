@@ -301,18 +301,17 @@ function renderShell() {
       <div class="wizard-header">
         ${stepNum > 1
           ? '<button class="wizard-back btn btn--ghost btn--pill" data-wizard="back" aria-label="Go back">Back</button>'
-          : '<div style="width: 90px;"></div>'}
+          : '<div></div>'}
         <div class="wizard-header-center">
           <div class="wizard-progress">
             ${Array.from({ length: TOTAL_STEPS }, (_, i) => {
               const step = i + 1;
-              let cls = 'wizard-progress-dot';
-              if (step < stepNum) cls += ' wizard-progress-dot--done';
-              else if (step === stepNum) cls += ' wizard-progress-dot--active';
+              let cls = 'wizard-progress-seg';
+              if (step < stepNum) cls += ' wizard-progress-seg--done';
+              else if (step === stepNum) cls += ' wizard-progress-seg--active';
               return `<div class="${cls}"></div>`;
             }).join('')}
           </div>
-          <span class="wizard-step-count">Step ${stepNum} of ${totalVisible}</span>
         </div>
         <button class="wizard-close" data-wizard="close" aria-label="Close wizard">✕</button>
       </div>
