@@ -1,9 +1,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const adminClient = SUPABASE_URL && SUPABASE_SERVICE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+  : null;
+
+function logToDb(level: string, category: string, message: string, metadata: Record<string, unknown> = {}) {
+  if (!adminClient) return;
+  adminClient.from("app_logs").insert({
+    level,
+    category,
+    message,
+    metadata,
+    source: "edge",
+    user_id: (metadata.userId as string) || null,
+    trip_id: (metadata.tripId as string) || null,
+  }).then(() => {}).catch(() => {});
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -410,17 +430,20 @@ async function callGemini(prompt: string, systemPrompt: string, geminiSchema: an
 
       if (res.status === 429 || res.status === 503) {
         console.error(`Gemini ${res.status} on attempt ${attempt + 1}`);
+        logToDb("warn", "edge", `Gemini rate limited (${res.status})`, { provider: "Gemini", status: res.status, attempt: attempt + 1 });
         if (attempt < MAX_RETRIES - 1) {
           await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
           continue;
         }
         const errText = await res.text();
+        logToDb("error", "edge", `Gemini ${res.status} after retries`, { response: errText.substring(0, 300) });
         return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}` };
       }
 
       if (!res.ok) {
         const errText = await res.text();
         console.error("Gemini API error:", errText);
+        logToDb("error", "edge", `Gemini API error (${res.status})`, { status: res.status, response: errText.substring(0, 300) });
         return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}` };
       }
 
@@ -436,12 +459,14 @@ async function callGemini(prompt: string, systemPrompt: string, geminiSchema: an
     } catch (err: any) {
       if (err.name === "AbortError") {
         console.error(`Gemini timeout on attempt ${attempt + 1}`);
+        logToDb("error", "edge", "Gemini request timed out", { provider: "Gemini", attempt: attempt + 1, timeoutMs: FETCH_TIMEOUT });
         if (attempt < MAX_RETRIES - 1) {
           await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
           continue;
         }
         return { data: null, error: "Gemini request timed out" };
       }
+      logToDb("error", "edge", `Gemini unexpected error: ${err.message}`, { provider: "Gemini", error: err.message });
       return { data: null, error: `Gemini error: ${err.message || "Unknown"}` };
     }
   }
@@ -486,12 +511,21 @@ serve(async (req: Request) => {
       result = await callMistral(prompt, systemPrompt, jsonSchema);
     }
 
+    const dest = wizardState.multiCity
+      ? wizardState.destinations?.map((d: any) => d.name).join(", ")
+      : wizardState.destination?.name;
+
     if (!result.data) {
+      logToDb("error", "generation", `Itinerary generation failed via ${provider}`, { provider, destination: dest, error: result.error });
       return new Response(
         JSON.stringify({ error: result.error || "All AI providers failed", retryable: true }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const dayCount = result.data.days?.length || 0;
+    const actCount = result.data.days?.reduce((s: number, d: any) => s + (d.activities?.length || 0), 0) || 0;
+    logToDb("info", "generation", `Itinerary generated: ${dest} (${dayCount} days, ${actCount} activities)`, { provider, destination: dest, days: dayCount, activities: actCount });
 
     console.log(`Itinerary generated via ${provider}`);
     return new Response(
@@ -499,8 +533,9 @@ serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (err) {
+  } catch (err: any) {
     console.error("Edge function error:", err);
+    logToDb("error", "edge", "Uncaught edge function error", { error: err?.message, stack: err?.stack });
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

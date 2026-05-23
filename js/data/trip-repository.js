@@ -1,4 +1,5 @@
 import { supabase, getUser } from '../lib/supabase.js';
+import { logger } from '../lib/logger.js';
 
 export async function fetchAllTrips() {
   const user = getUser();
@@ -101,7 +102,7 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
     .select()
     .single();
 
-  if (tripError) return { data: null, error: tripError.message };
+  if (tripError) { logger.error('data', 'Trip insert failed', { error: tripError.message }); return { data: null, error: tripError.message }; }
 
   const dayErrors = [];
   for (const day of itinerary.days) {
@@ -129,7 +130,7 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
       .single();
 
     if (dayError) {
-      console.error(`itinerary_days insert failed for day ${day.dayNumber}:`, dayError, dayPayload);
+      logger.error('data', 'Itinerary day insert failed', { tripId: trip.id, dayNumber: day.dayNumber, error: dayError.message });
       dayErrors.push(`Day ${day.dayNumber}: ${dayError.message}`);
       continue;
     }

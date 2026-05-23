@@ -69,7 +69,7 @@
 /* Stat Cards */
 .adm-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--sp-4);
   margin-bottom: var(--sp-8);
 }
@@ -118,6 +118,11 @@
 .adm-stat-icon--amber {
   background: var(--amber-light);
   color: var(--amber);
+}
+
+.adm-stat-icon--error {
+  background: rgba(200, 82, 82, 0.14);
+  color: var(--error);
 }
 
 .adm-stat-body {
@@ -566,6 +571,163 @@
   font-style: italic;
 }
 
+/* Error tab count */
+.adm-tab-count--error {
+  background: rgba(200, 82, 82, 0.14);
+  color: var(--error);
+}
+
+/* ===== Logs Panel ===== */
+
+.adm-log-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.adm-log-filters {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.adm-log-select {
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+  font: var(--text-small);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--duration-fast);
+}
+
+.adm-log-select:focus {
+  border-color: var(--terracotta);
+}
+
+.adm-log-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.adm-log-auto-refresh {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.adm-log-auto-refresh input {
+  accent-color: var(--terracotta);
+}
+
+.adm-log-count {
+  font: var(--text-caption);
+  color: var(--ink-ghost);
+  margin-bottom: var(--sp-3);
+}
+
+.adm-log-table td {
+  font-size: 0.8125rem;
+}
+
+.adm-log-row--error td {
+  background: rgba(200, 82, 82, 0.06);
+}
+
+.adm-log-row--warn td {
+  background: rgba(196, 164, 60, 0.06);
+}
+
+.adm-log-time {
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+.adm-log-message {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-log-expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-ghost);
+  font-size: 0.75rem;
+  padding: var(--sp-1);
+  border-radius: var(--r-sm);
+  transition: color var(--duration-fast), background var(--duration-fast);
+}
+
+.adm-log-expand-btn:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.adm-log-detail-row td {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border);
+}
+
+.adm-log-detail {
+  background: var(--surface-inset);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.adm-log-detail-field {
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+.adm-log-detail-field strong {
+  color: var(--ink);
+}
+
+.adm-log-detail-json {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-secondary);
+  overflow-x: auto;
+  margin-top: var(--sp-1);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.adm-log-load-more {
+  display: block;
+  margin: var(--sp-4) auto 0;
+}
+
+.adm-log-purge {
+  color: var(--error);
+}
+
+.adm-log-purge:hover {
+  background: rgba(200, 82, 82, 0.14);
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {
@@ -584,7 +746,7 @@
   }
 
   .adm-stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--sp-3);
   }
 
@@ -642,7 +804,24 @@
 
 @media (max-width: 480px) {
   .adm-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .adm-log-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adm-log-filters {
+    flex-direction: column;
+  }
+
+  .adm-log-actions {
+    justify-content: space-between;
+  }
+
+  .adm-log-message {
+    max-width: 160px;
   }
 
   .adm-stat-card {

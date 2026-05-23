@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { saveTripWithItinerary } from '../data/trip-repository.js';
 import { fetchProfile } from '../data/profile-repository.js';
+import { logger } from '../lib/logger.js';
 
 const photoCache = new Map();
 
@@ -23,6 +24,7 @@ export async function generateItinerary(wizardState) {
       body: payload
     }));
   } catch (e) {
+    logger.error('generation', 'Edge Function network error', { error: e.message });
     return { data: null, error: `Network error: ${e.message}` };
   }
 
@@ -40,10 +42,12 @@ export async function generateItinerary(wizardState) {
     if (!retryable && /503|429|502|high demand|overloaded|non-2xx/i.test(msg)) {
       retryable = true;
     }
+    logger.error('generation', 'Edge Function error', { error: msg, retryable });
     return { data: null, error: msg, retryable };
   }
 
   if (!data?.days || !Array.isArray(data.days)) {
+    logger.warn('generation', 'Invalid itinerary format from Edge Function');
     return { data: null, error: 'Invalid itinerary format received' };
   }
 
@@ -70,7 +74,8 @@ export async function fetchPlacePhoto(placeId, maxWidth = 400) {
 
     photoCache.set(placeId, data.url);
     return data.url;
-  } catch {
+  } catch (e) {
+    logger.warn('data', 'Place photo fetch failed', { placeId, error: e?.message });
     photoCache.set(placeId, null);
     return null;
   }
@@ -94,7 +99,8 @@ export async function fetchPlacePhotoByQuery(query, location, maxWidth = 400) {
 
     photoCache.set(cacheKey, data.url);
     return data.url;
-  } catch {
+  } catch (e) {
+    logger.warn('data', 'Place photo query failed', { query, error: e?.message });
     photoCache.set(cacheKey, null);
     return null;
   }

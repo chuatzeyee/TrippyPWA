@@ -1,4 +1,5 @@
 import { supabase, getUser } from '../lib/supabase.js';
+import { logger } from '../lib/logger.js';
 
 export async function fetchProfile() {
   const user = getUser();
@@ -10,6 +11,7 @@ export async function fetchProfile() {
     .eq('id', user.id)
     .single();
 
+  if (error) logger.warn('profile', 'Profile fetch failed', { error: error.message });
   return { data, error: error?.message || null };
 }
 
@@ -21,6 +23,7 @@ export async function updateProfile(fields) {
     .from('profiles')
     .upsert({ id: user.id, ...fields });
 
+  if (error) logger.error('profile', 'Profile update failed', { error: error.message });
   return { error: error?.message || null };
 }
 
