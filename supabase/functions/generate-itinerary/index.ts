@@ -74,7 +74,7 @@ function buildPromptAndSchema(wizardState: any) {
     && departureCity.toLowerCase() === destName.toLowerCase();
 
   const transportMode = wizardState.transport?.mode || null;
-  const isNearbyTrip = !!transportMode && !isSameCity;
+  const isNearbyTrip = (!!transportMode || !!wizardState.isNearbyTrip) && !isSameCity;
   const fareClass = wizardState.flights?.fareClass || "economy";
   const connectionPref = wizardState.flights?.connectionPref || "any";
   const transportLabel: Record<string, string> = {
@@ -128,7 +128,7 @@ ${accomSettled && accomAddress
 ${isSameCity
   ? `- The traveler LIVES in ${destName}. This is a LOCAL exploration trip. Do NOT include any flights, inter-city transport, or arrival logistics. Start the itinerary directly with Day 1 activities.`
   : isNearbyTrip
-  ? `- This is a NEARBY trip — NO FLIGHTS. Primary transport: ${transportLabel[transportMode] || transportMode}. Suggest ${transportLabel[transportMode] || transportMode} options with schedules, operators, duration, and pricing instead of flights.`
+  ? `- This is a NEARBY trip — absolutely NO FLIGHTS. Do NOT invent, suggest, or mention any airline or flight — not even hypothetical ones. Primary transport: ${transportMode ? (transportLabel[transportMode] || transportMode) : "bus, train, or ferry (pick the most common option for this route)"}. Suggest realistic ground/sea transport options with schedules, operators, duration, and pricing.`
   : flightsSettled && settledFlightNumber
   ? `- FLIGHTS (PRE-BOOKED): The traveler has ALREADY booked flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight number and details for the inbound flight. Do NOT suggest a different airline or flight. For the return flight, suggest a realistic option from the same airline if possible.`
   : `- Flights: ${fareClass} class, ${connectionPref} connections`}
@@ -156,7 +156,7 @@ CRITICAL REQUIREMENTS:
 10. The timeSlot field should still categorize as morning/afternoon/evening for grouping.
 11. For EVERY day, include a "weather" object with the expected weather conditions for that day based on the destination, season, and travel dates. Include condition (e.g. "sunny", "partly cloudy", "rainy"), highC and lowC temperatures in Celsius.
 ${isNearbyTrip
-  ? `12. Include "transport" (NOT flights) with suggested outbound and inbound ${transportLabel[transportMode] || "transport"} options — include operator name, route, duration, schedule frequency, and pricing. For ferries include terminal names. For buses include bus operator and station. For trains include train service name and station.`
+  ? `12. Include "transport" (NOT "flights" — do NOT include a "flights" key at all) with suggested outbound and inbound ${transportMode ? (transportLabel[transportMode] || transportMode) : "ground/sea transport"} options — include operator name, mode (bus/train/ferry/drive), route, duration, schedule frequency, and pricing. For ferries include terminal names. For buses include bus operator and station. For trains include train service name and station. NEVER generate airline names or flight numbers.`
   : flightsSettled && settledFlightNumber
   ? `12. Include "flights" — the traveler has PRE-BOOKED flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight for the outbound/inbound entry. For the other direction, suggest a realistic return flight from the same airline.`
   : `12. Include "flights" with suggested outbound and inbound flight options — recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing for ${fareClass} class.`}
@@ -187,7 +187,7 @@ The "tripTitle" should be SHORT: just the city or region name (e.g. "Melbourne",
 
 Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON only.`;
 
-  const jsonSchema = {
+  const jsonSchema: Record<string, unknown> = {
     tripTitle: "string",
     days: [{
       dayNumber: "integer",
@@ -218,12 +218,15 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
         transportOptions: [{ mode: "string", label: "string", duration: "string", cost: "string" }]
       }]
     }],
-    flights: { outbound: { airline: "string", flightNumber: "string", route: "string", duration: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } },
-    transport: { outbound: { operator: "string", mode: "string", route: "string", terminal: "string", duration: "string", frequency: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } },
     accommodation: [{ name: "string", area: "string", priceRange: "string", type: "string", highlights: "string", badge: "string" }],
     bookingChecklist: [{ group: "string", items: [{ label: "string", day: "integer", note: "string", url: "string (optional)" }] }],
     savingsTips: [{ icon: "string (emoji)", title: "string", description: "string", estimatedSaving: "string" }]
   };
+  if (isNearbyTrip) {
+    jsonSchema.transport = { outbound: { operator: "string", mode: "string", route: "string", terminal: "string", duration: "string", frequency: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } };
+  } else if (!isSameCity) {
+    jsonSchema.flights = { outbound: { airline: "string", flightNumber: "string", route: "string", duration: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } };
+  }
 
   const geminiSchema = {
     type: "object" as const,
