@@ -146,7 +146,7 @@ function renderEmpty() {
         </div>
         <h1 class="landing-headline">
           <span class="landing-hl-your">Your</span>
-          <span class="landing-hl-city">next</span>
+          <span class="landing-hl-city">${'next'.split('').map(flap).join('')}</span>
           <span class="landing-hl-accent">adventure<span class="landing-cursor"></span></span>
         </h1>
         <p class="landing-tagline">Trip planning in minutes, not hours.<br>Pick a destination, set your style and we'll craft your plans.</p>
@@ -453,4 +453,91 @@ export async function renderDashboard() {
     }, { threshold: 0.15 });
     app.querySelectorAll('.landing-reveal').forEach(el => observer.observe(el));
   });
+
+  const citySpan = app.querySelector('.landing-hl-city');
+  if (citySpan) {
+    let currentText = '';
+    let hovered = false;
+    let cycleTimer = null;
+
+    const buildCell = (ch) => {
+      if (ch === ' ') return '<span class="flap-cell flap-cell--space"></span>';
+      const display = escapeHtml(ch);
+      return `<span class="flap-cell">
+        <span class="flap-face">${display}</span>
+        <span class="flap-top"><span class="flap-top-text">${display}</span></span>
+        <span class="flap-bottom"><span class="flap-bottom-text">${display}</span></span>
+      </span>`;
+    };
+
+    const setImmediate = (text) => {
+      currentText = text;
+      citySpan.innerHTML = text.split('').map(buildCell).join('');
+    };
+
+    const flipTo = (text) => {
+      if (text === currentText) return;
+      const maxLen = Math.max(currentText.length, text.length);
+      const padded = text.padEnd(maxLen);
+      const oldPadded = currentText.padEnd(maxLen);
+      currentText = text;
+
+      citySpan.innerHTML = '';
+      for (let i = 0; i < maxLen; i++) {
+        const oldCh = oldPadded[i] || ' ';
+        const newCh = padded[i];
+        if (newCh === ' ' && i >= text.length) continue;
+
+        const cell = document.createElement('span');
+        cell.className = newCh === ' ' ? 'flap-cell flap-cell--space' : 'flap-cell';
+        if (newCh === ' ') { citySpan.appendChild(cell); continue; }
+
+        const oldDisplay = oldCh === ' ' ? '&nbsp;' : escapeHtml(oldCh);
+        const newDisplay = escapeHtml(newCh);
+
+        cell.innerHTML = `
+          <span class="flap-face">${oldDisplay}</span>
+          <span class="flap-top"><span class="flap-top-text">${oldDisplay}</span></span>
+          <span class="flap-bottom"><span class="flap-bottom-text">${newDisplay}</span></span>
+        `;
+        citySpan.appendChild(cell);
+
+        const delay = i * 50;
+        setTimeout(() => {
+          const top = cell.querySelector('.flap-top');
+          const bottom = cell.querySelector('.flap-bottom');
+          const face = cell.querySelector('.flap-face');
+          top.classList.add('flap-flip-out');
+          setTimeout(() => {
+            face.innerHTML = newDisplay;
+            top.querySelector('.flap-top-text').innerHTML = newDisplay;
+            top.classList.remove('flap-flip-out');
+            bottom.classList.add('flap-flip-in');
+            setTimeout(() => bottom.classList.remove('flap-flip-in'), 200);
+          }, 150);
+        }, delay);
+      }
+    };
+
+    setImmediate('next');
+
+    deferWork(() => {
+      const cycleNames = ['Tokyo', 'Paris', 'Bali', 'Barcelona', 'Seoul', 'New York', 'Bangkok', 'Kyoto', 'next'];
+      let cycleIdx = 0;
+      const startCycle = () => {
+        clearInterval(cycleTimer);
+        cycleTimer = setInterval(() => {
+          if (hovered) return;
+          flipTo(cycleNames[cycleIdx]);
+          cycleIdx = (cycleIdx + 1) % cycleNames.length;
+        }, 2800);
+      };
+      startCycle();
+
+      app.querySelectorAll('.dest-circle[data-city]').forEach(card => {
+        card.addEventListener('mouseenter', () => { hovered = true; flipTo(card.dataset.city); });
+        card.addEventListener('mouseleave', () => { hovered = false; flipTo('next'); startCycle(); });
+      });
+    });
+  }
 }
