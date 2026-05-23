@@ -1838,3 +1838,164 @@
   text-align: center;
   margin-top: var(--sp-1);
 }
+
+/* ===== Light Mode ===== */
+[data-theme="light"] .wizard-header {
+  background: rgba(245, 241, 234, 0.88);
+  border-bottom-color: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .wizard-back:hover,
+[data-theme="light"] .wizard-close:hover {
+  background: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .wizard-progress-dot {
+  background: rgba(44, 42, 37, 0.12);
+}
+
+[data-theme="light"] .wizard-cta-bar {
+  background: rgba(245, 241, 234, 0.92);
+  border-top-color: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .wizard-section-label::before,
+[data-theme="light"] .wizard-section-label::after {
+  background: rgba(44, 42, 37, 0.1);
+}
+
+[data-theme="light"] .dest-search-wrap .input {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(44, 42, 37, 0.12);
+}
+
+[data-theme="light"] .dest-search-wrap .input:focus {
+  background: #FFFFFF;
+}
+
+[data-theme="light"] .dest-dropdown {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(44, 42, 37, 0.1);
+}
+
+[data-theme="light"] .dest-dropdown-item:hover {
+  background: rgba(44, 42, 37, 0.04);
+}
+
+[data-theme="light"] .date-mode-card,
+[data-theme="light"] .duration-pill,
+[data-theme="light"] .season-card,
+[data-theme="light"] .budget-preset,
+[data-theme="light"] .budget-stepper,
+[data-theme="light"] .fare-card,
+[data-theme="light"] .departure-time-card,
+[data-theme="light"] .connection-card,
+[data-theme="light"] .cal,
+[data-theme="light"] .traveler-stepper,
+[data-theme="light"] .currency-option,
+[data-theme="light"] .trip-summary-card,
+[data-theme="light"] .accom-card,
+[data-theme="light"] .accom-star-btn,
+[data-theme="light"] .summary-tile,
+[data-theme="light"] .free-day-chip {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(44, 42, 37, 0.08);
+}
+
+[data-theme="light"] .date-mode-card:hover,
+[data-theme="light"] .duration-pill:hover,
+[data-theme="light"] .season-card:hover,
+[data-theme="light"] .budget-preset:hover,
+[data-theme="light"] .fare-card:hover,
+[data-theme="light"] .departure-time-card:hover,
+[data-theme="light"] .connection-card:hover,
+[data-theme="light"] .accom-card:hover,
+[data-theme="light"] .accom-star-btn:hover,
+[data-theme="light"] .summary-tile:hover,
+[data-theme="light"] .free-day-chip:hover {
+  border-color: rgba(44, 42, 37, 0.16);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .cal-nav {
+  border-color: rgba(44, 42, 37, 0.12);
+}
+
+[data-theme="light"] .cal-cell--day:hover {
+  background: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .budget-stepper-btn {
+  border-color: rgba(44, 42, 37, 0.12);
+}
+
+[data-theme="light"] .fare-card::before,
+[data-theme="light"] .accom-card::before {
+  background: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .summary-extra {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(44, 42, 37, 0.08);
+}
+
+[data-theme="light"] .summary-extra--open {
+  border-color: rgba(44, 42, 37, 0.14);
+}
+
+[data-theme="light"] .summary-extra-toggle:hover {
+  background: rgba(44, 42, 37, 0.03);
+}
+
+[data-theme="light"] .summary-extra-plus {
+  background: rgba(44, 42, 37, 0.08);
+}
+
+[data-theme="light"] .summary-extra-field .input {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(44, 42, 37, 0.12);
+}
+
+[data-theme="light"] .wizard-footer {
+  background: rgba(245, 241, 234, 0.92);
+  border-top-color: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .wizard-footer-pill {
+  background: rgba(44, 42, 37, 0.06);
+  border-color: rgba(44, 42, 37, 0.08);
+}
+
+[data-theme="light"] .wizard-footer-divider {
+  background: rgba(44, 42, 37, 0.12);
+}
+
+[data-theme="light"] .settled-toggle {
+  border-color: rgba(44, 42, 37, 0.15);
+  background: rgba(44, 42, 37, 0.03);
+}
+
+[data-theme="light"] .settled-toggle:hover {
+  border-color: rgba(44, 42, 37, 0.25);
+  background: rgba(44, 42, 37, 0.06);
+}
+
+[data-theme="light"] .multi-city-remove {
+  background: rgba(44, 42, 37, 0.08);
+}
+
+[data-theme="light"] .style-slider input[type="range"] {
+  background: rgba(44, 42, 37, 0.1);
+}
+
+[data-theme="light"] .style-slider input[type="range"]::-webkit-slider-thumb {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .wizard-gen-bar {
+  background: rgba(44, 42, 37, 0.08);
+}
+
+[data-theme="light"] .trip-summary-row + .trip-summary-row {
+  border-top-color: rgba(44, 42, 37, 0.06);
+}

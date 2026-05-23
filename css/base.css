@@ -206,9 +206,17 @@ textarea.input {
   border: 1px solid transparent;
 }
 
+[data-theme="light"] .chip {
+  background: rgba(44, 42, 37, 0.06);
+}
+
 .chip:hover {
   background: rgba(229, 225, 216, 0.1);
   color: var(--ink);
+}
+
+[data-theme="light"] .chip:hover {
+  background: rgba(44, 42, 37, 0.1);
 }
 
 .chip--active {
@@ -309,6 +317,8 @@ textarea.input {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(229, 225, 216, 0.12); border-radius: var(--r-pill); }
 ::-webkit-scrollbar-thumb:hover { background: rgba(229, 225, 216, 0.2); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(44, 42, 37, 0.12); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(44, 42, 37, 0.2); }
 
 /* Back to top */
 .back-to-top {
