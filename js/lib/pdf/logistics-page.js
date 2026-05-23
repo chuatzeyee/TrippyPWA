@@ -96,11 +96,12 @@ function renderFlightOrTransport(doc, ctx, extras) {
       doc.text(leg.priceRange, MX_R - 6, ctx.y + 25, { align: 'right' });
     }
 
-    ctx.y += 32;
+    ctx.y += 34;
   };
 
   renderLeg(data.outbound, 'Outbound');
   renderLeg(data.inbound, 'Return');
+  ctx.y += 4;
 }
 
 function renderAccommodation(doc, ctx, extras) {
@@ -183,8 +184,9 @@ function renderAccommodation(doc, ctx, extras) {
       }
     }
 
-    ctx.y += maxH + 4;
+    ctx.y += maxH + 6;
   }
+  ctx.y += 4;
 }
 
 function renderChecklist(doc, ctx, extras) {
