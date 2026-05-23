@@ -132,29 +132,13 @@ function renderEmpty() {
   const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
   const flap = ch => `<span class="flap-cell"><span class="flap-face">${ch}</span><span class="flap-top"><span class="flap-top-text">${ch}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${ch}</span></span></span>`;
 
-  const asciiGlobe = `         .,:::::::::.
-      .:::''     '':::.
-    .::    .--.  _   ::.
-   ::   ./    \\\\./ \\\\   ::
-  ::    |  () |\\\\_/    ::
-  ::     \\\\   / .--.   ::
-   ::    '\`\`' |    |  ::
-    '::       \\\\__./.::'
-      ':::.      .:::'
-         ''::::::::''`;
-
   return `
     <div class="dashboard-empty">
       <div class="landing-scanlines"></div>
       <div class="landing-bg">
-        <div class="landing-glow landing-glow--1"></div>
-        <div class="landing-glow landing-glow--2"></div>
-        <div class="landing-glow landing-glow--3"></div>
         <div class="landing-grid-dots"></div>
-        <div class="landing-floaties"></div>
       </div>
       <section class="landing-hero">
-        <div class="landing-ascii-globe"><pre>${asciiGlobe}</pre></div>
         <div class="landing-logo">
           <svg class="landing-logo-plane" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
           <span class="landing-logo-flaps landing-glitch" data-text="TRIPPY">${'TRIPPY'.split('').map(flap).join('')}</span>
@@ -461,129 +445,11 @@ export async function renderDashboard() {
   const deferWork = (fn) => (typeof requestIdleCallback === 'function') ? requestIdleCallback(fn) : setTimeout(fn, 1);
 
   deferWork(() => {
-    const floatiesEl = app.querySelector('.landing-floaties');
-    if (floatiesEl) {
-      const emojis = ['✈️', '🗺️', '🏖️', '🗼', '🌏', '⛩️', '🌴', '🏔️', '🛫', '🧳', '🌺', '⛵'];
-      const frag = document.createDocumentFragment();
-      for (let i = 0; i < 18; i++) {
-        const el = document.createElement('span');
-        el.className = 'landing-floaty';
-        el.textContent = emojis[i % emojis.length];
-        el.style.cssText = `left:${4 + Math.random() * 92}%;animation-duration:${10 + Math.random() * 14}s;animation-delay:${Math.random() * 12}s;font-size:${0.8 + Math.random() * 0.5}rem`;
-        frag.appendChild(el);
-      }
-      floatiesEl.appendChild(frag);
-    }
-  });
-
-  deferWork(() => {
-    const landingBg = app.querySelector('.landing-bg');
-    if (landingBg && window.innerWidth >= 768) {
-      let ticking = false;
-      document.addEventListener('mousemove', (e) => {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(() => {
-          const x = (e.clientX / window.innerWidth - 0.5) * 24;
-          const y = (e.clientY / window.innerHeight - 0.5) * 24;
-          landingBg.style.transform = `translate(${x}px, ${y}px)`;
-          ticking = false;
-        });
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('landing-reveal--visible');
       });
-    }
+    }, { threshold: 0.15 });
+    app.querySelectorAll('.landing-reveal').forEach(el => observer.observe(el));
   });
-
-  const citySpan = app.querySelector('.landing-hl-city');
-  if (citySpan) {
-    let currentText = '';
-    let hovered = false;
-    let cycleTimer = null;
-
-    const buildCell = (ch) => {
-      if (ch === ' ') return '<span class="flap-cell flap-cell--space"></span>';
-      const display = escapeHtml(ch);
-      return `<span class="flap-cell">
-        <span class="flap-face">${display}</span>
-        <span class="flap-top"><span class="flap-top-text">${display}</span></span>
-        <span class="flap-bottom"><span class="flap-bottom-text">${display}</span></span>
-      </span>`;
-    };
-
-    const setImmediate = (text) => {
-      currentText = text;
-      citySpan.innerHTML = text.split('').map(buildCell).join('');
-    };
-
-    const flipTo = (text) => {
-      if (text === currentText) return;
-      const maxLen = Math.max(currentText.length, text.length);
-      const padded = text.padEnd(maxLen);
-      const oldPadded = currentText.padEnd(maxLen);
-      currentText = text;
-
-      citySpan.innerHTML = '';
-      for (let i = 0; i < maxLen; i++) {
-        const oldCh = oldPadded[i] || ' ';
-        const newCh = padded[i];
-        if (newCh === ' ' && i >= text.length) continue;
-
-        const cell = document.createElement('span');
-        cell.className = newCh === ' ' ? 'flap-cell flap-cell--space' : 'flap-cell';
-        if (newCh === ' ') { citySpan.appendChild(cell); continue; }
-
-        const oldDisplay = oldCh === ' ' ? '&nbsp;' : escapeHtml(oldCh);
-        const newDisplay = escapeHtml(newCh);
-
-        cell.innerHTML = `
-          <span class="flap-face">${oldDisplay}</span>
-          <span class="flap-top"><span class="flap-top-text">${oldDisplay}</span></span>
-          <span class="flap-bottom"><span class="flap-bottom-text">${newDisplay}</span></span>
-        `;
-        citySpan.appendChild(cell);
-
-        const delay = i * 50;
-        setTimeout(() => {
-          const top = cell.querySelector('.flap-top');
-          const bottom = cell.querySelector('.flap-bottom');
-          const face = cell.querySelector('.flap-face');
-          top.classList.add('flap-flip-out');
-          setTimeout(() => {
-            face.innerHTML = newDisplay;
-            top.querySelector('.flap-top-text').innerHTML = newDisplay;
-            top.classList.remove('flap-flip-out');
-            bottom.classList.add('flap-flip-in');
-            setTimeout(() => bottom.classList.remove('flap-flip-in'), 200);
-          }, 150);
-        }, delay);
-      }
-    };
-
-    setImmediate('next');
-
-    deferWork(() => {
-      const cycleNames = ['Tokyo', 'Paris', 'Bali', 'Barcelona', 'Seoul', 'New York', 'Bangkok', 'Kyoto', 'next'];
-      let cycleIdx = 0;
-      const startCycle = () => {
-        clearInterval(cycleTimer);
-        cycleTimer = setInterval(() => {
-          if (hovered) return;
-          flipTo(cycleNames[cycleIdx]);
-          cycleIdx = (cycleIdx + 1) % cycleNames.length;
-        }, 2800);
-      };
-      startCycle();
-
-      app.querySelectorAll('.dest-circle[data-city]').forEach(card => {
-        card.addEventListener('mouseenter', () => { hovered = true; flipTo(card.dataset.city); });
-        card.addEventListener('mouseleave', () => { hovered = false; flipTo('next'); startCycle(); });
-      });
-
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(e => {
-          if (e.isIntersecting) e.target.classList.add('landing-reveal--visible');
-        });
-      }, { threshold: 0.15 });
-      app.querySelectorAll('.landing-reveal').forEach(el => observer.observe(el));
-    });
-  }
 }
