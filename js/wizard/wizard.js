@@ -398,7 +398,7 @@ function renderMultiCityList() {
 
 function hiResImage(url) {
   if (!url) return '';
-  return url.replace(/\/\d+px-/, '/600px-');
+  return url.replace(/\/\d+px-/, '/500px-');
 }
 
 function renderCoverflow(popular, isSelected) {
@@ -457,9 +457,6 @@ function renderStep1(el) {
         value="${!state.multiCity ? escapeHtml(state.destination?.name || '') : ''}" autocomplete="off">
       <div class="dest-dropdown" id="dest-dropdown"></div>
     </div>
-    <div id="dest-popular" class="destination-grid" style="margin-top: var(--sp-6);">
-      ${popular.map(d => destinationCard(d, isSelected(d))).join('')}
-    </div>
   `;
 
   setupCoverflowClicks(el);
@@ -494,7 +491,6 @@ function renderStep1(el) {
 
   const searchInput = el.querySelector('#dest-search');
   const dropdown = el.querySelector('#dest-dropdown');
-  const popularGrid = el.querySelector('#dest-popular');
 
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim();
@@ -531,20 +527,6 @@ function renderStep1(el) {
     if (searchInput.value.trim()) searchInput.dispatchEvent(new Event('input'));
   });
 
-  bindDestinationClicks(popularGrid);
-}
-
-function destinationCard(d, selected = false) {
-  const bg = d.image
-    ? `background-image: url('${escapeHtml(d.image)}'); background-color: var(--surface-inset);`
-    : 'background: linear-gradient(135deg, var(--teal-light), var(--terracotta-light));';
-  return `
-    <div class="destination-card${selected ? ' destination-card--selected' : ''}" data-dest='${JSON.stringify(d).replace(/'/g, "&#39;")}'
-      style="${bg}">
-      <span class="destination-card-flag">${flagImg(d.flag, 20)}</span>
-      <span class="destination-card-label">${escapeHtml(d.name)}<br><small>${escapeHtml(d.country)}</small></span>
-    </div>
-  `;
 }
 
 function selectDestination(dest) {
@@ -577,12 +559,6 @@ function selectDestination(dest) {
     applyFlagBackground(dest.flag);
   }
   updateNextButton();
-}
-
-function bindDestinationClicks(container) {
-  container.querySelectorAll('[data-dest]').forEach(card => {
-    card.addEventListener('click', () => selectDestination(JSON.parse(card.dataset.dest)));
-  });
 }
 
 function bindDropdownClicks(container, searchInput, dropdown) {
