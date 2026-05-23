@@ -2412,6 +2412,14 @@
   line-height: 1.5;
 }
 
+.td-savings-tip-save {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-green, #6ecf7a);
+  letter-spacing: 0.02em;
+}
+
 /* ===== Desktop Two-Panel Layout ===== */
 @media (min-width: 1024px) {
   .td-wrap {

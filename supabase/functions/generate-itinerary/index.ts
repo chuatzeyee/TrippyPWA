@@ -143,7 +143,14 @@ ${isNearbyTrip
 ${accomSettled && accomAddress
   ? `13. Include "accommodation" with ONLY the pre-booked property: "${accomAddress}". Look up the actual name, neighborhood, and details of this property. Return it as a single item with badge "Pre-booked". Do NOT add alternative options.`
   : `13. Include "accommodation" with 2-3 hotel/apartment options at different price points matching the traveler's ${accomType} preference. Include name, neighborhood, price range, type, highlights, and a badge (Recommended, Best Value, Best Location, or Luxury Pick).`}
-14. Include "bookingChecklist" — scan every activity and identify which ones need advance booking (museum tickets, restaurant reservations, tours, shows). Group into "Must Book Ahead" (sells out or requires reservation) and "Good to Book" (walk-in possible but booking saves time). Include the day number and a practical booking note.`;
+14. Include "bookingChecklist" — scan every activity and identify which ones need advance booking (museum tickets, restaurant reservations, tours, shows). Group into "Must Book Ahead" (sells out or requires reservation) and "Good to Book" (walk-in possible but booking saves time). Include the day number and a practical booking note.
+15. Include "savingsTips" — an array of 4-6 REAL, SPECIFIC money-saving tips for tourists in ${dest} during the travel dates. These MUST be:
+   a) REAL programs, passes, discounts, or free services that actually exist (not generic advice)
+   b) SPECIFIC to ${dest} and relevant to the travel dates/season
+   c) Safe and legal for tourists to use
+   d) Each tip needs: icon (emoji), title (the specific program/pass/offer name), description (what it is, how much it saves, eligibility, how to get it), and estimatedSaving (approximate savings in ${currency}, e.g. "${currencySymbol}50-80")
+   Examples of GOOD tips: "Melbourne Free Tram Zone — all trams within the CBD are free for everyone", "Japan Rail Pass 7-Day — ¥50,000 covers unlimited Shinkansen", "Paris Museum Pass 4-Day — €62 covers 50+ museums vs €15-17 each", "Free museum Sundays — first Sunday of each month, most national museums are free"
+   Examples of BAD tips: "Check for discounts" (too vague), "Eat street food" (generic), "Use public transport" (obvious)`;
 
   const systemPrompt = `You are a world-class travel planner who creates incredibly detailed, practical itineraries. Your itineraries read like a knowledgeable local friend guiding someone through the city hour by hour.
 
@@ -194,7 +201,8 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
     flights: { outbound: { airline: "string", flightNumber: "string", route: "string", duration: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } },
     transport: { outbound: { operator: "string", mode: "string", route: "string", terminal: "string", duration: "string", frequency: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } },
     accommodation: [{ name: "string", area: "string", priceRange: "string", type: "string", highlights: "string", badge: "string" }],
-    bookingChecklist: [{ group: "string", items: [{ label: "string", day: "integer", note: "string", url: "string (optional)" }] }]
+    bookingChecklist: [{ group: "string", items: [{ label: "string", day: "integer", note: "string", url: "string (optional)" }] }],
+    savingsTips: [{ icon: "string (emoji)", title: "string", description: "string", estimatedSaving: "string" }]
   };
 
   const geminiSchema = {
@@ -283,6 +291,19 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
           type: "object",
           properties: { group: { type: "string" }, items: { type: "array", items: { type: "object", properties: { label: { type: "string" }, day: { type: "integer" }, note: { type: "string" }, url: { type: "string" } }, required: ["label", "day", "note"] } } },
           required: ["group", "items"]
+        }
+      },
+      savingsTips: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            icon: { type: "string", description: "Emoji icon" },
+            title: { type: "string", description: "Name of the specific program, pass, or offer" },
+            description: { type: "string", description: "What it is, how to get it, eligibility" },
+            estimatedSaving: { type: "string", description: "Approximate savings in local currency" }
+          },
+          required: ["icon", "title", "description", "estimatedSaving"]
         }
       }
     },
