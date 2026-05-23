@@ -1,6 +1,25 @@
 import { addRoute, start, navigate, onNotFound } from './router.js';
 import { renderNav } from './components/nav.js';
 import { renderDashboard } from './components/dashboard.js';
+import { logger } from './lib/logger.js';
+
+window.addEventListener('error', (event) => {
+  logger.error('system', 'Unhandled error', {
+    message: event.message,
+    filename: event.filename,
+    line: event.lineno,
+    col: event.colno,
+    stack: event.error?.stack,
+  });
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  const msg = event.reason?.message || String(event.reason);
+  logger.error('system', 'Unhandled promise rejection', {
+    message: msg,
+    stack: event.reason?.stack,
+  });
+});
 
 renderNav();
 

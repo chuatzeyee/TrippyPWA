@@ -1,4 +1,5 @@
 import { supabase, setCachedUser } from '../lib/supabase.js';
+import { logger } from '../lib/logger.js';
 
 let currentUser = null;
 const listeners = new Set();
@@ -17,6 +18,7 @@ export async function signInWithGoogle() {
     provider: 'google',
     options: { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` }
   });
+  if (error) logger.error('auth', 'Google sign-in failed', { error: error.message });
   return { error: error?.message || null };
 }
 
@@ -34,7 +36,7 @@ export function onAuthChange(callback) {
 
 function notifyListeners(event, session) {
   for (const cb of listeners) {
-    try { cb(event, session); } catch (e) { console.error('Auth listener error:', e); }
+    try { cb(event, session); } catch (e) { logger.error('auth', 'Auth listener callback error', { error: e.message, stack: e.stack }); }
   }
 }
 

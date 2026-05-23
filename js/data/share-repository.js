@@ -1,4 +1,5 @@
 import { supabase, getUser } from '../lib/supabase.js';
+import { logger } from '../lib/logger.js';
 
 export async function createShareLink(tripId) {
   const user = getUser();
@@ -13,6 +14,7 @@ export async function createShareLink(tripId) {
     .select()
     .single();
 
+  if (error) logger.error('share', 'Share link creation failed', { tripId, error: error.message });
   return { data, error: error?.message || null };
 }
 
@@ -36,6 +38,7 @@ export async function deleteShareLink(shareId) {
     .delete()
     .eq('id', shareId);
 
+  if (error) logger.error('share', 'Share link deletion failed', { shareId, error: error.message });
   return { error: error?.message || null };
 }
 
@@ -46,7 +49,10 @@ export async function fetchSharedTrip(shareToken) {
     .eq('share_token', shareToken)
     .single();
 
-  if (shareError || !share) return { data: null, error: 'Share link not found or expired' };
+  if (shareError || !share) {
+    logger.warn('share', 'Share link not found', { shareToken });
+    return { data: null, error: 'Share link not found or expired' };
+  }
 
   const { data: trip, error: tripError } = await supabase
     .from('trips')
@@ -60,7 +66,10 @@ export async function fetchSharedTrip(shareToken) {
     .eq('id', share.trip_id)
     .single();
 
-  if (tripError) return { data: null, error: tripError.message };
+  if (tripError) {
+    logger.error('share', 'Shared trip fetch failed', { shareToken, error: tripError.message });
+    return { data: null, error: tripError.message };
+  }
 
   if (trip?.itinerary_days) {
     trip.itinerary_days.sort((a, b) => a.day_number - b.day_number);

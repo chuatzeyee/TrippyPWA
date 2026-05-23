@@ -1,5 +1,8 @@
 import { navigate } from '../router.js';
 import { isAdmin, fetchAdminStats, fetchAllUsers, fetchAllTrips, updateUserRole, deleteUserTrip } from '../data/admin-repository.js';
+import { logger } from '../lib/logger.js';
+import { showToast } from '../components/toast.js';
+import { renderLogsPanel, bindLogEvents, loadLogs, loadLogStats, stopAutoRefresh } from './admin-logs.js';
 
 function esc(s) {
   const d = document.createElement('div');
@@ -59,9 +62,10 @@ const STAT_ICONS = {
   trips: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>',
   generated: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
   admin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  logs: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
 };
 
-function buildStatCards(stats) {
+function buildStatCards(stats, logStats) {
   return `
     <div class="adm-stats">
       <div class="adm-stat-card">
@@ -95,6 +99,14 @@ function buildStatCards(stats) {
           <span class="adm-stat-label">Admins</span>
         </div>
         <span class="adm-stat-sub">${stats.failedTrips} failed &middot; ${stats.planningTrips} planning</span>
+      </div>
+      <div class="adm-stat-card">
+        <div class="adm-stat-icon adm-stat-icon--error">${STAT_ICONS.logs}</div>
+        <div class="adm-stat-body">
+          <span class="adm-stat-value">${logStats.errors}</span>
+          <span class="adm-stat-label">Errors</span>
+        </div>
+        <span class="adm-stat-sub">${logStats.warnings} warnings &middot; ${logStats.total} total logs</span>
       </div>
     </div>`;
 }
@@ -223,11 +235,13 @@ export async function renderAdminDashboard() {
       </div>
     </div>`;
 
-  const [stats, usersResult, tripsResult] = await Promise.all([
+  const [stats, usersResult, tripsResult, logStats] = await Promise.all([
     fetchAdminStats(),
     fetchAllUsers(),
     fetchAllTrips(),
+    loadLogStats(),
   ]);
+  await loadLogs(true);
 
   const users = usersResult.data;
   const trips = tripsResult.data;
@@ -364,7 +378,7 @@ export async function renderAdminDashboard() {
           </button>
         </div>
 
-        ${buildStatCards(stats)}
+        ${buildStatCards(stats, logStats)}
 
         <div class="adm-tabs">
           <button class="adm-tab ${activeTab === 'users' ? 'adm-tab--active' : ''}" data-tab="users">
@@ -375,6 +389,10 @@ export async function renderAdminDashboard() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>
             Trips <span class="adm-tab-count">${trips.length}</span>
           </button>
+          <button class="adm-tab ${activeTab === 'logs' ? 'adm-tab--active' : ''}" data-tab="logs">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Logs ${logStats.errors > 0 ? `<span class="adm-tab-count adm-tab-count--error">${logStats.errors}</span>` : `<span class="adm-tab-count">${logStats.total}</span>`}
+          </button>
         </div>
 
         <div class="adm-panel" id="adm-panel-users" ${activeTab !== 'users' ? 'style="display:none"' : ''}>
@@ -384,8 +402,20 @@ export async function renderAdminDashboard() {
         <div class="adm-panel" id="adm-panel-trips" ${activeTab !== 'trips' ? 'style="display:none"' : ''}>
           ${renderTripsPanel()}
         </div>
+
+        <div class="adm-panel" id="adm-panel-logs" ${activeTab !== 'logs' ? 'style="display:none"' : ''}>
+          ${renderLogsPanel()}
+        </div>
       </div>`;
     bindEvents();
+  }
+
+  function reRenderLogsPanel() {
+    const logsPanel = document.getElementById('adm-panel-logs');
+    if (logsPanel) {
+      logsPanel.innerHTML = renderLogsPanel();
+      bindLogEvents(logsPanel, reRenderLogsPanel);
+    }
   }
 
   function reRenderPanel() {
@@ -433,12 +463,18 @@ export async function renderAdminDashboard() {
 
       const tab = e.target.closest('.adm-tab');
       if (tab) {
+        const prevTab = activeTab;
         activeTab = tab.dataset.tab;
         container.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('adm-tab--active'));
         tab.classList.add('adm-tab--active');
         container.querySelectorAll('.adm-panel').forEach(p => p.style.display = 'none');
         const panel = document.getElementById(`adm-panel-${activeTab}`);
         if (panel) panel.style.display = '';
+        if (prevTab === 'logs' && activeTab !== 'logs') stopAutoRefresh();
+        if (activeTab === 'logs') {
+          const logsPanel = document.getElementById('adm-panel-logs');
+          if (logsPanel) bindLogEvents(logsPanel, reRenderLogsPanel);
+        }
         return;
       }
 
@@ -474,11 +510,14 @@ export async function renderAdminDashboard() {
         if (!confirm('Delete this trip? This cannot be undone.')) return;
         deleteBtn.disabled = true;
         deleteUserTrip(deleteBtn.dataset.tripId).then(({ error }) => {
-          if (error) { alert(`Failed: ${error}`); deleteBtn.disabled = false; return; }
+          if (error) { showToast('Failed to delete trip', 'error'); logger.error('data', 'Admin trip delete failed', { error }); deleteBtn.disabled = false; return; }
           deleteBtn.closest('tr')?.remove();
         });
       }
     });
+
+    const logsPanel = document.getElementById('adm-panel-logs');
+    if (logsPanel && activeTab === 'logs') bindLogEvents(logsPanel, reRenderLogsPanel);
 
     container.addEventListener('change', (e) => {
       const select = e.target.closest('.adm-role-select');
@@ -495,7 +534,7 @@ export async function renderAdminDashboard() {
 
       updateUserRole(userId, newRole).then(({ error }) => {
         if (error) {
-          alert(`Failed: ${error}`);
+          showToast('Failed to update role', 'error'); logger.error('auth', 'Admin role update failed', { error });
           select.value = prev;
           return;
         }

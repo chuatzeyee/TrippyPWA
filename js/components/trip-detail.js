@@ -5,6 +5,8 @@ import { convert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { shortenTransitName } from '../data/transit-lines.js';
+import { logger } from '../lib/logger.js';
+import { showToast } from './toast.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -1323,7 +1325,7 @@ async function showShareModal(trip) {
 
   const { createShareLink } = await import('../data/share-repository.js');
   const { data, error } = await createShareLink(trip.id);
-  if (error) { alert(`Share failed: ${error}`); return; }
+  if (error) { showToast('Share failed: ' + error, 'error'); logger.error('share', 'Share creation failed from trip detail', { error }); return; }
 
   const shareUrl = `${location.origin}${location.pathname}#/shared/${data.share_token}`;
   const ws = trip.wizard_state;
@@ -1496,7 +1498,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
       const { exportTripPdf } = await import('../lib/pdf-export.js');
       await exportTripPdf(trip);
     } catch (err) {
-      alert(`PDF export failed: ${err.message || err}`);
+      showToast('PDF export failed', 'error'); logger.error('data', 'PDF export failed', { error: err.message, stack: err.stack });
     }
     btn.disabled = false;
   });
@@ -1756,7 +1758,7 @@ function bindDelete(container) {
     if (!confirm('Delete this trip? This cannot be undone.')) return;
     const { error } = await deleteTrip(tripId);
     if (error) {
-      alert('Failed to delete: ' + error);
+      showToast('Failed to delete trip', 'error'); logger.error('data', 'Trip delete failed from detail', { error });
       return;
     }
     navigate('/');

@@ -4,6 +4,8 @@ import { DESTINATIONS } from '../wizard/destinations.js';
 import { navigate } from '../router.js';
 import { setHomeCurrency } from '../data/user-prefs.js';
 import { setLocaleFromFlag } from '../lib/locale.js';
+import { logger } from '../lib/logger.js';
+import { showToast } from '../components/toast.js';
 
 function esc(str) {
   const el = document.createElement('span');
@@ -307,7 +309,7 @@ async function saveProfile() {
 
   if (error) {
     if (btn) { btn.disabled = false; btn.textContent = 'Let\'s go'; }
-    alert('Failed to save profile: ' + error);
+    showToast('Failed to save profile', 'error'); logger.error('profile', 'Profile save failed from wizard', { error });
     return;
   }
 
