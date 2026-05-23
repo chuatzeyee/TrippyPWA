@@ -290,6 +290,15 @@ export async function renderDashboard() {
           ? Math.round((new Date(t.end_date) - new Date(t.start_date)) / 86400000) + 1
           : 0;
         const dayCount = itineraryCount || dateDayCount;
+        let activityTotal = 0;
+        if (Array.isArray(t.itinerary_days)) {
+          for (const day of t.itinerary_days) {
+            if (Array.isArray(day.activities)) {
+              for (const a of day.activities) activityTotal += (a.cost_amount || 0);
+            }
+          }
+        }
+        const budgetEstimate = (t.budget_daily || 0) * (t.travelers || 1) * (dayCount || 7);
         return {
           id: t.id,
           title: t.title,
@@ -299,7 +308,7 @@ export async function renderDashboard() {
           dayCount,
           budget: {
             currencySymbol: dest?.currencySymbol || t.budget_currency_symbol || '$',
-            total: (t.budget_daily || 0) * (t.travelers || 1) * (dayCount || 7),
+            total: activityTotal > 0 ? activityTotal : budgetEstimate,
             spent: 0
           },
           coverImage: t.cover_image || dest?.image || ''
