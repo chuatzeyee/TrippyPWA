@@ -1505,24 +1505,26 @@ function renderDayPicker(app, trip, jumpToToday = false) {
 
   app.querySelector('[data-action="pdf"]')?.addEventListener('click', async () => {
     const btn = app.querySelector('[data-action="pdf"]');
-    const origText = btn.innerHTML;
+    const origHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<span class="td-pdf-progress">Fetching photos...</span>';
+    btn.classList.add('td-action-btn--exporting');
+    btn.innerHTML = '<span class="td-pdf-progress"><span class="td-pdf-spinner"></span>Photos...</span>';
     try {
       const { exportTripPdf } = await import('../lib/pdf-export.js');
       await exportTripPdf(trip, {
         onProgress: (stage, pct) => {
-          const label = stage === 'photos' ? 'Fetching photos...'
-            : stage === 'render' ? 'Building PDF...'
-            : 'Saving...';
-          btn.innerHTML = `<span class="td-pdf-progress">${label} ${pct}%</span>`;
+          const label = stage === 'photos' ? 'Photos'
+            : stage === 'render' ? 'Building'
+            : 'Saving';
+          btn.innerHTML = `<span class="td-pdf-progress"><span class="td-pdf-spinner"></span>${label}... ${pct}%</span>`;
         }
       });
       showToast('PDF exported!');
     } catch (err) {
       showToast('PDF export failed', 'error'); logger.error('data', 'PDF export failed', { error: err.message, stack: err.stack });
     }
-    btn.innerHTML = origText;
+    btn.classList.remove('td-action-btn--exporting');
+    btn.innerHTML = origHtml;
     btn.disabled = false;
   });
 

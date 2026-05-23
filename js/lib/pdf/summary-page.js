@@ -150,7 +150,7 @@ export function renderSummaryPage(doc, ctx, trip, homeCurrency) {
     ry += 7;
   }
 
-  ctx.y += cardH + 8;
+  ctx.y += cardH + 12;
 
   const tips = trip.extras?.savingsTips;
   if (Array.isArray(tips) && tips.length > 0) {
