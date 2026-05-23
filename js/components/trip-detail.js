@@ -568,6 +568,16 @@ export async function renderTripDetail(rawTripId) {
     } catch {}
   }
 
+  if (trip.wizard_state?.transport?.mode && trip.extras?.flights && !trip.extras?.transport) {
+    const mode = trip.wizard_state.transport.mode;
+    const f = trip.extras.flights;
+    trip.extras.transport = {
+      outbound: f.outbound ? { ...f.outbound, mode, operator: f.outbound.airline || '' } : undefined,
+      inbound: f.inbound ? { ...f.inbound, mode, operator: f.inbound.airline || '' } : undefined
+    };
+    delete trip.extras.flights;
+  }
+
   renderDayPicker(app, trip, jumpToToday);
 }
 
