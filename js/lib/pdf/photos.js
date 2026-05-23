@@ -39,7 +39,7 @@ function loadImageAsDataUrl(url, targetW, targetH) {
 
 function hiResWikipedia(url) {
   if (!url) return null;
-  return url.replace(/\/\d+px-/, '/800px-');
+  return url.replace(/\/\d+px-/, '/500px-');
 }
 
 export function loadCoverImageWithGradient(url) {

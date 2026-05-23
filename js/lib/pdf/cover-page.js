@@ -75,8 +75,9 @@ export function renderCover(doc, trip, photos, homeCurrency) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...C.ink);
-  const accomType = ws?.accommodationType || ws?.accommodation || 'Hotel';
-  doc.text(String(accomType).charAt(0).toUpperCase() + String(accomType).slice(1), MX + 6, cardY + 20);
+  const accomRaw = ws?.accommodationType || ws?.accommodation?.type || ws?.accommodation || 'Hotel';
+  const accomType = typeof accomRaw === 'object' ? (accomRaw.type || 'Hotel') : String(accomRaw);
+  doc.text(accomType.charAt(0).toUpperCase() + accomType.slice(1), MX + 6, cardY + 20);
 
   const rightX = MX + colW + 6;
   doc.setFont('helvetica', 'normal');

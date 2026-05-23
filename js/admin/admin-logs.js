@@ -9,6 +9,7 @@ let logCategory = 'all';
 let logSource = 'all';
 let autoRefreshId = null;
 let expandedLogId = null;
+let logEventsController = null;
 
 const LEVEL_BADGES = {
   error: 'adm-badge--error',
@@ -41,6 +42,12 @@ function relativeTime(dateStr) {
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   return `${days}d ago`;
+}
+
+function formatTime(dateStr) {
+  return new Date(dateStr).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false
+  });
 }
 
 export async function loadLogStats() {
@@ -98,15 +105,16 @@ export function renderLogsPanel() {
         <thead>
           <tr>
             <th style="width:70px">Level</th>
-            <th style="width:90px">Time</th>
+            <th style="width:130px">Time</th>
             <th style="width:90px">Category</th>
             <th style="width:60px">Source</th>
+            <th style="width:70px">Model</th>
             <th>Message</th>
             <th style="width:40px"></th>
           </tr>
         </thead>
         <tbody>
-          ${logs.length === 0 ? '<tr><td colspan="6" class="adm-empty">No logs found</td></tr>' : logs.map(renderLogRow).join('')}
+          ${logs.length === 0 ? '<tr><td colspan="7" class="adm-empty">No logs found</td></tr>' : logs.map(renderLogRow).join('')}
         </tbody>
       </table>
     </div>
@@ -120,17 +128,20 @@ function renderLogRow(log) {
   const catClass = CATEGORY_BADGES[log.category] || 'adm-badge--muted';
   const rowClass = log.level === 'error' ? 'adm-log-row--error' : log.level === 'warn' ? 'adm-log-row--warn' : '';
 
+  const meta = log.metadata || {};
+  const provider = meta.provider || '';
+
   let detail = '';
   if (isExpanded) {
-    const meta = log.metadata || {};
     const metaStr = JSON.stringify(meta, null, 2);
     const stack = meta.stack || '';
     detail = `
       <tr class="adm-log-detail-row">
-        <td colspan="6">
+        <td colspan="7">
           <div class="adm-log-detail">
             ${log.user_id ? `<div class="adm-log-detail-field"><strong>User ID:</strong> ${esc(log.user_id)}</div>` : ''}
             ${log.trip_id ? `<div class="adm-log-detail-field"><strong>Trip ID:</strong> ${esc(log.trip_id)}</div>` : ''}
+            ${provider ? `<div class="adm-log-detail-field"><strong>Model:</strong> ${esc(provider)}</div>` : ''}
             ${log.user_agent ? `<div class="adm-log-detail-field"><strong>User Agent:</strong> ${esc(log.user_agent)}</div>` : ''}
             <div class="adm-log-detail-field"><strong>Full timestamp:</strong> ${new Date(log.created_at).toLocaleString()}</div>
             ${stack ? `<div class="adm-log-detail-field"><strong>Stack Trace:</strong><pre class="adm-log-detail-json">${esc(stack)}</pre></div>` : ''}
@@ -140,40 +151,52 @@ function renderLogRow(log) {
       </tr>`;
   }
 
+  const providerBadge = provider
+    ? `<span class="adm-badge ${provider === 'Mistral' ? 'adm-badge--plum' : 'adm-badge--amber'}">${esc(provider)}</span>`
+    : '<span class="adm-log-no-model">-</span>';
+
   return `
     <tr class="${rowClass}" data-log-id="${log.id}">
       <td><span class="adm-badge ${levelClass}">${log.level}</span></td>
-      <td class="adm-log-time" title="${new Date(log.created_at).toLocaleString()}">${relativeTime(log.created_at)}</td>
+      <td class="adm-log-time" title="${new Date(log.created_at).toLocaleString()}">
+        <span class="adm-log-time-abs">${formatTime(log.created_at)}</span>
+        <span class="adm-log-time-rel">${relativeTime(log.created_at)}</span>
+      </td>
       <td><span class="adm-badge ${catClass}">${log.category}</span></td>
       <td><span class="adm-badge adm-badge--muted">${log.source}</span></td>
+      <td>${providerBadge}</td>
       <td class="adm-log-message" title="${esc(log.message)}">${esc(log.message)}</td>
       <td><button class="adm-log-expand-btn" data-log-id="${log.id}">${isExpanded ? '&#9650;' : '&#9660;'}</button></td>
     </tr>${detail}`;
 }
 
 export function bindLogEvents(panel, refreshCallback) {
+  if (logEventsController) logEventsController.abort();
+  logEventsController = new AbortController();
+  const sig = { signal: logEventsController.signal };
+
   panel.querySelector('#log-level-filter')?.addEventListener('change', async (e) => {
     logLevel = e.target.value;
     await loadLogs(true);
     refreshCallback();
-  });
+  }, sig);
 
   panel.querySelector('#log-category-filter')?.addEventListener('change', async (e) => {
     logCategory = e.target.value;
     await loadLogs(true);
     refreshCallback();
-  });
+  }, sig);
 
   panel.querySelector('#log-source-filter')?.addEventListener('change', async (e) => {
     logSource = e.target.value;
     await loadLogs(true);
     refreshCallback();
-  });
+  }, sig);
 
   panel.querySelector('#log-refresh-btn')?.addEventListener('click', async () => {
     await loadLogs(true);
     refreshCallback();
-  });
+  }, sig);
 
   panel.querySelector('#log-purge-btn')?.addEventListener('click', async () => {
     if (!confirm('Delete all logs older than 90 days?')) return;
@@ -182,7 +205,7 @@ export function bindLogEvents(panel, refreshCallback) {
     showToast('Old logs purged', 'success');
     await loadLogs(true);
     refreshCallback();
-  });
+  }, sig);
 
   panel.querySelector('#log-auto-refresh')?.addEventListener('change', (e) => {
     if (e.target.checked) {
@@ -194,13 +217,13 @@ export function bindLogEvents(panel, refreshCallback) {
       clearInterval(autoRefreshId);
       autoRefreshId = null;
     }
-  });
+  }, sig);
 
   panel.querySelector('#log-load-more')?.addEventListener('click', async () => {
     logOffset += 100;
     await loadLogs(false);
     refreshCallback();
-  });
+  }, sig);
 
   panel.addEventListener('click', (e) => {
     const btn = e.target.closest('.adm-log-expand-btn');
@@ -208,7 +231,7 @@ export function bindLogEvents(panel, refreshCallback) {
     const id = btn.dataset.logId;
     expandedLogId = expandedLogId === id ? null : id;
     refreshCallback();
-  });
+  }, sig);
 }
 
 export function stopAutoRefresh() {
