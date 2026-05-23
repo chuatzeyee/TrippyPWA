@@ -31,8 +31,13 @@ function drawDayHeader(doc, ctx, day, color) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...C.inkGhost);
-    const weather = day.weather ? ` · ${day.weather}` : '';
-    doc.text(`${fmtDateShort(day.date)}${weather}`, textX, ctx.y + 8);
+    let weatherStr = '';
+    if (day.weather) {
+      if (typeof day.weather === 'string') weatherStr = ` · ${day.weather}`;
+      else if (day.weather.highC != null) weatherStr = ` · ${day.weather.lowC || ''}–${day.weather.highC}° ${day.weather.condition || ''}`.trim();
+      else if (day.weather.condition) weatherStr = ` · ${day.weather.condition}`;
+    }
+    doc.text(`${fmtDateShort(day.date)}${weatherStr}`, textX, ctx.y + 8);
   }
 
   if (day.theme) {

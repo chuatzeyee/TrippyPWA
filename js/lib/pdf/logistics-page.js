@@ -69,7 +69,7 @@ function renderFlightOrTransport(doc, ctx, extras) {
     doc.setTextColor(...C.inkGhost);
     doc.text(label.toUpperCase(), MX + 6, ctx.y + 5);
 
-    const routeParts = (leg.route || '').split(/\s*[→➔>]\s*/);
+    const routeParts = (leg.route || '').split(/\s*(?:[→➔>]|\bto\b)\s*/i);
     const from = routeParts[0] || '???';
     const to = routeParts.length > 1 ? routeParts[routeParts.length - 1] : '???';
     drawRouteVisualization(doc, from, to, ctx.y + 15, isTransport, mode);

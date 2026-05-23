@@ -504,14 +504,17 @@ serve(async (req: Request) => {
     let result: { data: any; error: string | null } = { data: null, error: null };
     let provider = "";
 
-    if (GEMINI_API_KEY) {
-      provider = "Gemini";
-      console.log("Trying Gemini (primary)...");
-      result = await callGemini(prompt, systemPrompt, geminiSchema);
-    } else if (MISTRAL_API_KEY) {
+    if (MISTRAL_API_KEY) {
       provider = "Mistral";
-      console.log("Trying Mistral (no Gemini key)...");
+      console.log("Trying Mistral (primary)...");
       result = await callMistral(prompt, systemPrompt, jsonSchema);
+    }
+
+    if (!result.data && GEMINI_API_KEY) {
+      const fallback = !provider ? "" : ` (fallback, ${provider} failed)`;
+      provider = "Gemini";
+      console.log(`Trying Gemini${fallback}...`);
+      result = await callGemini(prompt, systemPrompt, geminiSchema);
     }
 
     const dest = wizardState.multiCity

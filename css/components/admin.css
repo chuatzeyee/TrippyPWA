@@ -649,9 +649,26 @@
 }
 
 .adm-log-time {
-  font: var(--text-caption);
-  color: var(--ink-secondary);
   white-space: nowrap;
+  line-height: 1.1;
+}
+
+.adm-log-time-abs {
+  font: var(--text-caption);
+  color: var(--ink);
+  display: block;
+}
+
+.adm-log-time-rel {
+  font-size: 0.65rem;
+  color: var(--ink-ghost);
+  display: block;
+  margin-top: 1px;
+}
+
+.adm-log-no-model {
+  color: var(--ink-ghost);
+  font-size: 0.75rem;
 }
 
 .adm-log-message {
