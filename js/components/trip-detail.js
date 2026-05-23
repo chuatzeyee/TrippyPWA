@@ -99,14 +99,26 @@ function flagImg(code, size = 24) {
 
 const IATA_TO_FLAG = {
   SIN: 'sg', KUL: 'my', PEN: 'my', BKI: 'my', MEL: 'au', SYD: 'au', BNE: 'au',
-  PER: 'au', ADL: 'au', AKL: 'nz', CHC: 'nz', NRT: 'jp', HND: 'jp', KIX: 'jp',
+  PER: 'au', ADL: 'au', AKL: 'nz', CHC: 'nz', WLG: 'nz',
+  NRT: 'jp', HND: 'jp', KIX: 'jp', FUK: 'jp', CTS: 'jp', NGO: 'jp',
   ICN: 'kr', GMP: 'kr', BKK: 'th', CNX: 'th', HKT: 'th', DPS: 'id', CGK: 'id',
-  HKG: 'hk', TPE: 'tw', PVG: 'cn', PEK: 'cn', MNL: 'ph', CEB: 'ph',
-  LHR: 'gb', LGW: 'gb', STN: 'gb', CDG: 'fr', ORY: 'fr', FCO: 'it', MXP: 'it',
-  BCN: 'es', MAD: 'es', AMS: 'nl', FRA: 'de', MUC: 'de', ZRH: 'ch', VIE: 'at',
-  IST: 'tr', DXB: 'ae', AUH: 'ae', DOH: 'qa', JFK: 'us', LAX: 'us', SFO: 'us',
-  ORD: 'us', MIA: 'us', YVR: 'ca', YYZ: 'ca', DEL: 'in', BOM: 'in', CMB: 'lk',
+  HKG: 'hk', TPE: 'tw', PVG: 'cn', PEK: 'cn', CAN: 'cn', MNL: 'ph', CEB: 'ph',
+  LHR: 'gb', LGW: 'gb', STN: 'gb', EDI: 'gb', MAN: 'gb',
+  CDG: 'fr', ORY: 'fr', NCE: 'fr', FCO: 'it', MXP: 'it', VCE: 'it',
+  BCN: 'es', MAD: 'es', AMS: 'nl', FRA: 'de', MUC: 'de', BER: 'de',
+  ZRH: 'ch', GVA: 'ch', VIE: 'at',
+  HEL: 'fi', TLL: 'ee', ARN: 'se', GOT: 'se', CPH: 'dk', OSL: 'no', KEF: 'is',
+  SVO: 'ru', DME: 'ru', LED: 'ru',
+  WAW: 'pl', KRK: 'pl', PRG: 'cz', BUD: 'hu', OTP: 'ro', SOF: 'bg',
+  ATH: 'gr', LIS: 'pt', OPO: 'pt', DUB: 'ie', BRU: 'be', LUX: 'lu',
+  RIX: 'lv', VNO: 'lt',
+  IST: 'tr', SAW: 'tr', DXB: 'ae', AUH: 'ae', DOH: 'qa',
+  JFK: 'us', LAX: 'us', SFO: 'us', ORD: 'us', MIA: 'us', EWR: 'us', ATL: 'us',
+  SEA: 'us', BOS: 'us', DFW: 'us', DEN: 'us',
+  YVR: 'ca', YYZ: 'ca', YUL: 'ca', DEL: 'in', BOM: 'in', BLR: 'in', CMB: 'lk',
   HAN: 'vn', SGN: 'vn', RGN: 'mm', PNH: 'kh', REP: 'kh', VTE: 'la',
+  GRU: 'br', EZE: 'ar', SCL: 'cl', LIM: 'pe', BOG: 'co', MEX: 'mx', CUN: 'mx',
+  JNB: 'za', CPT: 'za', NBO: 'ke', CAI: 'eg', ADD: 'et',
 };
 
 const AIRLINE_LOGOS = {
@@ -130,6 +142,25 @@ const AIRLINE_LOGOS = {
   'garuda indonesia': 'https://upload.wikimedia.org/wikipedia/en/9/9a/Garuda_Indonesia_Logo_2009.svg',
   'virgin australia': 'https://upload.wikimedia.org/wikipedia/en/4/4f/Virgin_Australia_logo.svg',
   'air new zealand': 'https://upload.wikimedia.org/wikipedia/en/2/24/Air_New_Zealand_logo.svg',
+  'finnair': 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Finnair_Logo.svg',
+  'aeroflot': 'https://upload.wikimedia.org/wikipedia/commons/2/26/Aeroflot_logo.svg',
+  'sas': 'https://upload.wikimedia.org/wikipedia/commons/e/e6/SAS_Scandinavian_Airlines_logo.svg',
+  'scandinavian airlines': 'https://upload.wikimedia.org/wikipedia/commons/e/e6/SAS_Scandinavian_Airlines_logo.svg',
+  'norwegian': 'https://upload.wikimedia.org/wikipedia/commons/5/50/Norwegian_Air_Shuttle_logo.svg',
+  'icelandair': 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Icelandair_logo.svg',
+  'klm': 'https://upload.wikimedia.org/wikipedia/commons/c/c7/KLM_logo.svg',
+  'turkish airlines': 'https://upload.wikimedia.org/wikipedia/commons/0/00/Turkish_Airlines_logo_2019_compact.svg',
+  'etihad': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Etihad_Airways_Logo.svg',
+  'etihad airways': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Etihad_Airways_Logo.svg',
+  'swiss': 'https://upload.wikimedia.org/wikipedia/commons/f/f8/Swiss_International_Air_Lines_Logo_2011.svg',
+  'lot': 'https://upload.wikimedia.org/wikipedia/commons/a/a9/LOT_Polish_Airlines_logo_2011.svg',
+  'lot polish airlines': 'https://upload.wikimedia.org/wikipedia/commons/a/a9/LOT_Polish_Airlines_logo_2011.svg',
+  'air baltic': 'https://upload.wikimedia.org/wikipedia/commons/6/69/AirBaltic_logo.svg',
+  'vietnam airlines': 'https://upload.wikimedia.org/wikipedia/en/a/a7/Vietnam_Airlines_Logo.svg',
+  'cebu pacific': 'https://upload.wikimedia.org/wikipedia/commons/1/13/Cebu_Pacific_Logo_2022.svg',
+  'air india': 'https://upload.wikimedia.org/wikipedia/commons/5/5b/Air_India_2023.svg',
+  'china airlines': 'https://upload.wikimedia.org/wikipedia/en/1/15/China_Airlines_logo.svg',
+  'eva air': 'https://upload.wikimedia.org/wikipedia/en/1/1c/EVA_Air_logo.svg',
 };
 
 function airlineLogo(name) {
@@ -538,41 +569,121 @@ export async function renderTripDetail(rawTripId) {
   renderDayPicker(app, trip, jumpToToday);
 }
 
+function parseFlightRoute(route) {
+  if (!route) return { stops: [] };
+
+  const extractCode = (text) => {
+    const m = text.match(/\(([A-Z]{3})\)/);
+    return m ? m[1] : text.trim();
+  };
+
+  const arrowParts = route.split(/\s*[→➔>]\s*/).filter(Boolean);
+  if (arrowParts.length >= 2) {
+    return { stops: arrowParts.map(extractCode) };
+  }
+
+  const viaSplit = route.split(/\s+via\s+/i);
+  const mainRoute = viaSplit[0];
+  const viaStops = viaSplit.slice(1).map(v => {
+    const parts = v.split(/\s*[,&]\s*/).map(extractCode);
+    return parts;
+  }).flat();
+
+  const toParts = mainRoute.split(/\s+to\s+/i);
+  if (toParts.length >= 2) {
+    const origin = extractCode(toParts[0]);
+    const dest = extractCode(toParts[toParts.length - 1]);
+    return { stops: [origin, ...viaStops, dest] };
+  }
+
+  const dashParts = mainRoute.split(/\s*[-–—]\s*/).filter(Boolean);
+  if (dashParts.length >= 2) {
+    const origin = extractCode(dashParts[0]);
+    const dest = extractCode(dashParts[dashParts.length - 1]);
+    return { stops: [origin, ...viaStops, dest] };
+  }
+
+  const iataPattern = /\(([A-Z]{3})\)/g;
+  const codes = [];
+  let m;
+  while ((m = iataPattern.exec(route)) !== null) codes.push(m[1]);
+  if (codes.length >= 2) {
+    if (viaStops.length > 0) {
+      return { stops: [codes[0], ...viaStops, codes[codes.length - 1]] };
+    }
+    return { stops: codes };
+  }
+
+  return { stops: codes.length === 1 ? codes : [route.trim()] };
+}
+
 function renderFlightContent(extras, trip) {
   const flights = extras?.flights;
   if (!flights) return '';
 
   const renderLeg = (leg, label, trip) => {
     if (!leg) return '';
-    const routeParts = (leg.route || '').split(/\s*[→➔>]\s*/);
-    const from = routeParts[0] || '???';
-    const to = routeParts[1] || '???';
+    const { stops } = parseFlightRoute(leg.route);
+    const from = stops[0] || '???';
+    const to = stops.length > 1 ? stops[stops.length - 1] : '???';
+    const viaStops = stops.length > 2 ? stops.slice(1, -1) : [];
+    const isConnecting = viaStops.length > 0;
+
     const logo = airlineLogo(leg.airline);
     const flightNo = leg.flightNumber || '';
     const gfDate = label === 'Outbound' ? trip?.start_date : trip?.end_date;
     const gfParams = new URLSearchParams({ q: `Flights from ${from} to ${to}${gfDate ? ` on ${gfDate}` : ''}` });
     const gfLink = `https://www.google.com/travel/flights?${gfParams.toString()}`;
+
+    const renderEndpoint = (code) => `
+      <div class="td-flight-endpoint">
+        <div class="td-flight-code">${esc(code)}</div>
+        <div class="td-flight-flag">${airportFlag(code)}</div>
+      </div>`;
+
+    const renderSegmentLine = () => `
+      <div class="td-flight-route-line">
+        <span class="td-flight-route-dash"></span>
+        <span class="td-flight-route-plane">${SECTION_ICONS.flights}</span>
+        <span class="td-flight-route-dash"></span>
+      </div>`;
+
+    const renderStopover = (code) => `
+      <div class="td-flight-stopover">
+        <div class="td-flight-stopover-dot"></div>
+        <div class="td-flight-stopover-code">${esc(code)}</div>
+        <div class="td-flight-stopover-flag">${airportFlag(code)}</div>
+      </div>`;
+
+    let routeHtml;
+    if (isConnecting) {
+      routeHtml = `
+        <div class="td-flight-route td-flight-route--connecting">
+          ${renderEndpoint(from)}
+          ${viaStops.map(s => `${renderSegmentLine()}${renderStopover(s)}`).join('')}
+          ${renderSegmentLine()}
+          ${renderEndpoint(to)}
+        </div>
+        <div class="td-flight-connection-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ${viaStops.length === 1 ? '1 stop' : `${viaStops.length} stops`} via ${viaStops.map(s => esc(s)).join(', ')}
+        </div>`;
+    } else {
+      routeHtml = `
+        <div class="td-flight-route">
+          ${renderEndpoint(from)}
+          ${renderSegmentLine()}
+          ${renderEndpoint(to)}
+        </div>`;
+    }
+
     return `
-      <div class="td-flight-leg">
+      <div class="td-flight-leg${isConnecting ? ' td-flight-leg--connecting' : ''}">
         <div class="td-flight-leg-header">
           <span class="td-flight-leg-label">${esc(label)}</span>
-          <span class="td-flight-leg-airline">${logo || esc(leg.airline)}${flightNo ? `<span class="td-flight-number">${esc(flightNo)}</span>` : ''}</span>
+          <span class="td-flight-leg-airline">${logo}${logo ? '' : esc(leg.airline || '')}${flightNo ? `<span class="td-flight-number">${esc(flightNo)}</span>` : ''}</span>
         </div>
-        <div class="td-flight-route">
-          <div class="td-flight-endpoint">
-            <div class="td-flight-code">${esc(from)}</div>
-            <div class="td-flight-flag">${airportFlag(from)}</div>
-          </div>
-          <div class="td-flight-route-line">
-            <span class="td-flight-route-dash"></span>
-            <span class="td-flight-route-plane">${SECTION_ICONS.flights}</span>
-            <span class="td-flight-route-dash"></span>
-          </div>
-          <div class="td-flight-endpoint">
-            <div class="td-flight-code">${esc(to)}</div>
-            <div class="td-flight-flag">${airportFlag(to)}</div>
-          </div>
-        </div>
+        ${routeHtml}
         <div class="td-flight-duration">${esc(leg.duration)}</div>
         <div class="td-flight-bottom">
           <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>

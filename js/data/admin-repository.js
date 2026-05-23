@@ -16,7 +16,7 @@ export async function isAdmin() {
 export async function fetchAllUsers() {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name, avatar_url, role, home_city, home_country, home_flag, created_at')
+    .select('id, display_name, avatar_url, role, home_city, home_country, home_flag, is_nomad, onboarding_complete, created_at, updated_at')
     .order('created_at', { ascending: false });
 
   return { data: data || [], error: error?.message || null };
@@ -42,6 +42,7 @@ export async function fetchAdminStats() {
 
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
 
   return {
     totalUsers: userList.length,
@@ -50,8 +51,12 @@ export async function fetchAdminStats() {
     generatedTrips: tripList.filter(t => t.status === 'generated').length,
     activeTrips: tripList.filter(t => t.status === 'active').length,
     failedTrips: tripList.filter(t => t.status === 'failed').length,
+    planningTrips: tripList.filter(t => t.status === 'planning').length,
+    generatingTrips: tripList.filter(t => t.status === 'generating').length,
     recentUsers: userList.filter(u => new Date(u.created_at) > thirtyDaysAgo).length,
     recentTrips: tripList.filter(t => new Date(t.created_at) > thirtyDaysAgo).length,
+    weeklyUsers: userList.filter(u => new Date(u.created_at) > sevenDaysAgo).length,
+    weeklyTrips: tripList.filter(t => new Date(t.created_at) > sevenDaysAgo).length,
   };
 }
 
