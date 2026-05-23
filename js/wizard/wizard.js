@@ -396,6 +396,46 @@ function renderMultiCityList() {
   `;
 }
 
+function hiResImage(url) {
+  if (!url) return '';
+  return url.replace(/\/\d+px-/, '/600px-');
+}
+
+function renderCoverflow(popular, isSelected) {
+  const cards = popular.map(d => {
+    const bg = d.image
+      ? `background-image: url('${escapeHtml(hiResImage(d.image))}'); background-color: var(--surface-inset);`
+      : 'background: linear-gradient(135deg, var(--teal-light), var(--terracotta-light));';
+    const sel = isSelected(d) ? ' coverflow-card--selected' : '';
+    return `
+      <div class="coverflow-card${sel}" data-dest='${JSON.stringify(d).replace(/'/g, "&#39;")}' style="${bg}">
+        <span class="coverflow-flag">${flagImg(d.flag, 28)}</span>
+        <div class="coverflow-label">
+          <span class="coverflow-city">${escapeHtml(d.name)}</span>
+          <span class="coverflow-country">${escapeHtml(d.country)}</span>
+          <span class="coverflow-budget">From $${d.budgetRange.backpacker}/day</span>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div class="coverflow">
+      <div class="coverflow-track">
+        <div class="coverflow-inner" id="coverflow-inner">
+          ${cards}${cards}
+        </div>
+      </div>
+    </div>`;
+}
+
+function setupCoverflowClicks(container) {
+  container.querySelectorAll('.coverflow-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const dest = JSON.parse(card.dataset.dest);
+      selectDestination(dest);
+    });
+  });
+}
+
 function renderStep1(el) {
   const popular = getPopularDestinations();
   const isSelected = (d) => state.multiCity
@@ -405,6 +445,7 @@ function renderStep1(el) {
   el.innerHTML = `
     <h2 class="wizard-step-title">Where to?</h2>
     <p class="wizard-step-subtitle">Search or pick from our favorites</p>
+    ${renderCoverflow(popular, isSelected)}
     <div class="multi-city-toggle">
       <button class="chip ${!state.multiCity ? 'chip--active' : ''}" data-mode="single">One city</button>
       <button class="chip ${state.multiCity ? 'chip--active' : ''}" data-mode="multi">Multi-city</button>
@@ -420,6 +461,8 @@ function renderStep1(el) {
       ${popular.map(d => destinationCard(d, isSelected(d))).join('')}
     </div>
   `;
+
+  setupCoverflowClicks(el);
 
   el.querySelectorAll('[data-mode]').forEach(btn => {
     btn.addEventListener('click', () => {
