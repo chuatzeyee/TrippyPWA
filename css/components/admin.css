@@ -1,7 +1,7 @@
 /* ===== Admin Portal ===== */
 
 .adm {
-  padding: var(--sp-8) 0 var(--sp-16);
+  padding: var(--sp-12) 0 var(--sp-16);
   max-width: 1080px;
   margin: 0 auto;
 }
@@ -732,7 +732,7 @@
 
 @media (max-width: 768px) {
   .adm {
-    padding: var(--sp-6) 0 var(--sp-12);
+    padding: var(--sp-8) 0 var(--sp-12);
   }
 
   .adm-header {
