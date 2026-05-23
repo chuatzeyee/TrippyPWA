@@ -1505,13 +1505,24 @@ function renderDayPicker(app, trip, jumpToToday = false) {
 
   app.querySelector('[data-action="pdf"]')?.addEventListener('click', async () => {
     const btn = app.querySelector('[data-action="pdf"]');
+    const origText = btn.innerHTML;
     btn.disabled = true;
+    btn.innerHTML = '<span class="td-pdf-progress">Fetching photos...</span>';
     try {
       const { exportTripPdf } = await import('../lib/pdf-export.js');
-      await exportTripPdf(trip);
+      await exportTripPdf(trip, {
+        onProgress: (stage, pct) => {
+          const label = stage === 'photos' ? 'Fetching photos...'
+            : stage === 'render' ? 'Building PDF...'
+            : 'Saving...';
+          btn.innerHTML = `<span class="td-pdf-progress">${label} ${pct}%</span>`;
+        }
+      });
+      showToast('PDF exported!');
     } catch (err) {
       showToast('PDF export failed', 'error'); logger.error('data', 'PDF export failed', { error: err.message, stack: err.stack });
     }
+    btn.innerHTML = origText;
     btn.disabled = false;
   });
 
