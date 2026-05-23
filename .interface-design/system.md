@@ -113,11 +113,13 @@ Slightly softer than standard - rounder corners match the lounge mood.
 - Currency cards: dark surface, subtle border, hover lifts with terracotta border
 - Symbol in `--text-h2`, code in caption weight 600
 
-### Progress Dots
-- 10px circles, `border-radius: 50%`
+### Progress Segments
+- 7 horizontal bars (24px wide, 3px tall), pill radius, 5px gap
 - Done: `--sage` background
-- Active: `--terracotta` background, `scale(1.3)`, terracotta glow shadow
-- Future: `--border` background
+- Active: `--terracotta` background + terracotta glow shadow
+- Future: `rgba(229, 225, 216, 0.1)` background
+- Header uses CSS Grid (72px / 1fr / 72px) for perfect centering
+- No text label — segments alone communicate progress
 
 ### CTA Button
 - `btn--primary`: terracotta background, white text

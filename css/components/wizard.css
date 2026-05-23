@@ -31,9 +31,9 @@
 
 /* ===== Glass Header ===== */
 .wizard-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 72px 1fr 72px;
   align-items: center;
-  justify-content: space-between;
   padding: var(--sp-3) var(--sp-4);
   background: rgba(27, 26, 23, 0.75);
   backdrop-filter: blur(16px);
@@ -44,24 +44,15 @@
 
 .wizard-header-center {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
-  flex: 1;
 }
 
 .wizard-progress {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   justify-content: center;
-}
-
-.wizard-step-count {
-  font: var(--text-caption);
-  color: var(--ink-ghost);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-size: 0.75rem;
+  align-items: center;
 }
 
 .wizard-back {
@@ -86,26 +77,23 @@
   margin-right: 4px;
 }
 
-/* ===== Progress Dots ===== */
-.wizard-progress-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+/* ===== Progress Segments ===== */
+.wizard-progress-seg {
+  width: 24px;
+  height: 3px;
+  border-radius: var(--r-pill);
   background: rgba(229, 225, 216, 0.1);
-  transition: all var(--duration-normal) var(--ease-out);
+  transition: background var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
 }
 
-.wizard-progress-dot--done {
+.wizard-progress-seg--done {
   background: var(--sage);
-  width: 8px;
-  height: 8px;
 }
 
-.wizard-progress-dot--active {
+.wizard-progress-seg--active {
   background: var(--terracotta);
-  width: 10px;
-  height: 10px;
-  box-shadow: 0 0 8px rgba(234, 88, 12, 0.4);
+  box-shadow: 0 0 8px rgba(212, 115, 88, 0.45);
 }
 
 .wizard-close {
@@ -1925,7 +1913,7 @@
   background: rgba(44, 42, 37, 0.06);
 }
 
-[data-theme="light"] .wizard-progress-dot {
+[data-theme="light"] .wizard-progress-seg {
   background: rgba(44, 42, 37, 0.12);
 }
 
