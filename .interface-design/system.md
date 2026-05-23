@@ -189,6 +189,18 @@ Slightly softer than standard - rounder corners match the lounge mood.
 - City thumbnails at bottom, hovering flips "next" to city name
 - Click thumbnail to jump directly to wizard step 2 with destination pre-filled
 
+### PDF Export
+- Magazine-quality A4 PDF with modular page system
+- Cover page: destination hero photo (Wikipedia) with gradient overlay, trip overview card, daily grid
+- Logistics page: flight/transport route visualization, 2-column accommodation cards, booking checklist
+- Day pages: timeline layout with colored dots, activity cards with venue photos, category badges
+- Summary page: budget breakdown by category, per-day bar chart, savings tips
+- Dual currency: destination currency bold, home currency in parentheses (~S$X)
+- Photo pipeline: parallel fetch with 4-concurrency limit, 10s timeout per photo, graceful fallback
+- 7 rotating day accent colors: terracotta, teal, plum, amber, steel, rose, sage
+- Print palette: warm cream paper (#FAF8F3), dark ink (#2C2A25), white card surfaces
+- Progress indicator during export: "Fetching photos... X%", "Building PDF... X%", "Saving..."
+
 ### Date Formatting
 - `formatDate(dateStr)`: "d MMM yyyy" (e.g. "15 Jun 2026") - used in footer pills
 - `formatDateShort(dateStr)`: "d MMM" (e.g. "15 Jun") - used in summary tiles and footer
