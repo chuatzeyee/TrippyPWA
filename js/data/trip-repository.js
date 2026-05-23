@@ -268,11 +268,12 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
     }
   }
 
-  if (itinerary.flights || itinerary.accommodation || itinerary.bookingChecklist) {
+  if (itinerary.flights || itinerary.accommodation || itinerary.bookingChecklist || itinerary.savingsTips) {
     const extras = {};
     if (itinerary.flights) extras.flights = itinerary.flights;
     if (itinerary.accommodation) extras.accommodation = itinerary.accommodation;
     if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;
+    if (itinerary.savingsTips) extras.savingsTips = itinerary.savingsTips;
     await supabase.from('trips').update({ extras }).eq('id', tripId);
   }
 

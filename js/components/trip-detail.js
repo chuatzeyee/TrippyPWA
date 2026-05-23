@@ -1212,34 +1212,48 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
     <div class="td-savings-section">
       <h3 class="td-spending-title">${mdIcon(MD.ticket, 18)} Potential Savings</h3>
       <div class="td-savings-tips">
-        <div class="td-savings-tip">
-          <span class="td-savings-tip-icon">🎫</span>
-          <div class="td-savings-tip-content">
-            <div class="td-savings-tip-title">Tourist City Pass</div>
-            <div class="td-savings-tip-desc">Check if ${esc(destName)} offers a tourist pass covering public transport and major attractions at a bundled discount.</div>
-          </div>
-        </div>
-        <div class="td-savings-tip">
-          <span class="td-savings-tip-icon">🚇</span>
-          <div class="td-savings-tip-content">
-            <div class="td-savings-tip-title">Multi-Day Transport Pass</div>
-            <div class="td-savings-tip-desc">A ${dayCount}-day transit pass is often cheaper than buying individual tickets daily.</div>
-          </div>
-        </div>
-        <div class="td-savings-tip">
-          <span class="td-savings-tip-icon">🏛️</span>
-          <div class="td-savings-tip-content">
-            <div class="td-savings-tip-title">Free Admission Days</div>
-            <div class="td-savings-tip-desc">Many museums and galleries offer free or reduced entry on certain days or hours.</div>
-          </div>
-        </div>
-        <div class="td-savings-tip">
-          <span class="td-savings-tip-icon">🍽️</span>
-          <div class="td-savings-tip-content">
-            <div class="td-savings-tip-title">Lunch Set Menus</div>
-            <div class="td-savings-tip-desc">Restaurants often serve the same quality at lower lunch prices. Enjoy your main meal midday.</div>
-          </div>
-        </div>
+        ${(trip.extras?.savingsTips?.length > 0
+          ? trip.extras.savingsTips.map(tip => `
+            <div class="td-savings-tip">
+              <span class="td-savings-tip-icon">${esc(tip.icon || '💡')}</span>
+              <div class="td-savings-tip-content">
+                <div class="td-savings-tip-title">${esc(tip.title)}</div>
+                <div class="td-savings-tip-desc">${esc(tip.description)}</div>
+                ${tip.estimatedSaving ? `<div class="td-savings-tip-save">Save ~${esc(tip.estimatedSaving)}</div>` : ''}
+              </div>
+            </div>
+          `).join('')
+          : `
+            <div class="td-savings-tip">
+              <span class="td-savings-tip-icon">🎫</span>
+              <div class="td-savings-tip-content">
+                <div class="td-savings-tip-title">Tourist City Pass</div>
+                <div class="td-savings-tip-desc">Check if ${esc(destName)} offers a tourist pass covering public transport and major attractions at a bundled discount.</div>
+              </div>
+            </div>
+            <div class="td-savings-tip">
+              <span class="td-savings-tip-icon">🚇</span>
+              <div class="td-savings-tip-content">
+                <div class="td-savings-tip-title">Multi-Day Transport Pass</div>
+                <div class="td-savings-tip-desc">A ${dayCount}-day transit pass is often cheaper than buying individual tickets daily.</div>
+              </div>
+            </div>
+            <div class="td-savings-tip">
+              <span class="td-savings-tip-icon">🏛️</span>
+              <div class="td-savings-tip-content">
+                <div class="td-savings-tip-title">Free Admission Days</div>
+                <div class="td-savings-tip-desc">Many museums and galleries offer free or reduced entry on certain days or hours.</div>
+              </div>
+            </div>
+            <div class="td-savings-tip">
+              <span class="td-savings-tip-icon">🍽️</span>
+              <div class="td-savings-tip-content">
+                <div class="td-savings-tip-title">Lunch Set Menus</div>
+                <div class="td-savings-tip-desc">Restaurants often serve the same quality at lower lunch prices. Enjoy your main meal midday.</div>
+              </div>
+            </div>
+          `
+        )}
       </div>
     </div>
   `;
