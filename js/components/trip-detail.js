@@ -1412,7 +1412,9 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           const diff = Math.ceil((start - now) / 86400000);
           if (diff >= 0) {
             const label = diff === 0 ? 'Today!' : diff === 1 ? '1 day' : `${diff} days`;
-            countdownHtml = `<div class="td-countdown">${mdIcon(MD.flightTakeoff, 14)} ${label}</div>`;
+            const mode = trip.extras?.transport ? getTransportMode(trip.extras) : null;
+            const countdownIcon = mode && TRANSPORT_MODE_MD[mode] ? mdIcon(TRANSPORT_MODE_MD[mode], 14) : mdIcon(MD.flightTakeoff, 14);
+            countdownHtml = `<div class="td-countdown">${countdownIcon} ${label}</div>`;
           }
         }
         return heroImage ? `
