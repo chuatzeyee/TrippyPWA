@@ -221,12 +221,13 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
     }
   }
 
-  if (itinerary.flights || itinerary.transport || itinerary.accommodation || itinerary.bookingChecklist) {
+  if (itinerary.flights || itinerary.transport || itinerary.accommodation || itinerary.bookingChecklist || itinerary.savingsTips) {
     const extras = {};
     if (itinerary.flights) extras.flights = itinerary.flights;
     if (itinerary.transport) extras.transport = itinerary.transport;
     if (itinerary.accommodation) extras.accommodation = itinerary.accommodation;
     if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;
+    if (itinerary.savingsTips) extras.savingsTips = itinerary.savingsTips;
     await supabase
       .from('trips')
       .update({ extras })
@@ -240,7 +241,7 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
   return { data: trip, error: null };
 }
 
-export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
+export async function saveItineraryToTrip(tripId, wizardState, itinerary, provider = 'unknown') {
   const updates = { status: 'generated' };
   if (itinerary.tripTitle) updates.title = itinerary.tripTitle;
   const { error: statusErr } = await supabase.from('trips').update(updates).eq('id', tripId);
@@ -323,15 +324,15 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
     }
   }
 
-  if (itinerary.flights || itinerary.transport || itinerary.accommodation || itinerary.bookingChecklist || itinerary.savingsTips) {
-    const extras = {};
-    if (itinerary.flights) extras.flights = itinerary.flights;
-    if (itinerary.transport) extras.transport = itinerary.transport;
-    if (itinerary.accommodation) extras.accommodation = itinerary.accommodation;
-    if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;
-    if (itinerary.savingsTips) extras.savingsTips = itinerary.savingsTips;
-    await supabase.from('trips').update({ extras }).eq('id', tripId);
-  }
+  const extras = {};
+  if (itinerary.flights) extras.flights = itinerary.flights;
+  if (itinerary.transport) extras.transport = itinerary.transport;
+  if (itinerary.accommodation) extras.accommodation = itinerary.accommodation;
+  if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;
+  if (itinerary.savingsTips) extras.savingsTips = itinerary.savingsTips;
+  extras.provider = provider;
+  extras.generatedAt = new Date().toISOString();
+  await supabase.from('trips').update({ extras }).eq('id', tripId);
 
   if (dayErrors.length === 0 && statusErr) {
     await supabase.from('trips').update({ status: 'generated' }).eq('id', tripId);

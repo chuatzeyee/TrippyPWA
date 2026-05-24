@@ -68,12 +68,21 @@ export async function generateItinerary(wizardState) {
     return { data: null, error: msg, retryable };
   }
 
-  if (!data?.days || !Array.isArray(data.days)) {
-    logger.warn('generation', 'Invalid itinerary format from Edge Function');
+  const itinerary = data?.itinerary || data;
+  const provider = data?.provider || 'unknown';
+
+  if (!itinerary?.days || !Array.isArray(itinerary.days)) {
+    logger.warn('generation', 'Invalid itinerary format from Edge Function', { provider });
     return { data: null, error: 'Invalid itinerary format received' };
   }
 
-  return { data, error: null };
+  if (data?.validationWarnings?.length > 0) {
+    logger.warn('generation', `Itinerary validation warnings (${provider})`, { provider, warnings: data.validationWarnings });
+  }
+
+  logger.info('generation', `Itinerary received via ${provider}`, { provider, expectedDays: data?.expectedDays, actualDays: data?.actualDays });
+
+  return { data: itinerary, error: null, provider };
 }
 
 export async function saveGeneratedTrip(wizardState, itinerary) {
