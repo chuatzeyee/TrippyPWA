@@ -1,9 +1,9 @@
 import { supabase, getUser } from '../lib/supabase.js';
 import { logger } from '../lib/logger.js';
 
-function normDay(d) {
+function normDay(d, index) {
   return {
-    dayNumber: d.dayNumber ?? d.day_number,
+    dayNumber: d.dayNumber ?? d.day_number ?? d.dayNum ?? d.day ?? d.number ?? (index + 1),
     date: d.date,
     title: d.title,
     theme: d.theme,
@@ -155,8 +155,8 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
   if (tripError) { logger.error('data', 'Trip insert failed', { error: tripError.message }); return { data: null, error: tripError.message }; }
 
   const dayErrors = [];
-  for (const rawDay of itinerary.days) {
-    const day = normDay(rawDay);
+  for (let i = 0; i < itinerary.days.length; i++) {
+    const day = normDay(itinerary.days[i], i);
     let safeDate = null;
     if (day.date) {
       const parsed = new Date(day.date);
@@ -257,8 +257,8 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
   }
 
   const dayErrors = [];
-  for (const rawDay of itinerary.days) {
-    const day = normDay(rawDay);
+  for (let i = 0; i < itinerary.days.length; i++) {
+    const day = normDay(itinerary.days[i], i);
     let safeDate = null;
     if (day.date) {
       const parsed = new Date(day.date);
