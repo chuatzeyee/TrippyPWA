@@ -30,7 +30,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FETCH_TIMEOUT = 180_000;
+const FETCH_TIMEOUT = 120_000;
 
 function buildPromptAndSchema(wizardState: any) {
   const dest = wizardState.multiCity && wizardState.destinations?.length > 0
@@ -342,6 +342,10 @@ function validateItinerary(data: any, expectedDays: number): string[] {
   if (data.days.length < expectedDays) {
     issues.push(`Expected ${expectedDays} days, got ${data.days.length}`);
   }
+  if (data.days.length > expectedDays) {
+    issues.push(`AI returned ${data.days.length} days, trimming to ${expectedDays}`);
+    data.days = data.days.slice(0, expectedDays);
+  }
   const seen = new Set<number>();
   for (let i = 0; i < data.days.length; i++) {
     const d = data.days[i];
@@ -428,9 +432,6 @@ async function callMistral(prompt: string, systemPrompt: string, jsonSchema: any
 }
 
 async function callGemini(prompt: string, systemPrompt: string, geminiSchema: any): Promise<{ data: any; error: string | null }> {
-  const MAX_RETRIES = 2;
-  const RETRY_DELAYS = [5000];
-
   const payload = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemPrompt + "\nRespond ONLY with valid JSON matching the provided schema." }] },
@@ -442,58 +443,45 @@ async function callGemini(prompt: string, systemPrompt: string, geminiSchema: an
     }
   };
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const res = await fetchWithTimeout(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      }, FETCH_TIMEOUT);
+  try {
+    const res = await fetchWithTimeout(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }, FETCH_TIMEOUT);
 
-      if (res.status === 429 || res.status === 503) {
-        console.error(`Gemini ${res.status} on attempt ${attempt + 1}`);
-        logToDb("warn", "edge", `Gemini rate limited (${res.status})`, { provider: "Gemini", status: res.status, attempt: attempt + 1 });
-        if (attempt < MAX_RETRIES - 1) {
-          await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
-          continue;
-        }
-        const errText = await res.text();
-        logToDb("error", "edge", `Gemini ${res.status} after retries`, { response: errText.substring(0, 300) });
-        return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}` };
-      }
-
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error("Gemini API error:", errText);
-        logToDb("error", "edge", `Gemini API error (${res.status})`, { status: res.status, response: errText.substring(0, 300) });
-        return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}` };
-      }
-
-      const geminiData = await res.json();
-      const textContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!textContent) return { data: null, error: "No content from Gemini" };
-
-      const cleaned = textContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
-      const parsed = JSON.parse(cleaned);
-      if (!parsed.days || !Array.isArray(parsed.days)) return { data: null, error: "Gemini returned incomplete itinerary" };
-
-      return { data: parsed, error: null };
-    } catch (err: any) {
-      if (err.name === "AbortError") {
-        console.error(`Gemini timeout on attempt ${attempt + 1}`);
-        logToDb("error", "edge", "Gemini request timed out", { provider: "Gemini", attempt: attempt + 1, timeoutMs: FETCH_TIMEOUT });
-        if (attempt < MAX_RETRIES - 1) {
-          await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
-          continue;
-        }
-        return { data: null, error: "Gemini request timed out" };
-      }
-      logToDb("error", "edge", `Gemini unexpected error: ${err.message}`, { provider: "Gemini", error: err.message });
-      return { data: null, error: `Gemini error: ${err.message || "Unknown"}` };
+    if (res.status === 429 || res.status === 503) {
+      const errText = await res.text();
+      console.error(`Gemini ${res.status}: ${errText.substring(0, 100)}`);
+      logToDb("warn", "edge", `Gemini rate limited (${res.status})`, { provider: "Gemini", status: res.status });
+      return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}` };
     }
-  }
 
-  return { data: null, error: "Gemini: all retries exhausted" };
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Gemini API error:", errText.substring(0, 200));
+      logToDb("error", "edge", `Gemini API error (${res.status})`, { status: res.status, response: errText.substring(0, 300) });
+      return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}` };
+    }
+
+    const geminiData = await res.json();
+    const textContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!textContent) return { data: null, error: "No content from Gemini" };
+
+    const cleaned = textContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+    const parsed = JSON.parse(cleaned);
+    if (!parsed.days || !Array.isArray(parsed.days)) return { data: null, error: "Gemini returned incomplete itinerary" };
+
+    return { data: parsed, error: null };
+  } catch (err: any) {
+    if (err.name === "AbortError") {
+      console.error("Gemini timeout");
+      logToDb("error", "edge", "Gemini request timed out", { provider: "Gemini", timeoutMs: FETCH_TIMEOUT });
+      return { data: null, error: "Gemini request timed out" };
+    }
+    logToDb("error", "edge", `Gemini unexpected error: ${err.message}`, { provider: "Gemini", error: err.message });
+    return { data: null, error: `Gemini error: ${err.message || "Unknown"}` };
+  }
 }
 
 serve(async (req: Request) => {
