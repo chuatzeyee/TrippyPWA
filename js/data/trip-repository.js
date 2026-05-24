@@ -12,9 +12,21 @@ function normDay(d) {
   };
 }
 
+const VALID_SLOTS = new Set(['morning', 'afternoon', 'evening']);
+
+function normTimeSlot(raw) {
+  if (!raw) return 'morning';
+  const s = String(raw).toLowerCase().trim();
+  if (VALID_SLOTS.has(s)) return s;
+  if (s.includes('morning') || s.includes('breakfast')) return 'morning';
+  if (s.includes('afternoon') || s.includes('lunch')) return 'afternoon';
+  if (s.includes('evening') || s.includes('night') || s.includes('dinner')) return 'evening';
+  return 'morning';
+}
+
 function normActivity(a) {
   return {
-    timeSlot: a.timeSlot ?? a.time_slot ?? 'morning',
+    timeSlot: normTimeSlot(a.timeSlot ?? a.time_slot),
     sortOrder: a.sortOrder ?? a.sort_order ?? 0,
     startTime: a.startTime ?? a.start_time ?? '',
     title: a.title ?? '',
