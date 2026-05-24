@@ -55,30 +55,53 @@ function drawDayHeader(doc, ctx, day, color) {
 
 function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, homeCurrency) {
   const hasPhoto = !!photoData;
-  const PAD = 5;
+  const PAD = 6;
   const PHOTO_W = 32;
   const PHOTO_H = 24;
-  const PHOTO_GAP = 3;
-  const contentW = hasPhoto ? CARD_W - PHOTO_W - PHOTO_GAP - PAD * 2 : CARD_W - PAD * 2;
+  const PHOTO_GAP = 4;
+  const narrowW = hasPhoto ? CARD_W - PHOTO_W - PHOTO_GAP - PAD * 2 : CARD_W - PAD * 2;
+  const fullW = CARD_W - PAD * 2;
 
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  const titleLines = doc.splitTextToSize(act.title || '', narrowW - 2).slice(0, 2);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  const venueLines = act.venue_name
+    ? doc.splitTextToSize(act.venue_name, narrowW - 2).slice(0, 2) : [];
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
   const descLines = act.description
-    ? doc.splitTextToSize(act.description, contentW)
-    : [];
-  const maxDescLines = hasPhoto ? 3 : 4;
-  const clampedDesc = descLines.slice(0, maxDescLines);
+    ? doc.splitTextToSize(act.description, narrowW).slice(0, hasPhoto ? 3 : 5) : [];
+
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(6.5);
+  const tipLines = act.tips
+    ? doc.splitTextToSize(`Tip: ${act.tips}`, fullW).slice(0, 2) : [];
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  const transportStr = act.getting_there || (act.transport_mode ? `${act.transport_mode || ''} ${act.transport_duration || ''}`.trim() : '');
+  const transportLines = transportStr
+    ? doc.splitTextToSize(transportStr, fullW).slice(0, 2) : [];
+
+  const cat = (act.category || '').toLowerCase();
+  const showCost = !!(act.cost_amount || !NO_COST_CATS.has(cat));
 
   let cardH = PAD;
-  cardH += 6;
-  if (act.venue_name) cardH += 5;
-  cardH += clampedDesc.length * 3.4 + (clampedDesc.length > 0 ? 2 : 0);
-  const cat = (act.category || '').toLowerCase();
-  if (act.cost_amount || !NO_COST_CATS.has(cat)) cardH += 7;
-  if (act.tips) cardH += 5;
-  if (act.getting_there || act.transport_mode) cardH += 5;
+  cardH += 7;
+  cardH += titleLines.length * 4.5 + 2;
+  if (venueLines.length) cardH += venueLines.length * 3.8 + 2;
+  if (descLines.length) cardH += descLines.length * 3.4 + 3;
+  if (showCost) cardH += 8;
+  if (tipLines.length) cardH += tipLines.length * 3.2 + 3;
+  if (transportLines.length) cardH += transportLines.length * 3.2 + 2;
   cardH += PAD;
-  cardH = Math.max(cardH, hasPhoto ? PHOTO_H + PAD * 2 + 6 : 20);
+  cardH = Math.max(cardH, hasPhoto ? PHOTO_H + PAD * 2 + 8 : 26);
 
-  if (ctx.y + cardH + 8 > BOTTOM) {
+  if (ctx.y + cardH + 10 > BOTTOM) {
     doc.addPage();
     ctx.page++;
     ctx.y = 14;
@@ -105,9 +128,9 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(5.5);
   const badgeW = doc.getTextWidth(badge.label) + 4;
-  doc.roundedRect(CARD_X + PAD, ctx.y + 3, badgeW, 4, 2, 2, 'F');
+  doc.roundedRect(CARD_X + PAD, ctx.y + PAD - 2, badgeW, 4, 2, 2, 'F');
   doc.setTextColor(...C.white);
-  doc.text(badge.label, CARD_X + PAD + badgeW / 2, ctx.y + 5.8, { align: 'center' });
+  doc.text(badge.label, CARD_X + PAD + badgeW / 2, ctx.y + PAD + 0.8, { align: 'center' });
 
   if (hasPhoto) {
     try {
@@ -115,39 +138,32 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
     } catch { /* photo render failed */ }
   }
 
-  let ty = ctx.y + 10;
+  let ty = ctx.y + PAD + 5;
   const textX = CARD_X + PAD;
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(...C.ink);
-  const titleMaxW = contentW - 2;
-  const titleText = act.title || '';
-  const truncTitle = doc.getTextWidth(titleText) > titleMaxW
-    ? titleText.slice(0, 38) + '..' : titleText;
-  doc.text(truncTitle, textX, ty);
-  ty += 5;
+  doc.text(titleLines, textX, ty);
+  ty += titleLines.length * 4.5 + 2;
 
-  if (act.venue_name) {
+  if (venueLines.length) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(...C.teal);
-    const venueMaxW = contentW - 2;
-    const venueTrunc = doc.getTextWidth(act.venue_name) > venueMaxW
-      ? act.venue_name.slice(0, 35) + '..' : act.venue_name;
-    doc.text(venueTrunc, textX, ty);
-    ty += 5;
+    doc.text(venueLines, textX, ty);
+    ty += venueLines.length * 3.8 + 2;
   }
 
-  if (clampedDesc.length > 0) {
+  if (descLines.length) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...C.inkSecondary);
-    doc.text(clampedDesc, textX, ty);
-    ty += clampedDesc.length * 3.4 + 2;
+    doc.text(descLines, textX, ty);
+    ty += descLines.length * 3.4 + 3;
   }
 
-  if (act.cost_amount || !NO_COST_CATS.has(cat)) {
+  if (showCost) {
     ty += 1;
     if (act.cost_amount && act.cost_amount > 0) {
       doc.setFont('courier', 'bold');
@@ -175,36 +191,32 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
       doc.setFont('courier', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(...C.inkGhost);
-      const durX = hasPhoto ? CARD_X + CARD_W - PHOTO_W - PHOTO_GAP - PAD : CARD_X + CARD_W - PAD;
-      doc.text(fmtDuration(act.duration_minutes), durX, ty, { align: 'right' });
+      doc.text(fmtDuration(act.duration_minutes), CARD_X + CARD_W - PAD, ty, { align: 'right' });
     }
-    ty += 5;
+    ty += 6;
   }
 
-  if (act.tips) {
+  if (tipLines.length) {
+    ty += 1;
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(6.5);
     doc.setTextColor(...C.inkSecondary);
-    const tipLines = doc.splitTextToSize(`Tip: ${act.tips}`, contentW);
-    doc.text(tipLines[0] || '', textX, ty);
-    ty += 5;
+    doc.text(tipLines, textX, ty);
+    ty += tipLines.length * 3.2 + 2;
   }
 
-  if (act.getting_there || act.transport_mode) {
+  if (transportLines.length) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
     doc.setTextColor(...C.teal);
-    const transport = act.getting_there || `${act.transport_mode || ''} ${act.transport_duration || ''}`.trim();
-    const transportTrunc = doc.getTextWidth(transport) > contentW
-      ? transport.slice(0, 55) + '..' : transport;
-    doc.text(transportTrunc, textX, ty);
+    doc.text(transportLines, textX, ty);
   }
 
   doc.setDrawColor(...C.divider);
   doc.setLineWidth(0.3);
-  doc.line(TIMELINE_X, ctx.y + 4.5, TIMELINE_X, ctx.y + cardH + 5);
+  doc.line(TIMELINE_X, ctx.y + 4.5, TIMELINE_X, ctx.y + cardH + 7);
 
-  ctx.y += cardH + 5;
+  ctx.y += cardH + 7;
 }
 
 function drawDayCostBar(doc, ctx, dayCost, destSym, destCode, homeCurrency) {
