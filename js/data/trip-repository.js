@@ -243,7 +243,8 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
 export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
   const updates = { status: 'generated' };
   if (itinerary.tripTitle) updates.title = itinerary.tripTitle;
-  await supabase.from('trips').update(updates).eq('id', tripId);
+  const { error: statusErr } = await supabase.from('trips').update(updates).eq('id', tripId);
+  if (statusErr) logger.error('data', 'Trip status update failed', { tripId, error: statusErr.message });
 
   const { data: oldDays } = await supabase
     .from('itinerary_days')
@@ -330,6 +331,10 @@ export async function saveItineraryToTrip(tripId, wizardState, itinerary) {
     if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;
     if (itinerary.savingsTips) extras.savingsTips = itinerary.savingsTips;
     await supabase.from('trips').update({ extras }).eq('id', tripId);
+  }
+
+  if (dayErrors.length === 0 && statusErr) {
+    await supabase.from('trips').update({ status: 'generated' }).eq('id', tripId);
   }
 
   return { error: dayErrors.length > 0 ? `Some days failed: ${dayErrors[0]}` : null };
