@@ -50,39 +50,41 @@ function drawDayHeader(doc, ctx, day, color) {
     doc.text(day.theme, textX + themeW / 2, ctx.y + 13.2, { align: 'center' });
   }
 
-  ctx.y += 24;
+  ctx.y += 20;
 }
 
 function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, homeCurrency) {
   const hasPhoto = !!photoData;
-  const PAD = 6;
+  const PAD = 5;
   const PHOTO_W = 32;
-  const PHOTO_H = 24;
-  const PHOTO_GAP = 4;
+  const PHOTO_H = 22;
+  const PHOTO_GAP = 3;
+  const LH = { title: 3.8, venue: 3.0, desc: 2.9, small: 2.7 };
+  const S = 1.2;
   const narrowW = hasPhoto ? CARD_W - PHOTO_W - PHOTO_GAP - PAD * 2 : CARD_W - PAD * 2;
   const fullW = CARD_W - PAD * 2;
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   const titleLines = doc.splitTextToSize(act.title || '', narrowW - 2).slice(0, 2);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
+  doc.setFontSize(7);
   const venueLines = act.venue_name
     ? doc.splitTextToSize(act.venue_name, narrowW - 2).slice(0, 2) : [];
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
+  doc.setFontSize(6.5);
   const descLines = act.description
     ? doc.splitTextToSize(act.description, narrowW).slice(0, hasPhoto ? 3 : 5) : [];
 
   doc.setFont('helvetica', 'italic');
-  doc.setFontSize(6.5);
+  doc.setFontSize(6);
   const tipLines = act.tips
     ? doc.splitTextToSize(`Tip: ${act.tips}`, fullW).slice(0, 2) : [];
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6.5);
+  doc.setFontSize(6);
   const transportStr = act.getting_there || (act.transport_mode ? `${act.transport_mode || ''} ${act.transport_duration || ''}`.trim() : '');
   const transportLines = transportStr
     ? doc.splitTextToSize(transportStr, fullW).slice(0, 2) : [];
@@ -90,18 +92,17 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
   const cat = (act.category || '').toLowerCase();
   const showCost = !!(act.cost_amount || !NO_COST_CATS.has(cat));
 
-  let cardH = PAD;
-  cardH += 7;
-  cardH += titleLines.length * 4.5 + 2;
-  if (venueLines.length) cardH += venueLines.length * 3.8 + 2;
-  if (descLines.length) cardH += descLines.length * 3.4 + 3;
-  if (showCost) cardH += 8;
-  if (tipLines.length) cardH += tipLines.length * 3.2 + 3;
-  if (transportLines.length) cardH += transportLines.length * 3.2 + 2;
+  let cardH = 4;
+  cardH += titleLines.length * LH.title + S;
+  if (venueLines.length) cardH += venueLines.length * LH.venue + S;
+  if (descLines.length) cardH += descLines.length * LH.desc + S;
+  if (showCost) cardH += 4.5;
+  if (tipLines.length) cardH += tipLines.length * LH.small + S;
+  if (transportLines.length) cardH += transportLines.length * LH.small + S;
   cardH += PAD;
-  cardH = Math.max(cardH, hasPhoto ? PHOTO_H + PAD * 2 + 8 : 26);
+  cardH = Math.max(cardH, hasPhoto ? PHOTO_H + PAD * 2 : 22);
 
-  if (ctx.y + cardH + 10 > BOTTOM) {
+  if (ctx.y + cardH + 6 > BOTTOM) {
     doc.addPage();
     ctx.page++;
     ctx.y = 14;
@@ -113,7 +114,7 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
 
   if (act.start_time) {
     doc.setFont('courier', 'bold');
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(...C.terracotta);
     doc.text(act.start_time, TIMELINE_X - 3, ctx.y + 4, { align: 'right' });
   }
@@ -126,11 +127,11 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
   const badge = categoryBadge(act.category);
   doc.setFillColor(...badge.color);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(5.5);
-  const badgeW = doc.getTextWidth(badge.label) + 4;
-  doc.roundedRect(CARD_X + PAD, ctx.y + PAD - 2, badgeW, 4, 2, 2, 'F');
+  doc.setFontSize(5);
+  const badgeW = doc.getTextWidth(badge.label) + 3.5;
+  doc.roundedRect(CARD_X + PAD, ctx.y + PAD - 2, badgeW, 3.5, 1.5, 1.5, 'F');
   doc.setTextColor(...C.white);
-  doc.text(badge.label, CARD_X + PAD + badgeW / 2, ctx.y + PAD + 0.8, { align: 'center' });
+  doc.text(badge.label, CARD_X + PAD + badgeW / 2, ctx.y + PAD + 0.3, { align: 'center' });
 
   if (hasPhoto) {
     try {
@@ -138,36 +139,35 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
     } catch { /* photo render failed */ }
   }
 
-  let ty = ctx.y + PAD + 5;
+  let ty = ctx.y + 9;
   const textX = CARD_X + PAD;
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(...C.ink);
   doc.text(titleLines, textX, ty);
-  ty += titleLines.length * 4.5 + 2;
+  ty += titleLines.length * LH.title + S;
 
   if (venueLines.length) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(7);
     doc.setTextColor(...C.teal);
     doc.text(venueLines, textX, ty);
-    ty += venueLines.length * 3.8 + 2;
+    ty += venueLines.length * LH.venue + S;
   }
 
   if (descLines.length) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setTextColor(...C.inkSecondary);
     doc.text(descLines, textX, ty);
-    ty += descLines.length * 3.4 + 3;
+    ty += descLines.length * LH.desc + S;
   }
 
   if (showCost) {
-    ty += 1;
     if (act.cost_amount && act.cost_amount > 0) {
       doc.setFont('courier', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setTextColor(...C.ink);
       const costText = `${destSym}${act.cost_amount.toLocaleString()}`;
       doc.text(costText, textX, ty);
@@ -175,48 +175,47 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
       if (homeCurrency?.code && destCode && homeCurrency.code !== destCode) {
         const converted = convert(act.cost_amount, destCode, homeCurrency.code);
         doc.setFont('courier', 'normal');
-        doc.setFontSize(6.5);
+        doc.setFontSize(6);
         doc.setTextColor(...C.inkGhost);
         const cw = doc.getTextWidth(costText);
         doc.text(` (~${homeCurrency.symbol}${converted.toLocaleString()})`, textX + cw, ty);
       }
     } else {
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(7.5);
+      doc.setFontSize(7);
       doc.setTextColor(...C.sage);
       doc.text('Free', textX, ty);
     }
 
     if (act.duration_minutes) {
       doc.setFont('courier', 'normal');
-      doc.setFontSize(7);
+      doc.setFontSize(6.5);
       doc.setTextColor(...C.inkGhost);
       doc.text(fmtDuration(act.duration_minutes), CARD_X + CARD_W - PAD, ty, { align: 'right' });
     }
-    ty += 6;
+    ty += 4.5;
   }
 
   if (tipLines.length) {
-    ty += 1;
     doc.setFont('helvetica', 'italic');
-    doc.setFontSize(6.5);
+    doc.setFontSize(6);
     doc.setTextColor(...C.inkSecondary);
     doc.text(tipLines, textX, ty);
-    ty += tipLines.length * 3.2 + 2;
+    ty += tipLines.length * LH.small + S;
   }
 
   if (transportLines.length) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
+    doc.setFontSize(6);
     doc.setTextColor(...C.teal);
     doc.text(transportLines, textX, ty);
   }
 
   doc.setDrawColor(...C.divider);
   doc.setLineWidth(0.3);
-  doc.line(TIMELINE_X, ctx.y + 4.5, TIMELINE_X, ctx.y + cardH + 7);
+  doc.line(TIMELINE_X, ctx.y + 4.5, TIMELINE_X, ctx.y + cardH + 4);
 
-  ctx.y += cardH + 7;
+  ctx.y += cardH + 4;
 }
 
 function drawDayCostBar(doc, ctx, dayCost, destSym, destCode, homeCurrency) {

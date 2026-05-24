@@ -61,7 +61,7 @@ export async function generateItinerary(wizardState) {
         if (body?.retryable) retryable = true;
       }
     } catch {}
-    if (!retryable && /503|429|502|high demand|overloaded|non-2xx/i.test(msg)) {
+    if (!retryable && /503|429|502|high demand|overloaded|non-2xx|Failed to send|Edge Function/i.test(msg)) {
       retryable = true;
     }
     logger.error('generation', 'Edge Function error', { error: msg, retryable });
