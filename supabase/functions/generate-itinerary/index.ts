@@ -30,7 +30,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FETCH_TIMEOUT = 140_000;
+const FETCH_TIMEOUT = 180_000;
 
 function buildPromptAndSchema(wizardState: any) {
   const dest = wizardState.multiCity && wizardState.destinations?.length > 0
