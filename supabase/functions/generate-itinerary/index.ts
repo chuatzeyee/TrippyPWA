@@ -409,8 +409,8 @@ async function callMistral(prompt: string, systemPrompt: string, jsonSchema: any
 }
 
 async function callGemini(prompt: string, systemPrompt: string, geminiSchema: any): Promise<{ data: any; error: string | null }> {
-  const MAX_RETRIES = 1;
-  const RETRY_DELAYS: number[] = [];
+  const MAX_RETRIES = 2;
+  const RETRY_DELAYS = [5000];
 
   const payload = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -504,17 +504,17 @@ serve(async (req: Request) => {
     let result: { data: any; error: string | null } = { data: null, error: null };
     let provider = "";
 
-    if (MISTRAL_API_KEY) {
-      provider = "Mistral";
-      console.log("Trying Mistral (primary)...");
-      result = await callMistral(prompt, systemPrompt, jsonSchema);
+    if (GEMINI_API_KEY) {
+      provider = "Gemini";
+      console.log("Trying Gemini (primary)...");
+      result = await callGemini(prompt, systemPrompt, geminiSchema);
     }
 
-    if (!result.data && GEMINI_API_KEY) {
+    if (!result.data && MISTRAL_API_KEY) {
       const fallback = !provider ? "" : ` (fallback, ${provider} failed)`;
-      provider = "Gemini";
-      console.log(`Trying Gemini${fallback}...`);
-      result = await callGemini(prompt, systemPrompt, geminiSchema);
+      provider = "Mistral";
+      console.log(`Trying Mistral${fallback}...`);
+      result = await callMistral(prompt, systemPrompt, jsonSchema);
     }
 
     const dest = wizardState.multiCity
