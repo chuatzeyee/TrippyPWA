@@ -180,7 +180,7 @@ function buildTripRow(t, owner) {
           <span>${esc(ownerName)}</span>
         </div>
       </td>
-      <td><span class="adm-badge ${STATUS_BADGES[t.status] || 'adm-badge--muted'}">${t.status || 'unknown'}</span></td>
+      <td><span class="adm-badge ${STATUS_BADGES[t.status] || 'adm-badge--muted'}">${t.status || 'unknown'}</span>${t.extras?.provider ? ` <span class="adm-badge adm-badge--muted" style="font-size:.65rem">${esc(t.extras.provider)}</span>` : ''}</td>
       <td class="adm-mono adm-nowrap">${dateRange}</td>
       <td class="adm-mono">${formatDate(t.created_at)}</td>
       <td>

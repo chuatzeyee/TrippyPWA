@@ -20,7 +20,7 @@ async function runGeneration(tripId, wizardState, attempt) {
     const { generateItinerary } = await import('./generate.js');
     const { saveItineraryToTrip, updateTripStatus } = await import('../data/trip-repository.js');
 
-    const { data: itinerary, error: genError, retryable } = await generateItinerary(wizardState);
+    const { data: itinerary, error: genError, retryable, provider } = await generateItinerary(wizardState);
 
     if (genError) {
       if (retryable && attempt < CLIENT_MAX_RETRIES) {
@@ -39,9 +39,9 @@ async function runGeneration(tripId, wizardState, attempt) {
       return;
     }
 
-    const { error: saveError } = await saveItineraryToTrip(tripId, wizardState, itinerary);
+    const { error: saveError } = await saveItineraryToTrip(tripId, wizardState, itinerary, provider);
     activeGenerations.set(tripId, { status: 'done', partialError: saveError || null });
-    logger.info('generation', 'Trip generation completed', { tripId, partialError: saveError || null });
+    logger.info('generation', 'Trip generation completed', { tripId, provider, partialError: saveError || null });
     if (saveError) logger.warn('data', 'Itinerary saved with partial errors', { tripId, error: saveError });
     showCompletionNotification(wizardState);
     localStorage.removeItem(`gen-state-${tripId}`);

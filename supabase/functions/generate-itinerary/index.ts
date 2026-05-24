@@ -333,7 +333,26 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
     required: ["tripTitle", "days"]
   };
 
-  return { prompt, systemPrompt, jsonSchema, geminiSchema };
+  return { prompt, systemPrompt, jsonSchema, geminiSchema, expectedDays: days };
+}
+
+function validateItinerary(data: any, expectedDays: number): string[] {
+  const issues: string[] = [];
+  if (!data?.days || !Array.isArray(data.days)) return ["No days array"];
+  if (data.days.length < expectedDays) {
+    issues.push(`Expected ${expectedDays} days, got ${data.days.length}`);
+  }
+  const seen = new Set<number>();
+  for (let i = 0; i < data.days.length; i++) {
+    const d = data.days[i];
+    const num = d.dayNumber ?? d.day_number ?? (i + 1);
+    if (seen.has(num)) issues.push(`Duplicate day ${num}`);
+    seen.add(num);
+    if (!d.activities || d.activities.length === 0) {
+      issues.push(`Day ${num} has no activities`);
+    }
+  }
+  return issues;
 }
 
 function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
@@ -343,7 +362,7 @@ function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Pr
 }
 
 async function callMistral(prompt: string, systemPrompt: string, jsonSchema: any): Promise<{ data: any; error: string | null }> {
-  const MAX_RETRIES = 1;
+  const MAX_RETRIES = 2;
   const RETRY_DELAYS = [5000];
 
   const schemaInstruction = `\n\nYou MUST return a JSON object matching this exact structure:\n${JSON.stringify(jsonSchema, null, 2)}\n\nReturn ONLY raw JSON. No markdown fences, no explanation.`;
@@ -499,15 +518,32 @@ serve(async (req: Request) => {
       );
     }
 
-    const { prompt, systemPrompt, jsonSchema, geminiSchema } = buildPromptAndSchema(wizardState);
+    const { prompt, systemPrompt, jsonSchema, geminiSchema, expectedDays } = buildPromptAndSchema(wizardState);
 
     let result: { data: any; error: string | null } = { data: null, error: null };
     let provider = "";
+    let validationWarnings: string[] = [];
+
+    const dest = wizardState.multiCity
+      ? wizardState.destinations?.map((d: any) => d.name).join(", ")
+      : wizardState.destination?.name;
 
     if (GEMINI_API_KEY) {
       provider = "Gemini";
       console.log("Trying Gemini (primary)...");
       result = await callGemini(prompt, systemPrompt, geminiSchema);
+
+      if (result.data) {
+        const issues = validateItinerary(result.data, expectedDays);
+        if (issues.length > 0) {
+          logToDb("warn", "generation", `Gemini validation: ${issues.join("; ")}`, { provider: "Gemini", destination: dest, expectedDays, actualDays: result.data.days?.length, issues });
+          if (result.data.days.length < expectedDays - 1) {
+            result = { data: null, error: `Validation failed: ${issues[0]}` };
+          } else {
+            validationWarnings = issues;
+          }
+        }
+      }
     }
 
     if (!result.data && MISTRAL_API_KEY) {
@@ -515,11 +551,15 @@ serve(async (req: Request) => {
       provider = "Mistral";
       console.log(`Trying Mistral${fallback}...`);
       result = await callMistral(prompt, systemPrompt, jsonSchema);
-    }
 
-    const dest = wizardState.multiCity
-      ? wizardState.destinations?.map((d: any) => d.name).join(", ")
-      : wizardState.destination?.name;
+      if (result.data) {
+        const issues = validateItinerary(result.data, expectedDays);
+        if (issues.length > 0) {
+          logToDb("warn", "generation", `Mistral validation: ${issues.join("; ")}`, { provider: "Mistral", destination: dest, expectedDays, actualDays: result.data.days?.length, issues });
+          validationWarnings = issues;
+        }
+      }
+    }
 
     if (!result.data) {
       logToDb("error", "generation", `Itinerary generation failed via ${provider}`, { provider, destination: dest, error: result.error });
@@ -531,11 +571,11 @@ serve(async (req: Request) => {
 
     const dayCount = result.data.days?.length || 0;
     const actCount = result.data.days?.reduce((s: number, d: any) => s + (d.activities?.length || 0), 0) || 0;
-    logToDb("info", "generation", `Itinerary generated: ${dest} (${dayCount} days, ${actCount} activities)`, { provider, destination: dest, days: dayCount, activities: actCount });
+    logToDb("info", "generation", `Itinerary generated via ${provider}: ${dest} (${dayCount}/${expectedDays} days, ${actCount} activities)`, { provider, destination: dest, expectedDays, actualDays: dayCount, activities: actCount, validationWarnings });
 
-    console.log(`Itinerary generated via ${provider}`);
+    console.log(`Itinerary generated via ${provider} (${dayCount}/${expectedDays} days)`);
     return new Response(
-      JSON.stringify(result.data),
+      JSON.stringify({ itinerary: result.data, provider, expectedDays, actualDays: dayCount, validationWarnings }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
