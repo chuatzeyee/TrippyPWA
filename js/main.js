@@ -15,6 +15,14 @@ window.addEventListener('error', (event) => {
 
 window.addEventListener('unhandledrejection', (event) => {
   const msg = event.reason?.message || String(event.reason);
+  if (/Failed to fetch dynamically imported module|Loading chunk .* failed/i.test(msg)) {
+    if (!sessionStorage.getItem('chunk-reload')) {
+      sessionStorage.setItem('chunk-reload', '1');
+      window.location.reload();
+      return;
+    }
+    sessionStorage.removeItem('chunk-reload');
+  }
   logger.error('system', 'Unhandled promise rejection', {
     message: msg,
     stack: event.reason?.stack,
