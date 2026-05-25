@@ -354,6 +354,37 @@ export async function deleteTrip(id) {
   return { error: error?.message || null };
 }
 
+export async function updateActivityById(activityId, updates) {
+  const payload = {};
+  if (updates.title !== undefined) payload.title = updates.title;
+  if (updates.venueName !== undefined) payload.venue_name = updates.venueName;
+  if (updates.venueAddress !== undefined) payload.venue_address = updates.venueAddress;
+  if (updates.placeId !== undefined) payload.place_id = updates.placeId;
+  if (updates.description !== undefined) payload.description = updates.description;
+  if (updates.startTime !== undefined) payload.start_time = updates.startTime;
+  if (updates.durationMinutes !== undefined) payload.duration_minutes = updates.durationMinutes;
+  if (updates.costAmount !== undefined) payload.cost_amount = Math.round(updates.costAmount || 0);
+  if (updates.costNote !== undefined) payload.cost_note = updates.costNote;
+  if (updates.category !== undefined) payload.category = updates.category;
+  if (updates.latitude !== undefined) payload.latitude = updates.latitude;
+  if (updates.longitude !== undefined) payload.longitude = updates.longitude;
+  if (updates.tips !== undefined) payload.tips = updates.tips;
+  if (updates.gettingThere !== undefined) payload.getting_there = updates.gettingThere;
+  if (updates.transportMode !== undefined) payload.transport_mode = updates.transportMode;
+  if (updates.transportDuration !== undefined) payload.transport_duration = updates.transportDuration;
+  if (updates.transportCost !== undefined) payload.transport_cost = updates.transportCost;
+  if (updates.transportOptions !== undefined) payload.transport_options = updates.transportOptions;
+
+  if (Object.keys(payload).length === 0) return { error: null };
+
+  const { error } = await supabase
+    .from('activities')
+    .update(payload)
+    .eq('id', activityId);
+
+  return { error: error?.message || null };
+}
+
 export async function updateTripStatus(id, status) {
   const { error } = await supabase
     .from('trips')

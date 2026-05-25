@@ -2717,3 +2717,183 @@
 [data-theme="light"] .td-flight-card {
   background: rgba(44, 42, 37, 0.03);
 }
+
+/* ── Edit Mode ── */
+
+.td-edit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--terracotta);
+  color: #fff;
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-4);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.td-edit-bar-actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.td-edit-mode .td-activity-card {
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast), outline var(--duration-fast);
+  outline: 1.5px dashed transparent;
+}
+
+.td-edit-mode .td-activity-card:hover {
+  outline-color: var(--terracotta);
+  box-shadow: 0 0 0 1px var(--terracotta);
+}
+
+.td-activity-card--editing {
+  outline: 2px solid var(--terracotta) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+}
+
+.ae-edit-btn {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--terracotta);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+  z-index: 2;
+}
+
+.td-edit-mode .td-activity-card:hover .ae-edit-btn,
+.ae-edit-btn:focus-visible {
+  opacity: 1;
+}
+
+/* ── Activity Editor Form ── */
+
+.ae-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-1) 0;
+}
+
+.ae-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ae-field--half {
+  flex: 1;
+  min-width: 0;
+}
+
+.ae-row {
+  display: flex;
+  gap: var(--sp-3);
+}
+
+.ae-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-secondary);
+}
+
+.ae-input {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--duration-fast);
+}
+
+.ae-input:focus {
+  border-color: var(--terracotta);
+}
+
+.ae-textarea {
+  resize: vertical;
+  min-height: 48px;
+}
+
+.ae-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+}
+
+/* ── Autocomplete Suggestions ── */
+
+.ae-autocomplete {
+  position: relative;
+}
+
+.ae-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  max-height: 240px;
+  overflow-y: auto;
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.ae-suggestions--visible {
+  display: block;
+}
+
+.ae-suggestion {
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.ae-suggestion:hover {
+  background: rgba(229, 225, 216, 0.08);
+}
+
+.ae-suggestion--empty {
+  color: var(--ink-ghost);
+  cursor: default;
+  font-size: 0.85rem;
+}
+
+.ae-suggestion-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ae-suggestion-addr {
+  font-size: 0.78rem;
+  color: var(--ink-secondary);
+  margin-top: 2px;
+}
+
+.btn--sm {
+  padding: 6px 16px;
+  font-size: 0.82rem;
+}

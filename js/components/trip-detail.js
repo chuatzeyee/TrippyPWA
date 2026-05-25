@@ -486,7 +486,7 @@ function renderActivity(activity, currencySymbol, isFirst) {
     <div class="td-activity">
       ${time ? `<div class="td-activity-time">${esc(time)}</div>` : '<div class="td-activity-time"></div>'}
       <div class="td-activity-dot" data-time="${esc(time)}"></div>
-      <div class="td-activity-card">
+      <div class="td-activity-card" data-activity-id="${activity.id || ''}">
         <div class="td-activity-card-top">
           <span class="td-activity-icon">${icon}</span>
           <div class="td-activity-card-cost">
@@ -1408,8 +1408,11 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           <button class="td-action-btn" data-action="pdf" title="Export PDF">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg>
           </button>
-          <button class="td-action-btn" data-action="edit" title="Edit & Regenerate">
+          <button class="td-action-btn" data-action="edit" title="Edit activities">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          </button>
+          <button class="td-action-btn" data-action="regenerate" title="Regenerate itinerary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
           </button>
         </div>
       </div>
@@ -1529,6 +1532,175 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   });
 
   app.querySelector('[data-action="edit"]')?.addEventListener('click', async () => {
+    const wrap = app.querySelector('.td-wrap');
+    const isEditing = wrap.classList.contains('td-edit-mode');
+
+    if (isEditing) {
+      const { exitEditMode } = await import('./activity-editor.js');
+      exitEditMode(wrap);
+      if (wrap._editClickHandler) { wrap.removeEventListener('click', wrap._editClickHandler); wrap._editClickHandler = null; }
+      if (wrap._editSavedHandler) { wrap.removeEventListener('activity-saved', wrap._editSavedHandler); wrap._editSavedHandler = null; }
+      wrap.querySelector('.td-edit-bar')?.remove();
+    } else {
+      const { enterEditMode, exitEditMode, makeActivityEditable, refreshActivityPhoto, fetchDirections } = await import('./activity-editor.js');
+
+      const editBar = document.createElement('div');
+      editBar.className = 'td-edit-bar';
+      editBar.innerHTML = `
+        <span>Editing Itinerary</span>
+        <div class="td-edit-bar-actions">
+          <button class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" data-action="done-edit">Done</button>
+        </div>
+      `;
+      const firstDay = wrap.querySelector('.td-day-grid, .td-day-card');
+      if (firstDay) firstDay.parentNode.insertBefore(editBar, firstDay);
+      else wrap.appendChild(editBar);
+
+      editBar.querySelector('[data-action="done-edit"]').addEventListener('click', () => {
+        exitEditMode(wrap);
+        if (wrap._editClickHandler) { wrap.removeEventListener('click', wrap._editClickHandler); wrap._editClickHandler = null; }
+        if (wrap._editSavedHandler) { wrap.removeEventListener('activity-saved', wrap._editSavedHandler); wrap._editSavedHandler = null; }
+        editBar.remove();
+      });
+
+      const wsDest = trip.wizard_state?.multiCity
+        ? trip.wizard_state?.destinations?.[0]
+        : trip.wizard_state?.destination;
+      const tripLocation = wsDest?.lat && wsDest?.lng ? { lat: wsDest.lat, lng: wsDest.lng } : null;
+
+      enterEditMode(wrap, trip);
+
+      wrap._editClickHandler = (e) => {
+        if (!wrap.classList.contains('td-edit-mode')) return;
+        const editBtnEl = e.target.closest('.ae-edit-btn');
+        const card = editBtnEl ? editBtnEl.closest('.td-activity-card') : null;
+        if (!card) return;
+
+        const actId = card.dataset.activityId;
+        if (!actId) return;
+
+        let matchedActivity = null;
+        for (const day of (trip.itinerary_days || [])) {
+          for (const act of (day.activities || [])) {
+            if (act.id === actId) { matchedActivity = act; break; }
+          }
+          if (matchedActivity) break;
+        }
+        if (!matchedActivity) return;
+
+        makeActivityEditable(card, matchedActivity, tripLocation);
+      };
+      wrap.addEventListener('click', wrap._editClickHandler);
+
+      wrap._editSavedHandler = async (e) => {
+        const { activity: savedActivity, venueChanged } = e.detail;
+        const wsDest2 = trip.wizard_state?.multiCity ? trip.wizard_state?.destinations?.[0] : trip.wizard_state?.destination;
+        const sym = wsDest2?.currencySymbol || trip.budget_currency_symbol || '$';
+
+        const rebuildCard = (act, isFirst) => {
+          const html = renderActivity(act, sym, isFirst);
+          const card = wrap.querySelector(`[data-activity-id="${act.id}"]`);
+          if (!card) return;
+          const activityWrapper = card.closest('.td-activity');
+          if (!activityWrapper) return;
+
+          const temp = document.createElement('div');
+          temp.innerHTML = html.trim();
+          const newGettingThere = temp.querySelector('.td-getting-there');
+          const newActivityDiv = temp.querySelector('.td-activity');
+
+          const prevSibling = activityWrapper.previousElementSibling;
+          const hadGettingThere = prevSibling?.classList.contains('td-getting-there');
+
+          if (hadGettingThere) {
+            if (newGettingThere) {
+              prevSibling.replaceWith(newGettingThere);
+            } else {
+              prevSibling.remove();
+            }
+          } else if (newGettingThere) {
+            activityWrapper.before(newGettingThere);
+          }
+
+          if (newActivityDiv) {
+            activityWrapper.replaceWith(newActivityDiv);
+            loadActivityPhotos(newActivityDiv);
+            if (wrap.classList.contains('td-edit-mode')) {
+              const newCard = newActivityDiv.querySelector('.td-activity-card');
+              if (newCard) {
+                newCard.style.position = 'relative';
+                const btn = document.createElement('button');
+                btn.className = 'ae-edit-btn';
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+                btn.title = 'Edit this activity';
+                newCard.appendChild(btn);
+              }
+            }
+          }
+        };
+
+        const { updateActivityById: updateAct } = await import('../data/trip-repository.js');
+
+        for (const day of (trip.itinerary_days || [])) {
+          const acts = day.activities || [];
+          const idx = acts.findIndex(a => a.id === savedActivity.id);
+          if (idx < 0) continue;
+
+          const prev = idx > 0 ? acts[idx - 1] : null;
+          const next = idx < acts.length - 1 ? acts[idx + 1] : null;
+
+          if (venueChanged) {
+            const savedLoc = { lat: savedActivity.latitude, lng: savedActivity.longitude, name: savedActivity.venue_name };
+
+            if (prev && (prev.latitude || prev.venue_name)) {
+              const prevLoc = { lat: prev.latitude, lng: prev.longitude, name: prev.venue_name };
+              const dirs = await fetchDirections(prevLoc, savedLoc);
+              if (dirs?.options?.length) {
+                Object.assign(savedActivity, {
+                  getting_there: dirs.gettingThere,
+                  transport_mode: dirs.transportMode,
+                  transport_duration: dirs.transportDuration,
+                  transport_cost: dirs.transportCost,
+                  transport_options: dirs.options,
+                });
+                await updateAct(savedActivity.id, {
+                  gettingThere: dirs.gettingThere, transportMode: dirs.transportMode,
+                  transportDuration: dirs.transportDuration, transportCost: dirs.transportCost,
+                  transportOptions: dirs.options,
+                });
+              }
+            }
+
+            if (next && (next.latitude || next.venue_name)) {
+              const nextLoc = { lat: next.latitude, lng: next.longitude, name: next.venue_name };
+              const dirs = await fetchDirections(savedLoc, nextLoc);
+              if (dirs?.options?.length) {
+                Object.assign(next, {
+                  getting_there: dirs.gettingThere,
+                  transport_mode: dirs.transportMode,
+                  transport_duration: dirs.transportDuration,
+                  transport_cost: dirs.transportCost,
+                  transport_options: dirs.options,
+                });
+                await updateAct(next.id, {
+                  gettingThere: dirs.gettingThere, transportMode: dirs.transportMode,
+                  transportDuration: dirs.transportDuration, transportCost: dirs.transportCost,
+                  transportOptions: dirs.options,
+                });
+                rebuildCard(next, false);
+              }
+            }
+          }
+
+          rebuildCard(savedActivity, idx === 0);
+          break;
+        }
+      };
+      wrap.addEventListener('activity-saved', wrap._editSavedHandler);
+    }
+  });
+
+  app.querySelector('[data-action="regenerate"]')?.addEventListener('click', async () => {
     const { showEditModal } = await import('./trip-edit.js');
     showEditModal(trip);
   });
