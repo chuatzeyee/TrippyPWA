@@ -34,9 +34,56 @@ export async function startGeneration(tripId, wizardState) {
   }
 }
 
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Inject the traveler's origin + a nearby-trip flag into the wizard state before
+// queuing. Without this the AI has no idea where the user departs from and will
+// invent an origin (e.g. JFK for a Singapore-based user).
+async function enrichWizardState(wizardState) {
+  try {
+    const { fetchProfile } = await import('../data/profile-repository.js');
+    const { DESTINATIONS } = await import('../wizard/destinations.js');
+    const { data: profile } = await fetchProfile();
+    if (!profile?.home_city) return wizardState;
+
+    const enriched = {
+      ...wizardState,
+      departureCity: wizardState.departureCity || profile.home_city,
+      profile: {
+        homeCity: profile.home_city || '',
+        homeCountry: profile.home_country || '',
+        isNomad: profile.is_nomad || false,
+      },
+    };
+
+    // Nearby = same landmass / short hop (use ground transport, no flights).
+    if (!enriched.isNearbyTrip && !wizardState.transport?.mode) {
+      const home = DESTINATIONS.find(d => d.name.toLowerCase() === profile.home_city.toLowerCase());
+      const dest = wizardState.multiCity ? wizardState.destinations?.[0] : wizardState.destination;
+      if (home && dest?.lat && dest?.lng) {
+        const km = haversineKm(home.lat, home.lng, dest.lat, dest.lng);
+        if (km < 500 && km > 10) enriched.isNearbyTrip = true;
+      }
+    }
+    return enriched;
+  } catch (e) {
+    logger.warn('generation', 'Profile enrichment failed; generating without origin', { error: e?.message });
+    return wizardState;
+  }
+}
+
 async function enqueueAndWatch(tripId, wizardState) {
   const user = getUser();
   if (!user) throw new Error('Not authenticated');
+
+  const enriched = await enrichWizardState(wizardState);
 
   // Create the job row, then start watching BEFORE invoking the worker so we
   // cannot miss a fast completion event.
@@ -45,7 +92,7 @@ async function enqueueAndWatch(tripId, wizardState) {
     .insert({
       trip_id: tripId,
       user_id: user.id,
-      wizard_state: wizardState,
+      wizard_state: enriched,
       status: 'queued',
     })
     .select('id')

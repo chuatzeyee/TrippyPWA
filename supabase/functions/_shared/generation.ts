@@ -2,7 +2,10 @@
 // legacy synchronous endpoint (generate-itinerary). Keeping it here prevents the
 // ~300-line prompt/schema/provider code from being duplicated across functions.
 
-export const FETCH_TIMEOUT = 110_000; // stay safely under the ~150s platform cap
+// Free-tier wall-clock cap is 150s PER invocation. In the async design each
+// provider runs in its OWN invocation, so it gets a full 150s — we allow 125s
+// for the model fetch and leave ~25s for parse + the replace_itinerary save.
+export const FETCH_TIMEOUT = 125_000;
 
 export function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
@@ -15,15 +18,19 @@ export function buildPromptAndSchema(wizardState: any) {
     ? wizardState.destinations.map((d: any) => d.name).join(", ")
     : wizardState.destination?.name;
 
-  const dateInfo = wizardState.dates?.start
-    ? `Fixed dates: ${wizardState.dates.start} to ${wizardState.dates.end}`
+  // Fixed start+end is authoritative for the day count. dates.duration defaults
+  // to 7 in the wizard and is NOT cleared when fixed dates are picked, so it must
+  // NOT take precedence — otherwise an 11-day fixed trip gets only 7 days.
+  const hasFixedDates = !!(wizardState.dates?.start && wizardState.dates?.end);
+  const fixedDays = hasFixedDates
+    ? Math.round((new Date(wizardState.dates.end).getTime() - new Date(wizardState.dates.start).getTime()) / 86400000) + 1
+    : 0;
+
+  const dateInfo = hasFixedDates
+    ? `Fixed dates: ${wizardState.dates.start} to ${wizardState.dates.end} (${fixedDays} days inclusive)`
     : `Flexible: approximately ${wizardState.dates?.duration || 7} days, ${wizardState.dates?.season || "any season"}`;
 
-  const days = wizardState.dates?.duration || (
-    wizardState.dates?.start && wizardState.dates?.end
-      ? Math.round((new Date(wizardState.dates.end).getTime() - new Date(wizardState.dates.start).getTime()) / 86400000) + 1
-      : 7
-  );
+  const days = hasFixedDates ? fixedDays : (wizardState.dates?.duration || 7);
 
   const currency = wizardState.destination?.currencyCode || "USD";
   const currencySymbol = wizardState.destination?.currencySymbol || "$";
@@ -33,6 +40,21 @@ export function buildPromptAndSchema(wizardState: any) {
   const homeCity = wizardState.profile?.homeCity || "";
   const homeCountry = wizardState.profile?.homeCountry || "";
   const departureCity = wizardState.departureCity || homeCity;
+
+  // Multi-city routing guidance. The user's city ordering is just a wish-list;
+  // the AI should sequence them sensibly: enter at the city nearest/cheapest to
+  // reach from the origin, then visit the rest by geographic proximity (shortest
+  // total inter-city travel), and depart from the last city.
+  const cityNames: string[] = wizardState.multiCity && wizardState.destinations?.length > 1
+    ? wizardState.destinations.map((d: any) => d.name)
+    : [];
+  const multiCityNote = cityNames.length > 1
+    ? `\n- MULTI-CITY ROUTING: The traveler wants to visit ${cityNames.join(", ")} (this is an unordered wish-list, NOT a fixed order).${departureCity ? ` They depart from ${departureCity}.` : ""} You MUST choose the optimal route:
+  1. ENTRY: Start at whichever of these cities is nearest and cheapest to reach from ${departureCity || "the origin"} — that is the arrival city (book the inbound flight/transport into it).
+  2. ORDER: Then sequence the remaining cities by geographic proximity, minimizing total inter-city travel time — each next city should be the closest unvisited one. Do NOT just follow the order the traveler listed them.
+  3. EXIT: Depart back to ${departureCity || "the origin"} from the LAST city in your route (book the return from there).
+  4. Allocate days per city proportional to its size/attractions, and include realistic inter-city transport (train/flight/bus) as activities on the travel days. State the chosen route explicitly in the day titles/themes.`
+    : "";
 
   const accomType = wizardState.accommodation?.type || "hotel";
   const stars = wizardState.accommodation?.stars || 0;
@@ -98,7 +120,7 @@ export function buildPromptAndSchema(wizardState: any) {
 
 TRIP DETAILS:
 - ${dateInfo}
-- ${travelers} traveler${travelers > 1 ? "s" : ""}${departureCity ? `\n- Departing from: ${departureCity}${homeCountry ? `, ${homeCountry}` : ""}` : ""}
+- ${travelers} traveler${travelers > 1 ? "s" : ""}${departureCity ? `\n- Departing from: ${departureCity}${homeCountry ? `, ${homeCountry}` : ""}` : ""}${multiCityNote}
 - Daily budget: ${currencySymbol}${budget} per person (${currency})
 ${accomSettled && accomAddress
   ? `- ACCOMMODATION (PRE-BOOKED): The traveler has ALREADY booked accommodation at "${accomAddress}"${accomCheckIn ? `, checking in ${accomCheckIn}` : ""}. Look up this property and return it as the ONLY accommodation option with badge "Pre-booked". Do NOT suggest alternative accommodation.`
@@ -137,7 +159,7 @@ ${isNearbyTrip
   ? `12. Include "transport" (NOT "flights" — do NOT include a "flights" key at all) with suggested outbound and inbound ${transportMode ? (transportLabel[transportMode] || transportMode) : "ground/sea transport"} options — include operator name, mode (bus/train/ferry/drive), route, duration, schedule frequency, and pricing. For ferries include terminal names. For buses include bus operator and station. For trains include train service name and station. NEVER generate airline names or flight numbers.`
   : flightsSettled && settledFlightNumber
   ? `12. Include "flights" — the traveler has PRE-BOOKED flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight for the outbound/inbound entry. For the other direction, suggest a realistic return flight from the same airline.`
-  : `12. Include "flights" with suggested outbound and inbound flight options — recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing for ${fareClass} class.`}
+  : `12. Include "flights" with suggested outbound and inbound flight options for ${fareClass} class. ${departureCity ? `The OUTBOUND flight MUST depart from ${departureCity}${homeCountry ? ` (${homeCountry})` : ""} and arrive at the entry city you selected above; the INBOUND flight MUST return from the last city of the route back to ${departureCity}. Use airlines and routes that realistically serve ${departureCity}.` : "Use the traveler's stated origin as the departure point."} Recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing.`}
 ${accomSettled && accomAddress
   ? `13. Include "accommodation" with ONLY the pre-booked property: "${accomAddress}". Look up the actual name, neighborhood, and details of this property. Return it as a single item with badge "Pre-booked". Do NOT add alternative options.`
   : `13. Include "accommodation" with 2-3 hotel/apartment options at different price points matching the traveler's ${accomType} preference. Include name, neighborhood, price range, type, highlights, and a badge (Recommended, Best Value, Best Location, or Luxury Pick).`}
@@ -159,7 +181,7 @@ Key principles:
 - Costs should be realistic current prices in local currency
 - Descriptions should be vivid and helpful, not generic
 
-The "tripTitle" should be SHORT: just the city or region name (e.g. "Melbourne", "Tokyo", "Barcelona to Madrid"). Do NOT include duration, day count, or long descriptive subtitles.
+The "tripTitle" should be SHORT: just the city or region name (e.g. "Melbourne", "Tokyo"). For multiple cities, join them with commas and an ampersand (e.g. "Barcelona & Madrid", "Tokyo, Osaka & Kyoto"). Do NOT include duration, day count, or long descriptive subtitles.
 
 Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON only.`;
 
@@ -353,8 +375,10 @@ export async function callGemini(
       responseSchema: geminiSchema,
       temperature: 0.7,
       maxOutputTokens,
-      // thinkingBudget removed: for a strict-schema JSON task it mostly added
-      // latency and pushed the request past the platform cap.
+      // 2.5 Flash is a thinking model. Leaving thinking UNBOUNDED lets it consume
+      // the entire output-token budget and return empty text (finishReason
+      // MAX_TOKENS). A small bounded budget keeps quality without starving output.
+      thinkingConfig: { thinkingBudget: 512 },
     }
   };
 
@@ -372,11 +396,22 @@ export async function callGemini(
     }
 
     const geminiData = await res.json();
-    const textContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textContent) return { data: null, error: "No content from Gemini" };
+    const cand = geminiData.candidates?.[0];
+    const textContent = cand?.content?.parts?.[0]?.text;
+    if (!textContent) {
+      // Surface WHY there's no text (MAX_TOKENS, SAFETY, RECITATION...) so the
+      // failure is diagnosable instead of an opaque "No content".
+      const reason = cand?.finishReason || geminiData.promptFeedback?.blockReason || "unknown";
+      return { data: null, error: `No content from Gemini (finishReason: ${reason})` };
+    }
 
     const cleaned = textContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
-    const parsed = JSON.parse(cleaned);
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      return { data: null, error: "Gemini returned unparseable JSON (likely truncated)" };
+    }
     if (!parsed.days || !Array.isArray(parsed.days)) return { data: null, error: "Gemini returned incomplete itinerary" };
 
     return { data: parsed, error: null };
@@ -417,7 +452,12 @@ export async function callMistral(
     if (!content) return { data: null, error: "No content from Mistral" };
 
     const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
-    const parsed = JSON.parse(cleaned);
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      return { data: null, error: "Mistral returned unparseable JSON (likely truncated)" };
+    }
     if (!parsed.days || !Array.isArray(parsed.days)) return { data: null, error: "Mistral returned incomplete itinerary" };
 
     return { data: parsed, error: null };

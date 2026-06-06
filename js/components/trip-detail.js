@@ -1,6 +1,6 @@
 import { navigate, onRouteLeave } from '../router.js';
 import { fetchTripById, deleteTrip } from '../data/trip-repository.js';
-import { formatNumber, formatDateRange, formatWeekdayDate, getLocale } from '../lib/locale.js';
+import { formatNumber, formatDateRange, formatWeekdayDate, getLocale, formatCityList } from '../lib/locale.js';
 import { convert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
@@ -510,7 +510,7 @@ function tripHeader(trip) {
   const wsDest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
   const sym = wsDest?.currencySymbol || trip.budget_currency_symbol || '$';
   const shortTitle = ws?.multiCity && ws?.destinations?.length > 0
-    ? ws.destinations.map(d => d.name).join(' → ')
+    ? formatCityList(ws.destinations.map(d => d.name))
     : ws?.destination?.name || trip.title || 'My Trip';
 
   let totalCost = 0;

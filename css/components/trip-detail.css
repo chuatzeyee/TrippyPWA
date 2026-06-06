@@ -2671,8 +2671,10 @@
 }
 
 @media (display-mode: standalone) and (max-width: 768px) {
+  /* Body already applies env(safe-area-inset-top); the nav is hidden in PWA
+     mode, so only a small top padding is needed (no double safe-area inset). */
   .td-wrap {
-    padding-top: calc(env(safe-area-inset-top, 12px) + var(--sp-4));
+    padding-top: var(--sp-4);
   }
 }
 
