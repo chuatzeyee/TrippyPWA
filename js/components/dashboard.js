@@ -3,6 +3,8 @@ import { escapeHtml } from '../data/day-builder.js';
 import { getAllTrips } from '../data/registry.js';
 import { DESTINATIONS } from '../wizard/destinations.js';
 import { formatNumber, formatWeekdayDate, formatCityList } from '../lib/locale.js';
+import { convert, canConvert } from '../data/currencies.js';
+import { getHomeCurrency } from '../data/user-prefs.js';
 
 function hasLocalSession() {
   try {
@@ -37,6 +39,19 @@ function formatDates(trip) {
   const dateStr = formatWeekdayDate(trip.dates.start);
   const dayCount = trip.dayCount || 0;
   return `${dateStr}${dayCount > 0 ? ` · ${dayCount} days` : ''}`;
+}
+
+// Show the trip total converted into the traveler's home currency, e.g.
+// "CHF1,108" with "≈ S$1,650" beneath it. Hidden when home == trip currency or
+// when we have no rate for either currency.
+function tripCardHomeTotal(budget) {
+  const home = getHomeCurrency();
+  if (!home?.code) return '';
+  const tripCode = budget.currencyCode || 'USD';
+  if (home.code === tripCode) return '';
+  if (!canConvert(home.code) || !canConvert(tripCode)) return '';
+  const converted = convert(budget.total, tripCode, home.code);
+  return `<span class="trip-card-budget-home">&asymp; ${escapeHtml(home.symbol || '')}${formatNumber(converted)}</span>`;
 }
 
 function renderTripCard(trip, index) {
@@ -77,10 +92,8 @@ function renderTripCard(trip, index) {
           </div>
         ` : trip.budget?.total ? `
           <div class="trip-card-budget">
-            ${escapeHtml(trip.budget.currencySymbol || '$')}${formatNumber(trip.budget.total)}
-            <div class="trip-card-budget-bar">
-              <div class="trip-card-budget-fill" style="width: ${Math.min(100, (trip.budget.spent || 0) / trip.budget.total * 100)}%"></div>
-            </div>
+            <span class="trip-card-budget-amount">${escapeHtml(trip.budget.currencySymbol || '$')}${formatNumber(trip.budget.total)}</span>
+            ${tripCardHomeTotal(trip.budget)}
           </div>
         ` : '<div class="trip-card-budget">Planning...</div>'}
         ${status === 'active' ? `<button class="trip-card-now-btn" data-now-trip="${escapeHtml(trip.id)}">Current Activity &rarr;</button>` : ''}
@@ -350,6 +363,7 @@ export async function renderDashboard() {
           dayCount,
           budget: {
             currencySymbol: dest?.currencySymbol || t.budget_currency_symbol || '$',
+            currencyCode: dest?.currencyCode || t.budget_currency || 'USD',
             total: activityTotal > 0 ? activityTotal : budgetEstimate,
             spent: 0
           },

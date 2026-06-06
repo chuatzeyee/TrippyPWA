@@ -503,7 +503,7 @@
 }
 
 .td-day-card--section .td-day-card-body {
-  padding-top: calc(var(--sp-4) + 56px);
+  padding-top: var(--sp-2);
 }
 
 /* ===== Open State ===== */
@@ -530,7 +530,7 @@
 
 .td-day-card--open .td-day-card-body {
   display: block;
-  padding-top: calc(var(--sp-4) + 56px);
+  padding-top: var(--sp-2);
   animation: cascadeDown 0.35s var(--ease-out) both;
 }
 
@@ -2465,7 +2465,7 @@
   }
 
   .td-day-card--open .td-day-card-body {
-    padding-top: calc(var(--sp-8) + 56px);
+    padding-top: var(--sp-2);
   }
 
   .td-main > .td-quick-checklist {
@@ -2675,10 +2675,10 @@
     top: calc(env(safe-area-inset-top, 0px) + var(--sp-2));
   }
   .td-day-card--open .td-day-card-body {
-    padding-top: var(--sp-6);
+    padding-top: var(--sp-2);
   }
   .td-day-card--section .td-day-card-body {
-    padding-top: var(--sp-6);
+    padding-top: var(--sp-2);
   }
 }
 
