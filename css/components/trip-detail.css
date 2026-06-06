@@ -1155,12 +1155,14 @@
 
 .td-exchange-value {
   font-family: var(--font-mono);
-  font-size: 2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--terracotta);
   padding: var(--sp-2) var(--sp-4);
   background: rgba(229, 225, 216, 0.06);
   border-radius: var(--r-lg);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .td-exchange-grid {
