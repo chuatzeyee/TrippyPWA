@@ -172,7 +172,7 @@ ${isNearbyTrip
   : `12. Include "flights" with suggested outbound and inbound flight options for ${fareClass} class. ${departureCity ? `The OUTBOUND flight MUST depart from ${departureCity}${homeCountry ? ` (${homeCountry})` : ""} and arrive at the entry city you selected above; the INBOUND flight MUST return from the last city of the route back to ${departureCity}. Use airlines and routes that realistically serve ${departureCity}.` : "Use the traveler's stated origin as the departure point."} Recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing.`}
 ${accomSettled && accomAddress
   ? `13. Include "accommodation" with ONLY the pre-booked property: "${accomAddress}". Look up the actual name, neighborhood, and details of this property. Return it as a single item with badge "Pre-booked". Do NOT add alternative options.`
-  : `13. Include "accommodation" with 2-3 hotel/apartment options at different price points matching the traveler's ${accomType} preference. Include name, neighborhood, price range, type, highlights, and a badge (Recommended, Best Value, Best Location, or Luxury Pick).`}
+  : `13. Include "accommodation" with hotel/apartment options matching the traveler's ${accomType} preference. Each item needs: name, area (neighborhood), priceRange, type, highlights, a badge (Recommended, Best Value, Best Location, or Luxury Pick), and "city" (which city it is in).${cityNames.length > 1 ? ` This is a MULTI-CITY trip — provide 2-3 options FOR EACH city the traveler stays in (${cityNames.join(", ")}), and set "city" to that city's name so options can be grouped per city.` : ` Provide 2-3 options and set "city" to ${destName || "the destination"}.`}`}
 14. Include "bookingChecklist" — scan every activity and identify which ones need advance booking (museum tickets, restaurant reservations, tours, shows). Group into "Must Book Ahead" (sells out or requires reservation) and "Good to Book" (walk-in possible but booking saves time). Include the day number and a practical booking note.
 15. Include "savingsTips" — an array of 4-6 REAL, SPECIFIC money-saving tips for tourists in ${dest} during the travel dates. These MUST be:
    a) REAL programs, passes, discounts, or free services that actually exist (not generic advice)
@@ -225,7 +225,7 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
         transportCost: "string"
       }]
     }],
-    accommodation: [{ name: "string", area: "string", priceRange: "string", type: "string", highlights: "string", badge: "string" }],
+    accommodation: [{ name: "string", area: "string", city: "string", priceRange: "string", type: "string", highlights: "string", badge: "string" }],
     bookingChecklist: [{ group: "string", items: [{ label: "string", day: "integer", note: "string", url: "string (optional)" }] }],
     savingsTips: [{ icon: "string (emoji)", title: "string", description: "string", estimatedSaving: "string" }]
   };
@@ -299,7 +299,7 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
         type: "array",
         items: {
           type: "object",
-          properties: { name: { type: "string" }, area: { type: "string" }, priceRange: { type: "string" }, type: { type: "string" }, highlights: { type: "string" }, badge: { type: "string" } },
+          properties: { name: { type: "string" }, area: { type: "string" }, city: { type: "string" }, priceRange: { type: "string" }, type: { type: "string" }, highlights: { type: "string" }, badge: { type: "string" } },
           required: ["name", "area", "priceRange", "type", "highlights", "badge"]
         }
       },

@@ -1,7 +1,7 @@
 import { navigate } from '../router.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { loadWizardState, saveWizardState, updateWizardField, clearWizardState, canAdvance } from './wizard-state.js';
-import { searchDestinations, getPopularDestinations, DESTINATIONS } from './destinations.js';
+import { searchDestinations, getPopularDestinations, DESTINATIONS, makeCustomDestination } from './destinations.js';
 import { renderCalendar } from './calendar.js';
 import { convert, formatCurrency } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
@@ -504,12 +504,7 @@ function renderStep1(el) {
       return;
     }
     const matches = searchDestinations(q);
-    if (matches.length === 0) {
-      dropdown.classList.remove('dest-dropdown--open');
-      dropdown.innerHTML = '';
-      return;
-    }
-    dropdown.innerHTML = matches.map(d => {
+    let html = matches.map(d => {
       const active = state.multiCity
         ? state.destinations.some(s => s.name === d.name)
         : state.destination?.name === d.name;
@@ -523,6 +518,24 @@ function renderStep1(el) {
         </div>
       `;
     }).join('');
+
+    // Offer to add the typed city even if it is not in our curated list (e.g.
+    // Utrecht). Skip if the query already exactly matches a listed destination.
+    const exact = matches.some(d => d.name.toLowerCase() === q.toLowerCase());
+    if (!exact) {
+      const custom = makeCustomDestination(q);
+      html += `
+        <div class="dest-dropdown-item dest-dropdown-item--custom" data-dest='${JSON.stringify(custom).replace(/'/g, "&#39;")}'>
+          <span class="dest-dropdown-flag">📍</span>
+          <div>
+            <span class="dest-dropdown-name">Use &ldquo;${escapeHtml(custom.name)}&rdquo;</span>
+            <span class="dest-dropdown-country">Add this city</span>
+          </div>
+        </div>
+      `;
+    }
+
+    dropdown.innerHTML = html;
     dropdown.classList.add('dest-dropdown--open');
     bindDropdownClicks(dropdown, searchInput, dropdown);
   });
