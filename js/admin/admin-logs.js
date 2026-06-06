@@ -105,16 +105,17 @@ export function renderLogsPanel() {
         <thead>
           <tr>
             <th style="width:70px">Level</th>
-            <th style="width:130px">Time</th>
+            <th style="width:120px">Time</th>
             <th style="width:90px">Category</th>
-            <th style="width:60px">Source</th>
-            <th style="width:70px">Model</th>
+            <th style="width:110px">User</th>
+            <th style="width:120px">Destination</th>
+            <th style="width:60px">Model</th>
             <th>Message</th>
             <th style="width:40px"></th>
           </tr>
         </thead>
         <tbody>
-          ${logs.length === 0 ? '<tr><td colspan="7" class="adm-empty">No logs found</td></tr>' : logs.map(renderLogRow).join('')}
+          ${logs.length === 0 ? '<tr><td colspan="8" class="adm-empty">No logs found</td></tr>' : logs.map(renderLogRow).join('')}
         </tbody>
       </table>
     </div>
@@ -130,6 +131,8 @@ function renderLogRow(log) {
 
   const meta = log.metadata || {};
   const provider = meta.provider || '';
+  const userName = log.profiles?.display_name?.trim();
+  const tripTitle = log.trips?.title?.trim();
 
   let detail = '';
   if (isExpanded) {
@@ -137,7 +140,7 @@ function renderLogRow(log) {
     const stack = meta.stack || '';
     detail = `
       <tr class="adm-log-detail-row">
-        <td colspan="7">
+        <td colspan="8">
           <div class="adm-log-detail">
             ${log.user_id ? `<div class="adm-log-detail-field"><strong>User ID:</strong> ${esc(log.user_id)}</div>` : ''}
             ${log.trip_id ? `<div class="adm-log-detail-field"><strong>Trip ID:</strong> ${esc(log.trip_id)}</div>` : ''}
@@ -163,7 +166,8 @@ function renderLogRow(log) {
         <span class="adm-log-time-rel">${relativeTime(log.created_at)}</span>
       </td>
       <td><span class="adm-badge ${catClass}">${log.category}</span></td>
-      <td><span class="adm-badge adm-badge--muted">${log.source}</span></td>
+      <td class="adm-log-user" title="${esc(userName || (log.user_id ? log.user_id : ''))}">${userName ? esc(userName) : '<span class="adm-log-no-model">-</span>'}</td>
+      <td class="adm-log-dest" title="${esc(tripTitle || '')}">${tripTitle ? esc(tripTitle) : '<span class="adm-log-no-model">-</span>'}</td>
       <td>${providerBadge}</td>
       <td class="adm-log-message" title="${esc(log.message)}">${esc(log.message)}</td>
       <td><button class="adm-log-expand-btn" data-log-id="${log.id}">${isExpanded ? '&#9650;' : '&#9660;'}</button></td>

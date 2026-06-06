@@ -2,7 +2,7 @@
 
 .adm {
   /* Generous top padding so the header clears the sticky nav with breathing room. */
-  padding: var(--sp-16) 0 var(--sp-16);
+  padding: calc(var(--sp-16) + var(--sp-6)) 0 var(--sp-16);
   max-width: 1080px;
   margin: 0 auto;
 }
@@ -702,6 +702,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.adm-log-user,
+.adm-log-dest {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--ink-secondary);
 }
 
 .adm-log-expand-btn {

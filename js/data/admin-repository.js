@@ -81,7 +81,9 @@ export async function deleteUserTrip(tripId) {
 export async function fetchLogs({ level, category, source, limit = 100, offset = 0 } = {}) {
   let query = supabase
     .from('app_logs')
-    .select('*', { count: 'exact' })
+    // Embed the related user name + trip title so the logs view can show who/what
+    // each log refers to (nullable: system logs have no user/trip).
+    .select('*, profiles(display_name), trips(title)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 

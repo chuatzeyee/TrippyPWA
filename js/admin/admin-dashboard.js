@@ -59,7 +59,7 @@ const STATUS_BADGES = {
 
 const STAT_ICONS = {
   users: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
-  trips: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>',
+  trips: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/><line x1="9" y1="11" x2="9" y2="16"/><line x1="15" y1="11" x2="15" y2="16"/></svg>',
   generated: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
   admin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
   logs: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
@@ -188,7 +188,7 @@ function buildTripRow(t, owner) {
           <button class="adm-btn adm-btn--ghost adm-view-trip" data-trip-id="${t.id}" title="View trip">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
-          ${t.status === 'failed' || t.status === 'generating' ? `<button class="adm-btn adm-btn--retry adm-retry-trip" data-trip-id="${t.id}" title="Retry generation">
+          ${t.status !== 'generating' ? `<button class="adm-btn adm-btn--retry adm-retry-trip" data-trip-id="${t.id}" title="${t.status === 'failed' ? 'Retry generation' : 'Regenerate itinerary'}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
           </button>` : ''}
           <button class="adm-btn adm-btn--danger adm-delete-trip" data-trip-id="${t.id}" title="Delete trip">
@@ -389,7 +389,7 @@ export async function renderAdminDashboard() {
             Users <span class="adm-tab-count">${users.length}</span>
           </button>
           <button class="adm-tab ${activeTab === 'trips' ? 'adm-tab--active' : ''}" data-tab="trips">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/><line x1="9" y1="11" x2="9" y2="16"/><line x1="15" y1="11" x2="15" y2="16"/></svg>
             Trips <span class="adm-tab-count">${trips.length}</span>
           </button>
           <button class="adm-tab ${activeTab === 'logs' ? 'adm-tab--active' : ''}" data-tab="logs">
@@ -511,6 +511,11 @@ export async function renderAdminDashboard() {
         e.preventDefault();
         e.stopPropagation();
         const tripId = retryBtn.dataset.tripId;
+        const row = retryBtn.closest('tr');
+        const curStatus = row?.querySelector('.adm-badge')?.textContent?.trim();
+        // Regenerating an already-generated trip replaces its itinerary, so confirm.
+        if (curStatus && curStatus !== 'failed' &&
+            !confirm('Regenerate this itinerary? The current plan will be replaced.')) return;
         retryBtn.disabled = true;
         retryBtn.classList.add('adm-btn--spinning');
         retryTripGeneration(tripId).then(({ error }) => {
