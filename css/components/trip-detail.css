@@ -543,7 +543,7 @@
 /* Sticky floating header on open cards */
 .td-day-card--open .td-day-card-header {
   position: sticky;
-  top: calc(56px + var(--sp-3));
+  top: calc(var(--nav-h) + var(--sp-3));
   z-index: var(--z-sticky);
   background: var(--surface-solid);
   border-radius: var(--r-xl);
@@ -675,7 +675,7 @@
   transition: background var(--duration-fast);
 }
 
-.td-activity-card:active {
+.td-edit-mode .td-activity-card:active {
   background: rgba(229, 225, 216, 0.03);
 }
 
@@ -2480,8 +2480,8 @@
   .td-sidebar {
     display: block;
     position: sticky;
-    top: calc(56px + var(--sp-4));
-    max-height: calc(100dvh - 56px - var(--sp-8));
+    top: calc(var(--nav-h) + var(--sp-4));
+    max-height: calc(100dvh - var(--nav-h) - var(--sp-8));
     overflow-y: auto;
     border-radius: var(--r-xl);
     background: var(--surface-solid);
@@ -2492,7 +2492,7 @@
   }
 
   .td-day-card--open .td-day-card-header {
-    top: calc(56px + var(--sp-4));
+    top: calc(var(--nav-h) + var(--sp-4));
     margin: 0 var(--sp-2);
   }
 
@@ -2733,7 +2733,7 @@
   border-color: rgba(74, 150, 132, 0.3);
 }
 
-[data-theme="light"] .td-activity-card:active {
+[data-theme="light"] .td-edit-mode .td-activity-card:active {
   background: rgba(44, 42, 37, 0.03);
 }
 

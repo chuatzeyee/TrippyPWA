@@ -409,13 +409,18 @@ function hiResImage(url) {
 }
 
 function renderCoverflow(popular, isSelected) {
-  const cards = popular.map(d => {
+  const card = (d, dup) => {
     const bg = d.image
       ? `background-image: url('${escapeHtml(hiResImage(d.image))}'); background-color: var(--surface-inset);`
       : 'background: linear-gradient(135deg, var(--teal-light), var(--terracotta-light));';
     const sel = isSelected(d) ? ' coverflow-card--selected' : '';
+    // The track is duplicated for the infinite-scroll loop; the duplicate set is
+    // hidden from AT and the tab order to avoid double stops.
+    const a11y = dup
+      ? 'aria-hidden="true" tabindex="-1"'
+      : `role="button" tabindex="0" aria-label="Choose ${escapeHtml(d.name)}, ${escapeHtml(d.country)}"`;
     return `
-      <div class="coverflow-card${sel}" data-dest='${JSON.stringify(d).replace(/'/g, "&#39;")}' style="${bg}">
+      <div class="coverflow-card${sel}" data-dest='${JSON.stringify(d).replace(/'/g, "&#39;")}' style="${bg}" ${a11y}>
         <span class="coverflow-flag">${flagImg(d.flag, 28)}</span>
         <div class="coverflow-label">
           <span class="coverflow-city">${escapeHtml(d.name)}</span>
@@ -423,12 +428,14 @@ function renderCoverflow(popular, isSelected) {
           <span class="coverflow-budget">From $${d.budgetRange.backpacker}/day</span>
         </div>
       </div>`;
-  }).join('');
+  };
+  const primary = popular.map(d => card(d, false)).join('');
+  const duplicate = popular.map(d => card(d, true)).join('');
   return `
     <div class="coverflow">
       <div class="coverflow-track">
         <div class="coverflow-inner" id="coverflow-inner">
-          ${cards}${cards}
+          ${primary}${duplicate}
         </div>
       </div>
     </div>`;
@@ -436,9 +443,10 @@ function renderCoverflow(popular, isSelected) {
 
 function setupCoverflowClicks(container) {
   container.querySelectorAll('.coverflow-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const dest = JSON.parse(card.dataset.dest);
-      selectDestination(dest);
+    const choose = () => selectDestination(JSON.parse(card.dataset.dest));
+    card.addEventListener('click', choose);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); }
     });
   });
 }

@@ -57,7 +57,10 @@ export function renderCalendar(container, { start, end, onSelect }) {
       if (isInRange) cls += ' cal-cell--range';
       if (isToday && !isStart && !isEnd) cls += ' cal-cell--today';
 
-      cells += `<div class="${cls}" ${isPast ? '' : `data-date="${dateStr}"`}>${d}</div>`;
+      const cellA11y = isPast
+        ? 'aria-disabled="true"'
+        : `data-date="${dateStr}" role="button" tabindex="0" aria-label="${dateStr}"`;
+      cells += `<div class="${cls}" ${cellA11y}>${d}</div>`;
     }
 
     container.innerHTML = `
@@ -84,7 +87,7 @@ export function renderCalendar(container, { start, end, onSelect }) {
     });
 
     container.querySelectorAll('[data-date]').forEach(cell => {
-      cell.addEventListener('click', () => {
+      const pick = () => {
         const clicked = parseDate(cell.dataset.date);
         if (phase === 'start' || phase === 'done') {
           selStart = clicked;
@@ -101,6 +104,10 @@ export function renderCalendar(container, { start, end, onSelect }) {
           onSelect(toDateStr(selStart), toDateStr(selEnd));
         }
         render();
+      };
+      cell.addEventListener('click', pick);
+      cell.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); }
       });
     });
   }
