@@ -102,21 +102,20 @@
   font: var(--text-small);
   color: var(--ink-secondary);
   margin-top: var(--sp-1);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
 
-.trip-card-budget-bar {
-  height: 4px;
-  background: var(--border);
-  border-radius: var(--r-pill);
-  margin-top: var(--sp-1);
-  overflow: hidden;
+.trip-card-budget-amount {
+  font-weight: 600;
+  color: var(--ink);
 }
 
-.trip-card-budget-fill {
-  height: 100%;
-  border-radius: var(--r-pill);
-  background: var(--terracotta);
-  transition: width var(--duration-slow) var(--ease-out);
+.trip-card-budget-home {
+  color: var(--ink-ghost);
+  font-size: 0.85em;
 }
 
 /* ===== Generating Card ===== */
