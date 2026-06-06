@@ -998,6 +998,7 @@ function bindQuickChecklist(container, tripId) {
           if (grid) {
             grid.classList.add('td-day-grid--has-open');
             grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+            syncDayHeaderExpanded(grid);
           }
         } else {
           section.classList.remove('td-section-card--collapsed');
@@ -1323,6 +1324,7 @@ function bindSidebar(container) {
 
       grid.classList.add('td-day-grid--has-open');
       grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+      syncDayHeaderExpanded(grid);
       updateSidebarActive(container, dayIndex);
 
       setTimeout(() => {
@@ -1345,6 +1347,7 @@ function bindSidebar(container) {
       if (grid) {
         grid.classList.add('td-day-grid--has-open');
         grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+        syncDayHeaderExpanded(grid);
       }
 
       setTimeout(() => {
@@ -1786,6 +1789,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
       if (grid) {
         grid.classList.add('td-day-grid--has-open');
         grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+        syncDayHeaderExpanded(grid);
       }
       setTimeout(() => {
         dayCard.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1960,6 +1964,15 @@ function setupDayScrollSpy(container) {
   };
 }
 
+// Keep aria-expanded on every day-card header in sync with the grid's actual
+// open/closed state. Called from every path that toggles td-day-grid--has-open
+// (the header itself, the quick-checklist row, the sidebar, the today-jump).
+function syncDayHeaderExpanded(grid) {
+  if (!grid) return;
+  const expanded = grid.classList.contains('td-day-grid--has-open');
+  grid.querySelectorAll('.td-day-card-header').forEach(h => h.setAttribute('aria-expanded', String(expanded)));
+}
+
 function bindDayCards(container) {
   const grid = container.querySelector('.td-day-grid');
   if (!grid) return;
@@ -1969,10 +1982,6 @@ function bindDayCards(container) {
       card.style.animation = 'none';
     }, { once: true });
   });
-
-  const setExpandedState = (expanded) => {
-    grid.querySelectorAll('.td-day-card-header').forEach(h => h.setAttribute('aria-expanded', String(expanded)));
-  };
 
   grid.querySelectorAll('.td-day-card-header').forEach(header => {
     // Make the header a real keyboard-operable control.
@@ -1989,11 +1998,11 @@ function bindDayCards(container) {
       if (isExpanded) {
         grid.classList.remove('td-day-grid--has-open');
         grid.querySelectorAll('.td-day-card--open').forEach(c => c.classList.remove('td-day-card--open'));
-        setExpandedState(false);
+        syncDayHeaderExpanded(grid);
       } else {
         grid.classList.add('td-day-grid--has-open');
         grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
-        setExpandedState(true);
+        syncDayHeaderExpanded(grid);
         const dayIdx = card.dataset.dayIndex;
         if (dayIdx != null) updateSidebarActive(container, dayIdx);
         setTimeout(() => {
