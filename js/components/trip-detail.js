@@ -815,33 +815,47 @@ function renderAccommodationContent(extras) {
       .map(s => s.charAt(0).toUpperCase() + s.slice(1));
   }
 
-  return `
-    <div class="td-accom-grid">
-      ${accom.map(a => {
-        const features = parseFeatures(a.highlights);
-        return `
-          <div class="td-accom-option">
-            <div class="td-accom-head">
-              ${a.badge ? `<span class="td-accom-badge" style="background: ${BADGE_COLORS[a.badge] || 'var(--terracotta)'}">${esc(a.badge)}</span>` : ''}
-              <div class="td-accom-name">${esc(a.name)}</div>
-              <div class="td-accom-area">${esc(a.area)} · ${esc(a.type)}</div>
-            </div>
-            <div class="td-accom-price">${esc(a.priceRange)}</div>
-            ${features.length > 0 ? `
-              <ul class="td-accom-features">
-                ${features.map(f => `<li>${esc(f)}</li>`).join('')}
-              </ul>
-            ` : ''}
-            <div class="td-accom-links">
-              ${accomBookingLinks(a.name, a.area).map(l => `
-                <a class="td-accom-link" href="${l.url}" target="_blank" rel="noopener noreferrer">${l.icon} ${l.label}</a>
-              `).join('')}
-            </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
+  const renderOption = (a) => {
+    const features = parseFeatures(a.highlights);
+    return `
+      <div class="td-accom-option">
+        <div class="td-accom-head">
+          ${a.badge ? `<span class="td-accom-badge" style="background: ${BADGE_COLORS[a.badge] || 'var(--terracotta)'}">${esc(a.badge)}</span>` : ''}
+          <div class="td-accom-name">${esc(a.name)}</div>
+          <div class="td-accom-area">${esc(a.area)} · ${esc(a.type)}</div>
+        </div>
+        <div class="td-accom-price">${esc(a.priceRange)}</div>
+        ${features.length > 0 ? `
+          <ul class="td-accom-features">
+            ${features.map(f => `<li>${esc(f)}</li>`).join('')}
+          </ul>
+        ` : ''}
+        <div class="td-accom-links">
+          ${accomBookingLinks(a.name, a.area).map(l => `
+            <a class="td-accom-link" href="${l.url}" target="_blank" rel="noopener noreferrer">${l.icon} ${l.label}</a>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  };
+
+  // Group by city when the itinerary spans multiple cities, so each city's stays
+  // are shown under their own heading. Legacy/single-city data has no city field
+  // (or one distinct value) and renders as a single flat grid.
+  const cities = [...new Set(accom.map(a => (a.city || '').trim()).filter(Boolean))];
+  if (cities.length > 1) {
+    return cities.map(city => {
+      const forCity = accom.filter(a => (a.city || '').trim() === city);
+      return `
+        <div class="td-accom-city-group">
+          <h4 class="td-accom-city-heading">${esc(city)}</h4>
+          <div class="td-accom-grid">${forCity.map(renderOption).join('')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  return `<div class="td-accom-grid">${accom.map(renderOption).join('')}</div>`;
 }
 
 function renderBookingChecklist(extras, tripId) {

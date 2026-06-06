@@ -163,6 +163,26 @@ export function searchDestinations(query) {
   ).slice(0, 8);
 }
 
+// Build a minimal destination for a city not in the curated list (e.g. Utrecht).
+// Coords/currency are unknown, so the AI infers them from the name; budget falls
+// back to a mid-range default and currency to USD until the user adjusts it.
+export function makeCustomDestination(name) {
+  const clean = String(name || '').trim().replace(/\s+/g, ' ');
+  return {
+    name: clean,
+    country: '',
+    flag: '',
+    lat: null,
+    lng: null,
+    currencyCode: 'USD',
+    currencySymbol: '$',
+    timezone: null,
+    budgetRange: { backpacker: 60, comfortable: 140, luxury: 320 },
+    image: '',
+    custom: true,
+  };
+}
+
 const POPULAR_NAMES = ['Tokyo', 'Melbourne', 'Guangzhou', 'Bali', 'Helsinki', 'London', 'Seoul', 'Zurich'];
 
 export function getPopularDestinations() {
