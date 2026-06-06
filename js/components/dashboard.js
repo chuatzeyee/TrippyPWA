@@ -67,7 +67,7 @@ function renderTripCard(trip, index) {
       <div class="trip-card-hero" style="${heroStyle}">
         <span class="trip-card-emoji">${trip.emoji || '🌍'}</span>
         ${isGenerating ? '<div class="trip-card-gen-shimmer"></div>' : ''}
-        <span class="trip-card-status">
+        <span class="trip-card-status" role="img" aria-label="Status: ${status}">
           <span class="status-dot status-dot--${status}"></span>
         </span>
       </div>
@@ -596,7 +596,9 @@ export async function renderDashboard() {
     deferWork(() => {
       const cycleNames = ['Tokyo', 'Paris', 'Bali', 'Barcelona', 'Seoul', 'New York', 'Bangkok', 'Kyoto', 'next'];
       let cycleIdx = 0;
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       const startCycle = () => {
+        if (reduceMotion) return; // leave the static headline, no auto-cycling
         clearInterval(cycleTimer);
         cycleTimer = setInterval(() => {
           if (hovered) return;
