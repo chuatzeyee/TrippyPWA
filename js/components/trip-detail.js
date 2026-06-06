@@ -1,7 +1,7 @@
 import { navigate, onRouteLeave } from '../router.js';
 import { fetchTripById, deleteTrip } from '../data/trip-repository.js';
 import { formatNumber, formatDateRange, formatWeekdayDate, getLocale, formatCityList } from '../lib/locale.js';
-import { convert } from '../data/currencies.js';
+import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { shortenTransitName } from '../data/transit-lines.js';
@@ -525,9 +525,12 @@ function tripHeader(trip) {
   const flag = ws?.multiCity
     ? ws?.destinations?.[0]?.flag
     : ws?.destination?.flag;
-  const heroImage = ws?.multiCity
+  const rawHeroImage = ws?.multiCity
     ? ws?.destinations?.[0]?.image
     : ws?.destination?.image;
+  // Destination images are 250px Wikipedia thumbnails; the hero is full-width, so
+  // request a larger render to avoid the upscaled/pixelated look.
+  const heroImage = rawHeroImage ? rawHeroImage.replace(/\/\d+px-/, '/1280px-') : rawHeroImage;
 
   const dateRange = formatDateRange(trip.start_date, trip.end_date);
 
@@ -1160,11 +1163,34 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
   const home = getHomeCurrency();
   const homeCode = home?.code || '';
   const homeSym = home?.symbol || '';
-  const showConversion = homeCode && homeCode !== destCode;
+  const showConversion = homeCode && homeCode !== destCode && canConvert(destCode) && canConvert(homeCode);
   const homeTotal = showConversion ? convert(totalCost, destCode, homeCode) : 0;
-  const rate = showConversion ? (homeTotal / totalCost) : 0;
-  const refAmounts = [50, 100, 200, 500];
   const destName = wsDest?.name || trip.title || '';
+
+  // Build a readable exchange-rate line. When the destination currency is much
+  // weaker (e.g. IDR vs SGD) a "1 IDR = 0.000 SGD" rate is useless, so we flip it
+  // to "1 SGD = 11,600 IDR". We always show the direction whose multiplier is >= 1.
+  let exchangeLine = '';
+  let refAmounts = [50, 100, 200, 500];
+  let homePerDest = 0;
+  if (showConversion) {
+    // convert() rounds to an integer, so compute the rate from a large base to
+    // keep the true (unrounded) ratio for both display and magnitude logic.
+    homePerDest = convert(1_000_000, destCode, homeCode) / 1_000_000; // 1 dest unit in home
+    const destPerHome = convert(1_000_000, homeCode, destCode) / 1_000_000; // 1 home unit in dest
+    const fmtRate = (n) => n >= 1000 ? formatNumber(Math.round(n)) : (n >= 1 ? n.toFixed(2) : n.toFixed(4));
+    if (homePerDest >= 1) {
+      exchangeLine = `1 ${destCode} = ${homeSym}${fmtRate(homePerDest)} ${homeCode}`;
+    } else {
+      exchangeLine = `1 ${homeCode} = ${sym}${fmtRate(destPerHome)} ${destCode}`;
+    }
+    // Scale the reference amounts to the destination currency's magnitude so the
+    // converted figures are not all rounded to zero.
+    if (homePerDest > 0 && homePerDest < 0.02) refAmounts = [10000, 50000, 100000, 500000];
+    else if (homePerDest < 0.2) refAmounts = [1000, 5000, 10000, 50000];
+    else if (homePerDest < 2) refAmounts = [100, 500, 1000, 2000];
+    else refAmounts = [10, 20, 50, 100];
+  }
 
   const dayRows = days.map(d => {
     const acts = d.activities || [];
@@ -1193,17 +1219,22 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
           <div class="td-exchange">
             <div class="td-exchange-label">${mdIcon(MD.info, 14)} Exchange Rate</div>
             <div class="td-exchange-hero">
-              <span class="td-exchange-from">${destCode} →</span>
-              <span class="td-exchange-value">${rate.toFixed(3)}</span>
-              <span class="td-exchange-to">→ ${homeCode}</span>
+              <span class="td-exchange-value">${esc(exchangeLine)}</span>
             </div>
             <div class="td-exchange-grid">
-              ${refAmounts.map(a => `
+              ${refAmounts.map(a => {
+                // Use the unrounded rate so small amounts in a weak currency do
+                // not all collapse to zero (convert() rounds to an integer).
+                const converted = a * homePerDest;
+                const shown = converted >= 100 ? formatNumber(Math.round(converted))
+                  : converted >= 1 ? converted.toFixed(2)
+                  : converted.toFixed(3);
+                return `
                 <div class="td-exchange-tile">
                   <span class="td-exchange-tile-from">${sym}${formatNumber(a)}</span>
-                  <span class="td-exchange-tile-to">${homeSym}${formatNumber(convert(a, destCode, homeCode))}</span>
+                  <span class="td-exchange-tile-to">${homeSym}${shown}</span>
                 </div>
-              `).join('')}
+              `; }).join('')}
             </div>
           </div>
         ` : ''}
