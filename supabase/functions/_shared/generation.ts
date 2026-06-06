@@ -92,7 +92,21 @@ export function buildPromptAndSchema(wizardState: any) {
     4: "9-11 activities per day, efficiently scheduled",
     5: "11-14 activities per day, hour-by-hour packed schedule"
   };
-  const activityGuidance = activityCountMap[paceVal] || activityCountMap[3];
+  // Long trips produce a lot of JSON; cap per-day density on 9+ day trips so the
+  // whole itinerary fits in one model response within the wall-clock limit.
+  const longTripCountMap: Record<number, string> = {
+    1: "4-5 activities per day with generous breaks",
+    2: "5-6 activities per day with comfortable spacing",
+    3: "6-7 activities per day with moderate pacing",
+    4: "7-8 activities per day, efficiently scheduled",
+    5: "8-9 activities per day, a full but not exhausting schedule"
+  };
+  const isLongTrip = days >= 9;
+  const activityGuidance = (isLongTrip ? longTripCountMap : activityCountMap)[paceVal]
+    || (isLongTrip ? longTripCountMap : activityCountMap)[3];
+  const brevityNote = isLongTrip
+    ? " Keep each activity description to ONE concise sentence and tips to a short phrase — this is a long trip, so prioritize covering all days completely over verbose detail."
+    : "";
 
   const interests = wizardState.style?.activities?.join(", ") || "general sightseeing";
 
@@ -132,7 +146,7 @@ ${isSameCity
   : flightsSettled && settledFlightNumber
   ? `- FLIGHTS (PRE-BOOKED): The traveler has ALREADY booked flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight number and details for the inbound flight. Do NOT suggest a different airline or flight. For the return flight, suggest a realistic option from the same airline if possible.`
   : `- Flights: ${fareClass} class, ${connectionPref} connections`}
-- Travel pace: ${pace} — plan ${activityGuidance}
+- Travel pace: ${pace} — plan ${activityGuidance}${brevityNote}
 - Interests: ${interests}
 - ${foodStyle}
 - ${exploration}
@@ -143,11 +157,7 @@ CRITICAL REQUIREMENTS:
 1. Every activity MUST have a specific startTime in 24h format (e.g. "09:00", "14:30"). Plan from morning wake-up to evening.
 2. Activities should be in chronological order by startTime.
 3. Include MEALS: breakfast, lunch, dinner, and coffee/snack breaks as separate activities with specific restaurant recommendations.
-4. For EVERY activity after the first of each day, include "transportOptions" — an array of UP TO 3 realistic ways to get from the previous venue:
-   a) "walk" — walking directions (omit if distance > 25 min walk)
-   b) "public" — public transit (tram, metro, mrt, bus, train, ferry) with route number/name and line name
-   c) "private" — ride-share or taxi (Uber globally, Grab for Southeast Asia, DiDi for Australia/China, Gojek for Indonesia, Bolt for Europe/Africa)
-   Each option needs: mode (e.g. "walk", "tram", "mrt", "uber"), label (human-readable). For transit with lines, use format: "MRT Downtown Line from Fort Canning to Stevens" or "Bus 96 from Bourke St to Flinders". ALWAYS include "from [boarding] to [alighting]" for transit. Duration (e.g. "8 min"), cost (e.g. "A$5", "Free"). For multi-leg transit, use SEPARATE transport options per leg — do NOT combine legs into one label. Also keep "gettingThere" as a one-line summary of the recommended option.
+4. For EVERY activity after the first of each day, include "gettingThere" — a ONE-LINE summary of the best way to get from the previous venue (e.g. "Tram 96 from Bourke St to Acland St, 12 min" or "8-min walk"). Also set "transportMode" (e.g. "walk", "tram", "mrt", "uber"), "transportDuration" (e.g. "12 min") and "transportCost" (e.g. "A$5", "Free"). Keep it concise — detailed multi-option directions are fetched separately, so do NOT output a transportOptions array.
 5. Include a mix: sightseeing, meals, coffee, shopping, cultural experiences, relaxation based on the traveler's interests.
 6. Use REAL venue names, addresses, and realistic current pricing in ${currency}.
 7. Include latitude and longitude for every venue.
@@ -212,8 +222,7 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
         gettingThere: "string",
         transportMode: "string",
         transportDuration: "string",
-        transportCost: "string",
-        transportOptions: [{ mode: "string", label: "string", duration: "string", cost: "string" }]
+        transportCost: "string"
       }]
     }],
     accommodation: [{ name: "string", area: "string", priceRange: "string", type: "string", highlights: "string", badge: "string" }],
@@ -258,15 +267,7 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
                   latitude: { type: "number" }, longitude: { type: "number" },
                   tips: { type: "string" }, gettingThere: { type: "string" },
                   transportMode: { type: "string" }, transportDuration: { type: "string" },
-                  transportCost: { type: "string" },
-                  transportOptions: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: { mode: { type: "string" }, label: { type: "string" }, duration: { type: "string" }, cost: { type: "string" } },
-                      required: ["mode", "label", "duration", "cost"]
-                    }
-                  }
+                  transportCost: { type: "string" }
                 },
                 required: ["startTime", "timeSlot", "sortOrder", "title", "description", "venueName", "category", "durationMinutes", "costAmount", "costCurrency"]
               }
