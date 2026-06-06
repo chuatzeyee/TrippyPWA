@@ -15,12 +15,13 @@
 
 .trip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--sp-6);
 }
 
 .trip-card {
   position: relative;
+  max-width: 420px;
   border-radius: var(--r-xl);
   overflow: hidden;
   cursor: pointer;
@@ -871,6 +872,7 @@
     align-items: flex-start;
     gap: var(--sp-4);
   }
+  .dashboard-new-trip-btn { width: 100%; }
   .trip-grid { grid-template-columns: 1fr; }
   .landing-headline { font-size: 2.4rem; }
   .landing-features { grid-template-columns: 1fr 1fr; gap: var(--sp-3); }

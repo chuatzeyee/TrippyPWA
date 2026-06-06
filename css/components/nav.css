@@ -122,6 +122,7 @@
 }
 
 .td-action-btn {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--ink-secondary);
@@ -133,6 +134,13 @@
   align-items: center;
   justify-content: center;
   transition: color var(--duration-fast), border-color var(--duration-fast);
+}
+
+/* Keep the 32px visual circle but extend the touch/click target to 44px. */
+.td-action-btn::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }
 
 .td-action-btn:hover {

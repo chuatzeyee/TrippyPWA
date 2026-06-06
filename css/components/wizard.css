@@ -34,7 +34,7 @@
   display: grid;
   grid-template-columns: 72px 1fr 72px;
   align-items: center;
-  padding: var(--sp-3) var(--sp-4);
+  padding: calc(var(--sp-3) + env(safe-area-inset-top, 0px)) var(--sp-4) var(--sp-3);
   background: rgba(27, 26, 23, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -156,7 +156,7 @@
 
 /* ===== CTA Bar (pinned above footer) ===== */
 .wizard-cta-bar {
-  padding: var(--sp-3) var(--sp-5);
+  padding: var(--sp-3) var(--sp-5) calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
   background: rgba(27, 26, 23, 0.85);
@@ -968,8 +968,15 @@
 .interest-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
   margin-top: var(--sp-3);
+}
+
+/* Interest chips are a primary wizard control — meet the 44px touch target. */
+.interest-grid .chip {
+  min-height: 44px;
+  padding-block: var(--sp-2);
+  font: var(--text-small);
 }
 
 /* ===== Calendar ===== */
@@ -1036,16 +1043,19 @@
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
+  gap: 2px;
 }
 
 .cal-cell {
-  height: 34px;
+  /* Square cells that grow with the grid width; min 40px so day-picking is not
+     fiddly on phones (was a fixed 34px). */
+  min-height: 40px;
+  aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: default;
   transition: all var(--duration-fast);
@@ -1729,9 +1739,15 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid rgba(229, 225, 216, 0.06);
-  padding: var(--sp-2) var(--sp-4);
+  padding: var(--sp-2) var(--sp-4) calc(var(--sp-2) + env(safe-area-inset-bottom, 0px));
   z-index: 2;
   animation: footerSlideUp 0.4s var(--ease-out) both;
+}
+
+/* When the summary footer is present it is the bottom-most bar, so it carries
+   the safe-area inset; the CTA bar above it then needs none (avoids doubling). */
+.wizard:has(.wizard-footer) .wizard-cta-bar {
+  padding-bottom: var(--sp-3);
 }
 
 @keyframes footerSlideUp {
