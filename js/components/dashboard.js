@@ -95,7 +95,7 @@ function renderTripCard(trip, index) {
             <span class="trip-card-budget-amount">${escapeHtml(trip.budget.currencySymbol || '$')}${formatNumber(trip.budget.total)}</span>
             ${tripCardHomeTotal(trip.budget)}
           </div>
-        ` : '<div class="trip-card-budget">Planning...</div>'}
+        ` : '<div class="trip-card-budget">Budget TBD</div>'}
         ${status === 'active' ? `<button class="trip-card-now-btn" data-now-trip="${escapeHtml(trip.id)}">Current Activity &rarr;</button>` : ''}
       </div>
     </article>
@@ -119,7 +119,10 @@ function renderAuthDashboard(trips) {
           </div>
         ` : `
           <div class="dashboard-no-trips">
-            <p class="dashboard-no-trips-text">Plan your first trip and we'll take it from there.</p>
+            <div class="dashboard-no-trips-icon">✈️</div>
+            <h2 class="dashboard-no-trips-title">Your next adventure starts here</h2>
+            <p class="dashboard-no-trips-text">Tell us where and how you like to travel — we'll craft a day-by-day plan in minutes.</p>
+            <button class="btn btn--primary btn--lg btn--pill" data-action="new-trip">+ Plan your first trip</button>
           </div>
         `}
         <section class="dashboard-dest-picks">
@@ -437,6 +440,8 @@ export async function renderDashboard() {
       const tripId = retryBtn.dataset.retryTrip;
       const trip = _dashboardTrips.find(t => t.id === tripId);
       if (trip) {
+        retryBtn.disabled = true;
+        retryBtn.textContent = 'Retrying…';
         const { updateTripStatus } = await import('../data/trip-repository.js');
         await updateTripStatus(tripId, 'generating');
         const { startGeneration } = await import('../services/generation-manager.js');

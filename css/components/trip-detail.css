@@ -1860,6 +1860,37 @@
 .td-loading { color: var(--ink-ghost); }
 .td-error { color: var(--error); }
 
+.td-error-state {
+  text-align: center;
+  padding: var(--sp-16) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.td-error-icon {
+  color: var(--ink-ghost);
+  opacity: 0.6;
+}
+.td-error-icon svg { width: 40px; height: 40px; }
+.td-error-title {
+  font: var(--text-h2);
+  color: var(--ink);
+  margin: 0;
+}
+.td-error-msg {
+  color: var(--ink-secondary);
+  margin: 0;
+  max-width: 360px;
+}
+.td-error-actions {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 /* ===== Mobile ===== */
 @media (max-width: 1023px) {
   .td-topbar .td-back {

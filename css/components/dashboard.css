@@ -297,12 +297,33 @@
 
 .dashboard-no-trips {
   text-align: center;
-  padding: var(--sp-12) 0;
+  padding: var(--sp-12) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  margin-bottom: var(--sp-8);
+}
+
+.dashboard-no-trips-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.dashboard-no-trips-title {
+  font: var(--text-h2);
+  color: var(--ink);
+  margin: 0;
 }
 
 .dashboard-no-trips-text {
   color: var(--ink-secondary);
   font-size: 1rem;
+  max-width: 420px;
+  margin: 0 0 var(--sp-2);
 }
 
 .dashboard-dest-picks {

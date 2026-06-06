@@ -44,8 +44,17 @@
 
 .wizard-header-center {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: var(--sp-1);
+}
+
+.wizard-progress-count {
+  font: var(--text-caption);
+  font-family: var(--font-mono);
+  color: var(--ink-secondary);
+  letter-spacing: 0.03em;
 }
 
 .wizard-progress {

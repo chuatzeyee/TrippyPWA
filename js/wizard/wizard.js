@@ -6,6 +6,8 @@ import { renderCalendar } from './calendar.js';
 import { convert, formatCurrency } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
 import { formatNumber } from '../lib/locale.js';
+import { showToast } from '../components/toast.js';
+import { logger } from '../lib/logger.js';
 
 const TOTAL_STEPS = 8;
 
@@ -303,6 +305,7 @@ function renderShell() {
           ? '<button class="wizard-back btn btn--ghost btn--pill" data-wizard="back" aria-label="Go back">Back</button>'
           : '<div></div>'}
         <div class="wizard-header-center">
+          <span class="wizard-progress-count">Step ${Math.min(stepNum, TOTAL_STEPS - 1)} of ${TOTAL_STEPS - 1}</span>
           <div class="wizard-progress">
             ${Array.from({ length: TOTAL_STEPS }, (_, i) => {
               const step = i + 1;
@@ -1373,7 +1376,8 @@ async function renderGeneration() {
     app.querySelector('#gen-signin')?.addEventListener('click', async () => {
       const { error } = await signInWithGoogle();
       if (error) {
-        app.querySelector('#gen-signin').textContent = 'Sign-in failed. Try again.';
+        // Keep the branded button intact; surface the failure via a toast.
+        showToast("Sign-in didn't go through — please try again.", 'error');
       }
     });
     app.querySelector('[data-wizard-gen="back"]')?.addEventListener('click', () => {
@@ -1389,6 +1393,7 @@ async function renderGeneration() {
       <div class="wizard-gen">
         <div class="wizard-gen-icon" style="animation: float 3s ease-in-out infinite;">&#9992;&#65039;</div>
         <h2 class="wizard-step-title" style="margin-bottom: var(--sp-3); font-size: 1.5rem;">Setting up your trip...</h2>
+        <p style="color: var(--ink-secondary); font-size: 0.9rem;">Saving your choices — this only takes a moment.</p>
       </div>
     </div>
     <style>@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }</style>
@@ -1400,12 +1405,13 @@ async function renderGeneration() {
 
     const { data: trip, error } = await createTrip(state, 'generating');
     if (error || !trip) {
+      logger.error('generation', 'Trip creation failed at wizard', { error });
       app.innerHTML = `
         <div class="wizard" style="align-items: center; justify-content: center;">
           <div class="wizard-gen">
             <div class="wizard-gen-icon">&#9888;&#65039;</div>
             <h2 class="wizard-step-title" style="margin-bottom: var(--sp-3); font-size: 1.5rem;">Something went wrong</h2>
-            <p style="color: var(--error); margin-bottom: var(--sp-6); font-size: 0.85rem;">${escapeHtml(error || 'Could not create trip')}</p>
+            <p style="color: var(--ink-secondary); margin-bottom: var(--sp-6); font-size: 0.9rem;">We couldn't start planning your trip just now. Your choices are saved — give it another go.</p>
             <button class="btn btn--primary btn--pill" id="gen-retry">Try Again</button>
             <button class="btn btn--ghost btn--pill" style="margin-top: var(--sp-3); font-size: 0.8rem;" data-wizard-gen="back">Back to Summary</button>
           </div>
@@ -1424,12 +1430,13 @@ async function renderGeneration() {
     clearWizardState();
     navigate('/');
   } catch (err) {
+    logger.error('generation', 'Wizard generation threw', { error: err?.message });
     app.innerHTML = `
       <div class="wizard" style="align-items: center; justify-content: center;">
         <div class="wizard-gen">
           <div class="wizard-gen-icon">&#9888;&#65039;</div>
           <h2 class="wizard-step-title" style="margin-bottom: var(--sp-3); font-size: 1.5rem;">Something went wrong</h2>
-          <p style="color: var(--error); margin-bottom: var(--sp-6); font-size: 0.85rem;">${escapeHtml(err.message || 'Unexpected error')}</p>
+          <p style="color: var(--ink-secondary); margin-bottom: var(--sp-6); font-size: 0.9rem;">We couldn't start planning your trip just now. Your choices are saved — give it another go.</p>
           <button class="btn btn--primary btn--pill" id="gen-retry">Try Again</button>
           <button class="btn btn--ghost btn--pill" style="margin-top: var(--sp-3); font-size: 0.8rem;" data-wizard-gen="back">Back to Summary</button>
         </div>
