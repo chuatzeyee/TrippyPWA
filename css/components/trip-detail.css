@@ -2773,8 +2773,31 @@
   z-index: 2;
 }
 
+.ae-delete-btn {
+  position: absolute;
+  top: var(--sp-2);
+  right: calc(var(--sp-2) + 34px);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ink-ghost);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast), background var(--duration-fast);
+  z-index: 2;
+}
+
+.ae-delete-btn:hover { background: var(--error, #c0392b); }
+
 .td-edit-mode .td-activity-card:hover .ae-edit-btn,
-.ae-edit-btn:focus-visible {
+.td-edit-mode .td-activity-card:hover .ae-delete-btn,
+.ae-edit-btn:focus-visible,
+.ae-delete-btn:focus-visible {
   opacity: 1;
 }
 
@@ -2818,7 +2841,8 @@
   border-radius: var(--r-md);
   background: transparent;
   color: var(--ink);
-  font-size: 0.88rem;
+  /* 16px minimum so iOS Safari does not zoom in when the field gains focus. */
+  font-size: 16px;
   font-family: inherit;
   outline: none;
   transition: border-color var(--duration-fast);

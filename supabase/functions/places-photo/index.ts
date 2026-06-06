@@ -1,41 +1,36 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeadersFor, getCallerUserId, fetchWithTimeout, json } from "../_shared/http.ts";
 
 const GOOGLE_PLACES_API_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY") || "";
 const PLACES_API_BASE = "https://places.googleapis.com/v1";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
 serve(async (req: Request) => {
+  const corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Reject anonymous callers so this is not an open, billable Google relay.
+  const userId = await getCallerUserId(req);
+  if (!userId) return json({ error: "Unauthorized" }, 401, corsHeaders);
+
   try {
     if (!GOOGLE_PLACES_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "GOOGLE_PLACES_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "GOOGLE_PLACES_API_KEY not configured" }, 500, corsHeaders);
     }
 
     const { place_id, query, location, max_width = 400 } = await req.json();
 
     if (!place_id && !query) {
-      return new Response(
-        JSON.stringify({ error: "place_id or query is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "place_id or query is required" }, 400, corsHeaders);
     }
 
     let photos: any[] | undefined;
     let resolvedPlaceId: string | undefined;
 
     if (place_id) {
-      const detailsRes = await fetch(
-        `${PLACES_API_BASE}/places/${place_id}?fields=photos&key=${GOOGLE_PLACES_API_KEY}`,
+      const detailsRes = await fetchWithTimeout(
+        `${PLACES_API_BASE}/places/${encodeURIComponent(place_id)}?fields=photos`,
         { headers: { "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY } }
       );
       if (detailsRes.ok) {
@@ -52,7 +47,7 @@ serve(async (req: Request) => {
           circle: { center: { latitude: location.lat, longitude: location.lng }, radius: 5000.0 }
         };
       }
-      const searchRes = await fetch(
+      const searchRes = await fetchWithTimeout(
         `${PLACES_API_BASE}/places:searchText`,
         {
           method: "POST",
@@ -75,54 +70,36 @@ serve(async (req: Request) => {
     }
 
     if (!photos || photos.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No photos available" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "No photos available" }, 404, corsHeaders);
     }
 
     const photoName = photos[0].name;
-    const mediaRes = await fetch(
-      `${PLACES_API_BASE}/${photoName}/media?maxWidthPx=${max_width}&skipHttpRedirect=true&key=${GOOGLE_PLACES_API_KEY}`
+    const mediaRes = await fetchWithTimeout(
+      `${PLACES_API_BASE}/${photoName}/media?maxWidthPx=${max_width}&skipHttpRedirect=true`,
+      { headers: { "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY } }
     );
 
     if (!mediaRes.ok) {
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch photo" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Failed to fetch photo" }, 502, corsHeaders);
     }
 
     const mediaData = await mediaRes.json();
     const photoUrl = mediaData.photoUri;
 
     if (!photoUrl) {
-      return new Response(
-        JSON.stringify({ error: "No photo URL returned" }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "No photo URL returned" }, 502, corsHeaders);
     }
 
     const responseBody: Record<string, string> = { url: photoUrl };
     if (resolvedPlaceId) responseBody.placeId = resolvedPlaceId;
 
-    return new Response(
-      JSON.stringify(responseBody),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=86400"
-        }
-      }
-    );
+    return new Response(JSON.stringify(responseBody), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=86400" },
+    });
 
   } catch (err) {
-    console.error("Places photo error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("Places photo error");
+    return json({ error: "Internal server error" }, 500, corsHeaders);
   }
 });

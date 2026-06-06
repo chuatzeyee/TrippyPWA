@@ -1,6 +1,22 @@
 const routes = [];
 let currentParams = {};
 let notFoundHandler = null;
+const leaveHandlers = new Set();
+
+// Register a one-shot cleanup to run the next time the route changes (e.g. tear
+// down scroll listeners / observers a view attached to window). Returns an
+// unregister function in case the view wants to cancel it.
+export function onRouteLeave(fn) {
+  leaveHandlers.add(fn);
+  return () => leaveHandlers.delete(fn);
+}
+
+function runLeaveHandlers() {
+  for (const fn of leaveHandlers) {
+    try { fn(); } catch { /* a failing cleanup must not block navigation */ }
+  }
+  leaveHandlers.clear();
+}
 
 export function addRoute(pattern, handler) {
   const paramNames = [];
@@ -35,6 +51,7 @@ function isAuthCallback(hash) {
 function resolve() {
   const hash = location.hash.slice(1) || '/';
   if (isAuthCallback(hash)) return;
+  runLeaveHandlers();
   for (const route of routes) {
     const match = hash.match(route.regex);
     if (match) {

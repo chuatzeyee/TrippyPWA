@@ -64,7 +64,8 @@ function renderTripCard(trip, index) {
         ${isGenerating ? `
           <div class="trip-card-gen-status">
             <span class="trip-card-gen-dots"><span></span><span></span><span></span></span>
-            Planning your itinerary
+            <span class="trip-card-gen-label">Planning your itinerary</span>
+            <span class="trip-card-gen-eta">Usually takes 1&ndash;2 minutes <span class="trip-card-gen-elapsed" data-gen-elapsed></span></span>
           </div>
         ` : isFailed ? `
           <div class="trip-card-gen-status">
@@ -256,6 +257,42 @@ function renderSkeleton() {
     </div>`;
 }
 
+let _dashboardTrips = [];
+let _clickHandlerBound = false;
+let _genListenerBound = false;
+let _elapsedTimer = null;
+const _genStartTimes = new Map();
+
+function startElapsedTicker(app, trips) {
+  const generating = trips.filter(t => t.status === 'generating');
+  for (const t of generating) {
+    if (!_genStartTimes.has(t.id)) _genStartTimes.set(t.id, Date.now());
+  }
+  if (_elapsedTimer) { clearInterval(_elapsedTimer); _elapsedTimer = null; }
+  if (generating.length === 0) return;
+
+  const tick = () => {
+    const root = document.getElementById('app');
+    if (!root) return;
+    let anyVisible = false;
+    for (const t of generating) {
+      const card = root.querySelector(`[data-trip-id="${t.id}"]`);
+      const span = card?.querySelector('[data-gen-elapsed]');
+      if (!span) continue;
+      if (!card.classList.contains('trip-card--generating')) continue;
+      anyVisible = true;
+      const start = _genStartTimes.get(t.id) || Date.now();
+      const secs = Math.floor((Date.now() - start) / 1000);
+      const mm = Math.floor(secs / 60);
+      const ss = String(secs % 60).padStart(2, '0');
+      span.textContent = `· ${mm}:${ss}`;
+    }
+    if (!anyVisible) { clearInterval(_elapsedTimer); _elapsedTimer = null; }
+  };
+  tick();
+  _elapsedTimer = setInterval(tick, 1000);
+}
+
 export async function renderDashboard() {
   const app = document.getElementById('app');
   let trips = [];
@@ -343,6 +380,10 @@ export async function renderDashboard() {
   app.innerHTML = `<div class="dashboard container">${content}</div>`;
   }
 
+  _dashboardTrips = trips;
+
+  if (!_clickHandlerBound) {
+  _clickHandlerBound = true;
   app.addEventListener('click', async (e) => {
     const destCard = e.target.closest('.dest-circle[data-city]');
     if (destCard) {
@@ -375,7 +416,7 @@ export async function renderDashboard() {
     if (retryBtn) {
       e.stopPropagation();
       const tripId = retryBtn.dataset.retryTrip;
-      const trip = trips.find(t => t.id === tripId);
+      const trip = _dashboardTrips.find(t => t.id === tripId);
       if (trip) {
         const { updateTripStatus } = await import('../data/trip-repository.js');
         await updateTripStatus(tripId, 'generating');
@@ -410,47 +451,50 @@ export async function renderDashboard() {
       navigate(`/trip/${card.dataset.tripId}`);
     }
   });
+  }
 
   if (trips.some(t => t.status === 'generating')) {
     import('../services/generation-manager.js').then(({ onGenerationUpdate, resumeStaleGenerations }) => {
       resumeStaleGenerations(trips);
+      if (_genListenerBound) return;
+      _genListenerBound = true;
       onGenerationUpdate((tripId, genStatus) => {
-        const el = app.querySelector(`[data-trip-id="${tripId}"]`);
-        if (!el) return;
+        const el = document.getElementById('app')?.querySelector(`[data-trip-id="${tripId}"]`);
+        if (!el || !genStatus) return;
         if (genStatus.status === 'done') {
           el.classList.remove('trip-card--generating');
           el.classList.add('trip-card--just-generated');
-          const shimmer = el.querySelector('.trip-card-gen-shimmer');
-          if (shimmer) shimmer.remove();
+          el.querySelector('.trip-card-gen-shimmer')?.remove();
           const statusEl = el.querySelector('.trip-card-gen-status');
-          if (statusEl) {
-            statusEl.innerHTML = '<span class="trip-card-gen-ready">Your trip is ready!</span>';
-          }
+          if (statusEl) statusEl.innerHTML = '<span class="trip-card-gen-ready">Your trip is ready!</span>';
           const dot = el.querySelector('.status-dot');
-          if (dot) { dot.className = 'status-dot status-dot--upcoming'; }
-        } else if (genStatus.status === 'generating' && genStatus.busy) {
+          if (dot) dot.className = 'status-dot status-dot--upcoming';
+        } else if (genStatus.status === 'failed') {
+          el.classList.remove('trip-card--generating');
+          el.querySelector('.trip-card-gen-shimmer')?.remove();
           const statusEl = el.querySelector('.trip-card-gen-status');
           if (statusEl) {
             statusEl.innerHTML = `
-              <span class="trip-card-gen-dots"><span></span><span></span><span></span></span>
-              <span class="trip-card-gen-busy">AI is busy right now and is taking longer than expected.</span>
-              <span class="trip-card-gen-retry-hint">Retrying automatically (attempt ${genStatus.attempt})&hellip;</span>
-            `;
+              <span style="color: var(--terracotta); font-size: 0.85rem;">${escapeHtml(genStatus.error || 'Generation failed. Try again?')}</span>
+              <div class="trip-card-fail-actions">
+                <button class="btn btn--secondary btn--sm btn--pill" data-retry-trip="${escapeHtml(tripId)}">Retry</button>
+                <button class="btn btn--ghost btn--sm btn--pill" data-delete-trip="${escapeHtml(tripId)}">Delete</button>
+              </div>`;
           }
-        } else if (genStatus.status === 'failed') {
-          el.classList.remove('trip-card--generating');
-          const shimmer = el.querySelector('.trip-card-gen-shimmer');
-          if (shimmer) shimmer.remove();
-          const statusEl = el.querySelector('.trip-card-gen-status');
-          if (statusEl) {
-            statusEl.innerHTML = `<span style="color: var(--error); font-size: 0.85rem;">Generation failed: ${escapeHtml(genStatus.error || 'Unknown error')}. Click to retry.</span>`;
-          }
+          el.classList.add('trip-card--failed');
           const dot = el.querySelector('.status-dot');
-          if (dot) { dot.className = 'status-dot status-dot--past'; }
+          if (dot) dot.className = 'status-dot status-dot--failed';
+        } else if (genStatus.status === 'generating' && genStatus.slow) {
+          const label = el.querySelector('.trip-card-gen-label');
+          if (label) label.textContent = 'Still working on it';
+          const eta = el.querySelector('.trip-card-gen-eta');
+          if (eta) eta.innerHTML = 'Taking longer than usual &mdash; hang tight <span class="trip-card-gen-elapsed" data-gen-elapsed></span>';
         }
       });
     });
   }
+
+  startElapsedTicker(app, trips);
 
   const deferWork = (fn) => (typeof requestIdleCallback === 'function') ? requestIdleCallback(fn) : setTimeout(fn, 1);
 

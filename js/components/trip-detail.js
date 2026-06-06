@@ -1,4 +1,4 @@
-import { navigate } from '../router.js';
+import { navigate, onRouteLeave } from '../router.js';
 import { fetchTripById, deleteTrip } from '../data/trip-repository.js';
 import { formatNumber, formatDateRange, formatWeekdayDate, getLocale } from '../lib/locale.js';
 import { convert } from '../data/currencies.js';
@@ -1570,8 +1570,36 @@ function renderDayPicker(app, trip, jumpToToday = false) {
 
       enterEditMode(wrap, trip);
 
-      wrap._editClickHandler = (e) => {
+      wrap._editClickHandler = async (e) => {
         if (!wrap.classList.contains('td-edit-mode')) return;
+
+        const delBtnEl = e.target.closest('.ae-delete-btn');
+        if (delBtnEl) {
+          const card = delBtnEl.closest('.td-activity-card');
+          const actId = card?.dataset.activityId;
+          if (!actId) return;
+          if (!confirm('Delete this activity?')) return;
+          const { deleteActivityById } = await import('../data/trip-repository.js');
+          const { error } = await deleteActivityById(actId);
+          if (error) { showToast('Could not delete activity', 'error'); return; }
+          // Drop from the in-memory model and remove its wrapper (+ the following
+          // getting-there block, which described travel to the deleted stop).
+          for (const day of (trip.itinerary_days || [])) {
+            if (!day.activities) continue;
+            const idx = day.activities.findIndex(a => a.id === actId);
+            if (idx >= 0) { day.activities.splice(idx, 1); break; }
+          }
+          // renderActivity emits the getting-there block BEFORE its activity
+          // wrapper (it describes travel TO this stop), so remove the PREVIOUS
+          // sibling, not the next one.
+          const wrapper = card.closest('.td-activity');
+          const prevGetting = wrapper?.previousElementSibling;
+          if (prevGetting?.classList.contains('td-getting-there')) prevGetting.remove();
+          wrapper?.remove();
+          showToast('Activity deleted');
+          return;
+        }
+
         const editBtnEl = e.target.closest('.ae-edit-btn');
         const card = editBtnEl ? editBtnEl.closest('.td-activity-card') : null;
         if (!card) return;
@@ -1712,8 +1740,15 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   bindQuickChecklist(app, trip.id);
   bindCollapsibleSections(app);
   bindSidebar(app);
-  loadActivityPhotos(app);
+  const photoObserver = loadActivityPhotos(app);
   scrollSpyCleanup = setupDayScrollSpy(app);
+
+  // Tear down window-level listeners/observers when navigating away from the
+  // trip view (the in-render cleanup only fires on re-render of this same view).
+  onRouteLeave(() => {
+    if (scrollSpyCleanup) { scrollSpyCleanup(); scrollSpyCleanup = null; }
+    if (photoObserver) photoObserver.disconnect();
+  });
 
   if (jumpToToday && trip.start_date) {
     const tripTz = trip.timezone || trip.wizard_state?.destination?.timezone;
@@ -1737,7 +1772,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
 
 function loadActivityPhotos(container) {
   const photoEls = container.querySelectorAll('.td-activity-photo[data-venue]');
-  if (!photoEls.length) return;
+  if (!photoEls.length) return null;
 
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -1764,6 +1799,7 @@ function loadActivityPhotos(container) {
   }, { rootMargin: '200px' });
 
   photoEls.forEach(el => observer.observe(el));
+  return observer;
 }
 
 function parseTimeToMinutes(timeStr) {
