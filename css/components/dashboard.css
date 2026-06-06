@@ -1009,8 +1009,12 @@
 }
 
 @media (display-mode: standalone) and (max-width: 768px) {
+  /* The nav is hidden in standalone PWA mode and the body already adds
+     env(safe-area-inset-top), so only a small top padding is needed here.
+     Previously this re-added the safe-area inset, double-counting it and
+     leaving a large empty band above the first content. */
   .dashboard {
-    padding-top: calc(env(safe-area-inset-top, 12px) + var(--sp-4));
+    padding-top: var(--sp-4);
   }
 }
 

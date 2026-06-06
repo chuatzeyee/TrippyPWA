@@ -1,5 +1,6 @@
 import { supabase, getUser } from '../lib/supabase.js';
 import { logger } from '../lib/logger.js';
+import { formatCityList } from '../lib/locale.js';
 
 function normDay(d, index) {
   return {
@@ -110,7 +111,7 @@ export async function createTrip(wizardState, status = 'planning') {
   if (!user) return { data: null, error: 'Not authenticated' };
 
   const title = wizardState.multiCity && wizardState.destinations.length > 0
-    ? wizardState.destinations.map(d => d.name).join(' to ')
+    ? formatCityList(wizardState.destinations.map(d => d.name))
     : wizardState.destination?.name || 'My Trip';
 
   const primary = primaryDestination(wizardState);

@@ -100,13 +100,13 @@
 [data-theme="light"] .nav-theme-icon--moon { display: block; }
 
 .nav-admin-link {
-  font: var(--text-caption);
-  font-weight: 600;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--terracotta);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   cursor: pointer;
-  padding: var(--sp-1) var(--sp-2);
   border-radius: var(--r-md);
   transition: background var(--duration-fast);
 }

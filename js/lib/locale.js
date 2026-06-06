@@ -37,6 +37,16 @@ export function formatNumber(n) {
   return Number(n).toLocaleString(getLocale());
 }
 
+// Joins city names for display: "Tokyo" | "Tokyo & Osaka" | "Tokyo, Osaka & Kyoto".
+// Nicer than the old "Tokyo to Osaka to Kyoto" for multi-city trips.
+export function formatCityList(names) {
+  const list = (names || []).filter(Boolean);
+  if (list.length === 0) return '';
+  if (list.length === 1) return list[0];
+  if (list.length === 2) return `${list[0]} & ${list[1]}`;
+  return `${list.slice(0, -1).join(', ')} & ${list[list.length - 1]}`;
+}
+
 export function formatDateRange(startStr, endStr) {
   if (!startStr) return '';
   const s = new Date(startStr + 'T00:00:00');

@@ -2,7 +2,7 @@ import { navigate } from '../router.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { getAllTrips } from '../data/registry.js';
 import { DESTINATIONS } from '../wizard/destinations.js';
-import { formatNumber, formatWeekdayDate } from '../lib/locale.js';
+import { formatNumber, formatWeekdayDate, formatCityList } from '../lib/locale.js';
 
 function hasLocalSession() {
   try {
@@ -336,9 +336,14 @@ export async function renderDashboard() {
           }
         }
         const budgetEstimate = (t.budget_daily || 0) * (t.travelers || 1) * (dayCount || 7);
+        // For multi-city, show "A, B & C" from the wizard state rather than the
+        // stored title (which the AI may have set to "A to B").
+        const displayTitle = ws?.multiCity && ws?.destinations?.length > 0
+          ? formatCityList(ws.destinations.map(d => d.name))
+          : t.title;
         return {
           id: t.id,
-          title: t.title,
+          title: displayTitle,
           emoji: t.emoji || flagImg(dest?.flag, 20) || '🌍',
           status: t.status,
           dates: { start: t.start_date, end: t.end_date },
