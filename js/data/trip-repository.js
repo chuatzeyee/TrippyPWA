@@ -95,29 +95,41 @@ export async function fetchTripById(id) {
   return { data, error: error?.message || null };
 }
 
+// For multi-city trips wizardState.destination is null, so currency/symbol/tz
+// must come from the first destination — otherwise they silently default to USD
+// and the whole trip's budget shows the wrong currency.
+export function primaryDestination(wizardState) {
+  if (wizardState.multiCity && wizardState.destinations?.length > 0) {
+    return wizardState.destinations[0];
+  }
+  return wizardState.destination || null;
+}
+
 export async function createTrip(wizardState, status = 'planning') {
   const user = getUser();
   if (!user) return { data: null, error: 'Not authenticated' };
 
-  const dest = wizardState.multiCity && wizardState.destinations.length > 0
+  const title = wizardState.multiCity && wizardState.destinations.length > 0
     ? wizardState.destinations.map(d => d.name).join(' to ')
     : wizardState.destination?.name || 'My Trip';
+
+  const primary = primaryDestination(wizardState);
 
   const { data, error } = await supabase
     .from('trips')
     .insert({
       user_id: user.id,
-      title: dest,
-      emoji: wizardState.destination?.emoji || '',
+      title,
+      emoji: primary?.emoji || '',
       status,
       wizard_state: wizardState,
       travelers: wizardState.travelers || 1,
       start_date: wizardState.dates.start || null,
       end_date: wizardState.dates.end || null,
       budget_daily: wizardState.budget.dailyAmount || 0,
-      budget_currency: wizardState.destination?.currencyCode || 'USD',
-      budget_currency_symbol: wizardState.destination?.currencySymbol || '$',
-      timezone: wizardState.destination?.timezone || null
+      budget_currency: primary?.currencyCode || 'USD',
+      budget_currency_symbol: primary?.currencySymbol || '$',
+      timezone: primary?.timezone || null
     })
     .select()
     .single();
@@ -354,6 +366,49 @@ export async function deleteTrip(id) {
   return { error: error?.message || null };
 }
 
+// Delete a single activity (used by edit mode so users can curate the itinerary
+// without a destructive full regenerate). Ownership is enforced by RLS via the
+// activities -> itinerary_days -> trips chain.
+export async function deleteActivityById(activityId) {
+  const { error } = await supabase
+    .from('activities')
+    .delete()
+    .eq('id', activityId);
+
+  return { error: error?.message || null };
+}
+
+// Add a new activity to a day. Returns the inserted row (incl. id) so the UI can
+// render it without a full refetch.
+export async function addActivityToDay(dayId, activity = {}) {
+  const payload = {
+    day_id: dayId,
+    time_slot: activity.timeSlot || 'morning',
+    sort_order: activity.sortOrder ?? 999,
+    start_time: activity.startTime || '',
+    title: activity.title || 'New activity',
+    description: activity.description || '',
+    venue_name: activity.venueName || '',
+    venue_address: activity.venueAddress || '',
+    place_id: activity.placeId || '',
+    category: activity.category || 'culture',
+    duration_minutes: activity.durationMinutes ?? 60,
+    cost_amount: Math.round(activity.costAmount || 0),
+    cost_currency: activity.costCurrency || '',
+    latitude: activity.latitude ?? null,
+    longitude: activity.longitude ?? null,
+    tips: activity.tips || '',
+  };
+
+  const { data, error } = await supabase
+    .from('activities')
+    .insert(payload)
+    .select()
+    .single();
+
+  return { data, error: error?.message || null };
+}
+
 export async function updateActivityById(activityId, updates) {
   const payload = {};
   if (updates.title !== undefined) payload.title = updates.title;
@@ -364,6 +419,7 @@ export async function updateActivityById(activityId, updates) {
   if (updates.startTime !== undefined) payload.start_time = updates.startTime;
   if (updates.durationMinutes !== undefined) payload.duration_minutes = updates.durationMinutes;
   if (updates.costAmount !== undefined) payload.cost_amount = Math.round(updates.costAmount || 0);
+  if (updates.costCurrency !== undefined) payload.cost_currency = updates.costCurrency;
   if (updates.costNote !== undefined) payload.cost_note = updates.costNote;
   if (updates.category !== undefined) payload.category = updates.category;
   if (updates.latitude !== undefined) payload.latitude = updates.latitude;
@@ -386,11 +442,12 @@ export async function updateActivityById(activityId, updates) {
 }
 
 export async function updateTripStatus(id, status) {
-  const { error } = await supabase
-    .from('trips')
-    .update({ status })
-    .eq('id', id);
-
+  // Defense in depth: RLS already restricts updates to the owner, but filtering
+  // by user_id makes the intent explicit and consistent with the other mutations.
+  const user = getUser();
+  let q = supabase.from('trips').update({ status }).eq('id', id);
+  if (user) q = q.eq('user_id', user.id);
+  const { error } = await q;
   return { error: error?.message || null };
 }
 

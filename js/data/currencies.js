@@ -10,9 +10,20 @@ const RATES_FROM_USD = {
   PEN: 3.75, ARS: 900, CUP: 24
 };
 
+export function canConvert(code) {
+  return Object.prototype.hasOwnProperty.call(RATES_FROM_USD, code);
+}
+
+// If either currency is unknown we cannot produce a correct cross-rate. Rather
+// than silently scaling by USD (which shows a wrong number), return the amount
+// unchanged so it is at least displayed in its own currency. Callers that need to
+// know whether a real conversion happened should gate on canConvert() first.
 export function convert(amount, fromCurrency, toCurrency) {
-  const fromRate = RATES_FROM_USD[fromCurrency] || 1;
-  const toRate = RATES_FROM_USD[toCurrency] || 1;
+  if (!canConvert(fromCurrency) || !canConvert(toCurrency)) {
+    return Math.round(amount);
+  }
+  const fromRate = RATES_FROM_USD[fromCurrency];
+  const toRate = RATES_FROM_USD[toCurrency];
   return Math.round(amount / fromRate * toRate);
 }
 

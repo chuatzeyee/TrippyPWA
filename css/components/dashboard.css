@@ -199,6 +199,22 @@
   font-weight: 600;
 }
 
+.trip-card-gen-label {
+  font-weight: 600;
+}
+
+.trip-card-gen-eta {
+  display: block;
+  width: 100%;
+  color: var(--ink-ghost);
+  font-size: 0.75rem;
+}
+
+.trip-card-gen-elapsed {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
 .trip-card-now-btn {
   display: block;
   width: 100%;

@@ -6,6 +6,8 @@ const DESTINATIONS = [
 ];
 const HOME_TEXT = 'TRIPPY';
 
+let _flapTimer = null;
+
 function escHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -76,7 +78,10 @@ export function renderNav() {
   let destIndex = 0;
   let showingHome = true;
 
-  setInterval(() => {
+  // renderNav runs again on every auth-state change; clear the prior ticker so we
+  // do not accumulate split-flap timers (and detached DOM closures).
+  if (_flapTimer) clearInterval(_flapTimer);
+  _flapTimer = setInterval(() => {
     if (showingHome) {
       const dest = DESTINATIONS[destIndex];
       destIndex = (destIndex + 1) % DESTINATIONS.length;

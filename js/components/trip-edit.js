@@ -203,6 +203,9 @@ export function showEditModal(trip) {
       },
     };
 
+    // Do NOT delete the existing itinerary here. The async worker regenerates
+    // into a fresh set and swaps atomically via replace_itinerary, so a failed
+    // regeneration leaves the user's current itinerary intact.
     await supabase.from('trips').update({
       wizard_state: updatedState,
       status: 'generating',
@@ -211,18 +214,6 @@ export function showEditModal(trip) {
       end_date: updatedState.dates.end || null,
       budget_daily: updatedState.budget.dailyAmount || 0,
     }).eq('id', trip.id);
-
-    const { data: existingDays } = await supabase
-      .from('itinerary_days')
-      .select('id')
-      .eq('trip_id', trip.id);
-
-    if (existingDays?.length) {
-      for (const d of existingDays) {
-        await supabase.from('activities').delete().eq('day_id', d.id);
-      }
-      await supabase.from('itinerary_days').delete().eq('trip_id', trip.id);
-    }
 
     startGeneration(trip.id, updatedState);
     close();

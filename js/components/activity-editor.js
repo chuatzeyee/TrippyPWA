@@ -221,18 +221,25 @@ export function enterEditMode(container, trip) {
 
   const cards = container.querySelectorAll('.td-activity-card');
   cards.forEach(card => {
+    card.style.position = 'relative';
+
     const editBtn = document.createElement('button');
     editBtn.className = 'ae-edit-btn';
     editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
     editBtn.title = 'Edit this activity';
-    card.style.position = 'relative';
     card.appendChild(editBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'ae-delete-btn';
+    delBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+    delBtn.title = 'Delete this activity';
+    card.appendChild(delBtn);
   });
 }
 
 export function exitEditMode(container) {
   container.classList.remove('td-edit-mode');
-  container.querySelectorAll('.ae-edit-btn').forEach(b => b.remove());
+  container.querySelectorAll('.ae-edit-btn, .ae-delete-btn').forEach(b => b.remove());
   container.querySelectorAll('.td-activity-card--editing').forEach(card => {
     card.classList.remove('td-activity-card--editing');
   });

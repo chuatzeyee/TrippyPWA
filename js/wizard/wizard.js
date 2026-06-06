@@ -1,7 +1,7 @@
 import { navigate } from '../router.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { loadWizardState, saveWizardState, updateWizardField, clearWizardState, canAdvance } from './wizard-state.js';
-import { searchDestinations, getPopularDestinations } from './destinations.js';
+import { searchDestinations, getPopularDestinations, DESTINATIONS } from './destinations.js';
 import { renderCalendar } from './calendar.js';
 import { convert, formatCurrency } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
@@ -338,6 +338,11 @@ function bindWizardEvents() {
     if (!action) return;
 
     if (action === 'close') {
+      // Confirm before throwing away entered progress (everything past step 1).
+      if (state.currentStep > 1 &&
+          !confirm('Discard this trip and start over? Your selections will be lost.')) {
+        return;
+      }
       clearWizardState();
       navigate('/');
     } else if (action === 'back' && state.currentStep > 1) {

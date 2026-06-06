@@ -1,13 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeadersFor, getCallerUserId, fetchWithTimeout, json } from "../_shared/http.ts";
 
 const GOOGLE_API_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY") || "";
 const DIRECTIONS_BASE = "https://maps.googleapis.com/maps/api/directions/json";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 function toCoordStr(loc: { lat?: number; lng?: number; address?: string; name?: string }): string {
   if (loc.lat && loc.lng) return `${loc.lat},${loc.lng}`;
@@ -83,39 +78,35 @@ function buildGettingThere(steps: any[]): string {
 }
 
 serve(async (req: Request) => {
+  const corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const userId = await getCallerUserId(req);
+  if (!userId) return json({ error: "Unauthorized" }, 401, corsHeaders);
+
   try {
     if (!GOOGLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "API key not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "API key not configured" }, 500, corsHeaders);
     }
 
     const { origin, destination } = await req.json();
     if (!origin || !destination) {
-      return new Response(
-        JSON.stringify({ error: "origin and destination required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "origin and destination required" }, 400, corsHeaders);
     }
 
     const originStr = toCoordStr(origin);
     const destStr = toCoordStr(destination);
     if (!originStr || !destStr) {
-      return new Response(
-        JSON.stringify({ error: "Invalid origin or destination" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: "Invalid origin or destination" }, 400, corsHeaders);
     }
 
     const modes = ["transit", "walking"];
     const fetches = modes.map((mode) =>
-      fetch(
-        `${DIRECTIONS_BASE}?origin=${encodeURIComponent(originStr)}&destination=${encodeURIComponent(destStr)}&mode=${mode}&key=${GOOGLE_API_KEY}`
+      fetchWithTimeout(
+        `${DIRECTIONS_BASE}?origin=${encodeURIComponent(originStr)}&destination=${encodeURIComponent(destStr)}&mode=${mode}&key=${GOOGLE_API_KEY}`,
+        {}, 8_000,
       )
         .then((r) => r.json())
         .then((data) => ({ mode, data }))
@@ -125,22 +116,33 @@ serve(async (req: Request) => {
     const results = await Promise.all(fetches);
     const options: any[] = [];
 
+    // Distinguish "no route" (ZERO_RESULTS) from an actually-broken API call
+    // (REQUEST_DENIED = key/billing problem, OVER_QUERY_LIMIT = quota). The
+    // latter must surface as an error, not as a silent empty 200.
+    const apiBroken = results.find(({ data }) =>
+      data?.status && !["OK", "ZERO_RESULTS"].includes(data.status));
+    if (apiBroken && options.length === 0) {
+      console.error(`Directions API error: ${apiBroken.data.status}`);
+      return json({ error: "Directions service unavailable", code: apiBroken.data.status }, 502, corsHeaders);
+    }
+
     for (const { mode, data } of results) {
       if (data.status !== "OK" || !data.routes?.length) continue;
-      const leg = data.routes[0].legs[0];
+      const leg = data.routes?.[0]?.legs?.[0];
+      if (!leg) continue;
 
       if (mode === "transit") {
         options.push({
           mode: "transit",
-          label: buildTransitLabel(leg.steps),
-          duration: leg.duration.text,
+          label: buildTransitLabel(leg.steps || []),
+          duration: leg.duration?.text || "",
           cost: "Check local fares",
         });
       } else if (mode === "walking") {
         options.push({
           mode: "walk",
-          label: `Walk ${leg.distance.text}`,
-          duration: leg.duration.text,
+          label: `Walk ${leg.distance?.text || ""}`.trim(),
+          duration: leg.duration?.text || "",
           cost: "Free",
         });
       }
@@ -148,8 +150,9 @@ serve(async (req: Request) => {
 
     const transitResult = results.find((r) => r.mode === "transit" && r.data.status === "OK");
     let gettingThere = "";
-    if (transitResult?.data.routes?.[0]) {
-      gettingThere = buildGettingThere(transitResult.data.routes[0].legs[0].steps);
+    const transitLeg = transitResult?.data?.routes?.[0]?.legs?.[0];
+    if (transitLeg?.steps) {
+      gettingThere = buildGettingThere(transitLeg.steps);
     }
 
     const best = options[0];
@@ -164,18 +167,11 @@ serve(async (req: Request) => {
       }),
       {
         status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=3600",
-        },
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" },
       }
     );
   } catch (err: any) {
-    console.error("Directions error:", err.message);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("Directions error");
+    return json({ error: "Internal server error" }, 500, corsHeaders);
   }
 });
