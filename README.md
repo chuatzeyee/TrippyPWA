@@ -52,18 +52,19 @@ Open `http://localhost:5173`.
 
 ## Architecture Highlights
 
-### Async generation pipeline
+### Async, chunked generation pipeline
 
-Itinerary generation runs as an asynchronous job queue rather than a single blocking request. This solves the core reliability problem: Supabase free-tier edge functions are killed at roughly 150s of wall clock, and a large itinerary plus two AI providers cannot fit in one invocation.
+Itinerary generation runs as an asynchronous job queue rather than a single blocking request, and a long trip is generated in day-batches. This solves the core reliability problem: Supabase free-tier edge functions are killed at roughly 150s of wall clock, and a large itinerary (for example 11 days at a packed pace, around 90 activities) cannot be produced by one model call within that budget.
 
 The flow:
 
 1. The client creates a row in `generation_jobs`, subscribes to Supabase Realtime on the trip row, then invokes the `process-generation` worker once.
-2. The worker processes ONE provider attempt per invocation, so each provider gets its own fresh wall-clock budget. On a recoverable failure it advances to the next provider (Gemini, then Mistral) and re-invokes itself.
-3. On success it saves the itinerary atomically through the `replace_itinerary` Postgres RPC (delete old days plus insert new in a single transaction) and flips the trip status to `generated`. A failed save never leaves an empty trip, and regeneration never destroys the prior itinerary unless the new one commits.
-4. The client watches the trip row via Realtime and updates the UI the moment the status changes. A watchdog plus a `recover_stale_jobs` reaper handle dropped Realtime events and worker crashes.
+2. The worker splits the trip into day-batches (chunks of about four days) and processes ONE chunk per invocation, so every model call stays well within the wall-clock budget no matter how long or packed the trip is. Each chunk runs with one provider; on a recoverable failure it falls back to the next provider (Gemini, then Mistral) for that chunk.
+3. The first chunk also produces the trip-level extras (flights or transport, accommodation, booking checklist, savings tips). Later chunks emit days only. Generated days accumulate on the job row across chunks.
+4. When the final chunk lands, the whole itinerary is saved atomically through the `replace_itinerary` Postgres RPC (delete old days plus insert new in a single transaction) and the trip status flips to `generated`. A failed save never leaves an empty trip, and regeneration never destroys the prior itinerary unless the new one commits.
+5. The client watches the trip row via Realtime and updates the UI the moment the status changes. A watchdog plus a `recover_stale_jobs` reaper handle dropped Realtime events and worker crashes; jobs stay leased while in flight so a crashed worker can be retried without double-running a chunk.
 
-There is no client-side retry storm. The worker chains providers server side, and the client simply waits for the row to settle.
+There is no client-side retry storm. The worker drives chunks and provider fallback server side, and the client simply waits for the row to settle.
 
 ### Atomic, ownership-safe data writes
 
@@ -146,14 +147,12 @@ dev/
     functions/
       _shared/generation.ts           Shared prompt, schema, providers, validation, db mapping
       _shared/http.ts                 Shared CORS, caller-auth, timeout, json helpers
-      process-generation/index.ts     Async generation worker (Gemini then Mistral, atomic save)
+      process-generation/index.ts     Async, chunked generation worker (day-batches, atomic save)
       generate-itinerary/index.ts     Legacy synchronous generator (superseded, kept for reference)
       places-photo/index.ts           Google Places photo proxy (auth + CORS + timeout)
       places-search/index.ts          Google Places text search (venue autocomplete)
       places-directions/index.ts      Google Directions proxy (transit plus walking)
-    migrations/                       SQL migrations (run manually; 013 adds the generation queue)
   .github/workflows/deploy.yml        GitHub Actions: build plus deploy to GitHub Pages
-  .interface-design/system.md         Full design system documentation
   js/**/*.test.js                     Vitest unit tests (currencies, wizard-state)
 ```
 
@@ -194,7 +193,7 @@ The `process-generation` worker sends enriched wizard state to Gemini 2.5 Flash,
 - **Weather forecasts** per day based on destination and season
 - **Savings tips** that name real passes, discounts, and free services for the destination
 
-The day count honors fixed start and end dates exactly. Long trips (9 or more days) automatically use a lower per-day activity density and tighter descriptions so the whole itinerary fits within the platform compute limit. The traveler's origin and a nearby-trip flag are injected client side before the job is queued.
+The day count honors fixed start and end dates exactly. Long or packed trips are generated in day-batches (see the chunked pipeline above), so full per-day density is preserved regardless of length. The traveler's origin and a nearby-trip flag are injected client side before the job is queued.
 
 ### Trip Detail View
 
@@ -314,10 +313,10 @@ All tables use Row Level Security. Users access only their own data; admins have
 | `itinerary_days` | Per-day data (title, theme, weather JSONB) |
 | `activities` | Activities (venue, time, cost, currency, coordinates, transport fields) |
 | `trip_shares` | Share tokens linking trips to public URLs |
-| `generation_jobs` | Async generation queue (provider order, attempt, lease, wizard state, status) |
+| `generation_jobs` | Async generation queue (provider order, attempt, lease, chunk progress, accumulated days, wizard state, status) |
 | `app_logs` | System-wide diagnostics |
 
-Key database functions (migration `013_generation_jobs.sql`):
+Key database functions:
 
 - `replace_itinerary(trip_id, title, extras, days)`: atomic delete-then-insert of an itinerary, sets status to `generated`. Revoked from end users.
 - `recover_stale_jobs()`: requeues jobs whose worker lease expired so a crashed worker can be retried.
@@ -348,7 +347,7 @@ An auto-profile trigger on `auth.users` insert populates name and avatar from OA
 | `--plum` | `#7E6EAA` | Sharing, nomad badges |
 | `--error` | `#C85252` | Error states, failed trips |
 
-Typography: DM Serif Display for headings, Figtree for body, JetBrains Mono for costs, times, and data. Spacing follows a 4px scale (`--sp-1` to `--sp-16`). A light theme is available via `[data-theme="light"]`. Full patterns are documented in `.interface-design/system.md`.
+Typography: DM Serif Display for headings, Figtree for body, JetBrains Mono for costs, times, and data. Spacing follows a 4px scale (`--sp-1` to `--sp-16`). A light theme is available via `[data-theme="light"]`. The full token set lives in `css/tokens.css`.
 
 ---
 
@@ -370,11 +369,12 @@ The list emphasizes destinations popular with Singapore-based travelers, includi
 
 ### `process-generation`
 
-The async generation worker. Accepts a `jobId`, processes one provider attempt per invocation (Gemini then Mistral), validates the result, and saves it atomically through `replace_itinerary`. Chains to the next provider on failure by re-invoking itself, so each provider gets a full wall-clock budget. Deployed with `verify_jwt = false` because it self-invokes with the service-role key and authorizes by job id internally.
+The async, chunked generation worker. Accepts a `jobId`, then processes the trip in day-batches: one chunk per invocation, with Gemini-then-Mistral fallback per chunk. Generated days accumulate on the job row, and the final chunk saves the whole itinerary atomically through `replace_itinerary`. Self-invokes between chunks so each model call gets a fresh wall-clock budget. Deployed with `verify_jwt = false` because it self-invokes with the service-role key and authorizes by job id internally.
 
 Prompt and schema highlights (in `_shared/generation.ts`):
 
-- Activity density scales with the pace slider, and drops automatically for long trips
+- Chunk scoping: `buildPromptAndSchema` accepts a day range and an `includeExtras` flag, so non-first chunks emit days only
+- Full per-day activity density at any trip length, since each chunk is small
 - Same-city detection skips flight and arrival logistics for local trips
 - Nearby-trip detection replaces flights with ferry, bus, or train options
 - Multi-city routing guidance (enter nearest and cheapest, order by proximity)
@@ -406,7 +406,7 @@ Push to `main` triggers the GitHub Actions workflow:
 ### Supabase setup
 
 1. Create a Supabase project.
-2. Run the migrations in order via the SQL Editor (they are not committed in CI; `013_generation_jobs.sql` adds the queue, the atomic RPC, the recovery function, and Realtime on `trips`).
+2. Apply the database schema via the SQL Editor: the core tables (`profiles`, `trips`, `itinerary_days`, `activities`, `trip_shares`, `app_logs`), the role and sharing policies, and the generation queue (`generation_jobs`, the `replace_itinerary` and `recover_stale_jobs` functions, and Realtime on `trips`).
 3. Enable Google OAuth under Authentication > Providers.
 4. Set edge function secrets:
    ```bash
@@ -422,7 +422,7 @@ Push to `main` triggers the GitHub Actions workflow:
    supabase functions deploy places-search
    supabase functions deploy places-directions
    ```
-6. Verify Realtime is enabled for the `trips` table (the migration adds it to the `supabase_realtime` publication).
+6. Verify Realtime is enabled for the `trips` table (the schema adds it to the `supabase_realtime` publication).
 7. Make at least one admin by setting `role = 'admin'` on a row in `profiles`.
 
 ### Local development
