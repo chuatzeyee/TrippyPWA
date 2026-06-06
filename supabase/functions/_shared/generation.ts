@@ -13,24 +13,49 @@ export function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numb
   return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-export function buildPromptAndSchema(wizardState: any) {
+// Total day count for a trip: fixed start+end is authoritative (dates.duration
+// defaults to 7 and is not cleared when fixed dates are picked).
+export function tripDayCount(wizardState: any): number {
+  const hasFixedDates = !!(wizardState.dates?.start && wizardState.dates?.end);
+  if (hasFixedDates) {
+    return Math.round((new Date(wizardState.dates.end).getTime() - new Date(wizardState.dates.start).getTime()) / 86400000) + 1;
+  }
+  return wizardState.dates?.duration || 7;
+}
+
+// Split a trip into day-batches. Short trips are a single chunk; long ones are
+// generated in pieces so each model call stays well within the wall-clock limit.
+export function planChunks(totalDays: number, chunkSize = 4): Array<{ from: number; to: number }> {
+  const chunks: Array<{ from: number; to: number }> = [];
+  for (let from = 1; from <= totalDays; from += chunkSize) {
+    chunks.push({ from, to: Math.min(from + chunkSize - 1, totalDays) });
+  }
+  return chunks.length > 0 ? chunks : [{ from: 1, to: Math.max(1, totalDays) }];
+}
+
+// opts.dayFrom/dayTo scope generation to a day range (1-based, inclusive).
+// opts.includeExtras=false drops trip-level sections (flights, accommodation,
+// bookingChecklist, savingsTips) so non-first chunks only emit days.
+export function buildPromptAndSchema(wizardState: any, opts: { dayFrom?: number; dayTo?: number; includeExtras?: boolean } = {}) {
   const dest = wizardState.multiCity && wizardState.destinations?.length > 0
     ? wizardState.destinations.map((d: any) => d.name).join(", ")
     : wizardState.destination?.name;
 
-  // Fixed start+end is authoritative for the day count. dates.duration defaults
-  // to 7 in the wizard and is NOT cleared when fixed dates are picked, so it must
-  // NOT take precedence — otherwise an 11-day fixed trip gets only 7 days.
   const hasFixedDates = !!(wizardState.dates?.start && wizardState.dates?.end);
-  const fixedDays = hasFixedDates
-    ? Math.round((new Date(wizardState.dates.end).getTime() - new Date(wizardState.dates.start).getTime()) / 86400000) + 1
-    : 0;
+  const fixedDays = tripDayCount(wizardState);
+
+  const days = hasFixedDates ? fixedDays : (wizardState.dates?.duration || 7);
+
+  // Chunk scoping. Default to the whole trip when no range is given.
+  const dayFrom = opts.dayFrom ?? 1;
+  const dayTo = opts.dayTo ?? days;
+  const includeExtras = opts.includeExtras ?? true;
+  const isChunk = dayFrom > 1 || dayTo < days;
+  const chunkDays = dayTo - dayFrom + 1;
 
   const dateInfo = hasFixedDates
     ? `Fixed dates: ${wizardState.dates.start} to ${wizardState.dates.end} (${fixedDays} days inclusive)`
     : `Flexible: approximately ${wizardState.dates?.duration || 7} days, ${wizardState.dates?.season || "any season"}`;
-
-  const days = hasFixedDates ? fixedDays : (wizardState.dates?.duration || 7);
 
   const currency = wizardState.destination?.currencyCode || "USD";
   const currencySymbol = wizardState.destination?.currencySymbol || "$";
@@ -101,7 +126,9 @@ export function buildPromptAndSchema(wizardState: any) {
     4: "7-8 activities per day, efficiently scheduled",
     5: "8-9 activities per day, a full but not exhausting schedule"
   };
-  const isLongTrip = days >= 9;
+  // When generating in chunks, each call covers only a few days, so full density
+  // is affordable and we do NOT need the long-trip cap or brevity squeeze.
+  const isLongTrip = !isChunk && days >= 9;
   const activityGuidance = (isLongTrip ? longTripCountMap : activityCountMap)[paceVal]
     || (isLongTrip ? longTripCountMap : activityCountMap)[3];
   const brevityNote = isLongTrip
@@ -130,7 +157,11 @@ export function buildPromptAndSchema(wizardState: any) {
   if (wizardState.summary?.avoid) extras.push(`Avoid: ${wizardState.summary.avoid}`);
   if (wizardState.summary?.freeText) extras.push(`Additional notes: ${wizardState.summary.freeText}`);
 
-  const prompt = `Create a comprehensive hour-by-hour ${days}-day travel itinerary for ${dest}.
+  const chunkScope = isChunk
+    ? `\n\nIMPORTANT SCOPE: This is a ${days}-day trip overall, but generate ONLY days ${dayFrom} through ${dayTo} (${chunkDays} day${chunkDays > 1 ? "s" : ""}) in this response. Number them with their real dayNumber (${dayFrom}..${dayTo}) and use the correct calendar date for each. Maintain continuity with the rest of the trip (do not repeat venues a traveler would have seen on earlier days; assume earlier days covered the major highlights first).`
+    : "";
+
+  const prompt = `Create a comprehensive hour-by-hour travel itinerary for ${dest}.${chunkScope}
 
 TRIP DETAILS:
 - ${dateInfo}
@@ -165,7 +196,7 @@ CRITICAL REQUIREMENTS:
 9. Add practical tips for each activity (booking advice, best times, what to order, etc).
 10. The timeSlot field should still categorize as morning/afternoon/evening for grouping.
 11. For EVERY day, include a "weather" object with the expected weather conditions for that day based on the destination, season, and travel dates. Include condition (e.g. "sunny", "partly cloudy", "rainy"), highC and lowC temperatures in Celsius.
-${isNearbyTrip
+${!includeExtras ? `12. Output ONLY the "days" array for days ${dayFrom}..${dayTo}. Do NOT include flights, transport, accommodation, bookingChecklist, or savingsTips — those are generated separately.` : `${isNearbyTrip
   ? `12. Include "transport" (NOT "flights" — do NOT include a "flights" key at all) with suggested outbound and inbound ${transportMode ? (transportLabel[transportMode] || transportMode) : "ground/sea transport"} options — include operator name, mode (bus/train/ferry/drive), route, duration, schedule frequency, and pricing. For ferries include terminal names. For buses include bus operator and station. For trains include train service name and station. NEVER generate airline names or flight numbers.`
   : flightsSettled && settledFlightNumber
   ? `12. Include "flights" — the traveler has PRE-BOOKED flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight for the outbound/inbound entry. For the other direction, suggest a realistic return flight from the same airline.`
@@ -173,12 +204,12 @@ ${isNearbyTrip
 ${accomSettled && accomAddress
   ? `13. Include "accommodation" with ONLY the pre-booked property: "${accomAddress}". Look up the actual name, neighborhood, and details of this property. Return it as a single item with badge "Pre-booked". Do NOT add alternative options.`
   : `13. Include "accommodation" with hotel/apartment options matching the traveler's ${accomType} preference. Each item needs: name, area (neighborhood), priceRange, type, highlights, a badge (Recommended, Best Value, Best Location, or Luxury Pick), and "city" (which city it is in).${cityNames.length > 1 ? ` This is a MULTI-CITY trip — provide 2-3 options FOR EACH city the traveler stays in (${cityNames.join(", ")}), and set "city" to that city's name so options can be grouped per city.` : ` Provide 2-3 options and set "city" to ${destName || "the destination"}.`}`}
-14. Include "bookingChecklist" — scan every activity and identify which ones need advance booking (museum tickets, restaurant reservations, tours, shows). Group into "Must Book Ahead" (sells out or requires reservation) and "Good to Book" (walk-in possible but booking saves time). Include the day number and a practical booking note.
-15. Include "savingsTips" — an array of 4-6 REAL, SPECIFIC money-saving tips for tourists in ${dest} during the travel dates. These MUST be:
+14. Include "bookingChecklist" — scan every activity and identify which ones need advance booking (museum tickets, restaurant reservations, tours, shows). Group into "Must Book Ahead" (sells out or requires reservation) and "Good to Book" (walk-in possible but booking saves time). Include the day number and a practical booking note.`}
+${includeExtras ? `15. Include "savingsTips" — an array of 4-6 REAL, SPECIFIC money-saving tips for tourists in ${dest} during the travel dates. These MUST be:
    a) REAL programs, passes, discounts, or free services that actually exist (not generic advice)
    b) SPECIFIC to ${dest} and relevant to the travel dates/season
    c) Safe and legal for tourists to use
-   d) Each tip needs: icon (emoji), title (the specific program/pass/offer name), description (what it is, how much it saves, eligibility, how to get it), and estimatedSaving (approximate savings in ${currency}, e.g. "${currencySymbol}50-80")`;
+   d) Each tip needs: icon (emoji), title (the specific program/pass/offer name), description (what it is, how much it saves, eligibility, how to get it), and estimatedSaving (approximate savings in ${currency}, e.g. "${currencySymbol}50-80")` : ""}`;
 
   const systemPrompt = `You are a world-class travel planner who creates incredibly detailed, practical itineraries. Your itineraries read like a knowledgeable local friend guiding someone through the city hour by hour.
 
@@ -225,14 +256,16 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
         transportCost: "string"
       }]
     }],
-    accommodation: [{ name: "string", area: "string", city: "string", priceRange: "string", type: "string", highlights: "string", badge: "string" }],
-    bookingChecklist: [{ group: "string", items: [{ label: "string", day: "integer", note: "string", url: "string (optional)" }] }],
-    savingsTips: [{ icon: "string (emoji)", title: "string", description: "string", estimatedSaving: "string" }]
   };
-  if (isNearbyTrip) {
-    jsonSchema.transport = { outbound: { operator: "string", mode: "string", route: "string", terminal: "string", duration: "string", frequency: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } };
-  } else if (!isSameCity) {
-    jsonSchema.flights = { outbound: { airline: "string", flightNumber: "string", route: "string", duration: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } };
+  if (includeExtras) {
+    jsonSchema.accommodation = [{ name: "string", area: "string", city: "string", priceRange: "string", type: "string", highlights: "string", badge: "string" }];
+    jsonSchema.bookingChecklist = [{ group: "string", items: [{ label: "string", day: "integer", note: "string", url: "string (optional)" }] }];
+    jsonSchema.savingsTips = [{ icon: "string (emoji)", title: "string", description: "string", estimatedSaving: "string" }];
+    if (isNearbyTrip) {
+      jsonSchema.transport = { outbound: { operator: "string", mode: "string", route: "string", terminal: "string", duration: "string", frequency: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } };
+    } else if (!isSameCity) {
+      jsonSchema.flights = { outbound: { airline: "string", flightNumber: "string", route: "string", duration: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } };
+    }
   }
 
   const geminiSchema = {
@@ -276,59 +309,61 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
           required: ["dayNumber", "date", "title", "activities"]
         }
       },
-      ...(isNearbyTrip ? {
-        transport: {
-          type: "object",
-          properties: {
-            outbound: { type: "object", properties: { operator: { type: "string" }, mode: { type: "string" }, route: { type: "string" }, terminal: { type: "string" }, duration: { type: "string" }, frequency: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["operator", "mode", "route", "duration", "priceRange"] },
-            inbound: { type: "object", properties: { operator: { type: "string" }, mode: { type: "string" }, route: { type: "string" }, terminal: { type: "string" }, duration: { type: "string" }, frequency: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["operator", "mode", "route", "duration", "priceRange"] }
-          },
-          required: ["outbound", "inbound"]
+      ...(includeExtras ? {
+        ...(isNearbyTrip ? {
+          transport: {
+            type: "object",
+            properties: {
+              outbound: { type: "object", properties: { operator: { type: "string" }, mode: { type: "string" }, route: { type: "string" }, terminal: { type: "string" }, duration: { type: "string" }, frequency: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["operator", "mode", "route", "duration", "priceRange"] },
+              inbound: { type: "object", properties: { operator: { type: "string" }, mode: { type: "string" }, route: { type: "string" }, terminal: { type: "string" }, duration: { type: "string" }, frequency: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["operator", "mode", "route", "duration", "priceRange"] }
+            },
+            required: ["outbound", "inbound"]
+          }
+        } : {
+          flights: {
+            type: "object",
+            properties: {
+              outbound: { type: "object", properties: { airline: { type: "string" }, flightNumber: { type: "string" }, route: { type: "string" }, duration: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["airline", "flightNumber", "route", "duration", "priceRange"] },
+              inbound: { type: "object", properties: { airline: { type: "string" }, flightNumber: { type: "string" }, route: { type: "string" }, duration: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["airline", "flightNumber", "route", "duration", "priceRange"] }
+            },
+            required: ["outbound", "inbound"]
+          }
+        }),
+        accommodation: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { name: { type: "string" }, area: { type: "string" }, city: { type: "string" }, priceRange: { type: "string" }, type: { type: "string" }, highlights: { type: "string" }, badge: { type: "string" } },
+            required: ["name", "area", "priceRange", "type", "highlights", "badge"]
+          }
+        },
+        bookingChecklist: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { group: { type: "string" }, items: { type: "array", items: { type: "object", properties: { label: { type: "string" }, day: { type: "integer" }, note: { type: "string" }, url: { type: "string" } }, required: ["label", "day", "note"] } } },
+            required: ["group", "items"]
+          }
+        },
+        savingsTips: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              icon: { type: "string", description: "Emoji icon" },
+              title: { type: "string", description: "Name of the specific program, pass, or offer" },
+              description: { type: "string", description: "What it is, how to get it, eligibility" },
+              estimatedSaving: { type: "string", description: "Approximate savings in local currency" }
+            },
+            required: ["icon", "title", "description", "estimatedSaving"]
+          }
         }
-      } : {
-        flights: {
-          type: "object",
-          properties: {
-            outbound: { type: "object", properties: { airline: { type: "string" }, flightNumber: { type: "string" }, route: { type: "string" }, duration: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["airline", "flightNumber", "route", "duration", "priceRange"] },
-            inbound: { type: "object", properties: { airline: { type: "string" }, flightNumber: { type: "string" }, route: { type: "string" }, duration: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["airline", "flightNumber", "route", "duration", "priceRange"] }
-          },
-          required: ["outbound", "inbound"]
-        }
-      }),
-      accommodation: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: { name: { type: "string" }, area: { type: "string" }, city: { type: "string" }, priceRange: { type: "string" }, type: { type: "string" }, highlights: { type: "string" }, badge: { type: "string" } },
-          required: ["name", "area", "priceRange", "type", "highlights", "badge"]
-        }
-      },
-      bookingChecklist: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: { group: { type: "string" }, items: { type: "array", items: { type: "object", properties: { label: { type: "string" }, day: { type: "integer" }, note: { type: "string" }, url: { type: "string" } }, required: ["label", "day", "note"] } } },
-          required: ["group", "items"]
-        }
-      },
-      savingsTips: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            icon: { type: "string", description: "Emoji icon" },
-            title: { type: "string", description: "Name of the specific program, pass, or offer" },
-            description: { type: "string", description: "What it is, how to get it, eligibility" },
-            estimatedSaving: { type: "string", description: "Approximate savings in local currency" }
-          },
-          required: ["icon", "title", "description", "estimatedSaving"]
-        }
-      }
+      } : {})
     },
-    required: ["tripTitle", "days"]
+    required: includeExtras ? ["tripTitle", "days"] : ["days"]
   };
 
-  return { prompt, systemPrompt, jsonSchema, geminiSchema, expectedDays: days, currency };
+  return { prompt, systemPrompt, jsonSchema, geminiSchema, expectedDays: chunkDays, totalDays: days, dayFrom, dayTo, includeExtras, currency };
 }
 
 // Returns { issues, fatal }. fatal=true means the itinerary is unusable (no days,
