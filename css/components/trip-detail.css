@@ -141,10 +141,11 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 44px;
   padding: var(--sp-2) var(--sp-3);
   border: none;
   background: transparent;
-  color: var(--ink-ghost);
+  color: var(--ink-secondary);
   font-family: var(--font-body);
   font-size: 0.82rem;
   font-weight: 600;

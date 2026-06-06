@@ -111,7 +111,7 @@ function renderAuthDashboard(trips) {
       <div class="dashboard-merged-body">
         <div class="dashboard-header">
           <h1 class="dashboard-greeting">Where to next?</h1>
-          <button class="btn btn--primary btn--pill" data-action="new-trip">+ Plan a Trip</button>
+          <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">+ Plan a Trip</button>
         </div>
         ${trips.length > 0 ? `
           <div class="trip-grid">
@@ -386,7 +386,7 @@ export async function renderDashboard() {
     content = `
       <div class="dashboard-header">
         <h1 class="dashboard-greeting">Where to next?</h1>
-        <button class="btn btn--primary btn--pill" data-action="new-trip">
+        <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">
           + Plan a Trip
         </button>
       </div>
