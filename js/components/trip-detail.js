@@ -548,13 +548,24 @@ export async function renderTripDetail(rawTripId) {
   const { data: trip, error } = await fetchTripById(tripId);
 
   if (error || !trip) {
+    if (error) logger.error('data', 'Trip load failed', { tripId, error });
+    const notFound = !error && !trip;
     app.innerHTML = `
       <div class="td-wrap">
         <button class="td-back" data-action="back">${ICONS.arrowBack} Back</button>
-        <div class="td-error">${esc(error || 'Trip not found')}</div>
+        <div class="td-error-state">
+          <div class="td-error-icon">${ICONS.info}</div>
+          <h2 class="td-error-title">${notFound ? "We couldn't find this trip" : 'Something went wrong'}</h2>
+          <p class="td-error-msg">${notFound ? 'It may have been deleted, or the link is no longer valid.' : 'Check your connection and try again.'}</p>
+          <div class="td-error-actions">
+            ${notFound ? '' : '<button class="btn btn--primary btn--pill" data-action="retry">Try again</button>'}
+            <button class="btn btn--ghost btn--pill" data-action="back">Back to Trips</button>
+          </div>
+        </div>
       </div>
     `;
-    app.querySelector('[data-action="back"]')?.addEventListener('click', () => navigate('/'));
+    app.querySelector('[data-action="retry"]')?.addEventListener('click', () => renderTripDetail(rawTripId));
+    app.querySelectorAll('[data-action="back"]').forEach(b => b.addEventListener('click', () => navigate('/')));
     return;
   }
 
