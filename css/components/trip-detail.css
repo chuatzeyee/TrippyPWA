@@ -549,7 +549,9 @@
   border-radius: var(--r-xl);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35),
               0 1px 3px rgba(0, 0, 0, 0.15);
-  margin: var(--sp-3) var(--sp-2) var(--sp-2);
+  /* Horizontal inset must match the body content padding (--sp-4) so the sticky
+     header lines up with the cards below it. */
+  margin: var(--sp-3) var(--sp-4) var(--sp-2);
   border: 1px solid var(--border);
 }
 
@@ -1663,7 +1665,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--sp-1);
+  gap: var(--sp-2);
   margin-bottom: var(--sp-2);
 }
 
@@ -2493,7 +2495,9 @@
 
   .td-day-card--open .td-day-card-header {
     top: calc(var(--nav-h) + var(--sp-4));
-    margin: 0 var(--sp-2);
+    /* Match the body content's --sp-4 horizontal padding so the sticky header
+       aligns with the cards below it on desktop. */
+    margin: 0 var(--sp-4);
   }
 
   .td-day-card--open .td-day-card-body {
