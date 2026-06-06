@@ -39,6 +39,15 @@
 .toast--success { border-left-color: var(--teal); }
 .toast--info   { border-left-color: var(--teal); }
 
+.toast-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.toast--error  .toast-icon { color: var(--error, #C85252); }
+.toast--warn   .toast-icon { color: var(--warning, #D09A48); }
+.toast--success .toast-icon { color: var(--teal); }
+.toast--info   .toast-icon { color: var(--teal); }
+
 .toast-msg {
   flex: 1;
   min-width: 0;

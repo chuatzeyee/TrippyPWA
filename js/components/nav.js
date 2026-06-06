@@ -59,9 +59,9 @@ export function renderNav() {
   const nav = document.getElementById('app-nav');
   nav.className = 'app-nav';
   nav.innerHTML = `
-    <a class="nav-logo" data-nav="home">
-      <svg class="nav-logo-plane" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
-      <span class="nav-logo-flaps">${HOME_TEXT.split('').map(buildCell).join('')}</span>
+    <a class="nav-logo" href="#/" data-nav="home" aria-label="Trippy home">
+      <svg class="nav-logo-plane" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+      <span class="nav-logo-flaps" aria-hidden="true">${HOME_TEXT.split('').map(buildCell).join('')}</span>
     </a>
     <div class="nav-actions">
       <button class="nav-theme-toggle" id="theme-toggle" aria-label="Toggle theme">
@@ -83,19 +83,23 @@ export function renderNav() {
   // renderNav runs again on every auth-state change; clear the prior ticker so we
   // do not accumulate split-flap timers (and detached DOM closures).
   if (_flapTimer) clearInterval(_flapTimer);
-  _flapTimer = setInterval(() => {
-    if (showingHome) {
-      const dest = DESTINATIONS[destIndex];
-      destIndex = (destIndex + 1) % DESTINATIONS.length;
-      flipTo(flapsEl, current, dest);
-      current = dest;
-      showingHome = false;
-    } else {
-      flipTo(flapsEl, current, HOME_TEXT);
-      current = HOME_TEXT;
-      showingHome = true;
-    }
-  }, 4000);
+  // Respect reduced-motion: leave the static "TRIPPY" logo, no flap cycling.
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!reduceMotion) {
+    _flapTimer = setInterval(() => {
+      if (showingHome) {
+        const dest = DESTINATIONS[destIndex];
+        destIndex = (destIndex + 1) % DESTINATIONS.length;
+        flipTo(flapsEl, current, dest);
+        current = dest;
+        showingHome = false;
+      } else {
+        flipTo(flapsEl, current, HOME_TEXT);
+        current = HOME_TEXT;
+        showingHome = true;
+      }
+    }, 4000);
+  }
 
   nav.addEventListener('click', (e) => {
     const target = e.target.closest('[data-nav]');

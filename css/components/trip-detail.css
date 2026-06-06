@@ -749,7 +749,7 @@
 
 .td-activity-desc {
   font-size: 0.9rem;
-  color: var(--ink-ghost);
+  color: var(--ink-secondary);
   line-height: 1.55;
   margin-top: var(--sp-3);
 }
@@ -904,7 +904,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--border);
-  border: 2px solid var(--surface-card);
+  border: 2px solid var(--surface-solid);
 }
 
 .td-getting-there-step:only-child::after { display: none; }
@@ -2420,7 +2420,7 @@
 
 .td-savings-tip-desc {
   font-size: 0.82rem;
-  color: var(--ink-ghost);
+  color: var(--ink-secondary);
   line-height: 1.5;
 }
 
@@ -2428,7 +2428,7 @@
   margin-top: 4px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--accent-green, #6ecf7a);
+  color: var(--sage);
   letter-spacing: 0.02em;
 }
 

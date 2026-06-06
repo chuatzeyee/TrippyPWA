@@ -625,7 +625,7 @@
 
 .landing-feature-desc {
   font: var(--text-caption);
-  color: var(--ink-ghost);
+  color: var(--ink-secondary);
   line-height: 1.5;
   font-size: 0.78rem;
 }
@@ -680,7 +680,7 @@
 
 .landing-step-desc {
   font: var(--text-caption);
-  color: var(--ink-ghost);
+  color: var(--ink-secondary);
   line-height: 1.5;
   font-size: 0.78rem;
 }

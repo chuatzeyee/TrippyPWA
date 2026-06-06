@@ -313,6 +313,22 @@ textarea.input {
   }
 }
 
+/* Global keyboard focus indicator. Keyboard users get a clear ring on any
+   focusable control; mouse users (which trigger :focus but not :focus-visible)
+   are unaffected. */
+:focus-visible {
+  outline: 2px solid var(--terracotta);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* On terracotta-filled controls a terracotta ring would vanish — use a light
+   ring there instead. */
+.btn--primary:focus-visible,
+.wizard-cta-btn:focus-visible {
+  outline-color: var(--ink);
+}
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(229, 225, 216, 0.12); border-radius: var(--r-pill); }
@@ -329,7 +345,7 @@ textarea.input {
   height: 44px;
   border-radius: 50%;
   border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent);
-  background: color-mix(in srgb, var(--bg-surface) 90%, var(--teal));
+  background: color-mix(in srgb, var(--surface-solid) 90%, var(--teal));
   color: var(--teal);
   display: flex;
   align-items: center;
@@ -352,7 +368,7 @@ textarea.input {
 }
 
 .back-to-top:hover {
-  background: color-mix(in srgb, var(--teal) 20%, var(--bg-surface));
+  background: color-mix(in srgb, var(--teal) 20%, var(--surface-solid));
   border-color: var(--teal);
 }
 

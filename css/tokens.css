@@ -6,7 +6,9 @@
   --surface-inset: #1E1D1A;
   --ink: #E5E1D8;
   --ink-secondary: #9A9488;
-  --ink-ghost: #6A6459;
+  /* Raised from #6A6459 (2.7:1, failed AA) to ~4.8:1 on --surface-solid so it is
+     legible if used for text; reserve it for tertiary/disabled roles. */
+  --ink-ghost: #938D82;
   --border: rgba(229, 225, 216, 0.08);
   --border-strong: rgba(229, 225, 216, 0.15);
 
@@ -105,7 +107,8 @@
   --surface-inset: #EDE9E1;
   --ink: #2C2A25;
   --ink-secondary: #6B6660;
-  --ink-ghost: #9A9488;
+  /* Darkened from #9A9488 (3.0:1, failed AA) to ~4.6:1 on white. */
+  --ink-ghost: #7C766B;
   --border: rgba(44, 42, 37, 0.08);
   --border-strong: rgba(44, 42, 37, 0.16);
 
