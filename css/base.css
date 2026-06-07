@@ -1,3 +1,62 @@
+/* ===== GT Eesti Pro Display (self-hosted body font) ===== */
+@font-face {
+  font-family: 'GT Eesti Pro Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/GT-Eesti-Pro-Display-Regular.woff2') format('woff2'),
+       url('/fonts/GT-Eesti-Pro-Display-Regular.woff') format('woff');
+}
+@font-face {
+  font-family: 'GT Eesti Pro Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/GT-Eesti-Pro-Display-Regular-Italic.woff2') format('woff2'),
+       url('/fonts/GT-Eesti-Pro-Display-Regular-Italic.woff') format('woff');
+}
+@font-face {
+  font-family: 'GT Eesti Pro Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/GT-Eesti-Pro-Display-Medium.woff2') format('woff2'),
+       url('/fonts/GT-Eesti-Pro-Display-Medium.woff') format('woff');
+}
+@font-face {
+  font-family: 'GT Eesti Pro Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/GT-Eesti-Pro-Display-Medium-Italic.woff2') format('woff2'),
+       url('/fonts/GT-Eesti-Pro-Display-Medium-Italic.woff') format('woff');
+}
+/* Map 600 (semibold requests) onto Medium so weights stay on-family. */
+@font-face {
+  font-family: 'GT Eesti Pro Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/GT-Eesti-Pro-Display-Medium.woff2') format('woff2'),
+       url('/fonts/GT-Eesti-Pro-Display-Medium.woff') format('woff');
+}
+@font-face {
+  font-family: 'GT Eesti Pro Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/GT-Eesti-Pro-Display-UBold.woff2') format('woff2'),
+       url('/fonts/GT-Eesti-Pro-Display-UBold.woff') format('woff');
+}
+@font-face {
+  font-family: 'GT Eesti Pro Display';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/GT-Eesti-Pro-Display-UBold-Italic.woff2') format('woff2'),
+       url('/fonts/GT-Eesti-Pro-Display-UBold-Italic.woff') format('woff');
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

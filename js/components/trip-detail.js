@@ -756,9 +756,15 @@ function renderTransportContent(extras) {
 
   const renderLeg = (leg, label) => {
     if (!leg) return '';
-    const routeParts = (leg.route || '').split(/\s*[→➔>]\s*/);
-    const from = routeParts[0] || '???';
-    const to = routeParts[1] || '???';
+    // Routes arrive in mixed shapes: "A → B", "A to B", "A - B". Split on any of
+    // them (arrows, the word "to", en/em/hyphen dashes) so the destination is
+    // never lost to a "???" placeholder.
+    const routeParts = (leg.route || '')
+      .split(/\s*(?:[→➔>]|\bto\b|[-–—])\s*/i)
+      .map(s => s.trim())
+      .filter(Boolean);
+    const from = routeParts[0] || leg.from || '???';
+    const to = routeParts.length > 1 ? routeParts[routeParts.length - 1] : (leg.to || '???');
     const icon = TRANSPORT_MODE_ICONS[leg.mode] || '🚌';
     return `
       <div class="td-flight-leg">
