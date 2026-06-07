@@ -2,6 +2,7 @@ import { navigate } from '../router.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { loadWizardState, saveWizardState, updateWizardField, clearWizardState, canAdvance } from './wizard-state.js';
 import { searchDestinations, getPopularDestinations, DESTINATIONS, makeCustomDestination } from './destinations.js';
+import { resolveCity } from './city-resolver.js';
 import { renderCalendar } from './calendar.js';
 import { convert, formatCurrency } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
@@ -566,7 +567,7 @@ function renderStep1(el) {
           <span class="dest-dropdown-flag">📍</span>
           <div>
             <span class="dest-dropdown-name">Use &ldquo;${escapeHtml(custom.name)}&rdquo;</span>
-            <span class="dest-dropdown-country">Add this city</span>
+            <span class="dest-dropdown-country">We'll check the spelling &amp; fill in the details</span>
           </div>
         </div>
       `;
@@ -601,6 +602,7 @@ function selectDestination(dest) {
     const stepEl = document.getElementById('wizard-step-content');
     if (stepEl) renderStep1(stepEl);
     applyFlagBackground(state.destination?.flag);
+    if (!exists && dest.custom && !dest.resolved) enrichCustomDestination(dest);
   } else {
     state = updateWizardField(state, 'destination', dest);
     const dropdown = document.getElementById('dest-dropdown');
@@ -608,8 +610,68 @@ function selectDestination(dest) {
     const stepEl = document.getElementById('wizard-step-content');
     if (stepEl) renderStep1(stepEl);
     applyFlagBackground(dest.flag);
+    if (dest.custom && !dest.resolved) enrichCustomDestination(dest);
   }
   updateNextButton();
+}
+
+// A custom (non-curated) city carries only the raw typed name — often misspelled,
+// with no flag/currency/coords/photo. Geocode it in the background to autocorrect
+// the spelling and autopopulate those fields, then swap it into state in place.
+// Best-effort: if resolution fails we keep the user's typed city as-is.
+//
+// Enrichments are chained through a single promise so adding several cities in
+// quick succession resolves them one at a time, rather than firing a burst of
+// concurrent requests at the public geocoding APIs.
+let enrichmentChain = Promise.resolve();
+
+function enrichCustomDestination(typed) {
+  enrichmentChain = enrichmentChain.then(() => runEnrichment(typed)).catch(() => {});
+  return enrichmentChain;
+}
+
+async function runEnrichment(typed) {
+  showToast(`Looking up ${typed.name}…`, 'info');
+  let resolved;
+  try {
+    resolved = await resolveCity(typed.name);
+  } catch (e) {
+    logger.warn('data', 'City enrichment failed', { name: typed.name, error: e?.message });
+    return;
+  }
+  if (!resolved) {
+    showToast(`Couldn't find ${typed.name} — using it as typed.`, 'info');
+    return;
+  }
+
+  // Match on the originally-typed (still-unresolved) entry so we replace the
+  // right city even if the user has since added others. Bail if they removed it
+  // or it was already resolved while this lookup was in flight.
+  if (state.multiCity) {
+    const idx = state.destinations.findIndex(
+      d => d.custom && !d.resolved && d.name === typed.name);
+    if (idx === -1) return;
+    const next = [...state.destinations];
+    next[idx] = resolved;
+    state.destinations = next;
+    state.destination = next[0] || null;
+    state = updateWizardField(state, 'destinations', state.destinations);
+    state = updateWizardField(state, 'destination', state.destination);
+  } else {
+    if (state.destination?.name !== typed.name || state.destination?.resolved) return;
+    state = updateWizardField(state, 'destination', resolved);
+  }
+
+  const stepEl = document.getElementById('wizard-step-content');
+  if (state.currentStep === 1 && stepEl) renderStep1(stepEl);
+  applyFlagBackground((state.multiCity ? state.destinations[0] : state.destination)?.flag);
+  updateNextButton();
+
+  const corrected = resolved.name.toLowerCase() !== typed.name.toLowerCase();
+  showToast(
+    corrected ? `Corrected to ${resolved.name}, ${resolved.country}` : `${resolved.name} ready`,
+    'success'
+  );
 }
 
 function bindDropdownClicks(container, searchInput, dropdown) {
