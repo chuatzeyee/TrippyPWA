@@ -393,11 +393,19 @@ function hiResImage(url) {
   return url.replace(/\/\d+px-/, '/500px-');
 }
 
+// The selected-city banner spans the full viewport width, so the 500px coverflow
+// render looks soft on high-DPI phones. Request a 1280px Wikipedia thumbnail to
+// match the trip-detail hero.
+function bannerImage(url) {
+  if (!url) return '';
+  return url.replace(/\/\d+px-/, '/1280px-');
+}
+
 // A full-width banner for a chosen destination. Replaces the carousel once a
 // city is picked (multi-city stacks one banner per city).
 function renderDestBanner(d, idx) {
   const bg = d.image
-    ? `background-image: url('${escapeHtml(hiResImage(d.image))}'); background-color: var(--surface-inset);`
+    ? `background-image: url('${escapeHtml(bannerImage(d.image))}'); background-color: var(--surface-inset);`
     : 'background: linear-gradient(135deg, var(--teal-light), var(--terracotta-light));';
   return `
     <div class="dest-banner" style="${bg}" data-banner-idx="${idx}">
