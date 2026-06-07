@@ -27,7 +27,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
   margin-bottom: var(--sp-6);
 }
 
@@ -213,6 +213,8 @@
 }
 
 .td-hero-countdown .td-countdown {
+  padding: 5px 14px;
+  line-height: 1;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -220,16 +222,20 @@
   color: var(--terracotta);
 }
 
+/* Matches .td-hero-countdown .td-countdown box metrics (same padding, border,
+   line-height) so the two hero pills sit at identical heights. */
 .td-hero-dates {
   position: absolute;
   top: var(--sp-3);
   right: var(--sp-3);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
+  gap: 6px;
+  padding: 5px 14px;
+  line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--r-pill);
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   font-size: 0.82rem;
