@@ -54,12 +54,20 @@ function tripCardHomeTotal(budget) {
   return `<span class="trip-card-budget-home">&asymp; ${escapeHtml(home.symbol || '')}${formatNumber(converted)}</span>`;
 }
 
+// Trip cards source their cover from a ~250px Wikipedia thumbnail, but the hero
+// fills the full card width, so it looks soft on high-DPI phones. Upscale the
+// thumbnail request to 1280px (no-op when the URL isn't a sized Wikipedia thumb).
+function cardCoverImage(url) {
+  if (!url) return '';
+  return url.replace(/\/\d+px-/, '/1280px-');
+}
+
 function renderTripCard(trip, index) {
   const isGenerating = trip.status === 'generating';
   const isFailed = trip.status === 'failed';
   const status = isGenerating ? 'generating' : isFailed ? 'failed' : getTripStatus(trip);
   const heroStyle = trip.coverImage
-    ? `background-image: url('${escapeHtml(trip.coverImage)}')`
+    ? `background-image: url('${escapeHtml(cardCoverImage(trip.coverImage))}')`
     : 'background: linear-gradient(135deg, var(--terracotta-light), var(--teal-light))';
 
   return `
