@@ -222,8 +222,8 @@
 
 .td-hero-dates {
   position: absolute;
-  bottom: var(--sp-4);
-  left: var(--sp-4);
+  top: var(--sp-3);
+  right: var(--sp-3);
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -241,9 +241,10 @@
 .td-hero-caption {
   position: absolute;
   bottom: var(--sp-4);
+  left: var(--sp-5);
   right: var(--sp-5);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--sp-3);
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
 }
@@ -251,6 +252,8 @@
 .td-hero-flag {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  padding-bottom: 4px;
 }
 
 .td-hero-flag img {
@@ -266,6 +269,9 @@
   color: #fff;
   margin: 0;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ===== Trip Header ===== */
@@ -2084,7 +2090,7 @@
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-top: var(--glass-border);
-  padding: var(--sp-2) var(--sp-4);
+  padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
   z-index: var(--z-sticky);
   animation: tdFooterSlideUp 0.5s var(--ease-out) 0.3s both;
 }
@@ -2107,7 +2113,7 @@
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: var(--sp-1) var(--sp-2);
+  gap: var(--sp-2) var(--sp-3);
   max-width: 720px;
   margin: 0 auto;
 }
@@ -2115,29 +2121,38 @@
 .td-footer-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
+  gap: 7px;
+  font-size: 0.8rem;
+  line-height: 1;
   color: var(--ink-secondary);
-  background: var(--border);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-pill);
-  padding: 3px 10px;
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 8px 13px;
   white-space: nowrap;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--duration-fast), transform var(--duration-fast);
+}
+
+.td-footer-pill:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
 .td-footer-pill img {
-  border-radius: 2px;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
 .td-footer-pill strong {
   color: var(--ink);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .td-footer-pill svg {
-  opacity: 0.6;
+  color: var(--terracotta);
+  opacity: 0.85;
   flex-shrink: 0;
 }
 
@@ -2511,7 +2526,8 @@
   }
 
   .td-footer-pills {
-    max-width: 80%;
+    max-width: 100%;
+    gap: var(--sp-2);
   }
 
   .td-topbar {

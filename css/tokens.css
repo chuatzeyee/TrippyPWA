@@ -43,7 +43,7 @@
 
   /* Typography */
   --font-heading: 'DM Serif Display', serif;
-  --font-body: 'Figtree', sans-serif;
+  --font-body: 'GT Eesti Pro Display', 'Figtree', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   --text-hero: 400 2rem/1.2 var(--font-heading);
