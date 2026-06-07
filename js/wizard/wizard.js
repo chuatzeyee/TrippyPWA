@@ -388,24 +388,35 @@ function renderStep() {
   }
 }
 
-function renderMultiCityList() {
-  if (!state.multiCity || state.destinations.length === 0) return '';
-  return `
-    <div class="multi-city-list">
-      ${state.destinations.map((d, i) => `
-        <div class="multi-city-tag">
-          ${flagImg(d.flag, 14)}
-          <span>${escapeHtml(d.name)}</span>
-          <button class="multi-city-remove" data-remove-idx="${i}" aria-label="Remove ${escapeHtml(d.name)}">✕</button>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
 function hiResImage(url) {
   if (!url) return '';
   return url.replace(/\/\d+px-/, '/500px-');
+}
+
+// A full-width banner for a chosen destination. Replaces the carousel once a
+// city is picked (multi-city stacks one banner per city).
+function renderDestBanner(d, idx) {
+  const bg = d.image
+    ? `background-image: url('${escapeHtml(hiResImage(d.image))}'); background-color: var(--surface-inset);`
+    : 'background: linear-gradient(135deg, var(--teal-light), var(--terracotta-light));';
+  return `
+    <div class="dest-banner" style="${bg}" data-banner-idx="${idx}">
+      <div class="dest-banner-overlay"></div>
+      <button class="dest-banner-remove" data-remove-idx="${idx}" aria-label="Remove ${escapeHtml(d.name)}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+      <div class="dest-banner-label">
+        <span class="dest-banner-flag">${flagImg(d.flag, 24)}</span>
+        <span class="dest-banner-city">${escapeHtml(d.name)}</span>
+        ${d.country ? `<span class="dest-banner-country">${escapeHtml(d.country)}</span>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderSelectedBanners() {
+  const chosen = state.multiCity ? state.destinations : (state.destination ? [state.destination] : []);
+  if (chosen.length === 0) return '';
+  return `<div class="dest-banners">${chosen.map((d, i) => renderDestBanner(d, i)).join('')}</div>`;
 }
 
 function renderCoverflow(popular, isSelected) {
@@ -457,24 +468,27 @@ function renderStep1(el) {
     ? state.destinations.some(s => s.name === d.name)
     : state.destination?.name === d.name;
 
+  const hasSelection = state.multiCity
+    ? state.destinations.length > 0
+    : !!state.destination;
+
   el.innerHTML = `
     <h2 class="wizard-step-title">Where to?</h2>
     <p class="wizard-step-subtitle">Search or pick from our favorites</p>
-    ${renderCoverflow(popular, isSelected)}
+    ${hasSelection ? renderSelectedBanners() : renderCoverflow(popular, isSelected)}
     <div class="multi-city-toggle">
       <button class="chip ${!state.multiCity ? 'chip--active' : ''}" data-mode="single">One city</button>
       <button class="chip ${state.multiCity ? 'chip--active' : ''}" data-mode="multi">Multi-city</button>
     </div>
-    ${renderMultiCityList()}
     <div class="dest-search-wrap">
       <span class="dest-search-icon">&#x1F50D;</span>
-      <input class="input" type="text" placeholder="${state.multiCity ? 'Add a city...' : 'Search cities...'}" id="dest-search"
+      <input class="input" type="text" placeholder="${state.multiCity ? 'Add another city...' : 'Search cities...'}" id="dest-search"
         value="${!state.multiCity ? escapeHtml(state.destination?.name || '') : ''}" autocomplete="off">
       <div class="dest-dropdown" id="dest-dropdown"></div>
     </div>
   `;
 
-  setupCoverflowClicks(el);
+  if (!hasSelection) setupCoverflowClicks(el);
 
   el.querySelectorAll('[data-mode]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -495,10 +509,14 @@ function renderStep1(el) {
   el.querySelectorAll('[data-remove-idx]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      state.destinations = state.destinations.filter((_, i) => i !== parseInt(btn.dataset.removeIdx));
-      state.destination = state.destinations[0] || null;
-      state = updateWizardField(state, 'destinations', state.destinations);
-      state = updateWizardField(state, 'destination', state.destination);
+      if (state.multiCity) {
+        state.destinations = state.destinations.filter((_, i) => i !== parseInt(btn.dataset.removeIdx));
+        state.destination = state.destinations[0] || null;
+        state = updateWizardField(state, 'destinations', state.destinations);
+        state = updateWizardField(state, 'destination', state.destination);
+      } else {
+        state = updateWizardField(state, 'destination', null);
+      }
       renderStep1(el);
       updateNextButton();
     });
@@ -577,13 +595,10 @@ function selectDestination(dest) {
     applyFlagBackground(state.destination?.flag);
   } else {
     state = updateWizardField(state, 'destination', dest);
-    const searchInput = document.getElementById('dest-search');
-    if (searchInput) searchInput.value = dest.name;
     const dropdown = document.getElementById('dest-dropdown');
     if (dropdown) { dropdown.classList.remove('dest-dropdown--open'); dropdown.innerHTML = ''; }
-    document.querySelectorAll('.destination-card').forEach(c =>
-      c.classList.toggle('destination-card--selected', JSON.parse(c.dataset.dest).name === dest.name)
-    );
+    const stepEl = document.getElementById('wizard-step-content');
+    if (stepEl) renderStep1(stepEl);
     applyFlagBackground(dest.flag);
   }
   updateNextButton();
