@@ -926,7 +926,7 @@
   padding: 3px 10px;
   border-radius: var(--r-pill);
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   background: rgba(107, 148, 190, 0.18);
   color: var(--ink);
   white-space: nowrap;
