@@ -33,10 +33,35 @@ export function planChunks(totalDays: number, chunkSize = 4): Array<{ from: numb
   return chunks.length > 0 ? chunks : [{ from: 1, to: Math.max(1, totalDays) }];
 }
 
+// Calendar date (YYYY-MM-DD) for a 1-based trip day, or null without fixed dates.
+export function dateForDay(wizardState: any, dayNumber: number): string | null {
+  const start = wizardState?.dates?.start;
+  if (!start) return null;
+  const d = new Date(`${start}T00:00:00Z`);
+  if (isNaN(d.getTime())) return null;
+  d.setUTCDate(d.getUTCDate() + (dayNumber - 1));
+  return d.toISOString().slice(0, 10);
+}
+
+// Compact summary of already-generated days, fed to later chunks so they
+// continue the SAME trip instead of re-planning the route from scratch.
+// Without this, every chunk of a multi-city trip independently re-decides the
+// city order — producing duplicate "fly to X" days at each chunk seam.
+export function summarizePriorDays(priorDays: any[]): string {
+  if (!Array.isArray(priorDays) || priorDays.length === 0) return "";
+  const lines = priorDays.map((d: any) => {
+    const acts = Array.isArray(d.activities) ? d.activities : [];
+    const venues = acts.slice(0, 6).map((a: any) => a.venue_name || a.title).filter(Boolean).join("; ");
+    return `Day ${d.day_number}${d.date ? ` (${d.date})` : ""}: ${d.title || ""}${venues ? ` — ${venues}` : ""}`;
+  });
+  return lines.join("\n");
+}
+
 // opts.dayFrom/dayTo scope generation to a day range (1-based, inclusive).
 // opts.includeExtras=false drops trip-level sections (flights, accommodation,
 // bookingChecklist, savingsTips) so non-first chunks only emit days.
-export function buildPromptAndSchema(wizardState: any, opts: { dayFrom?: number; dayTo?: number; includeExtras?: boolean } = {}) {
+// opts.priorDays: already-generated days (db shape) for continuity context.
+export function buildPromptAndSchema(wizardState: any, opts: { dayFrom?: number; dayTo?: number; includeExtras?: boolean; priorDays?: any[] } = {}) {
   const dest = wizardState.multiCity && wizardState.destinations?.length > 0
     ? wizardState.destinations.map((d: any) => d.name).join(", ")
     : wizardState.destination?.name;
@@ -73,12 +98,19 @@ export function buildPromptAndSchema(wizardState: any, opts: { dayFrom?: number;
   const cityNames: string[] = wizardState.multiCity && wizardState.destinations?.length > 1
     ? wizardState.destinations.map((d: any) => d.name)
     : [];
+  // Route-planning instructions belong to the FIRST chunk only. Later chunks
+  // must follow the route already laid down (see CONTINUITY RULES below) —
+  // re-issuing "choose the optimal route" there made each chunk re-plan from
+  // scratch and repeat inter-city transfers.
+  const isContinuationChunk = (opts.dayFrom ?? 1) > 1;
   const multiCityNote = cityNames.length > 1
-    ? `\n- MULTI-CITY ROUTING: The traveler wants to visit ${cityNames.join(", ")} (this is an unordered wish-list, NOT a fixed order).${departureCity ? ` They depart from ${departureCity}.` : ""} You MUST choose the optimal route:
+    ? (isContinuationChunk
+      ? `\n- MULTI-CITY TRIP: ${cityNames.join(", ")}. The route was already chosen in the earlier days (see TRIP SO FAR below) — continue it, do not re-plan it.`
+      : `\n- MULTI-CITY ROUTING: The traveler wants to visit ${cityNames.join(", ")} (this is an unordered wish-list, NOT a fixed order).${departureCity ? ` They depart from ${departureCity}.` : ""} You MUST choose the optimal route:
   1. ENTRY: Start at whichever of these cities is nearest and cheapest to reach from ${departureCity || "the origin"} — that is the arrival city (book the inbound flight/transport into it).
   2. ORDER: Then sequence the remaining cities by geographic proximity, minimizing total inter-city travel time — each next city should be the closest unvisited one. Do NOT just follow the order the traveler listed them.
   3. EXIT: Depart back to ${departureCity || "the origin"} from the LAST city in your route (book the return from there).
-  4. Allocate days per city proportional to its size/attractions, and include realistic inter-city transport (train/flight/bus) as activities on the travel days. State the chosen route explicitly in the day titles/themes.`
+  4. Allocate days per city proportional to its size/attractions, and include realistic inter-city transport (train/flight/bus) as activities on the travel days. State the chosen route explicitly in the day titles/themes.`)
     : "";
 
   const accomType = wizardState.accommodation?.type || "hotel";
@@ -157,8 +189,26 @@ export function buildPromptAndSchema(wizardState: any, opts: { dayFrom?: number;
   if (wizardState.summary?.avoid) extras.push(`Avoid: ${wizardState.summary.avoid}`);
   if (wizardState.summary?.freeText) extras.push(`Additional notes: ${wizardState.summary.freeText}`);
 
+  // Exact calendar date per chunk day, so the model cannot drift or skip dates.
+  const chunkDateLines = hasFixedDates
+    ? Array.from({ length: chunkDays }, (_, i) => {
+        const n = dayFrom + i;
+        return `  dayNumber ${n} = ${dateForDay(wizardState, n)}`;
+      }).join("\n")
+    : "";
+
+  const priorSummary = isChunk ? summarizePriorDays(opts.priorDays || []) : "";
+
   const chunkScope = isChunk
-    ? `\n\nIMPORTANT SCOPE: This is a ${days}-day trip overall, but generate ONLY days ${dayFrom} through ${dayTo} (${chunkDays} day${chunkDays > 1 ? "s" : ""}) in this response. Number them with their real dayNumber (${dayFrom}..${dayTo}) and use the correct calendar date for each. Maintain continuity with the rest of the trip (do not repeat venues a traveler would have seen on earlier days; assume earlier days covered the major highlights first).`
+    ? `\n\nIMPORTANT SCOPE: This is a ${days}-day trip overall, but generate ONLY days ${dayFrom} through ${dayTo} (${chunkDays} day${chunkDays > 1 ? "s" : ""}) in this response. Number them with their real dayNumber (${dayFrom}..${dayTo}).${chunkDateLines ? `\nUse these EXACT calendar dates:\n${chunkDateLines}` : " Use the correct calendar date for each."}${priorSummary ? `
+
+TRIP SO FAR (days 1-${dayFrom - 1} are ALREADY FINALIZED — shown so you can continue them seamlessly):
+${priorSummary}
+
+CONTINUITY RULES (CRITICAL):
+1. The trip continues EXACTLY where day ${dayFrom - 1} ends — same city, same hotel. Day ${dayFrom} starts in that city.
+2. Do NOT re-plan the route, do NOT repeat any inter-city transfer that already happened above, and do NOT fly/train back to a city only to repeat an earlier transfer. ${cityNames.length > 1 ? "Any city from the wish-list already visited above is DONE unless the route above clearly returns through it." : ""}
+3. Do NOT repeat venues, restaurants, or experiences already listed above — plan NEW ones.` : ` Maintain continuity with the rest of the trip (do not repeat venues a traveler would have seen on earlier days; assume earlier days covered the major highlights first).`}`
     : "";
 
   const prompt = `Create a comprehensive hour-by-hour travel itinerary for ${dest}.${chunkScope}
