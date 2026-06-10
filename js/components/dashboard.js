@@ -137,7 +137,7 @@ function renderAuthDashboard(trips) {
           <h3 class="landing-section-title">Popular destinations</h3>
           <div class="dest-circle-grid">
             ${dests.map(d => `
-              <div class="dest-circle" data-city="${escapeHtml(d.name)}">
+              <div class="dest-circle" data-city="${escapeHtml(d.name)}" role="button" tabindex="0" aria-label="Plan a trip to ${escapeHtml(d.name)}">
                 <img class="dest-circle-img" src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" loading="lazy" decoding="async">
                 <span class="dest-circle-label">
                   ${d.flag ? `<img src="https://flagcdn.com/w40/${d.flag}.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;">` : ''}
@@ -241,7 +241,7 @@ function renderEmpty() {
         <h3 class="landing-section-title">Popular destinations</h3>
         <div class="dest-circle-grid">
           ${dests.map(d => `
-            <div class="dest-circle" data-city="${escapeHtml(d.name)}">
+            <div class="dest-circle" data-city="${escapeHtml(d.name)}" role="button" tabindex="0" aria-label="Plan a trip to ${escapeHtml(d.name)}">
               <img class="dest-circle-img" src="${escapeHtml(d.image)}" alt="${escapeHtml(d.name)}" loading="lazy" decoding="async">
               <span class="dest-circle-label">
                 ${d.flag ? `<img src="https://flagcdn.com/w40/${d.flag}.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;">` : ''}
@@ -414,6 +414,16 @@ export async function renderDashboard() {
 
   if (!_clickHandlerBound) {
   _clickHandlerBound = true;
+  // Keyboard activation for the destination circles (divs with role="button").
+  // Forward Enter/Space to the click handler below; preventDefault stops Space
+  // from scrolling the page.
+  app.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const destCard = e.target.closest('.dest-circle[data-city]');
+    if (!destCard) return;
+    e.preventDefault();
+    destCard.click();
+  });
   app.addEventListener('click', async (e) => {
     const destCard = e.target.closest('.dest-circle[data-city]');
     if (destCard) {
@@ -466,6 +476,7 @@ export async function renderDashboard() {
     if (deleteBtn) {
       e.stopPropagation();
       const tripId = deleteBtn.dataset.deleteTrip;
+      if (!confirm('Delete this trip? This cannot be undone.')) return;
       const { deleteTrip } = await import('../data/trip-repository.js');
       await deleteTrip(tripId);
       renderDashboard();
