@@ -296,7 +296,11 @@ function renderFooterPills() {
 function renderShell() {
   const app = document.getElementById('app');
   const stepNum = state.currentStep;
-  const totalVisible = TOTAL_STEPS - 1;
+  // Same-city trips skip step 5 (transport/flights), so the visible step count
+  // and the user's position both shift down by one past that point.
+  const skipsStep5 = isSameCityTrip();
+  const visibleTotal = skipsStep5 ? TOTAL_STEPS - 2 : TOTAL_STEPS - 1;
+  const displayStep = Math.min(skipsStep5 && stepNum > 5 ? stepNum - 1 : stepNum, visibleTotal);
   const ctaLabel = stepNum === 7 ? 'Generate My Trip ✨' : 'Continue';
 
   app.innerHTML = `
@@ -306,13 +310,13 @@ function renderShell() {
           ? '<button class="wizard-back btn btn--ghost btn--pill" data-wizard="back" aria-label="Go back">Back</button>'
           : '<div></div>'}
         <div class="wizard-header-center">
-          <span class="wizard-progress-count">Step ${Math.min(stepNum, TOTAL_STEPS - 1)} of ${TOTAL_STEPS - 1}</span>
+          <span class="wizard-progress-count">Step ${displayStep} of ${visibleTotal}</span>
           <div class="wizard-progress">
-            ${Array.from({ length: TOTAL_STEPS }, (_, i) => {
+            ${Array.from({ length: visibleTotal }, (_, i) => {
               const step = i + 1;
               let cls = 'wizard-progress-seg';
-              if (step < stepNum) cls += ' wizard-progress-seg--done';
-              else if (step === stepNum) cls += ' wizard-progress-seg--active';
+              if (step < displayStep) cls += ' wizard-progress-seg--done';
+              else if (step === displayStep) cls += ' wizard-progress-seg--active';
               return `<div class="${cls}"></div>`;
             }).join('')}
           </div>
@@ -337,6 +341,33 @@ function renderShell() {
 
 function bindWizardEvents() {
   const wizard = document.querySelector('.wizard');
+
+  // Keyboard activation for the div-based card/pill controls (role="button").
+  // Delegated so it survives step re-renders; native <button>s are excluded
+  // (they handle Enter/Space themselves), and controls with their own keydown
+  // handlers (coverflow cards) call preventDefault first, so we skip those.
+  wizard.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.defaultPrevented) return;
+    const target = e.target.closest('[role="button"]');
+    if (!target || target.tagName === 'BUTTON' || target.tagName === 'A') return;
+    e.preventDefault();
+    // Activation re-renders the step and replaces the control; remember its
+    // data attributes so focus can land on the replacement.
+    const selector = [...target.attributes]
+      .filter(a => a.name.startsWith('data-'))
+      .map(a => `[${a.name}="${CSS.escape(a.value)}"]`)
+      .join('');
+    target.click();
+    if (selector) {
+      requestAnimationFrame(() => {
+        if (!wizard.isConnected) return;
+        const replacement = wizard.querySelector(selector);
+        if (replacement && replacement !== target) replacement.focus();
+      });
+    }
+  });
+
   wizard.addEventListener('click', (e) => {
     const action = e.target.closest('[data-wizard]')?.dataset.wizard;
     if (!action) return;
@@ -711,12 +742,12 @@ function renderStep2(el) {
     <div id="traveler-section"></div>
 
     <div class="date-mode-cards" style="margin-top: var(--sp-6);">
-      <div class="date-mode-card ${state.dates.mode === 'fixed' ? 'date-mode-card--active' : ''}" data-date-mode="fixed">
+      <div class="date-mode-card ${state.dates.mode === 'fixed' ? 'date-mode-card--active' : ''}" data-date-mode="fixed" role="button" tabindex="0" aria-pressed="${state.dates.mode === 'fixed'}">
         <span class="date-mode-card-icon">📅</span>
         <span class="date-mode-card-title">I know my dates</span>
         <span class="date-mode-card-desc">Pick exact start & end</span>
       </div>
-      <div class="date-mode-card ${state.dates.mode === 'flexible' ? 'date-mode-card--active' : ''}" data-date-mode="flexible">
+      <div class="date-mode-card ${state.dates.mode === 'flexible' ? 'date-mode-card--active' : ''}" data-date-mode="flexible" role="button" tabindex="0" aria-pressed="${state.dates.mode === 'flexible'}">
         <span class="date-mode-card-icon">🎲</span>
         <span class="date-mode-card-title">Surprise me</span>
         <span class="date-mode-card-desc">Choose duration & vibe</span>
@@ -743,7 +774,7 @@ function renderStep2(el) {
     dateContent.innerHTML = `
       <p class="text-small" style="color: var(--ink-secondary); margin-bottom: var(--sp-3); text-align: center;">
         ${state.dates.start && state.dates.end
-          ? `${state.dates.start} → ${state.dates.end}`
+          ? `${formatDate(state.dates.start)} → ${formatDate(state.dates.end)}`
           : 'Tap your departure date, then your return date'}
       </p>
       <div id="cal-container"></div>
@@ -785,7 +816,7 @@ function renderStep2(el) {
       <div class="wizard-section-label">Duration</div>
       <div class="duration-pills">
         ${durations.map(d => `
-          <div class="duration-pill ${state.dates.duration === d.days ? 'duration-pill--active' : ''}" data-duration="${d.days}">
+          <div class="duration-pill ${state.dates.duration === d.days ? 'duration-pill--active' : ''}" data-duration="${d.days}" role="button" tabindex="0" aria-pressed="${state.dates.duration === d.days}" aria-label="${d.days} days, ${d.label}">
             <span class="duration-pill-days">${d.days}</span>
             <span class="duration-pill-label">${d.label}</span>
           </div>
@@ -795,7 +826,7 @@ function renderStep2(el) {
       <div class="wizard-section-label">Season</div>
       <div class="season-cards">
         ${seasons.map(s => `
-          <div class="season-card ${state.dates.season === s.value ? 'season-card--active' : ''}" data-season="${s.value}">
+          <div class="season-card ${state.dates.season === s.value ? 'season-card--active' : ''}" data-season="${s.value}" role="button" tabindex="0" aria-pressed="${state.dates.season === s.value}">
             <span class="season-card-icon">${s.icon}</span>
             <span class="season-card-title">${s.title}</span>
             <span class="season-card-desc">${s.desc}</span>
@@ -879,7 +910,7 @@ function renderStep3(el) {
         { key: 'comfortable', icon: '🧳', label: 'Comfortable', amount: budgets.comfortable },
         { key: 'luxury', icon: '👑', label: 'Luxury', amount: budgets.luxury }
       ].map(p => `
-        <div class="budget-preset ${state.budget.preset === p.key ? 'budget-preset--selected' : ''}" data-preset="${p.key}" data-amount="${p.amount}">
+        <div class="budget-preset ${state.budget.preset === p.key ? 'budget-preset--selected' : ''}" data-preset="${p.key}" data-amount="${p.amount}" role="button" tabindex="0" aria-pressed="${state.budget.preset === p.key}">
           <div class="budget-preset-icon">${p.icon}</div>
           <div class="budget-preset-label">${p.label}</div>
           <div class="budget-preset-range">~${destSym}${formatNumber(p.amount)}/day</div>
@@ -980,7 +1011,7 @@ function renderStepAccommodation(el) {
     ` : `
       <div class="accom-grid">
         ${ACCOM_TYPES.map(a => `
-          <div class="accom-card ${state.accommodation.type === a.key ? 'accom-card--active' : ''}" data-accom="${a.key}">
+          <div class="accom-card ${state.accommodation.type === a.key ? 'accom-card--active' : ''}" data-accom="${a.key}" role="button" tabindex="0" aria-pressed="${state.accommodation.type === a.key}">
             <span class="accom-card-icon">${a.icon}</span>
             <span class="accom-card-title">${a.title}</span>
             <span class="accom-card-desc">${a.desc}</span>
@@ -1121,7 +1152,7 @@ function renderStep4(el) {
       <div class="wizard-section-label">Cabin class</div>
       <div class="fare-cards">
         ${fares.map(f => `
-          <div class="fare-card ${state.flights.fareClass === f.key ? 'fare-card--active' : ''}" data-fare="${f.key}">
+          <div class="fare-card ${state.flights.fareClass === f.key ? 'fare-card--active' : ''}" data-fare="${f.key}" role="button" tabindex="0" aria-pressed="${state.flights.fareClass === f.key}">
             <span class="fare-card-seat">${f.seat}</span>
             <span class="fare-card-title">${f.title}</span>
             <span class="fare-card-desc">${f.desc}</span>
@@ -1137,7 +1168,7 @@ function renderStep4(el) {
             ? state.flights.departureTimePref.length === 0
             : state.flights.departureTimePref.includes(t.value);
           return `
-            <div class="departure-time-card ${active ? 'departure-time-card--active' : ''}" data-time="${t.value}">
+            <div class="departure-time-card ${active ? 'departure-time-card--active' : ''}" data-time="${t.value}" role="button" tabindex="0" aria-pressed="${active}">
               <span class="departure-time-icon">${t.icon}</span>
               <span class="departure-time-label">${t.label}</span>
               <span class="departure-time-range">${t.range}</span>
@@ -1149,7 +1180,7 @@ function renderStep4(el) {
       <div class="wizard-section-label">Connections</div>
       <div class="connection-cards">
         ${connections.map(c => `
-          <div class="connection-card ${state.flights.connectionPref === c.key ? 'connection-card--active' : ''}" data-conn="${c.key}">
+          <div class="connection-card ${state.flights.connectionPref === c.key ? 'connection-card--active' : ''}" data-conn="${c.key}" role="button" tabindex="0" aria-pressed="${state.flights.connectionPref === c.key}">
             <span class="connection-card-icon">${c.icon}</span>
             <span class="connection-card-label">${c.label}</span>
           </div>
@@ -1220,7 +1251,7 @@ function renderStepTransport(el) {
     <div class="wizard-section-label">Transport mode</div>
     <div class="fare-cards">
       ${TRANSPORT_MODES.map(t => `
-        <div class="fare-card ${selected === t.key ? 'fare-card--active' : ''}" data-transport="${t.key}">
+        <div class="fare-card ${selected === t.key ? 'fare-card--active' : ''}" data-transport="${t.key}" role="button" tabindex="0" aria-pressed="${selected === t.key}">
           <span class="fare-card-seat">${t.icon}</span>
           <span class="fare-card-title">${t.title}</span>
           <span class="fare-card-desc">${t.desc}</span>

@@ -12,7 +12,7 @@
 
   <script>
     try{if(Object.keys(localStorage).some(function(k){return k.startsWith('sb-')&&k.endsWith('-auth-token')}))document.documentElement.className='has-session'}catch(e){}
-    try{var t=localStorage.getItem('trippy-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia('(prefers-color-scheme:light)').matches)document.documentElement.setAttribute('data-theme','light')}catch(e){}
+    try{var t=localStorage.getItem('trippy-theme');if(!t&&window.matchMedia('(prefers-color-scheme:light)').matches)t='light';if(t)document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m&&t==='light')m.content='#F5F1EA'}catch(e){}
   </script>
   <style>.app-skel{display:none}.has-session .app-splash{display:none!important}.has-session .app-skel{display:block}[data-prerendered] .landing-hero,[data-prerendered] .landing-headline,[data-prerendered] .landing-tagline,[data-prerendered] .landing-cta,[data-prerendered] .landing-proof{animation:none!important;opacity:1!important;transform:none!important}[data-prerendered] .landing-reveal{opacity:1!important;transform:none!important}</style>
 
@@ -40,6 +40,7 @@
 
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
 <body>
   <nav id="app-nav"></nav>
@@ -127,43 +128,43 @@
         <section class="landing-explore landing-reveal">
           <h3 class="landing-section-title">Popular destinations</h3>
           <div class="dest-circle-grid">
-            <div class="dest-circle" data-city="Tokyo">
+            <div class="dest-circle" data-city="Tokyo" role="button" tabindex="0" aria-label="Plan a trip to Tokyo">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Skyscrapers_of_Shinjuku_2009_January.jpg/250px-Skyscrapers_of_Shinjuku_2009_January.jpg" alt="Tokyo" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/jp.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Tokyo</span>
             </div>
-            <div class="dest-circle" data-city="Paris">
+            <div class="dest-circle" data-city="Paris" role="button" tabindex="0" aria-label="Plan a trip to Paris">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques%2C_Paris_ao%C3%BBt_2014_%282%29.jpg/250px-La_Tour_Eiffel_vue_de_la_Tour_Saint-Jacques%2C_Paris_ao%C3%BBt_2014_%282%29.jpg" alt="Paris" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/fr.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Paris</span>
             </div>
-            <div class="dest-circle" data-city="Bali">
+            <div class="dest-circle" data-city="Bali" role="button" tabindex="0" aria-label="Plan a trip to Bali">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/TanahLot_2014.JPG/250px-TanahLot_2014.JPG" alt="Bali" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/id.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Bali</span>
             </div>
-            <div class="dest-circle" data-city="Bangkok">
+            <div class="dest-circle" data-city="Bangkok" role="button" tabindex="0" aria-label="Plan a trip to Bangkok">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/01-%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B9%80%E0%B8%9A%E0%B8%8D%E0%B8%88%E0%B8%A1%E0%B8%9A%E0%B8%9E%E0%B8%B4%E0%B8%95%E0%B8%A3%E0%B8%94%E0%B8%B8%E0%B8%AA%E0%B8%B4%E0%B8%95%E0%B8%A7%E0%B8%99%E0%B8%B2%E0%B8%A3%E0%B8%B2%E0%B8%A1%E0%B8%A3%E0%B8%B2%E0%B8%8A%E0%B8%A7%E0%B8%A3%E0%B8%A7%E0%B8%B4%E0%B8%AB%E0%B8%B2%E0%B8%A3.jpg/250px-01-%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B9%80%E0%B8%9A%E0%B8%8D%E0%B8%88%E0%B8%A1%E0%B8%9A%E0%B8%9E%E0%B8%B4%E0%B8%95%E0%B8%A3%E0%B8%94%E0%B8%B8%E0%B8%AA%E0%B8%B4%E0%B8%95%E0%B8%A7%E0%B8%99%E0%B8%B2%E0%B8%A3%E0%B8%B2%E0%B8%A1%E0%B8%A3%E0%B8%B2%E0%B8%8A%E0%B8%A7%E0%B8%A3%E0%B8%A7%E0%B8%B4%E0%B8%AB%E0%B8%B2%E0%B8%A3.jpg" alt="Bangkok" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/th.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Bangkok</span>
             </div>
-            <div class="dest-circle" data-city="Barcelona">
+            <div class="dest-circle" data-city="Barcelona" role="button" tabindex="0" aria-label="Plan a trip to Barcelona">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Aerial_view_of_Barcelona%2C_Spain_%2851227309370%29_edited.jpg/250px-Aerial_view_of_Barcelona%2C_Spain_%2851227309370%29_edited.jpg" alt="Barcelona" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/es.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Barcelona</span>
             </div>
-            <div class="dest-circle" data-city="Melbourne">
+            <div class="dest-circle" data-city="Melbourne" role="button" tabindex="0" aria-label="Plan a trip to Melbourne">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Melbourne_skyline_sor.jpg/250px-Melbourne_skyline_sor.jpg" alt="Melbourne" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/au.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Melbourne</span>
             </div>
-            <div class="dest-circle" data-city="Seoul">
+            <div class="dest-circle" data-city="Seoul" role="button" tabindex="0" aria-label="Plan a trip to Seoul">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/%EC%A4%91%ED%99%94%EC%A0%84%EC%9D%98_%EB%82%AE.jpg/250px-%EC%A4%91%ED%99%94%EC%A0%84%EC%9D%98_%EB%82%AE.jpg" alt="Seoul" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/kr.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Seoul</span>
             </div>
-            <div class="dest-circle" data-city="Istanbul">
+            <div class="dest-circle" data-city="Istanbul" role="button" tabindex="0" aria-label="Plan a trip to Istanbul">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Historical_peninsula_and_modern_skyline_of_Istanbul.jpg/250px-Historical_peninsula_and_modern_skyline_of_Istanbul.jpg" alt="Istanbul" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/tr.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Istanbul</span>
             </div>
-            <div class="dest-circle" data-city="New York">
+            <div class="dest-circle" data-city="New York" role="button" tabindex="0" aria-label="Plan a trip to New York">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg/250px-View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu_%28cropped%29.jpg" alt="New York" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/us.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> New York</span>
             </div>
-            <div class="dest-circle" data-city="Kyoto">
+            <div class="dest-circle" data-city="Kyoto" role="button" tabindex="0" aria-label="Plan a trip to Kyoto">
               <img class="dest-circle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Kiyomizu.jpg/250px-Kiyomizu.jpg" alt="Kyoto" loading="lazy" decoding="async">
               <span class="dest-circle-label"><img src="https://flagcdn.com/w40/jp.png" width="14" height="10" alt="" style="border-radius:2px; object-fit:cover;"> Kyoto</span>
             </div>

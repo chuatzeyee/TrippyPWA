@@ -750,7 +750,8 @@
               box-shadow var(--duration-normal) var(--ease-out);
 }
 
-.dest-circle:hover .dest-circle-img {
+.dest-circle:hover .dest-circle-img,
+.dest-circle:focus-visible .dest-circle-img {
   border-color: var(--terracotta);
   transform: scale(1.1);
   box-shadow: 0 4px 20px rgba(234, 88, 12, 0.25);
@@ -767,7 +768,8 @@
   transition: color var(--duration-fast);
 }
 
-.dest-circle:hover .dest-circle-label {
+.dest-circle:hover .dest-circle-label,
+.dest-circle:focus-visible .dest-circle-label {
   color: var(--ink);
 }
 
