@@ -188,7 +188,11 @@ CRITICAL REQUIREMENTS:
 1. Every activity MUST have a specific startTime in 24h format (e.g. "09:00", "14:30"). Plan from morning wake-up to evening.
 2. Activities should be in chronological order by startTime.
 3. Include MEALS: breakfast, lunch, dinner, and coffee/snack breaks as separate activities with specific restaurant recommendations.
-4. For EVERY activity after the first of each day, include "gettingThere" — a ONE-LINE summary of the best way to get from the previous venue (e.g. "Tram 96 from Bourke St to Acland St, 12 min" or "8-min walk"). Also set "transportMode" (e.g. "walk", "tram", "mrt", "uber"), "transportDuration" (e.g. "12 min") and "transportCost" (e.g. "A$5", "Free"). Keep it concise — detailed multi-option directions are fetched separately, so do NOT output a transportOptions array.
+4. For EVERY activity after the first of each day, include "transportOptions" — an array of UP TO 3 realistic ways to get from the previous venue:
+   a) "walk" — walking directions (omit if distance > 25 min walk)
+   b) "public" — public transit (tram, metro, mrt, bus, train, ferry) with route number/name and line name
+   c) "private" — ride-share or taxi (Uber globally, Grab for Southeast Asia, DiDi for Australia/China, Gojek for Indonesia, Bolt for Europe/Africa)
+   Each option needs: mode (e.g. "walk", "tram", "mrt", "uber"), label (human-readable). For transit with lines, use format: "MRT Downtown Line from Fort Canning to Stevens" or "Bus 96 from Bourke St to Flinders". ALWAYS include "from [boarding] to [alighting]" for transit. Duration (e.g. "8 min"), cost (e.g. "A$5", "Free"). For multi-leg transit, use SEPARATE transport options per leg — do NOT combine legs into one label. Also set "gettingThere" (a ONE-LINE summary of the recommended option), "transportMode", "transportDuration" and "transportCost".
 5. Include a mix: sightseeing, meals, coffee, shopping, cultural experiences, relaxation based on the traveler's interests.
 6. Use REAL venue names, addresses, and realistic current pricing in ${currency}.
 7. Include latitude and longitude for every venue.
@@ -253,7 +257,8 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
         gettingThere: "string",
         transportMode: "string",
         transportDuration: "string",
-        transportCost: "string"
+        transportCost: "string",
+        transportOptions: [{ mode: "string", label: "string", duration: "string", cost: "string" }]
       }]
     }],
   };
@@ -300,7 +305,15 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
                   latitude: { type: "number" }, longitude: { type: "number" },
                   tips: { type: "string" }, gettingThere: { type: "string" },
                   transportMode: { type: "string" }, transportDuration: { type: "string" },
-                  transportCost: { type: "string" }
+                  transportCost: { type: "string" },
+                  transportOptions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: { mode: { type: "string" }, label: { type: "string" }, duration: { type: "string" }, cost: { type: "string" } },
+                      required: ["mode", "label", "duration", "cost"]
+                    }
+                  }
                 },
                 required: ["startTime", "timeSlot", "sortOrder", "title", "description", "venueName", "category", "durationMinutes", "costAmount", "costCurrency"]
               }

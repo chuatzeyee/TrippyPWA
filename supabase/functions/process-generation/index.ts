@@ -111,13 +111,28 @@ async function runChunk(jobId: string) {
   const { prompt, systemPrompt, jsonSchema, geminiSchema, expectedDays, currency } =
     buildPromptAndSchema(wizardState, { dayFrom: from, dayTo: to, includeExtras: isFirstChunk });
 
-  let result: { data: any; error: string | null } = { data: null, error: "No provider key" };
-  if (provider === "gemini" && GEMINI_API_KEY) {
-    result = await callGemini(prompt, systemPrompt, geminiSchema, GEMINI_API_KEY, GEMINI_MODEL);
-  } else if (provider === "mistral" && MISTRAL_API_KEY) {
-    result = await callMistral(prompt, systemPrompt, jsonSchema, MISTRAL_API_KEY);
-  } else {
-    result = { data: null, error: `Provider ${provider} not configured` };
+  const callProvider = async (): Promise<{ data: any; error: string | null }> => {
+    if (provider === "gemini" && GEMINI_API_KEY) {
+      return callGemini(prompt, systemPrompt, geminiSchema, GEMINI_API_KEY, GEMINI_MODEL);
+    }
+    if (provider === "mistral" && MISTRAL_API_KEY) {
+      return callMistral(prompt, systemPrompt, jsonSchema, MISTRAL_API_KEY);
+    }
+    return { data: null, error: `Provider ${provider} not configured` };
+  };
+
+  const started = Date.now();
+  let result = await callProvider();
+
+  // Transient capacity errors (503/502/429, tagged [retryable]) usually clear in
+  // seconds — retry the same provider once before burning it and falling back.
+  // Only when the failure came back fast (a 503 returns in ~1-2s): 15s gate +
+  // 5s backoff + 125s retry fetch stays within the 150s isolate wall-clock.
+  if (!result.data && result.error?.includes("[retryable]") && Date.now() - started < 15_000) {
+    logDb("info", `${provider} returned a transient error on chunk ${chunkIdx + 1}, retrying once`,
+      { jobId, tripId: job.trip_id, userId: job.user_id, provider, error: result.error });
+    await new Promise(r => setTimeout(r, 5_000));
+    result = await callProvider();
   }
 
   if (result.data) {
