@@ -13,7 +13,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   buildPromptAndSchema, validateItinerary, callGemini, callMistral,
-  toDbDays, buildExtras, planChunks, tripDayCount,
+  toDbDays, buildExtras, planChunks, tripDayCount, dateForDay,
 } from "../_shared/generation.ts";
 
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") || "";
@@ -109,7 +109,10 @@ async function runChunk(jobId: string) {
   }).eq("id", jobId);
 
   const { prompt, systemPrompt, jsonSchema, geminiSchema, expectedDays, currency } =
-    buildPromptAndSchema(wizardState, { dayFrom: from, dayTo: to, includeExtras: isFirstChunk });
+    buildPromptAndSchema(wizardState, {
+      dayFrom: from, dayTo: to, includeExtras: isFirstChunk,
+      priorDays: (job.result_days as any[]) || [],
+    });
 
   const callProvider = async (): Promise<{ data: any; error: string | null }> => {
     if (provider === "gemini" && GEMINI_API_KEY) {
@@ -145,7 +148,12 @@ async function runChunk(jobId: string) {
 
   if (result.data) {
     // Accumulate this chunk's days; capture extras + title from the first chunk.
-    const newDays = toDbDays(result.data, currency);
+    // Day numbers and dates are stamped deterministically from the chunk range —
+    // models drift (skipped or duplicate dates at chunk seams) when left to them.
+    const newDays = toDbDays(result.data, currency).map((d: any, i: number) => {
+      const n = from + i;
+      return { ...d, day_number: n, date: dateForDay(wizardState, n) ?? d.date };
+    });
     const accumulated = [ ...((job.result_days as any[]) || []), ...newDays ];
     const update: Record<string, unknown> = {
       result_days: accumulated,
