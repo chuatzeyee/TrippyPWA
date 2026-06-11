@@ -3141,6 +3141,42 @@
   overflow: hidden;
 }
 
+/* Place photo cover on the front, dimmed under a legibility gradient. */
+.td-town-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out);
+}
+
+.td-town-photo--loaded { opacity: 1; }
+
+.td-town-photo--loaded::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(15, 14, 12, 0.88) 0%, rgba(15, 14, 12, 0.45) 55%, rgba(15, 14, 12, 0.15) 100%);
+}
+
+.td-town-front-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Over a photo the text must be light in BOTH themes. */
+.td-town-card:has(.td-town-photo--loaded) .td-town-name { color: #F3EFE7; }
+.td-town-card:has(.td-town-photo--loaded) .td-town-venues { color: rgba(243, 239, 231, 0.75); }
+.td-town-card:has(.td-town-photo--loaded) .td-town-count { color: rgba(243, 239, 231, 0.6); }
+
 .td-town-front::before {
   /* Quiet topographic texture so the cards don't read as flat tiles. */
   content: '';
@@ -3208,19 +3244,24 @@
 .td-town-days {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2);
+  gap: 5px;
   justify-content: center;
+  max-height: 76px;
+  overflow-y: auto;
+  padding: 0 var(--sp-1);
+  scrollbar-width: thin;
 }
 
 .td-town-day {
   border: 1px solid var(--terracotta);
   background: transparent;
   color: var(--terracotta);
-  font: var(--text-caption);
+  font-size: 0.66rem;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 3px 9px;
   border-radius: var(--r-pill);
   cursor: pointer;
+  white-space: nowrap;
   transition: background var(--duration-fast), color var(--duration-fast), transform var(--duration-fast);
 }
 
@@ -3260,4 +3301,36 @@
   .td-town-back { transform: none; opacity: 0; visibility: hidden; transition: opacity 0.15s ease, visibility 0.15s ease; pointer-events: none; }
   .td-town-card--flipped .td-town-front { opacity: 0; }
   .td-town-card--flipped .td-town-back { opacity: 1; visibility: visible; pointer-events: auto; }
+}
+
+/* ===== Locality waypoints in the Plan timeline ===== */
+/* Small "you are now in <neighbourhood>" markers between activities when the
+   itinerary moves to a new locality. Mono caption + hairline rule, terracotta
+   pin — orientation without stealing attention from the activities. */
+.td-locality-waypoint {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-4) 0 var(--sp-2);
+  color: var(--terracotta);
+}
+
+.td-locality-waypoint span {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+.td-locality-waypoint i {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border-strong), transparent);
+}
+
+.td-timeline > .td-locality-waypoint:first-child {
+  margin-top: 0;
 }

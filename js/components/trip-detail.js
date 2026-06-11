@@ -468,6 +468,52 @@ function renderGettingThere(activity) {
   `;
 }
 
+// ===== Locality waypoints (Plan tab orientation) =====
+// extras.towns (pre-computed at generation) carries the geocoded cell
+// coordinates per town. Flatten them once, then label each activity with the
+// nearest town cell — a pure lookup, no geocoding at render time.
+
+function collectTownCells(extras) {
+  const out = [];
+  for (const g of extras?.towns || []) {
+    for (const t of g.towns || []) {
+      for (const c of t.cells || []) {
+        if (Array.isArray(c) && c.length === 2) out.push({ lat: c[0], lng: c[1], name: t.name });
+      }
+    }
+  }
+  return out;
+}
+
+// ~2km matching radius: activities can sit at a cell's edge, but a venue much
+// further than that belongs to no known town — better unlabeled than wrong.
+const LOCALITY_MAX_KM = 2;
+
+function localityForActivity(activity, townCells) {
+  if (!townCells?.length) return null;
+  const lat = Number(activity.latitude);
+  const lng = Number(activity.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return null;
+  let best = null;
+  let bestKm = LOCALITY_MAX_KM;
+  for (const cell of townCells) {
+    // Cheap pre-filter before haversine: ~0.02° ≈ 2.2km latitude.
+    if (Math.abs(cell.lat - lat) > 0.03) continue;
+    const km = localityHaversineKm(lat, lng, cell.lat, cell.lng);
+    if (km < bestKm) { bestKm = km; best = cell.name; }
+  }
+  return best;
+}
+
+function localityHaversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 const NO_COST_CATEGORIES = new Set(['departure', 'arrival', 'flight', 'check-in', 'landing', 'transfer']);
 
 function renderActivity(activity, currencySymbol, isFirst) {
@@ -1592,7 +1638,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           ${renderSidebar(trip, days, sym, totalCost)}
           <div class="td-main">
             <div class="td-day-grid" data-tz="${esc(trip.timezone || trip.wizard_state?.destination?.timezone || '')}">
-          ${(() => { const offset = countSectionCards(trip.extras); const total = days.length + offset; return buildSectionCards(trip.extras, total, trip) + days.map((d, i) => {
+          ${(() => { const offset = countSectionCards(trip.extras); const total = days.length + offset; const townCells = collectTownCells(trip.extras); return buildSectionCards(trip.extras, total, trip) + days.map((d, i) => {
             const acts = d.activities || [];
             const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
             const dateStr = d.date ? formatDate(d.date) : '';
@@ -1608,7 +1654,18 @@ function renderDayPicker(app, trip, jumpToToday = false) {
                 </div>
                 <div class="td-day-card-body">
                   <div class="td-timeline">
-                    ${acts.map((a, ai) => renderActivity(a, sym, ai === 0)).join('')}
+                    ${(() => {
+                      let prevLocality = null;
+                      return acts.map((a, ai) => {
+                        const locality = localityForActivity(a, townCells);
+                        let waypoint = '';
+                        if (locality && locality !== prevLocality) {
+                          waypoint = `<div class="td-locality-waypoint">${mdIcon(MD.place, 12)}<span>${esc(locality)}</span><i></i></div>`;
+                          prevLocality = locality;
+                        }
+                        return waypoint + renderActivity(a, sym, ai === 0);
+                      }).join('');
+                    })()}
                   </div>
                   <div class="td-day-footer">
                     <span class="td-day-footer-meta">${acts.length} activities</span>
@@ -2165,10 +2222,58 @@ function bindTabs(container, trip) {
 
 // ===== Towns tab =====
 // Every district/town/village the trip touches, as flip cards grouped by city.
-// Front: locality name + venue taster. Back: the days it's visited — tapping a
-// day chip jumps to that day on the Plan tab.
+// Front: locality name + venue taster over a place photo. Back: the days it's
+// visited — tapping a day chip jumps to that day on the Plan tab.
 
 let _townsLoaded = false;
+
+// Compress consecutive visit days into range chips so a town visited daily
+// shows "Day 5–9" instead of five chips crowding the card back. Each range
+// jumps to its first day.
+function dayRanges(days) {
+  const ranges = [];
+  for (const d of days) {
+    const last = ranges[ranges.length - 1];
+    if (last && d.dayNumber === last.end + 1) {
+      last.end = d.dayNumber;
+    } else {
+      ranges.push({ start: d.dayNumber, end: d.dayNumber, dayIndex: d.dayIndex });
+    }
+  }
+  return ranges.map(r => ({
+    dayIndex: r.dayIndex,
+    label: r.start === r.end ? `Day ${r.start}`
+      : r.end === r.start + 1 ? `Day ${r.start}, ${r.end}`
+      : `Day ${r.start}–${r.end}`,
+  }));
+}
+
+// Lazy-load a representative photo for each town card via the places-photo
+// edge function (Google Places, cached in generate.js's photoCache). Missing
+// photos keep the gradient front — never an empty box.
+function loadTownPhotos(host) {
+  const cards = host.querySelectorAll('.td-town-card[data-town-photo]');
+  if (!cards.length) return;
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      observer.unobserve(entry.target);
+      const card = entry.target;
+      fetchPlacePhotoByQuery(card.dataset.townPhoto, null, 400).then(url => {
+        if (!url || !card.isConnected) return;
+        const photo = card.querySelector('.td-town-photo');
+        if (!photo) return;
+        const img = new Image();
+        img.onload = () => {
+          photo.style.backgroundImage = `url('${url.replace(/'/g, "%27")}')`;
+          photo.classList.add('td-town-photo--loaded');
+        };
+        img.src = url;
+      });
+    }
+  }, { rootMargin: '150px' });
+  cards.forEach(c => observer.observe(c));
+}
 
 async function loadTownsTab(container, trip) {
   if (_townsLoaded) return;
@@ -2230,19 +2335,23 @@ async function loadTownsTab(container, trip) {
       <div class="td-towns-grid">
         ${g.towns.map(t => `
           <div class="td-town-card" role="button" tabindex="0" aria-expanded="false"
-               aria-label="${esc(t.name)} — show visit days" style="--ti: ${cardIdx++}">
+               aria-label="${esc(t.name)} — show visit days" style="--ti: ${cardIdx++}"
+               data-town-photo="${esc(`${t.name} ${g.city || ''}`.trim())}">
             <div class="td-town-flip">
               <div class="td-town-face td-town-front">
-                <span class="td-town-icon">${mdIcon(MD.place, 18)}</span>
-                <span class="td-town-name">${esc(t.name)}</span>
-                ${t.venues.length ? `<span class="td-town-venues">${esc(t.venues.slice(0, 2).join(' · '))}</span>` : ''}
-                <span class="td-town-count">${t.activityCount} ${t.activityCount === 1 ? 'stop' : 'stops'}</span>
+                <div class="td-town-photo"></div>
+                <div class="td-town-front-content">
+                  <span class="td-town-icon">${mdIcon(MD.place, 18)}</span>
+                  <span class="td-town-name">${esc(t.name)}</span>
+                  ${t.venues.length ? `<span class="td-town-venues">${esc(t.venues.slice(0, 2).join(' · '))}</span>` : ''}
+                  <span class="td-town-count">${t.activityCount} ${t.activityCount === 1 ? 'stop' : 'stops'}</span>
+                </div>
               </div>
               <div class="td-town-face td-town-back">
                 <span class="td-town-back-label">You're here on</span>
                 <div class="td-town-days">
-                  ${t.days.map(d => `
-                    <button class="td-town-day" data-town-day-index="${d.dayIndex}">Day ${d.dayNumber}</button>
+                  ${dayRanges(t.days).map(r => `
+                    <button class="td-town-day" data-town-day-index="${r.dayIndex}">${r.label}</button>
                   `).join('')}
                 </div>
               </div>
@@ -2251,6 +2360,8 @@ async function loadTownsTab(container, trip) {
         `).join('')}
       </div>
     `).join('')}`;
+
+  loadTownPhotos(host);
 
   // Flip on tap/Enter/Space — one card open at a time keeps the grid tidy.
   const flip = (card, open) => {
