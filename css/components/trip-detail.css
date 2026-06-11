@@ -3086,10 +3086,18 @@
   font-weight: 400;
   font-size: 1.3rem;
   color: var(--ink);
-  margin: var(--sp-7) 0 var(--sp-4);
+  /* Generous gap above each new city group so cities read as separate
+     chapters, with a hairline rule to anchor the break. */
+  margin: var(--sp-12) 0 var(--sp-5);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--border);
 }
 
-.td-towns-city:first-of-type { margin-top: 0; }
+.td-towns-city:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
 
 .td-towns-grid {
   display: grid;
