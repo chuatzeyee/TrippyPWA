@@ -437,36 +437,78 @@ textarea.input {
 }
 
 /* ===== Site Footer ===== */
+/* A boarding-pass stub: brand mark on the left, a dotted flight route through
+   the middle, copyright on the right. Collapses to a centered stack on mobile. */
 .site-footer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-8) var(--sp-4) calc(var(--sp-8) + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--border);
   margin-top: var(--sp-12);
-  text-align: center;
+  padding: var(--sp-7) var(--sp-5) calc(var(--sp-7) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  background:
+    radial-gradient(ellipse 60% 100% at 50% 100%, rgba(234, 88, 12, 0.04) 0%, transparent 70%);
+}
+
+.site-footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
 }
 
 .site-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
   font-family: var(--font-mono, monospace);
   font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  font-size: 0.72rem;
   color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+.site-footer-plane {
+  color: var(--terracotta);
+  transform: rotate(45deg);
+}
+
+/* Departure board route: SIN ──··· ANYWHERE, the dotted leg flexes to fill. */
+.site-footer-route {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+  white-space: nowrap;
+}
+
+.site-footer-route i {
+  flex: 1;
+  height: 1px;
+  background-image: linear-gradient(to right, var(--border-strong) 50%, transparent 50%);
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
 }
 
 .site-footer-copy {
   font: var(--text-caption);
+  font-size: 0.7rem;
   color: var(--ink-ghost);
+  white-space: nowrap;
 }
 
-.site-footer-tag {
-  font: var(--text-caption);
-  color: var(--ink-ghost);
-  font-style: italic;
-  font-size: 0.7rem;
+@media (max-width: 640px) {
+  .site-footer-inner {
+    flex-direction: column;
+    gap: var(--sp-4);
+  }
+  .site-footer-route {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* The wizard and PWA standalone mode are immersive full-screens. */
