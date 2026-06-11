@@ -487,3 +487,33 @@ Installable as a Progressive Web App:
 - Apple mobile web app meta tags for the iOS home screen
 - A back-to-top button after 400px of scroll
 - In standalone mode the nav bar is hidden and safe-area insets are applied so content and the wizard CTA clear the notch and home indicator
+
+---
+
+## Android App (TWA)
+
+Trippy ships to Google Play as a Trusted Web Activity — the Play-installed app IS this
+website running in full Chrome, so every web deploy updates the app instantly. One-time
+US$25 Play Console fee; no Play billing required (travel services are exempt from the
+digital-goods cut).
+
+One-time setup:
+
+1. Create a [Play Console](https://play.google.com/console) developer account ($25).
+2. Build the Android package from the live PWA:
+   ```bash
+   npx @bubblewrap/cli init --manifest https://<production-domain>/manifest.json
+   npx @bubblewrap/cli build
+   ```
+   Use package id `com.trippy.app` to match `public/.well-known/assetlinks.json`.
+3. Upload the `.aab` to Play Console. Copy the **App signing key SHA-256 fingerprint**
+   (Play Console → Setup → App integrity) into
+   `public/.well-known/assetlinks.json`, replacing the placeholder, and deploy the site.
+   Without the matching fingerprint the app shows a browser toolbar instead of
+   running fullscreen.
+4. Personal accounts: run the required closed test (12 testers, 14 days) before
+   promoting to production.
+
+Native-wrapper readiness: service-worker registration is skipped when
+`window.Capacitor` reports a native platform, so the same codebase can later be
+wrapped with Capacitor for the iOS App Store without code changes.

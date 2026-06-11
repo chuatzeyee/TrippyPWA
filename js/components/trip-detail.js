@@ -5,6 +5,7 @@ import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { shortenTransitName } from '../data/transit-lines.js';
+import { hotelSearchLinks, flightSearchLink, trackBookingClick, BOOKING_DISCLOSURE } from '../services/booking-links.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
 
@@ -660,6 +661,11 @@ function renderFlightContent(extras, trip) {
     const gfDate = label === 'Outbound' ? trip?.start_date : trip?.end_date;
     const gfParams = new URLSearchParams({ q: `Flights from ${from} to ${to}${gfDate ? ` on ${gfDate}` : ''}` });
     const gfLink = `https://www.google.com/travel/flights?${gfParams.toString()}`;
+    const skyLink = flightSearchLink({
+      fromCity: from, toCity: to,
+      departDate: gfDate, returnDate: null,
+      adults: trip?.wizard_state?.travelers || 2,
+    });
 
     const renderEndpoint = (code) => `
       <div class="td-flight-endpoint">
@@ -713,10 +719,16 @@ function renderFlightContent(extras, trip) {
         <div class="td-flight-duration">${esc(leg.duration)}</div>
         <div class="td-flight-bottom">
           <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
-          <a class="td-flight-book" href="${esc(gfLink)}" target="_blank" rel="noopener noreferrer">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Google Flights
-          </a>
+          <div class="td-flight-book-group">
+            <a class="td-flight-book" href="${esc(skyLink.url)}" target="_blank" rel="noopener noreferrer" data-booking-click="skyscanner" data-booking-kind="flight">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              ${esc(skyLink.label)}
+            </a>
+            <a class="td-flight-book" href="${esc(gfLink)}" target="_blank" rel="noopener noreferrer" data-booking-click="google-flights" data-booking-kind="flight">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Google Flights
+            </a>
+          </div>
         </div>
         ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(leg.tips)}</div>` : ''}
       </div>
@@ -807,16 +819,22 @@ function renderTransportContent(extras) {
 const ACCOM_ICON_SEARCH = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 const ACCOM_ICON_EXTERNAL = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
 
-function accomBookingLinks(name, area) {
-  const q = encodeURIComponent(`${name} ${area || ''}`);
-  return [
-    { label: 'Booking.com', url: `https://www.booking.com/searchresults.html?ss=${q}`, icon: ACCOM_ICON_SEARCH },
-    { label: 'Trip.com', url: `https://www.trip.com/hotels/?keyword=${q}`, icon: ACCOM_ICON_SEARCH },
-    { label: 'Direct', url: `https://www.google.com/search?q=${encodeURIComponent(`${name} official site booking`)}`, icon: ACCOM_ICON_EXTERNAL },
-  ];
+function accomBookingLinks(name, area, trip) {
+  // Pre-fill check-in/out and party size from the trip so the handoff lands on
+  // an availability page, not a blank search (research.md §1 Phase A).
+  const links = hotelSearchLinks({
+    query: `${name} ${area || ''}`.trim(),
+    checkIn: trip?.start_date || null,
+    checkOut: trip?.end_date || null,
+    adults: trip?.wizard_state?.travelers || 2,
+  });
+  return links.map(l => ({
+    ...l,
+    icon: l.label === 'Direct' ? ACCOM_ICON_EXTERNAL : ACCOM_ICON_SEARCH,
+  }));
 }
 
-function renderAccommodationContent(extras) {
+function renderAccommodationContent(extras, trip) {
   const accom = extras?.accommodation;
   if (!Array.isArray(accom) || accom.length === 0) return '';
   const BADGE_COLORS = {
@@ -851,8 +869,8 @@ function renderAccommodationContent(extras) {
           </ul>
         ` : ''}
         <div class="td-accom-links">
-          ${accomBookingLinks(a.name, a.area).map(l => `
-            <a class="td-accom-link" href="${l.url}" target="_blank" rel="noopener noreferrer">${l.icon} ${l.label}</a>
+          ${accomBookingLinks(a.name, a.area, trip).map(l => `
+            <a class="td-accom-link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-booking-click="${esc(l.label.toLowerCase())}" data-booking-kind="hotel">${l.icon} ${l.label}</a>
           `).join('')}
         </div>
       </div>
@@ -862,6 +880,7 @@ function renderAccommodationContent(extras) {
   // Group by city when the itinerary spans multiple cities, so each city's stays
   // are shown under their own heading. Legacy/single-city data has no city field
   // (or one distinct value) and renders as a single flat grid.
+  const disclosure = `<p class="td-booking-disclosure">${esc(BOOKING_DISCLOSURE)}</p>`;
   const cities = [...new Set(accom.map(a => (a.city || '').trim()).filter(Boolean))];
   if (cities.length > 1) {
     return cities.map(city => {
@@ -872,10 +891,10 @@ function renderAccommodationContent(extras) {
           <div class="td-accom-grid">${forCity.map(renderOption).join('')}</div>
         </div>
       `;
-    }).join('');
+    }).join('') + disclosure;
   }
 
-  return `<div class="td-accom-grid">${accom.map(renderOption).join('')}</div>`;
+  return `<div class="td-accom-grid">${accom.map(renderOption).join('')}</div>${disclosure}`;
 }
 
 function renderBookingChecklist(extras, tripId) {
@@ -1020,6 +1039,62 @@ function bindQuickChecklist(container, tripId) {
   });
 }
 
+// Visa/entry-requirement advisory for the Prep tab. Loads after render because
+// it needs the user's nationality (profile fetch) and per-passport data files.
+// Advisory-only: official links, explicit disclaimer, never a blocking UI.
+async function loadVisaAdvisories(container, trip) {
+  const slot = container.querySelector('#td-visa-slot');
+  if (!slot) return;
+  try {
+    const { fetchProfile } = await import('../data/profile-repository.js');
+    const { data: profile } = await fetchProfile();
+    const nationality = profile?.nationality;
+    if (!nationality) {
+      slot.innerHTML = `
+        <div class="td-section-card td-visa-card">
+          <div class="td-section-header">
+            <span class="td-section-icon">${mdIcon(MD.place, 20)}</span>
+            <h3 class="td-section-title">Entry requirements</h3>
+          </div>
+          <p class="td-visa-empty">Add your passport nationality in your <a href="#/profile">profile</a> and Trippy will flag visas, eVisas, and arrival cards you need for this trip.</p>
+        </div>`;
+      return;
+    }
+
+    const { checkTrip, VISA_DISCLAIMER } = await import('../services/visa-advisor.js');
+    const advisories = await checkTrip(trip.wizard_state, nationality);
+    if (advisories.length === 0) { slot.remove(); return; }
+
+    const fmtDate = (iso) => iso ? formatDate(iso) : '';
+    slot.innerHTML = `
+      <div class="td-section-card td-visa-card">
+        <div class="td-section-header">
+          <span class="td-section-icon">${mdIcon(MD.place, 20)}</span>
+          <h3 class="td-section-title">Entry requirements</h3>
+        </div>
+        ${advisories.map(a => `
+          <div class="td-visa-item td-visa-item--${a.level}">
+            <div class="td-visa-item-main">
+              <span class="td-visa-flag">${flagImg(a.country.toLowerCase(), 20)}</span>
+              <div class="td-visa-text">
+                <span class="td-visa-name">${esc(a.label)}</span>
+                ${a.auth ? `<span class="td-visa-meta">${esc(a.auth.fee)} · valid ${esc(a.auth.validity)}</span>` : ''}
+                ${a.applyBy ? `<span class="td-visa-deadline">${a.applyFrom ? `Submit ${fmtDate(a.applyFrom)} – departure` : `Apply by ${fmtDate(a.applyBy)}`}</span>` : ''}
+                ${a.auth?.note ? `<span class="td-visa-note">${esc(a.auth.note)}</span>` : ''}
+                ${a.extraNote ? `<span class="td-visa-note">${esc(a.extraNote)}</span>` : ''}
+              </div>
+            </div>
+            ${a.auth?.url ? `<a class="btn btn--secondary btn--pill td-visa-apply" href="${esc(a.auth.url)}" target="_blank" rel="noopener noreferrer">Official site ↗</a>` : ''}
+          </div>
+        `).join('')}
+        <p class="td-visa-disclaimer">${esc(VISA_DISCLAIMER)}</p>
+      </div>`;
+  } catch (e) {
+    logger.warn('data', 'Visa advisory failed', { error: e?.message });
+    slot.remove();
+  }
+}
+
 function bindCollapsibleSections(container) {
   container.querySelectorAll('[data-toggle-section]').forEach(header => {
     header.addEventListener('click', () => {
@@ -1097,7 +1172,7 @@ function buildSectionCards(extras, totalCards, trip) {
           <span class="td-day-chevron">›</span>
         </div>
         <div class="td-day-card-body">
-          ${renderAccommodationContent(extras)}
+          ${renderAccommodationContent(extras, trip)}
         </div>
       </div>
     `);
@@ -1559,6 +1634,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
 
       <div class="td-tab-panel" data-panel="prep">
         <div class="td-prep-grid">
+          <div id="td-visa-slot"></div>
           ${renderTripQuickChecklist(trip.extras, trip.id)}
           ${renderBookingChecklist(trip.extras, trip.id)}
         </div>
@@ -1803,6 +1879,13 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   bindDayCards(app);
   bindChecklist(app, trip.id);
   bindQuickChecklist(app, trip.id);
+  loadVisaAdvisories(app, trip);
+
+  // Affiliate click telemetry (links open in a new tab; no navigation race).
+  app.addEventListener('click', (e) => {
+    const link = e.target.closest('[data-booking-click]');
+    if (link) trackBookingClick(link.dataset.bookingClick, trip.id, link.dataset.bookingKind);
+  });
   bindCollapsibleSections(app);
   bindSidebar(app);
   const photoObserver = loadActivityPhotos(app);

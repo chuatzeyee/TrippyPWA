@@ -156,7 +156,11 @@ import('./auth/auth.js').then(async ({ initAuth, isAuthenticated, onAuthChange }
   });
 });
 
-if ('serviceWorker' in navigator) {
+// Skip SW registration inside a native wrapper: service workers don't register
+// on Capacitor's capacitor:// iOS scheme, and the native shell does its own
+// caching. window.Capacitor is injected by the wrapper at runtime.
+const isNativeWrapper = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
+if ('serviceWorker' in navigator && !isNativeWrapper) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
