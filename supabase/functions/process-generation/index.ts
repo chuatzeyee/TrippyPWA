@@ -15,6 +15,7 @@ import {
   buildPromptAndSchema, validateItinerary, callGemini, callMistral,
   toDbDays, buildExtras, planChunks, tripDayCount, dateForDay, sanitizeDbDays,
 } from "../_shared/generation.ts";
+import { computeTownGroups } from "../_shared/towns.ts";
 
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
@@ -87,6 +88,19 @@ async function runChunk(jobId: string) {
   if (daysDone >= totalDays) {
     const dbDays = sanitizeDbDays((job.result_days as any[]) || []);
     const extras = (job.result_extras as Record<string, unknown>) || {};
+
+    // Pre-compute the Towns tab (reverse-geocoded neighbourhoods) so the client
+    // renders it instantly. Best-effort and time-capped: a geocoding outage
+    // must never block the itinerary save — the client falls back to on-device
+    // geocoding when extras.towns is absent.
+    try {
+      const towns = await computeTownGroups(dbDays, wizardState);
+      if (towns.length > 0) extras.towns = towns;
+    } catch (e: any) {
+      logDb("warn", "Towns precompute failed; client will geocode on demand",
+        { jobId, tripId: job.trip_id, error: e?.message });
+    }
+
     const { error: rpcErr } = await admin.rpc("replace_itinerary", {
       p_trip_id: job.trip_id,
       p_title: job.result_title || "",
@@ -99,7 +113,7 @@ async function runChunk(jobId: string) {
     }
     await admin.from("generation_jobs").update({ status: "succeeded", error: "" }).eq("id", jobId);
     const actCount = dbDays.reduce((s: number, d: any) => s + (d.activities?.length || 0), 0);
-    logDb("info", `Itinerary generated (${dbDays.length}/${totalDays} days, ${actCount} activities, ${chunks.length} chunks)`,
+    logDb("info", `Itinerary generated (${dbDays.length}/${totalDays} days, ${actCount} activities, ${chunks.length} chunks, ${(extras.towns as any[])?.length || 0} town groups)`,
       { jobId, tripId: job.trip_id, userId: job.user_id });
     return;
   }
