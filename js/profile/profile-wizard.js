@@ -86,6 +86,32 @@ function searchCities(query) {
   ).slice(0, 8);
 }
 
+// Passport countries for the nationality selector (ISO2 lowercase, matching
+// the app's flag-code convention). Names mirror common passport designations.
+const NATIONALITIES = [
+  ['sg', 'Singapore'], ['my', 'Malaysia'], ['id', 'Indonesia'], ['th', 'Thailand'],
+  ['ph', 'Philippines'], ['vn', 'Vietnam'], ['kh', 'Cambodia'], ['la', 'Laos'],
+  ['mm', 'Myanmar'], ['bn', 'Brunei'], ['cn', 'China'], ['hk', 'Hong Kong'],
+  ['tw', 'Taiwan'], ['jp', 'Japan'], ['kr', 'South Korea'], ['in', 'India'],
+  ['lk', 'Sri Lanka'], ['bd', 'Bangladesh'], ['pk', 'Pakistan'], ['np', 'Nepal'],
+  ['au', 'Australia'], ['nz', 'New Zealand'], ['us', 'United States'], ['ca', 'Canada'],
+  ['mx', 'Mexico'], ['br', 'Brazil'], ['ar', 'Argentina'], ['cl', 'Chile'],
+  ['co', 'Colombia'], ['pe', 'Peru'], ['gb', 'United Kingdom'], ['ie', 'Ireland'],
+  ['fr', 'France'], ['de', 'Germany'], ['it', 'Italy'], ['es', 'Spain'],
+  ['pt', 'Portugal'], ['nl', 'Netherlands'], ['be', 'Belgium'], ['ch', 'Switzerland'],
+  ['at', 'Austria'], ['se', 'Sweden'], ['no', 'Norway'], ['dk', 'Denmark'],
+  ['fi', 'Finland'], ['is', 'Iceland'], ['pl', 'Poland'], ['cz', 'Czechia'],
+  ['hu', 'Hungary'], ['gr', 'Greece'], ['hr', 'Croatia'], ['ro', 'Romania'],
+  ['tr', 'Türkiye'], ['il', 'Israel'], ['ae', 'United Arab Emirates'], ['sa', 'Saudi Arabia'],
+  ['qa', 'Qatar'], ['eg', 'Egypt'], ['ma', 'Morocco'], ['za', 'South Africa'],
+  ['ke', 'Kenya'], ['ng', 'Nigeria'], ['ru', 'Russia'], ['ua', 'Ukraine'],
+];
+
+function searchNationalities(query) {
+  const q = query.toLowerCase();
+  return NATIONALITIES.filter(([, name]) => name.toLowerCase().includes(q)).slice(0, 8);
+}
+
 let profileState = {
   displayName: '',
   homeCity: '',
@@ -93,6 +119,7 @@ let profileState = {
   homeFlag: '',
   isNomad: false,
   currency: null,
+  nationality: '',
 };
 
 export async function renderProfileWizard() {
@@ -110,6 +137,7 @@ export async function renderProfileWizard() {
     currency: profile?.home_currency
       ? { code: profile.home_currency, symbol: profile.home_currency_symbol || '$' }
       : null,
+    nationality: profile?.nationality || '',
   };
   if (profileState.currency) {
     setHomeCurrency(profileState.currency.code, profileState.currency.symbol);
@@ -153,6 +181,23 @@ function renderForm(app) {
             </div>
           ` : `
             <p class="profile-nomad-note">We'll ask where you're departing from when you plan each trip.</p>
+          `}
+        </div>
+
+        <div class="profile-field">
+          <label class="profile-label">Passport nationality <span class="profile-label-hint">for visa guidance</span></label>
+          ${profileState.nationality ? `
+            <div class="profile-currency-selected" id="pf-nat-selected">
+              ${flagImg(profileState.nationality, 20)}
+              <span class="profile-currency-name">${esc(NATIONALITIES.find(([c]) => c === profileState.nationality)?.[1] || profileState.nationality.toUpperCase())}</span>
+              <button class="profile-currency-change" id="pf-nat-change">Change</button>
+            </div>
+          ` : `
+            <div class="profile-city-search">
+              <input class="input" type="text" id="pf-nationality" placeholder="Search your passport country..." autocomplete="off">
+              <div class="profile-city-dropdown" id="pf-nat-dropdown"></div>
+            </div>
+            <p class="profile-nomad-note">Optional — lets Trippy remind you about visas and entry requirements.</p>
           `}
         </div>
 
@@ -261,6 +306,46 @@ function bindProfileEvents(app) {
     });
   }
 
+  const natInput = app.querySelector('#pf-nationality');
+  const natDropdown = app.querySelector('#pf-nat-dropdown');
+  if (natInput && natDropdown) {
+    natInput.addEventListener('input', () => {
+      const q = natInput.value.trim();
+      if (!q || q.length < 2) {
+        natDropdown.classList.remove('profile-city-dropdown--open');
+        natDropdown.innerHTML = '';
+        return;
+      }
+      const matches = searchNationalities(q);
+      if (matches.length === 0) {
+        natDropdown.classList.remove('profile-city-dropdown--open');
+        natDropdown.innerHTML = '';
+        return;
+      }
+      natDropdown.innerHTML = matches.map(([code, name]) => `
+        <div class="profile-city-item" data-nat="${code}">
+          ${flagImg(code, 20)}
+          <span>${esc(name)}</span>
+        </div>
+      `).join('');
+      natDropdown.classList.add('profile-city-dropdown--open');
+      natDropdown.querySelectorAll('[data-nat]').forEach(item => {
+        item.addEventListener('click', () => {
+          profileState = { ...profileState, nationality: item.dataset.nat };
+          renderForm(app);
+        });
+      });
+    });
+    natInput.addEventListener('focus', () => {
+      if (natInput.value.trim().length >= 2) natInput.dispatchEvent(new Event('input'));
+    });
+  }
+
+  app.querySelector('#pf-nat-change')?.addEventListener('click', () => {
+    profileState = { ...profileState, nationality: '' };
+    renderForm(app);
+  });
+
   app.querySelectorAll('[data-cur-code]').forEach(btn => {
     btn.addEventListener('click', () => {
       profileState = {
@@ -302,6 +387,7 @@ async function saveProfile() {
     is_nomad: profileState.isNomad,
     home_currency: profileState.currency.code,
     home_currency_symbol: profileState.currency.symbol,
+    nationality: profileState.nationality,
     onboarding_complete: true,
   };
 

@@ -3,6 +3,7 @@ import { escapeHtml } from '../data/day-builder.js';
 import { loadWizardState, saveWizardState, updateWizardField, clearWizardState, canAdvance } from './wizard-state.js';
 import { searchDestinations, getPopularDestinations, DESTINATIONS, makeCustomDestination } from './destinations.js';
 import { resolveCity } from './city-resolver.js';
+import { loadCatalogue, searchCatalogue, hydrateCity } from './city-catalogue.js';
 import { renderCalendar } from './calendar.js';
 import { convert, formatCurrency } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
@@ -695,6 +696,17 @@ function renderStep1(el) {
       dropdown.innerHTML = '';
       return;
     }
+    // Kick off the long-tail catalogue load on first use; when it arrives,
+    // re-run the search so results upgrade in place.
+    loadCatalogue().then(() => {
+      if (searchInput.value.trim() === q && document.contains(searchInput)) {
+        renderDropdown(q);
+      }
+    });
+    renderDropdown(q);
+  });
+
+  function renderDropdown(q) {
     const matches = searchDestinations(q);
     let html = matches.map(d => {
       const active = state.multiCity
@@ -711,9 +723,25 @@ function renderStep1(el) {
       `;
     }).join('');
 
-    // Offer to add the typed city even if it is not in our curated list (e.g.
-    // Utrecht). Skip if the query already exactly matches a listed destination.
-    const exact = matches.some(d => d.name.toLowerCase() === q.toLowerCase());
+    // Long-tail catalogue (2,000 GeoNames cities) below curated matches, skipping
+    // duplicates already shown from the curated list.
+    const curatedKeys = new Set(matches.map(d => `${d.name}|${d.country}`.toLowerCase()));
+    const catalogueHits = searchCatalogue(q, 6 - Math.min(matches.length, 4))
+      .filter(c => !curatedKeys.has(`${c.name}|${c.country}`.toLowerCase()));
+    html += catalogueHits.map(c => `
+      <div class="dest-dropdown-item" data-catalogue='${JSON.stringify(c).replace(/'/g, "&#39;")}'>
+        <span class="dest-dropdown-flag">${flagImg(c.flag, 24)}</span>
+        <div>
+          <span class="dest-dropdown-name">${escapeHtml(c.name)}</span>
+          <span class="dest-dropdown-country">${escapeHtml(c.country)}</span>
+        </div>
+      </div>
+    `).join('');
+
+    // Offer to add the typed city even when nothing matches (live resolver
+    // autocorrects spelling + fills details). Skip on an exact match.
+    const exact = matches.some(d => d.name.toLowerCase() === q.toLowerCase())
+      || catalogueHits.some(c => c.name.toLowerCase() === q.toLowerCase());
     if (!exact) {
       const custom = makeCustomDestination(q);
       html += `
@@ -730,7 +758,7 @@ function renderStep1(el) {
     dropdown.innerHTML = html;
     dropdown.classList.add('dest-dropdown--open');
     bindDropdownClicks(dropdown, searchInput, dropdown);
-  });
+  }
 
   searchInput.addEventListener('focus', () => {
     if (searchInput.value.trim()) searchInput.dispatchEvent(new Event('input'));
@@ -831,6 +859,19 @@ async function runEnrichment(typed) {
 function bindDropdownClicks(container, searchInput, dropdown) {
   container.querySelectorAll('[data-dest]').forEach(item => {
     item.addEventListener('click', () => selectDestination(JSON.parse(item.dataset.dest)));
+  });
+  container.querySelectorAll('[data-catalogue]').forEach(item => {
+    item.addEventListener('click', async () => {
+      const entry = JSON.parse(item.dataset.catalogue);
+      const dest = await hydrateCity(entry);
+      if (dest) {
+        selectDestination(dest);
+      } else {
+        // Hydration failed (offline / missing file) — let the live resolver
+        // build the record from the name instead.
+        selectDestination(makeCustomDestination(entry.name));
+      }
+    });
   });
 }
 

@@ -2995,3 +2995,75 @@
   padding: 6px 16px;
   font-size: 0.82rem;
 }
+
+/* ===== Visa / Entry Requirements (Prep tab) ===== */
+.td-visa-card { border-left: 3px solid var(--amber); }
+
+.td-visa-empty {
+  font: var(--text-small);
+  color: var(--ink-secondary);
+}
+
+.td-visa-empty a { color: var(--terracotta); }
+
+.td-visa-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--border);
+}
+
+.td-visa-item:first-of-type { border-top: none; }
+
+.td-visa-item-main {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.td-visa-flag { flex-shrink: 0; margin-top: 2px; }
+
+.td-visa-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.td-visa-name { font: var(--text-small); font-weight: 600; color: var(--ink); }
+
+.td-visa-meta { font: var(--text-caption); color: var(--ink-secondary); }
+
+.td-visa-deadline {
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.td-visa-note { font: var(--text-caption); color: var(--ink-ghost); }
+
+.td-visa-apply { flex-shrink: 0; white-space: nowrap; font-size: 0.75rem; }
+
+.td-visa-disclaimer {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: var(--ink-ghost);
+}
+
+.td-booking-disclosure {
+  margin-top: var(--sp-3);
+  font-size: 0.68rem;
+  color: var(--ink-ghost);
+}
+
+.td-flight-book-group {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
