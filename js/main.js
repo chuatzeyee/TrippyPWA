@@ -173,3 +173,6 @@ btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth'
 window.addEventListener('scroll', () => {
   btt.classList.toggle('back-to-top--visible', window.scrollY > 400);
 }, { passive: true });
+
+const footerYear = document.getElementById('footer-year');
+if (footerYear) footerYear.textContent = String(new Date().getFullYear());

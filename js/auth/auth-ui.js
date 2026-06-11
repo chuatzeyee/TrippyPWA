@@ -86,6 +86,7 @@ function render(container) {
       }
       <div class="auth-dropdown" id="auth-dropdown">
         <div class="auth-dropdown-name">${name}</div>
+        <button class="auth-dropdown-item" id="auth-edit-profile">Edit Profile</button>
         <button class="auth-dropdown-item" id="auth-sign-out">Sign out</button>
       </div>
     </div>
@@ -102,6 +103,12 @@ function render(container) {
   document.addEventListener('click', () => {
     dropdown.classList.remove('auth-dropdown--open');
   }, { once: true });
+
+  container.querySelector('#auth-edit-profile').addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.remove('auth-dropdown--open');
+    location.hash = '#/profile';
+  });
 
   container.querySelector('#auth-sign-out').addEventListener('click', (e) => {
     e.stopPropagation();

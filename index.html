@@ -4,11 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#1B1A17">
-  <meta name="description" content="Trippy - AI-powered travel planning that feels like a journal">
+  <meta name="description" content="Trippy plans your whole trip with AI: hour-by-hour itineraries, real venues and prices, flights, hotels, visa reminders, and budgets — for 2,000+ cities worldwide.">
+  <meta name="keywords" content="trip planner, AI travel planner, itinerary generator, travel itinerary, vacation planner, multi-city trip">
+  <meta name="author" content="Trippy">
+  <meta name="robots" content="index, follow">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Trippy</title>
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Trippy">
+  <meta property="og:title" content="Trippy — AI travel planning that feels like a journal">
+  <meta property="og:description" content="Pick a destination, set your style, and get a complete day-by-day itinerary with real venues, transport, budgets, and visa reminders.">
+  <meta property="og:image" content="icons/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Trippy — AI travel planning that feels like a journal">
+  <meta name="twitter:description" content="Complete day-by-day itineraries with real venues, transport, budgets, and visa reminders. 2,000+ cities.">
+
+  <title>Trippy — AI Travel Planner: Day-by-Day Itineraries, Flights & Hotels</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Trippy",
+    "applicationCategory": "TravelApplication",
+    "operatingSystem": "Any",
+    "description": "AI-powered travel planner that generates complete day-by-day itineraries with real venues, transport directions, budgets, accommodation picks, and visa reminders.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
 
   <script>
     try{if(Object.keys(localStorage).some(function(k){return k.startsWith('sb-')&&k.endsWith('-auth-token')}))document.documentElement.className='has-session'}catch(e){}
@@ -188,6 +212,12 @@
       </div>
     </div>
   </main>
+
+  <footer class="site-footer">
+    <span class="site-footer-brand">Trippy</span>
+    <span class="site-footer-copy">© <span id="footer-year">2026</span> Trippy. All rights reserved.</span>
+    <span class="site-footer-tag">AI travel planning that feels like a journal</span>
+  </footer>
 
   <script type="module" src="/js/main.js"></script>
 </body>
