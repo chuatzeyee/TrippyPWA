@@ -1540,6 +1540,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           <button class="td-tab td-tab--active" data-tab="plan" role="tab" aria-selected="true">${mdIcon(MD.calendarToday, 15)} Plan</button>
           <button class="td-tab" data-tab="spending" role="tab" aria-selected="false">${mdIcon(MD.ticket, 15)} Spending</button>
           <button class="td-tab" data-tab="prep" role="tab" aria-selected="false">${mdIcon(MD.checklist, 15)} Prep</button>
+          <button class="td-tab" data-tab="towns" role="tab" aria-selected="false">${mdIcon(MD.place, 15)} Towns</button>
         </nav>
         <div class="td-topbar-actions">
           <button class="td-action-btn" data-action="share" title="Share itinerary" aria-label="Share itinerary">
@@ -1638,6 +1639,10 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           ${renderTripQuickChecklist(trip.extras, trip.id)}
           ${renderBookingChecklist(trip.extras, trip.id)}
         </div>
+      </div>
+
+      <div class="td-tab-panel" data-panel="towns">
+        <div class="td-towns" id="td-towns"></div>
       </div>
     </div>
     ${renderTripFooter(trip)}
@@ -1875,7 +1880,8 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   });
 
   bindDelete(app);
-  bindTabs(app);
+  _townsLoaded = false; // new trip render = fresh towns panel
+  bindTabs(app, trip);
   bindDayCards(app);
   bindChecklist(app, trip.id);
   bindQuickChecklist(app, trip.id);
@@ -2139,7 +2145,7 @@ function bindDayCards(container) {
   });
 }
 
-function bindTabs(container) {
+function bindTabs(container, trip) {
   const tabs = container.querySelectorAll('.td-tab');
   const panels = container.querySelectorAll('.td-tab-panel');
   tabs.forEach(tab => {
@@ -2151,6 +2157,123 @@ function bindTabs(container) {
       tab.setAttribute('aria-selected', 'true');
       const panel = container.querySelector(`[data-panel="${target}"]`);
       if (panel) panel.classList.add('td-tab-panel--active');
+      // Towns geocode lazily on first open (network cost), then cache.
+      if (target === 'towns' && trip) loadTownsTab(container, trip);
+    });
+  });
+}
+
+// ===== Towns tab =====
+// Every district/town/village the trip touches, as flip cards grouped by city.
+// Front: locality name + venue taster. Back: the days it's visited — tapping a
+// day chip jumps to that day on the Plan tab.
+
+let _townsLoaded = false;
+
+async function loadTownsTab(container, trip) {
+  if (_townsLoaded) return;
+  _townsLoaded = true;
+  const host = container.querySelector('#td-towns');
+  if (!host) return;
+
+  // Skeleton grid while reverse geocoding runs (first visit only — cached after).
+  host.innerHTML = `
+    <p class="td-towns-intro">Mapping the neighbourhoods on your route…</p>
+    <div class="td-towns-grid">
+      ${Array.from({ length: 6 }, () => '<div class="td-town-card td-town-card--skeleton"><div class="shimmer" style="height:100%"></div></div>').join('')}
+    </div>`;
+
+  let groups = [];
+  try {
+    const { buildTownGroups } = await import('../services/town-mapper.js');
+    groups = await buildTownGroups(trip, (done, total) => {
+      const intro = host.querySelector('.td-towns-intro');
+      if (intro) intro.textContent = `Mapping the neighbourhoods on your route… ${done}/${total}`;
+    });
+  } catch (e) {
+    logger.warn('data', 'Towns build failed', { tripId: trip.id, error: e?.message });
+  }
+
+  if (!groups.length) {
+    host.innerHTML = `
+      <div class="td-towns-empty">
+        <div class="td-towns-empty-icon">${mdIcon(MD.place, 28)}</div>
+        <p>We couldn't map this trip's neighbourhoods. Activities may be missing location data.</p>
+      </div>`;
+    return;
+  }
+
+  const showCityHeadings = groups.length > 1;
+  let cardIdx = 0;
+  host.innerHTML = `
+    <p class="td-towns-intro">${groups.reduce((n, g) => n + g.towns.length, 0)} neighbourhoods &amp; towns on this trip. Tap a card to see when you'll be there.</p>
+    ${groups.map(g => `
+      ${showCityHeadings ? `<h4 class="td-towns-city">${flagImg((trip.wizard_state?.destinations || []).find(d => d.name === g.city)?.flag, 18)} ${esc(g.city)}</h4>` : ''}
+      <div class="td-towns-grid">
+        ${g.towns.map(t => `
+          <div class="td-town-card" role="button" tabindex="0" aria-expanded="false"
+               aria-label="${esc(t.name)} — show visit days" style="--ti: ${cardIdx++}">
+            <div class="td-town-flip">
+              <div class="td-town-face td-town-front">
+                <span class="td-town-icon">${mdIcon(MD.place, 18)}</span>
+                <span class="td-town-name">${esc(t.name)}</span>
+                ${t.venues.length ? `<span class="td-town-venues">${esc(t.venues.slice(0, 2).join(' · '))}</span>` : ''}
+                <span class="td-town-count">${t.activityCount} ${t.activityCount === 1 ? 'stop' : 'stops'}</span>
+              </div>
+              <div class="td-town-face td-town-back">
+                <span class="td-town-back-label">You're here on</span>
+                <div class="td-town-days">
+                  ${t.days.map(d => `
+                    <button class="td-town-day" data-town-day-index="${d.dayIndex}">Day ${d.dayNumber}</button>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}`;
+
+  // Flip on tap/Enter/Space — one card open at a time keeps the grid tidy.
+  const flip = (card, open) => {
+    card.classList.toggle('td-town-card--flipped', open);
+    card.setAttribute('aria-expanded', String(open));
+  };
+  host.querySelectorAll('.td-town-card').forEach(card => {
+    const activate = (e) => {
+      if (e.target.closest('.td-town-day')) return; // day chips handle themselves
+      const willOpen = !card.classList.contains('td-town-card--flipped');
+      host.querySelectorAll('.td-town-card--flipped').forEach(c => flip(c, false));
+      flip(card, willOpen);
+    };
+    card.addEventListener('click', activate);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(e); }
+    });
+  });
+
+  // Day chip → switch to Plan, expand all day cards, scroll to the chosen day
+  // (same mechanics as the prep-checklist jump).
+  host.querySelectorAll('[data-town-day-index]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dayIndex = btn.dataset.townDayIndex;
+      dayCardManualSwitch = true;
+      setTimeout(() => { dayCardManualSwitch = false; }, 600);
+      container.querySelector('[data-tab="plan"]')?.click();
+      // Double rAF: the plan panel flips from display:none on the click above;
+      // scrolling must wait for the layout that follows it.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const card = container.querySelector(`.td-day-card[data-day-index="${dayIndex}"]`);
+        if (!card) return;
+        const grid = card.closest('.td-day-grid');
+        if (grid) {
+          grid.classList.add('td-day-grid--has-open');
+          grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
+          syncDayHeaderExpanded(grid);
+        }
+        (card.querySelector('.td-day-card-header') || card).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }));
     });
   });
 }
