@@ -11,3 +11,4 @@ graphify-out/
 
 # local design-system notes (kept out of the repo)
 .interface-design/
+ARCHITECTURE.md
