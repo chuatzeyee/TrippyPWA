@@ -26,7 +26,6 @@
   padding: var(--sp-3) var(--sp-4);
   background: var(--surface-solid);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--teal);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-lg);
   font: var(--text-small);
@@ -34,10 +33,8 @@
   animation: toastIn 0.25s var(--ease-out) both;
 }
 
-.toast--error  { border-left-color: var(--error, #C85252); }
-.toast--warn   { border-left-color: var(--warning, #D09A48); }
-.toast--success { border-left-color: var(--teal); }
-.toast--info   { border-left-color: var(--teal); }
+/* Level is conveyed by the icon colour (and its glyph shape for a11y) — no
+   accent border, the 1px border stays uniform on all sides. */
 
 .toast-icon {
   display: inline-flex;

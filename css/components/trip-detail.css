@@ -2997,7 +2997,6 @@
 }
 
 /* ===== Visa / Entry Requirements (Prep tab) ===== */
-.td-visa-card { border-left: 3px solid var(--amber); }
 
 .td-visa-empty {
   font: var(--text-small);

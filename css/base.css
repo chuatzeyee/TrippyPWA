@@ -435,3 +435,42 @@ textarea.input {
   width: 20px;
   height: 20px;
 }
+
+/* ===== Site Footer ===== */
+.site-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-8) var(--sp-4) calc(var(--sp-8) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  margin-top: var(--sp-12);
+  text-align: center;
+}
+
+.site-footer-brand {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: var(--ink-secondary);
+}
+
+.site-footer-copy {
+  font: var(--text-caption);
+  color: var(--ink-ghost);
+}
+
+.site-footer-tag {
+  font: var(--text-caption);
+  color: var(--ink-ghost);
+  font-style: italic;
+  font-size: 0.7rem;
+}
+
+/* The wizard and PWA standalone mode are immersive full-screens. */
+body:has(.wizard) .site-footer { display: none; }
+@media (display-mode: standalone) {
+  .site-footer { display: none; }
+}
