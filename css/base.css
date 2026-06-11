@@ -261,7 +261,7 @@ textarea.input {
   background: rgba(229, 225, 216, 0.06);
   color: var(--ink-secondary);
   cursor: pointer;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
   border: 1px solid transparent;
 }
 

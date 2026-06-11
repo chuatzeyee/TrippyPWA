@@ -227,7 +227,7 @@
   font: var(--text-small);
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
   text-align: center;
 }
 

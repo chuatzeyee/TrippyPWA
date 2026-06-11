@@ -507,7 +507,7 @@
   font: var(--text-small);
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-md);
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
   color: var(--ink-secondary);
 }
 

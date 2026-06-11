@@ -20,7 +20,37 @@
   max-width: 420px;
   max-height: 85vh;
   overflow-y: auto;
-  animation: fadeInUp var(--duration-normal) var(--ease-out);
+  /* The keyframes must carry the -50%,-50% centering: an animation replaces the
+     whole transform, so plain fadeInUp would slide the modal in off-center and
+     snap it to the middle when the animation ends. */
+  animation: modalIn var(--duration-normal) var(--ease-out);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 12px)) scale(0.98); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Exit: dismiss handlers add these classes, then remove the nodes on
+   animationend, so closing mirrors opening instead of vanishing in one frame. */
+.modal--closing {
+  animation: modalOut var(--duration-fast) ease both;
+  pointer-events: none;
+}
+
+.modal-backdrop--closing {
+  animation: fadeOut var(--duration-fast) ease both;
+  pointer-events: none;
+}
+
+@keyframes modalOut {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(0.98); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 .modal-header {

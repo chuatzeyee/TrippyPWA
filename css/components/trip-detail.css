@@ -1766,7 +1766,7 @@
   color: var(--ink-secondary);
   text-decoration: none;
   white-space: nowrap;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .td-accom-link:hover {

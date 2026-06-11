@@ -32,8 +32,13 @@ export function showAuthGate() {
   document.body.appendChild(modal);
 
   const dismiss = () => {
-    backdrop.remove();
-    modal.remove();
+    // Mirror the entry animation on the way out, then remove. A timeout
+    // backstop guarantees removal if animationend never fires (reduced motion).
+    backdrop.classList.add('modal-backdrop--closing');
+    modal.classList.add('modal--closing');
+    const remove = () => { clearTimeout(timer); backdrop.remove(); modal.remove(); };
+    const timer = setTimeout(remove, 250);
+    modal.addEventListener('animationend', remove, { once: true });
   };
 
   backdrop.addEventListener('click', dismiss);

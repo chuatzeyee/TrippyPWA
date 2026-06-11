@@ -293,22 +293,29 @@ function renderFooterPills() {
   return `<div class="wizard-footer"><div class="wizard-footer-pills">${pills.join('')}</div></div>`;
 }
 
-function renderShell() {
-  const app = document.getElementById('app');
+function shellChrome() {
   const stepNum = state.currentStep;
   // Same-city trips skip step 5 (transport/flights), so the visible step count
   // and the user's position both shift down by one past that point.
   const skipsStep5 = isSameCityTrip();
   const visibleTotal = skipsStep5 ? TOTAL_STEPS - 2 : TOTAL_STEPS - 1;
   const displayStep = Math.min(skipsStep5 && stepNum > 5 ? stepNum - 1 : stepNum, visibleTotal);
-  const ctaLabel = stepNum === 7 ? 'Generate My Trip ✨' : 'Continue';
+  return {
+    stepNum,
+    visibleTotal,
+    displayStep,
+    ctaLabel: stepNum === 7 ? 'Generate My Trip ✨' : 'Continue',
+  };
+}
+
+function renderShell() {
+  const app = document.getElementById('app');
+  const { stepNum, visibleTotal, displayStep, ctaLabel } = shellChrome();
 
   app.innerHTML = `
     <div class="wizard">
       <div class="wizard-header">
-        ${stepNum > 1
-          ? '<button class="wizard-back btn btn--ghost btn--pill" data-wizard="back" aria-label="Go back">Back</button>'
-          : '<div></div>'}
+        <button class="wizard-back btn btn--ghost btn--pill ${stepNum > 1 ? '' : 'wizard-back--hidden'}" data-wizard="back" aria-label="Go back" ${stepNum > 1 ? '' : 'tabindex="-1" aria-hidden="true"'}>Back</button>
         <div class="wizard-header-center">
           <span class="wizard-progress-count">Step ${displayStep} of ${visibleTotal}</span>
           <div class="wizard-progress">
@@ -339,8 +346,112 @@ function renderShell() {
   bindWizardEvents();
 }
 
+// Patch the persistent shell (header, progress, CTA, footer) in place instead of
+// rebuilding it. Keeping the same DOM nodes lets the progress segments and CTA
+// actually transition, and stops the footer slide-up replaying on every step.
+function updateShellChrome() {
+  const wizard = document.querySelector('.wizard');
+  if (!wizard) return;
+  const { stepNum, visibleTotal, displayStep, ctaLabel } = shellChrome();
+
+  const back = wizard.querySelector('.wizard-back');
+  if (back) {
+    const hidden = stepNum <= 1;
+    back.classList.toggle('wizard-back--hidden', hidden);
+    // pointer-events:none blocks clicks but NOT keyboard focus — pull the
+    // invisible button out of the tab order too.
+    if (hidden) {
+      back.setAttribute('tabindex', '-1');
+      back.setAttribute('aria-hidden', 'true');
+    } else {
+      back.removeAttribute('tabindex');
+      back.removeAttribute('aria-hidden');
+    }
+  }
+
+  const count = wizard.querySelector('.wizard-progress-count');
+  if (count) count.textContent = `Step ${displayStep} of ${visibleTotal}`;
+
+  const progress = wizard.querySelector('.wizard-progress');
+  if (progress) {
+    let segs = [...progress.children];
+    if (segs.length !== visibleTotal) {
+      progress.innerHTML = Array.from({ length: visibleTotal }, () => '<div class="wizard-progress-seg"></div>').join('');
+      segs = [...progress.children];
+    }
+    segs.forEach((seg, i) => {
+      seg.classList.toggle('wizard-progress-seg--done', i + 1 < displayStep);
+      seg.classList.toggle('wizard-progress-seg--active', i + 1 === displayStep);
+    });
+  }
+
+  const cta = wizard.querySelector('.wizard-cta-btn');
+  if (cta) {
+    cta.textContent = ctaLabel;
+    cta.disabled = !canAdvance(state);
+  }
+
+  const footerHtml = renderFooterPills();
+  const footer = wizard.querySelector('.wizard-footer');
+  if (!footerHtml) {
+    footer?.remove();
+  } else if (footer) {
+    const temp = document.createElement('div');
+    temp.innerHTML = footerHtml;
+    footer.querySelector('.wizard-footer-pills').innerHTML =
+      temp.querySelector('.wizard-footer-pills').innerHTML;
+  } else {
+    wizard.insertAdjacentHTML('beforeend', footerHtml);
+  }
+}
+
+const REDUCE_MOTION = typeof window !== 'undefined'
+  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+const STEP_EXIT_MS = 140;
+
+let _transitioning = false;
+
+// Animate between steps: brief exit on the old content, in-place chrome patch,
+// then the entry animation replays on the new content. Falls back to a full
+// re-render when the shell is not mounted (e.g. arriving from another route).
+// While the exit is in flight further next/back clicks are ignored (the guard
+// in bindWizardEvents), so a rapid double-click cannot advance two steps.
+function transitionToStep() {
+  const stepEl = document.getElementById('wizard-step-content');
+  if (!stepEl || REDUCE_MOTION) { renderShell(); return; }
+
+  _transitioning = true;
+  stepEl.classList.add('wizard-step--exit');
+  setTimeout(() => {
+    _transitioning = false;
+    updateShellChrome();
+    renderStep();
+    stepEl.classList.remove('wizard-step--exit');
+    // Restart the .wizard-step entry animation on the same node.
+    stepEl.style.animation = 'none';
+    void stepEl.offsetWidth;
+    stepEl.style.animation = '';
+    const body = stepEl.closest('.wizard-body');
+    if (body) body.scrollTop = 0;
+  }, STEP_EXIT_MS);
+}
+
+const SELECTABLE_CARD = '.date-mode-card, .season-card, .budget-preset, .fare-card, .departure-time-card, .connection-card, .accom-card';
+let _popTimer = null;
+
 function bindWizardEvents() {
   const wizard = document.querySelector('.wizard');
+
+  // Flag genuine card selections so CSS can play the selection pop only then,
+  // not on every step re-render (capture phase: step handlers re-render before
+  // bubble listeners run).
+  wizard.addEventListener('pointerdown', (e) => {
+    if (REDUCE_MOTION || !e.target.closest(SELECTABLE_CARD)) return;
+    wizard.classList.add('wizard--just-selected');
+    clearTimeout(_popTimer);
+    _popTimer = setTimeout(() => wizard.classList.remove('wizard--just-selected'), 350);
+  }, true);
 
   // Keyboard activation for the div-based card/pill controls (role="button").
   // Delegated so it survives step re-renders; native <button>s are excluded
@@ -381,11 +492,13 @@ function bindWizardEvents() {
       clearWizardState();
       navigate('/');
     } else if (action === 'back' && state.currentStep > 1) {
+      if (_transitioning) return;
       state.currentStep--;
       if (state.currentStep === 5 && isSameCityTrip()) state.currentStep--;
       saveWizardState(state);
-      renderShell();
+      transitionToStep();
     } else if (action === 'next' && canAdvance(state)) {
+      if (_transitioning) return;
       if (state.currentStep < TOTAL_STEPS) {
         state.currentStep++;
         if (state.currentStep === 5 && isSameCityTrip()) state.currentStep++;
@@ -394,15 +507,25 @@ function bindWizardEvents() {
         if (state.currentStep === 8) {
           renderGeneration();
         } else {
-          renderShell();
+          transitionToStep();
         }
       }
     }
   });
 }
 
+let _enterTimer = null;
+
 function renderStep() {
   const container = document.getElementById('wizard-step-content');
+  // Mark the step as "entering" so option grids play their stagger exactly
+  // once per step entry — in-step re-renders (calendar taps etc.) call the
+  // renderStepN functions directly and never re-add this class.
+  if (container && !REDUCE_MOTION) {
+    container.classList.add('wizard-step--entering');
+    clearTimeout(_enterTimer);
+    _enterTimer = setTimeout(() => container.classList.remove('wizard-step--entering'), 500);
+  }
   if (state.currentStep === 1) {
     applyFlagBackground(state.destination?.flag);
   } else {

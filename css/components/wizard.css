@@ -72,14 +72,23 @@
   cursor: pointer;
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-pill);
-  transition: color var(--duration-fast), background var(--duration-fast);
+  transition: color var(--duration-fast), background var(--duration-fast),
+              opacity var(--duration-normal) var(--ease-out);
   white-space: nowrap;
   font-size: 0.8rem;
+  justify-self: start;
 }
 
 .wizard-back:hover {
   color: var(--ink);
   background: rgba(229, 225, 216, 0.06);
+}
+
+/* Step 1 has nowhere to go back to; fade rather than unmount so the header grid
+   keeps its three columns and nothing jumps when the button (re)appears. */
+.wizard-back--hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .wizard-back-arrow {
@@ -117,7 +126,7 @@
   cursor: pointer;
   font-size: 1rem;
   color: var(--ink-ghost);
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .wizard-close:hover {
@@ -141,6 +150,18 @@
   width: 100%;
   max-width: 560px;
   animation: fadeInUp var(--duration-slow) var(--ease-out);
+}
+
+/* Outgoing step content: a quick fade-and-lift before the next step renders,
+   so step changes read as movement instead of an instant DOM swap. */
+.wizard-step--exit {
+  animation: stepExit 140ms var(--ease-out) both;
+  pointer-events: none;
+}
+
+@keyframes stepExit {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
 }
 
 /* ===== Step Title ===== */
@@ -632,7 +653,7 @@
   border: 1px solid rgba(229, 225, 216, 0.06);
   cursor: pointer;
   text-align: center;
-  transition: all var(--duration-normal) var(--ease-out);
+  transition: var(--transition-interactive-slow);
   background: rgba(37, 35, 32, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -688,7 +709,7 @@
   background: rgba(37, 35, 32, 0.6);
   cursor: pointer;
   text-align: center;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .duration-pill:hover {
@@ -732,7 +753,7 @@
   background: rgba(37, 35, 32, 0.6);
   cursor: pointer;
   text-align: center;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .season-card:hover {
@@ -805,7 +826,7 @@
   border-radius: var(--r-xl);
   border: 1px solid rgba(229, 225, 216, 0.06);
   cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-out);
+  transition: var(--transition-interactive-slow);
   background: rgba(37, 35, 32, 0.6);
 }
 
@@ -867,7 +888,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
   color: var(--ink-secondary);
   user-select: none;
 }
@@ -942,7 +963,7 @@
   background: rgba(37, 35, 32, 0.6);
   cursor: pointer;
   text-align: center;
-  transition: all var(--duration-normal) var(--ease-out);
+  transition: var(--transition-interactive-slow);
   overflow: hidden;
 }
 
@@ -1013,7 +1034,7 @@
   background: rgba(37, 35, 32, 0.6);
   cursor: pointer;
   text-align: center;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .departure-time-card:hover {
@@ -1061,7 +1082,7 @@
   background: rgba(37, 35, 32, 0.6);
   cursor: pointer;
   text-align: center;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .connection-card:hover {
@@ -1166,7 +1187,7 @@
   cursor: pointer;
   font-size: 0.85rem;
   color: var(--ink-ghost);
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .cal-nav:hover {
@@ -1216,7 +1237,7 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: default;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
   color: var(--ink-secondary);
 }
 
@@ -1362,7 +1383,7 @@
   background: rgba(37, 35, 32, 0.6);
   cursor: pointer;
   text-align: center;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .currency-option:hover {
@@ -1555,7 +1576,7 @@
   -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
   text-align: center;
-  transition: all var(--duration-normal) var(--ease-out);
+  transition: var(--transition-interactive-slow);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1624,7 +1645,7 @@
   margin-top: 2px;
   opacity: 0;
   transform: translateY(4px);
-  transition: all var(--duration-normal) var(--ease-out);
+  transition: var(--transition-interactive-slow);
 }
 
 .accom-card:hover .accom-card-vibe,
@@ -1650,7 +1671,7 @@
   border: 1px solid rgba(229, 225, 216, 0.06);
   background: rgba(37, 35, 32, 0.6);
   cursor: pointer;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .accom-star-btn:hover {
@@ -1812,7 +1833,7 @@
   font-weight: 600;
   color: var(--ink-ghost);
   flex-shrink: 0;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .summary-extra-toggle:hover .summary-extra-plus {
@@ -1922,7 +1943,7 @@
   font: var(--text-caption);
   font-size: 0.72rem;
   color: var(--ink-secondary);
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
   white-space: nowrap;
 }
 
@@ -1953,7 +1974,7 @@
   color: var(--ink-secondary);
   font: var(--text-small);
   cursor: pointer;
-  transition: all var(--duration-fast);
+  transition: var(--transition-interactive);
 }
 
 .settled-toggle:hover {
@@ -2184,4 +2205,72 @@
 
 [data-theme="light"] .trip-summary-row + .trip-summary-row {
   border-top-color: rgba(44, 42, 37, 0.06);
+}
+
+/* ===== Motion polish ===== */
+
+/* Tactile press feedback on every selectable card/pill/chip. Cheap (transform
+   only, composited) and makes taps feel acknowledged before the re-render. */
+.date-mode-card:active,
+.duration-pill:active,
+.season-card:active,
+.budget-preset:active,
+.fare-card:active,
+.departure-time-card:active,
+.connection-card:active,
+.accom-card:active,
+.accom-star-btn:active,
+.settled-toggle:active,
+.free-day-chip:active,
+.cal-cell:active,
+.coverflow-card:active {
+  transform: scale(0.97);
+}
+
+/* Option grids cascade in when a step ENTERS. Gated on --entering (added by
+   renderStep for ~400ms) because in-step interactions rebuild the step's
+   innerHTML — e.g. every calendar tap re-renders step 2 — and the stagger
+   must not replay on each tap. */
+.wizard-step--entering :is(.date-mode-cards, .duration-pills, .season-cards,
+  .budget-presets, .fare-cards, .departure-time-grid, .connection-cards,
+  .accom-grid) > * {
+  animation: fadeInUp var(--duration-slow) var(--ease-out) both;
+}
+
+.wizard-step--entering :is(.date-mode-cards, .duration-pills, .season-cards,
+  .budget-presets, .fare-cards, .departure-time-grid, .connection-cards,
+  .accom-grid) > :nth-child(1) { animation-delay: 30ms; }
+
+.wizard-step--entering :is(.date-mode-cards, .duration-pills, .season-cards,
+  .budget-presets, .fare-cards, .departure-time-grid, .connection-cards,
+  .accom-grid) > :nth-child(2) { animation-delay: 60ms; }
+
+.wizard-step--entering :is(.date-mode-cards, .duration-pills, .season-cards,
+  .budget-presets, .fare-cards, .departure-time-grid, .connection-cards,
+  .accom-grid) > :nth-child(3) { animation-delay: 90ms; }
+
+.wizard-step--entering :is(.duration-pills, .departure-time-grid, .accom-grid)
+  > :nth-child(4) { animation-delay: 120ms; }
+
+.wizard-step--entering :is(.duration-pills, .departure-time-grid, .accom-grid)
+  > :nth-child(5) { animation-delay: 150ms; }
+
+.wizard-step--entering .accom-grid > :nth-child(6) { animation-delay: 180ms; }
+
+/* Selected-state pop: the active card springs slightly so selection reads as a
+   response, not just a recolor. Gated on .wizard--just-selected (added by a
+   delegated click handler only when a selectable card was pressed) because the
+   step re-renders on every interaction — without the gate, unrelated re-renders
+   (calendar taps, slider moves) would re-pop the already-active card. */
+.wizard--just-selected :is(
+  .date-mode-card--active, .season-card--active, .budget-preset--selected,
+  .fare-card--active, .departure-time-card--active, .connection-card--active,
+  .accom-card--active) {
+  animation: selectPop 240ms var(--ease-spring);
+}
+
+@keyframes selectPop {
+  0% { transform: scale(0.97); }
+  60% { transform: scale(1.015); }
+  100% { transform: scale(1); }
 }
