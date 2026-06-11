@@ -13,7 +13,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   buildPromptAndSchema, validateItinerary, callGemini, callMistral,
-  toDbDays, buildExtras, planChunks, tripDayCount, dateForDay,
+  toDbDays, buildExtras, planChunks, tripDayCount, dateForDay, sanitizeDbDays,
 } from "../_shared/generation.ts";
 
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") || "";
@@ -35,7 +35,7 @@ function logDb(level: string, message: string, metadata: Record<string, unknown>
     level, category: "generation", message, metadata, source: "edge",
     user_id: (metadata.userId as string) || null,
     trip_id: (metadata.tripId as string) || null,
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 }
 
 async function failJob(jobId: string, tripId: string, error: string, meta: Record<string, unknown>) {
@@ -58,6 +58,11 @@ async function selfInvoke(jobId: string, tripId: string) {
   }
 }
 
+// Each chunk may try every provider twice (two full rounds) before the job
+// fails: round one absorbs transient capacity errors, round two catches the
+// case where both providers hiccupped in the same minute.
+const MAX_PROVIDER_ROUNDS = 2;
+
 async function runChunk(jobId: string) {
   const { data: job } = await admin.from("generation_jobs").select("*").eq("id", jobId).single();
   if (!job) { logDb("error", "Job not found", { jobId }); return; }
@@ -67,14 +72,20 @@ async function runChunk(jobId: string) {
   const totalDays = job.total_days || tripDayCount(wizardState);
   const chunkSize = job.chunk_size || 4;
   const chunks = planChunks(totalDays, chunkSize);
-  const chunkIdx: number = job.chunk_idx || 0;
+
+  // Day-cursor chunking: the next chunk always starts after the last day we
+  // actually HAVE, not at a precomputed boundary. A salvaged partial chunk
+  // (e.g. 2 of 4 days) simply advances the cursor by 2 and the next pass
+  // regenerates from day 3 of that range — no work is thrown away.
+  const daysDone: number = Array.isArray(job.result_days) ? job.result_days.length : 0;
+  const chunkIdx = Math.min(Math.floor(daysDone / chunkSize), chunks.length - 1);
 
   const providers: string[] = job.provider_order || ["gemini", "mistral"];
   const providerIdx: number = job.provider_idx || 0;
 
-  // All chunks done: save the accumulated itinerary atomically.
-  if (chunkIdx >= chunks.length) {
-    const dbDays = (job.result_days as any[]) || [];
+  // All days generated: save the accumulated itinerary atomically.
+  if (daysDone >= totalDays) {
+    const dbDays = sanitizeDbDays((job.result_days as any[]) || []);
     const extras = (job.result_extras as Record<string, unknown>) || {};
     const { error: rpcErr } = await admin.rpc("replace_itinerary", {
       p_trip_id: job.trip_id,
@@ -93,15 +104,17 @@ async function runChunk(jobId: string) {
     return;
   }
 
-  if (providerIdx >= providers.length) {
-    await failJob(jobId, job.trip_id, `Generation failed: all providers failed on chunk ${chunkIdx + 1}/${chunks.length}`,
+  if (providerIdx >= providers.length * MAX_PROVIDER_ROUNDS) {
+    await failJob(jobId, job.trip_id, `Generation failed: all providers exhausted on chunk ${chunkIdx + 1}/${chunks.length}`,
       { jobId, tripId: job.trip_id, userId: job.user_id, error: job.error });
     return;
   }
 
-  const { from, to } = chunks[chunkIdx];
-  const isFirstChunk = chunkIdx === 0;
-  const provider = providers[providerIdx];
+  // Generate from the cursor to the end of the current chunk's range.
+  const from = daysDone + 1;
+  const to = Math.min(chunks[chunkIdx].to, totalDays);
+  const isFirstChunk = daysDone === 0;
+  const provider = providers[providerIdx % providers.length];
 
   await admin.from("generation_jobs").update({
     status: "processing", last_provider: provider,
@@ -123,6 +136,13 @@ async function runChunk(jobId: string) {
     }
     return { data: null, error: `Provider ${provider} not configured` };
   };
+
+  // Second round = both providers already failed once this chunk. Pause before
+  // retrying so a shared upstream hiccup has time to clear (fresh 150s budget,
+  // so 20s is affordable).
+  if (providerIdx >= providers.length) {
+    await new Promise(r => setTimeout(r, 20_000));
+  }
 
   const started = Date.now();
   let result = await callProvider();
@@ -157,8 +177,8 @@ async function runChunk(jobId: string) {
     const accumulated = [ ...((job.result_days as any[]) || []), ...newDays ];
     const update: Record<string, unknown> = {
       result_days: accumulated,
-      chunk_idx: chunkIdx + 1,
-      provider_idx: 0, // reset provider for the next chunk
+      chunk_idx: Math.floor(accumulated.length / chunkSize), // observability only; cursor derives from result_days
+      provider_idx: 0, // fresh provider rounds for the next pass
       // Stay 'processing' with a fresh lease between chunks so recover_stale_jobs
       // cannot requeue an in-flight job and double-run a chunk (which would
       // duplicate days in result_days). The next invocation re-leases.
@@ -171,26 +191,29 @@ async function runChunk(jobId: string) {
       update.result_title = result.data.tripTitle || "";
     }
     await admin.from("generation_jobs").update(update).eq("id", jobId);
-    logDb("info", `Chunk ${chunkIdx + 1}/${chunks.length} done via ${provider} (days ${from}-${to}, ${newDays.length} days)`,
+    const partial = newDays.length < (to - from + 1) ? ` (partial — ${to - (from + newDays.length - 1)} day(s) regenerate next pass)` : "";
+    logDb("info", `Days ${from}-${from + newDays.length - 1}/${totalDays} done via ${provider}${partial}`,
       { jobId, tripId: job.trip_id, userId: job.user_id, provider });
     await selfInvoke(jobId, job.trip_id);
     return;
   }
 
-  // Provider failed on this chunk. Advance provider; if exhausted, fail the job.
+  // Provider failed on this chunk. Advance provider; if both rounds are
+  // exhausted, fail the job.
   const nextProvider = providerIdx + 1;
+  const exhausted = nextProvider >= providers.length * MAX_PROVIDER_ROUNDS;
   await admin.from("generation_jobs").update({
     provider_idx: nextProvider, attempt: (job.attempt || 0) + 1, error: result.error || "Unknown",
     // Stay 'processing' with a fresh lease while a fallback is pending (same
     // anti-double-run reasoning as the chunk-advance path).
-    status: nextProvider < providers.length ? "processing" : "failed",
-    lease_until: nextProvider < providers.length ? new Date(Date.now() + 160_000).toISOString() : null,
+    status: exhausted ? "failed" : "processing",
+    lease_until: exhausted ? null : new Date(Date.now() + 160_000).toISOString(),
   }).eq("id", jobId);
 
-  logDb("warn", `${provider} failed on chunk ${chunkIdx + 1}, ${nextProvider < providers.length ? "falling back" : "no more providers"}`,
+  logDb("warn", `${provider} failed on chunk ${chunkIdx + 1}, ${!exhausted ? (nextProvider >= providers.length ? "starting second provider round" : "falling back") : "no more providers"}`,
     { jobId, tripId: job.trip_id, userId: job.user_id, provider, error: result.error });
 
-  if (nextProvider < providers.length) {
+  if (!exhausted) {
     await selfInvoke(jobId, job.trip_id);
   } else {
     await admin.from("trips").update({ status: "failed" }).eq("id", job.trip_id);

@@ -429,9 +429,11 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
   return { prompt, systemPrompt, jsonSchema, geminiSchema, expectedDays: chunkDays, totalDays: days, dayFrom, dayTo, includeExtras, currency };
 }
 
-// Returns { issues, fatal }. fatal=true means the itinerary is unusable (no days,
-// or a day with zero activities, or far too few days) and the caller should fall
-// back to the next provider rather than save a broken trip.
+// Validate-and-salvage. Instead of rejecting a whole chunk because the model's
+// response was truncated, keep every COMPLETE day (has activities) and let the
+// day-cursor in the worker generate the remainder in the next invocation.
+// fatal=true only when nothing usable survives — a truncated 2-of-4-day reply
+// still moves the trip forward 2 days instead of burning the provider.
 export function validateItinerary(data: any, expectedDays: number): { issues: string[]; fatal: boolean } {
   const issues: string[] = [];
   if (!data?.days || !Array.isArray(data.days) || data.days.length === 0) {
@@ -441,24 +443,22 @@ export function validateItinerary(data: any, expectedDays: number): { issues: st
     issues.push(`AI returned ${data.days.length} days, trimming to ${expectedDays}`);
     data.days = data.days.slice(0, expectedDays);
   }
-  let fatal = false;
+
+  // Drop incomplete days (truncated JSON usually cuts mid-day, leaving the last
+  // day with no activities). The cursor regenerates whatever is dropped.
+  const complete = data.days.filter((d: any) => Array.isArray(d.activities) && d.activities.length > 0);
+  if (complete.length < data.days.length) {
+    issues.push(`Dropped ${data.days.length - complete.length} incomplete day(s)`);
+  }
+  data.days = complete;
+
+  if (data.days.length === 0) {
+    return { issues: [...issues, "No complete days in response"], fatal: true };
+  }
   if (data.days.length < expectedDays) {
-    issues.push(`Expected ${expectedDays} days, got ${data.days.length}`);
-    // Tolerate at most one short day; anything more is a truncated response.
-    if (data.days.length < expectedDays - 1) fatal = true;
+    issues.push(`Expected ${expectedDays} days, got ${data.days.length} — remainder regenerates next pass`);
   }
-  const seen = new Set<number>();
-  for (let i = 0; i < data.days.length; i++) {
-    const d = data.days[i];
-    const num = d.dayNumber ?? d.day_number ?? (i + 1);
-    if (seen.has(num)) issues.push(`Duplicate day ${num}`);
-    seen.add(num);
-    if (!d.activities || d.activities.length === 0) {
-      issues.push(`Day ${num} has no activities`);
-      fatal = true; // an empty day renders as a broken blank screen — reject it
-    }
-  }
-  return { issues, fatal };
+  return { issues, fatal: false };
 }
 
 export async function callGemini(
@@ -566,6 +566,15 @@ export async function callMistral(
   }
 }
 
+// Models occasionally emit coordinates as arrays or strings ("[60.16, 60.18]")
+// which Postgres rejects with "invalid input syntax for type numeric". Coerce
+// to a finite number or null.
+function toFiniteNumber(v: unknown): number | null {
+  if (Array.isArray(v)) v = v[0];
+  const n = typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN;
+  return Number.isFinite(n) ? n : null;
+}
+
 const VALID_SLOTS = new Set(["morning", "afternoon", "evening"]);
 function normSlot(raw: any): string {
   if (!raw) return "morning";
@@ -609,8 +618,8 @@ export function toDbDays(itinerary: any, fallbackCurrency: string): any[] {
         cost_amount: Math.round(a.costAmount ?? a.cost_amount ?? 0),
         cost_currency: a.costCurrency ?? a.cost_currency ?? fallbackCurrency,
         cost_note: a.costNote ?? a.cost_note ?? "",
-        latitude: a.latitude ?? null,
-        longitude: a.longitude ?? null,
+        latitude: toFiniteNumber(a.latitude),
+        longitude: toFiniteNumber(a.longitude),
         booking_url: a.bookingUrl ?? a.booking_url ?? "",
         tips: a.tips ?? "",
         getting_there: a.gettingThere ?? a.getting_there ?? "",
@@ -621,6 +630,21 @@ export function toDbDays(itinerary: any, fallbackCurrency: string): any[] {
       })),
     };
   });
+}
+
+// Re-sanitise accumulated db-shaped days right before the atomic save. Days
+// generated before a sanitiser fix may carry malformed values (e.g. array
+// coordinates) that Postgres rejects; this heals them without regeneration.
+export function sanitizeDbDays(days: any[]): any[] {
+  return (days || []).map((d: any) => ({
+    ...d,
+    activities: (d.activities || []).map((a: any) => ({
+      ...a,
+      latitude: toFiniteNumber(a.latitude),
+      longitude: toFiniteNumber(a.longitude),
+      cost_amount: Math.round(toFiniteNumber(a.cost_amount) ?? 0),
+    })),
+  }));
 }
 
 export function buildExtras(itinerary: any, provider: string): Record<string, unknown> {
