@@ -155,9 +155,12 @@ export async function buildTownGroups(trip, onProgress) {
     const key = `${city}|${locality}`;
 
     if (!towns.has(key)) {
-      towns.set(key, { name: locality, city, days: new Map(), venues: [], activityCount: 0 });
+      towns.set(key, { name: locality, city, days: new Map(), venues: [], activityCount: 0, cells: [] });
     }
     const t = towns.get(key);
+    // Cell coords let the Plan tab label activities by locality via a
+    // nearest-cell lookup, with zero additional geocoding.
+    t.cells.push([Number(cell.lat.toFixed(4)), Number(cell.lng.toFixed(4))]);
     for (const hit of cell.hits) {
       if (!t.days.has(hit.dayNumber)) t.days.set(hit.dayNumber, hit.dayIndex);
       if (hit.venue && t.venues.length < 3 && !t.venues.includes(hit.venue)) t.venues.push(hit.venue);
@@ -178,6 +181,7 @@ export async function buildTownGroups(trip, onProgress) {
         .sort((a, b) => a.dayNumber - b.dayNumber),
       venues: t.venues,
       activityCount: t.activityCount,
+      cells: t.cells,
     });
   }
   const groups = [...byCity.entries()].map(([city, list]) => ({

@@ -104,7 +104,7 @@ export async function computeTownGroups(dbDays: any[], wizardState: any): Promis
     .map((d: any) => ({ name: d.name, lat: Number(d.lat), lng: Number(d.lng) }));
 
   // 2. Reverse geocode each cell (sequential, throttled, time-capped).
-  const towns = new Map<string, { name: string; city: string; days: Set<number>; venues: string[]; activityCount: number }>();
+  const towns = new Map<string, { name: string; city: string; days: Set<number>; venues: string[]; activityCount: number; cells: number[][] }>();
   for (const cell of cells.values()) {
     if (Date.now() - started > TIME_BUDGET_MS) break; // partial coverage beats a blown budget
     const props = await reverseGeocode(cell.lat, cell.lng);
@@ -113,9 +113,12 @@ export async function computeTownGroups(dbDays: any[], wizardState: any): Promis
       const city = nearestCity(cell.lat, cell.lng, cities);
       const key = `${city}|${locality}`;
       if (!towns.has(key)) {
-        towns.set(key, { name: locality, city, days: new Set(), venues: [], activityCount: 0 });
+        towns.set(key, { name: locality, city, days: new Set(), venues: [], activityCount: 0, cells: [] });
       }
       const t = towns.get(key)!;
+      // Cell coords let the client label activities with their locality
+      // (nearest-cell lookup) without any further geocoding.
+      t.cells.push([Number(cell.lat.toFixed(4)), Number(cell.lng.toFixed(4))]);
       for (const hit of cell.hits) {
         t.days.add(hit.dayNumber);
         if (hit.venue && t.venues.length < 3 && !t.venues.includes(hit.venue)) t.venues.push(hit.venue);
@@ -135,6 +138,7 @@ export async function computeTownGroups(dbDays: any[], wizardState: any): Promis
       days: [...t.days].sort((a, b) => a - b).map((dayNumber) => ({ dayNumber })),
       venues: t.venues,
       activityCount: t.activityCount,
+      cells: t.cells,
     });
   }
   const groups = [...byCity.entries()].map(([city, list]) => ({
