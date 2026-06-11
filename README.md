@@ -19,8 +19,6 @@ npm run dev
 
 Open `http://localhost:5173`.
 
-Deployment, database schema, edge functions, and the Android (TWA) build are documented in [DEVELOPMENT.md](DEVELOPMENT.md).
-
 ### Environment Variables
 
 | Variable | Where | Purpose |
