@@ -3116,19 +3116,23 @@
 .td-town-flip {
   position: absolute;
   inset: 0;
-  transform-style: preserve-3d;
-  transition: transform 0.5s var(--ease-spring);
+  /* Faces are this element's children — perspective must live here for the
+     rotation to foreshorten. */
+  perspective: 900px;
 }
 
-.td-town-card--flipped .td-town-flip {
-  transform: rotateY(180deg);
-}
+/* Each face rotates independently (no preserve-3d on the wrapper): iOS Safari
+   does not reliably apply a parent's backface-visibility to composited
+   children (the photo layer / content stack), which left the front text
+   showing through mirrored when the wrapper rotated. Per-face rotation keeps
+   every child inside its own flattened, backface-hidden plane. */
 
 .td-town-face {
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transition: transform 0.5s var(--ease-spring);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -3225,6 +3229,10 @@
   color: var(--ink-secondary);
 }
 
+.td-town-front { transform: rotateY(0deg); }
+.td-town-card--flipped .td-town-front { transform: rotateY(-180deg); }
+.td-town-card--flipped .td-town-back { transform: rotateY(0deg); }
+
 .td-town-back {
   transform: rotateY(180deg);
   justify-content: center;
@@ -3295,12 +3303,10 @@
 
 /* Reduced motion: crossfade instead of 3D rotation. */
 @media (prefers-reduced-motion: reduce) {
-  .td-town-flip { transition: none; }
-  .td-town-card--flipped .td-town-flip { transform: none; }
-  .td-town-front { transition: opacity 0.15s ease; }
+  .td-town-front { transform: none; transition: opacity 0.15s ease; }
+  .td-town-card--flipped .td-town-front { transform: none; opacity: 0; }
   .td-town-back { transform: none; opacity: 0; visibility: hidden; transition: opacity 0.15s ease, visibility 0.15s ease; pointer-events: none; }
-  .td-town-card--flipped .td-town-front { opacity: 0; }
-  .td-town-card--flipped .td-town-back { opacity: 1; visibility: visible; pointer-events: auto; }
+  .td-town-card--flipped .td-town-back { transform: none; opacity: 1; visibility: visible; pointer-events: auto; }
 }
 
 /* ===== Locality waypoints in the Plan timeline ===== */
