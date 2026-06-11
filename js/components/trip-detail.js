@@ -2176,22 +2176,40 @@ async function loadTownsTab(container, trip) {
   const host = container.querySelector('#td-towns');
   if (!host) return;
 
-  // Skeleton grid while reverse geocoding runs (first visit only — cached after).
-  host.innerHTML = `
-    <p class="td-towns-intro">Mapping the neighbourhoods on your route…</p>
-    <div class="td-towns-grid">
-      ${Array.from({ length: 6 }, () => '<div class="td-town-card td-town-card--skeleton"><div class="shimmer" style="height:100%"></div></div>').join('')}
-    </div>`;
-
+  // Fast path: towns were pre-computed at generation time (extras.towns).
+  // Server records dayNumber only — resolve dayIndex against the loaded days.
   let groups = [];
-  try {
-    const { buildTownGroups } = await import('../services/town-mapper.js');
-    groups = await buildTownGroups(trip, (done, total) => {
-      const intro = host.querySelector('.td-towns-intro');
-      if (intro) intro.textContent = `Mapping the neighbourhoods on your route… ${done}/${total}`;
-    });
-  } catch (e) {
-    logger.warn('data', 'Towns build failed', { tripId: trip.id, error: e?.message });
+  const precomputed = trip.extras?.towns;
+  if (Array.isArray(precomputed) && precomputed.length > 0) {
+    const indexByDayNumber = new Map(
+      (trip.itinerary_days || []).map((d, i) => [d.day_number, i]));
+    groups = precomputed.map(g => ({
+      ...g,
+      towns: (g.towns || []).map(t => ({
+        ...t,
+        days: (t.days || [])
+          .filter(d => indexByDayNumber.has(d.dayNumber))
+          .map(d => ({ dayNumber: d.dayNumber, dayIndex: indexByDayNumber.get(d.dayNumber) })),
+      })).filter(t => t.days.length > 0),
+    })).filter(g => g.towns.length > 0);
+  }
+
+  if (!groups.length) {
+    // Legacy trip (or precompute failed): geocode on-device with a skeleton.
+    host.innerHTML = `
+      <p class="td-towns-intro">Mapping the neighbourhoods on your route…</p>
+      <div class="td-towns-grid">
+        ${Array.from({ length: 6 }, () => '<div class="td-town-card td-town-card--skeleton"><div class="shimmer" style="height:100%"></div></div>').join('')}
+      </div>`;
+    try {
+      const { buildTownGroups } = await import('../services/town-mapper.js');
+      groups = await buildTownGroups(trip, (done, total) => {
+        const intro = host.querySelector('.td-towns-intro');
+        if (intro) intro.textContent = `Mapping the neighbourhoods on your route… ${done}/${total}`;
+      });
+    } catch (e) {
+      logger.warn('data', 'Towns build failed', { tripId: trip.id, error: e?.message });
+    }
   }
 
   if (!groups.length) {
