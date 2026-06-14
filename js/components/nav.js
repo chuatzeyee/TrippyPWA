@@ -1,4 +1,11 @@
 import { navigate } from '../router.js';
+import { getSquareOverride, cycleSquareOverride } from '../lib/square-mode.js';
+
+const SQUARE_LABELS = {
+  auto: 'Square layout: auto (tap to force on)',
+  on: 'Square layout: on (tap to force off)',
+  off: 'Square layout: off (tap to reset to auto)',
+};
 
 const DESTINATIONS = [
   'SINGAPORE', 'KUALA LUMPUR', 'JAKARTA', 'HELSINKI',
@@ -67,6 +74,10 @@ export function renderNav() {
       <span class="nav-logo-flaps" aria-hidden="true">${HOME_TEXT.split('').map(buildCell).join('')}</span>
     </a>
     <div class="nav-actions">
+      <button class="nav-square-toggle" id="square-toggle" data-square-state="${getSquareOverride()}" aria-label="${SQUARE_LABELS[getSquareOverride()]}" title="${SQUARE_LABELS[getSquareOverride()]}">
+        <svg class="nav-square-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"></rect><line x1="9.5" y1="4" x2="9.5" y2="20"></line></svg>
+        <span class="nav-square-dot" aria-hidden="true"></span>
+      </button>
       <button class="nav-theme-toggle" id="theme-toggle" aria-label="${isLight ? 'Switch to dark theme' : 'Switch to light theme'}">
         <svg class="nav-theme-icon nav-theme-icon--sun" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
         <svg class="nav-theme-icon nav-theme-icon--moon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
@@ -124,6 +135,14 @@ export function renderNav() {
     themeBtn.setAttribute('aria-label', next === 'light' ? 'Switch to dark theme' : 'Switch to light theme');
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = next === 'light' ? '#F5F1EA' : '#1B1A17';
+  });
+
+  const squareBtn = document.getElementById('square-toggle');
+  squareBtn.addEventListener('click', () => {
+    const next = cycleSquareOverride();
+    squareBtn.dataset.squareState = next;
+    squareBtn.setAttribute('aria-label', SQUARE_LABELS[next]);
+    squareBtn.setAttribute('title', SQUARE_LABELS[next]);
   });
 
   import('../auth/auth-ui.js').then(({ renderAuthButton }) => {

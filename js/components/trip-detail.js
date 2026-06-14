@@ -8,6 +8,8 @@ import { shortenTransitName } from '../data/transit-lines.js';
 import { hotelSearchLinks, flightSearchLink, trackBookingClick, BOOKING_DISCLOSURE } from '../services/booking-links.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
+import { isSquareMode } from '../lib/square-mode.js';
+import { renderSquareItinerary } from './square-itinerary.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -1283,6 +1285,55 @@ function renderSidebar(trip, days, sym, totalCost) {
   `;
 }
 
+// SVG donut showing spent (activity total) against the planned budget
+// (budget_daily x travelers x days). Degrades to just the total when no budget.
+function renderBudgetRing(spent, budget, sym, homeLine) {
+  const R = 52;
+  const C = 2 * Math.PI * R;
+  const pct = budget > 0 ? Math.min(spent / budget, 1) : 0;
+  const dash = C * pct;
+  const over = budget > 0 && spent > budget;
+  const ringColor = over ? 'var(--error)' : 'var(--terracotta)';
+  return `
+    <div class="td-budget-ring">
+      <svg class="td-budget-ring-svg" viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
+        <circle cx="60" cy="60" r="${R}" fill="none" stroke="var(--surface-inset)" stroke-width="10"></circle>
+        <circle cx="60" cy="60" r="${R}" fill="none" stroke="${ringColor}" stroke-width="10"
+          stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${C.toFixed(1)}"
+          transform="rotate(-90 60 60)"></circle>
+      </svg>
+      <div class="td-budget-ring-center">
+        <span class="td-budget-ring-spent">${formatCost(spent, sym)}</span>
+        ${budget > 0 ? `<span class="td-budget-ring-of">of ${formatCost(budget, sym)}</span>` : ''}
+        ${homeLine ? `<span class="td-budget-ring-home">${homeLine}</span>` : ''}
+      </div>
+    </div>`;
+}
+
+// Per-day burn-rate mini bar chart, bars colored by the 7-day sequence.
+function renderBurnChart(dayRows, sym) {
+  const max = Math.max(1, ...dayRows.map(r => r.cost));
+  const avg = dayRows.length ? dayRows.reduce((s, r) => s + r.cost, 0) / dayRows.length : 0;
+  const dayVars = ['--day-1', '--day-2', '--day-3', '--day-4', '--day-5', '--day-6', '--day-7'];
+  return `
+    <div class="td-burn">
+      <div class="td-burn-head">
+        <span class="td-burn-title">Daily burn rate</span>
+        <span class="td-burn-avg">${formatCost(Math.round(avg), sym)}/day avg</span>
+      </div>
+      <div class="td-burn-bars">
+        ${dayRows.map((r, i) => {
+          const h = Math.round((r.cost / max) * 100);
+          const color = `var(${dayVars[i % 7]})`;
+          return `<div class="td-burn-bar-wrap" title="Day ${r.dayNumber}: ${formatCost(r.cost, sym)}">
+            <div class="td-burn-bar" style="height:${Math.max(h, 3)}%; background:${color}"></div>
+            <span class="td-burn-bar-label">${r.dayNumber}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
 function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities) {
   const ws = trip.wizard_state;
   const wsDest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
@@ -1335,7 +1386,18 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
   }
   const sortedCats = Object.entries(categories).sort((a, b) => b[1] - a[1]);
 
+  // Planned budget target for the ring: daily budget x travelers x days.
+  const travelers = trip.travelers || trip.wizard_state?.travelers || 1;
+  const plannedBudget = (trip.budget_daily || 0) * travelers * (dayCount || days.length || 0);
+  const ringHomeLine = showConversion ? `≈ ${homeSym}${formatNumber(homeTotal)} ${homeCode}` : '';
+
   return `
+    ${totalCost > 0 ? `
+      <div class="td-budget-hero">
+        ${renderBudgetRing(totalCost, plannedBudget, sym, ringHomeLine)}
+        ${dayRows.length > 0 ? renderBurnChart(dayRows, sym) : ''}
+      </div>
+    ` : ''}
     ${totalCost > 0 ? `
       <div class="td-total">
         <div class="td-total-label">Estimated Trip Total</div>
@@ -1634,7 +1696,8 @@ function renderDayPicker(app, trip, jumpToToday = false) {
       ${!heroImage ? `<header class="td-header"><span class="td-emoji">${heroFlag || trip.emoji || mdIcon(MD.place, 28)}</span><h1 class="td-title">${esc(shortTitle)}</h1></header>` : ''}
 
       <div class="td-tab-panel td-tab-panel--active" data-panel="plan">
-        <div class="td-body">
+        <div class="td-square-itinerary square-only" id="td-square-itinerary"></div>
+        <div class="td-body scroll-only">
           ${renderSidebar(trip, days, sym, totalCost)}
           <div class="td-main">
             <div class="td-day-grid" data-tz="${esc(trip.timezone || trip.wizard_state?.destination?.timezone || '')}">
@@ -1954,11 +2017,30 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   const photoObserver = loadActivityPhotos(app);
   scrollSpyCleanup = setupDayScrollSpy(app);
 
+  // Square mode: render the no-scroll, one-stop-per-card itinerary into its
+  // host. Built lazily so the scroll view stays the default on normal screens.
+  let squareItinCleanup = null;
+  let squareSpendingDeck = null;
+  if (isSquareMode()) {
+    const host = app.querySelector('#td-square-itinerary');
+    squareItinCleanup = renderSquareItinerary(host, trip, days, sym, { formatCost, catIcon, formatDuration });
+
+    // Spending panel: page through its sections instead of scrolling.
+    import('../lib/card-deck.js').then(({ wrapChildrenIntoDeck }) => {
+      const spendingGrid = app.querySelector('[data-panel="spending"] .td-spending-grid');
+      if (spendingGrid && !spendingGrid.querySelector('.card-deck')) {
+        squareSpendingDeck = wrapChildrenIntoDeck(spendingGrid, { deckClass: 'td-spending-deck', label: 'Spending' });
+      }
+    });
+  }
+
   // Tear down window-level listeners/observers when navigating away from the
   // trip view (the in-render cleanup only fires on re-render of this same view).
   onRouteLeave(() => {
     if (scrollSpyCleanup) { scrollSpyCleanup(); scrollSpyCleanup = null; }
     if (photoObserver) photoObserver.disconnect();
+    if (squareItinCleanup) { squareItinCleanup(); squareItinCleanup = null; }
+    if (squareSpendingDeck) { squareSpendingDeck.destroy(); squareSpendingDeck = null; }
   });
 
   if (jumpToToday && trip.start_date) {
@@ -2275,11 +2357,44 @@ function loadTownPhotos(host) {
   cards.forEach(c => observer.observe(c));
 }
 
+// Map a raw activity category to a friendly "vibe" word for town tags.
+const VIBE_BY_CATEGORY = {
+  food: 'Food', restaurant: 'Food', cafe: 'Cafes', coffee: 'Cafes', bar: 'Nightlife',
+  nightlife: 'Nightlife', culture: 'Culture', museum: 'Culture', gallery: 'Art',
+  art: 'Art', shopping: 'Shopping', market: 'Markets', nature: 'Nature', park: 'Nature',
+  beach: 'Beaches', sights: 'Sights', landmark: 'Sights', temple: 'Temples',
+  spa: 'Wellness', wellness: 'Wellness',
+};
+
+// Derive up to 3 vibe tags per town by tallying the categories of activities that
+// fall within its cells. Pure render-time computation, no backend data needed.
+function computeTownVibes(trip) {
+  const townCells = collectTownCells(trip.extras);
+  const byTown = new Map(); // town name -> Map(vibe -> count)
+  for (const d of trip.itinerary_days || []) {
+    for (const a of d.activities || []) {
+      const town = localityForActivity(a, townCells);
+      if (!town) continue;
+      const vibe = VIBE_BY_CATEGORY[(a.category || '').toLowerCase()];
+      if (!vibe) continue;
+      if (!byTown.has(town)) byTown.set(town, new Map());
+      const m = byTown.get(town);
+      m.set(vibe, (m.get(vibe) || 0) + 1);
+    }
+  }
+  const out = new Map();
+  for (const [town, m] of byTown) {
+    out.set(town, [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]));
+  }
+  return out;
+}
+
 async function loadTownsTab(container, trip) {
   if (_townsLoaded) return;
   _townsLoaded = true;
   const host = container.querySelector('#td-towns');
   if (!host) return;
+  const townVibes = computeTownVibes(trip);
 
   // Fast path: towns were pre-computed at generation time (extras.towns).
   // Server records dayNumber only — resolve dayIndex against the loaded days.
@@ -2343,6 +2458,7 @@ async function loadTownsTab(container, trip) {
                 <div class="td-town-front-content">
                   <span class="td-town-icon">${mdIcon(MD.place, 18)}</span>
                   <span class="td-town-name">${esc(t.name)}</span>
+                  ${(townVibes.get(t.name) || []).length ? `<span class="td-town-vibes">${(townVibes.get(t.name) || []).map(v => `<span class="td-town-vibe">${esc(v)}</span>`).join('')}</span>` : ''}
                   ${t.venues.length ? `<span class="td-town-venues">${esc(t.venues.slice(0, 2).join(' · '))}</span>` : ''}
                   <span class="td-town-count">${t.activityCount} ${t.activityCount === 1 ? 'stop' : 'stops'}</span>
                 </div>
@@ -2405,6 +2521,12 @@ async function loadTownsTab(container, trip) {
       }));
     });
   });
+
+  // Square mode: page through town cards one at a time instead of scrolling.
+  if (isSquareMode()) {
+    const { wrapChildrenIntoDeck } = await import('../lib/card-deck.js');
+    wrapChildrenIntoDeck(host, { slideSelector: '.td-town-card', deckClass: 'td-towns-deck', label: 'Neighbourhoods' });
+  }
 }
 
 function bindDelete(container) {

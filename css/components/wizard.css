@@ -2274,3 +2274,33 @@
   60% { transform: scale(1.015); }
   100% { transform: scale(1); }
 }
+
+/* ---- Phase 5: live style-preview card ---------------------------------- */
+.wizard-style-preview { margin-top: var(--sp-6); }
+.wizard-preview-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+.wizard-preview-thumb {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--r-md);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--surface-inset);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+.wizard-preview-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wizard-preview-dest { font: var(--text-small); font-weight: 600; color: var(--ink); }
+.wizard-preview-lean { font: var(--text-caption); color: var(--ink-secondary); text-transform: capitalize; }

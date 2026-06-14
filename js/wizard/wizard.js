@@ -1467,12 +1467,22 @@ function renderStep5(el) {
         </button>
       `).join('')}
     </div>
+
+    <div class="wizard-style-preview" id="wizard-style-preview">
+      ${renderStylePreview()}
+    </div>
   `;
+
+  const refreshPreview = () => {
+    const slot = el.querySelector('#wizard-style-preview');
+    if (slot) slot.innerHTML = renderStylePreview();
+  };
 
   el.querySelectorAll('[data-slider]').forEach(slider => {
     slider.addEventListener('input', () => {
       state.style = { ...state.style, [slider.dataset.slider]: parseInt(slider.value) };
       state = updateWizardField(state, 'style', state.style);
+      refreshPreview();
     });
   });
 
@@ -1488,8 +1498,38 @@ function renderStep5(el) {
       state = updateWizardField(state, 'style', state.style);
       chip.classList.toggle('chip--active', activities.includes(interest));
       updateNextButton();
+      refreshPreview();
     });
   });
+}
+
+// Live preview card for the style step: reflects the destination, trip length,
+// and the current "lean" (chosen interests + pace) as the user adjusts them.
+function renderStylePreview() {
+  const dest = state.multiCity ? state.destinations?.[0] : state.destination;
+  const destName = state.multiCity && state.destinations?.length > 1
+    ? `${state.destinations.length} cities`
+    : (dest?.name || 'Your trip');
+  const dayCount = state.dates?.start && state.dates?.end
+    ? Math.round((new Date(state.dates.end) - new Date(state.dates.start)) / 86400000) + 1
+    : 0;
+  const paceWord = ['chilled', 'easy', 'balanced', 'active', 'packed'][(state.style.pace || 3) - 1] || 'balanced';
+  const picks = state.style.activities.slice(0, 3).map(a => a.toLowerCase());
+  const lean = picks.length
+    ? `leaning ${picks.join(' + ')}`
+    : 'pick a few interests to shape it';
+  const thumb = dest?.image || dest?.heroImage || '';
+  return `
+    <div class="wizard-preview-card">
+      <div class="wizard-preview-thumb" ${thumb ? `style="background-image:url('${escapeHtml(thumb)}')"` : ''}>
+        ${!thumb ? '🧭' : ''}
+      </div>
+      <div class="wizard-preview-body">
+        <span class="wizard-preview-dest">${escapeHtml(destName)}${dayCount ? ` · ${dayCount} days` : ''}</span>
+        <span class="wizard-preview-lean">A ${paceWord} trip, ${escapeHtml(lean)}</span>
+      </div>
+    </div>
+  `;
 }
 
 function renderStep6(el) {

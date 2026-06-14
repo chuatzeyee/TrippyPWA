@@ -804,11 +804,58 @@
   position: relative;
 }
 
+/* ---- Phase 3: budget ring + burn-rate chart ---------------------------- */
+.td-budget-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface-solid);
+}
+.td-budget-ring { position: relative; flex: 0 0 auto; width: 132px; height: 132px; }
+.td-budget-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2px;
+}
+.td-budget-ring-spent { font-family: var(--font-mono); font-weight: 700; font-size: 1.2rem; color: var(--ink); }
+.td-budget-ring-of { font: var(--text-caption); color: var(--ink-secondary); }
+.td-budget-ring-home { font: var(--text-caption); color: var(--ink-ghost); margin-top: 2px; }
+
+.td-burn { flex: 1 1 200px; min-width: 0; }
+.td-burn-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.td-burn-title { font: var(--text-small); font-weight: 600; color: var(--ink); }
+.td-burn-avg { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-secondary); }
+.td-burn-bars { display: flex; align-items: flex-end; gap: 5px; height: 90px; }
+.td-burn-bar-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 4px;
+}
+.td-burn-bar { width: 100%; max-width: 22px; border-radius: var(--r-sm) var(--r-sm) 0 0; }
+.td-burn-bar-label { font-size: 0.6rem; color: var(--ink-ghost); font-family: var(--font-mono); }
+
 .td-getting-there-line::before {
   content: '';
-  width: 2px;
+  width: 0;
   height: 100%;
-  background: var(--border-strong);
+  /* Dotted connector reads as "travel between stops" more clearly than a solid
+   * rail; rendered as a dotted left border so the dots scale with the gap. */
+  border-left: 2px dotted var(--border-strong);
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -3227,6 +3274,27 @@
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Atmosphere-first vibe tags on the town card front. */
+.td-town-vibes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 3px 0;
+}
+.td-town-vibe {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  color: var(--terracotta);
+  background: var(--terracotta-light);
+}
+.td-town-card:has(.td-town-photo--loaded) .td-town-vibe {
+  color: #F3EFE7;
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .td-town-count {
