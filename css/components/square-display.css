@@ -1,0 +1,130 @@
+/* ===== Square & short-display adaptations =====
+ *
+ * Devices like the Unihertz Titan 2 have a ~1:1 (square) screen, giving a very
+ * SHORT viewport (~416 CSS px tall). The app is portrait-first: the landing
+ * hero and the wizard force `min-height: 100dvh` and use large display fonts,
+ * so on a square screen the sign-in CTA and "how it works" fall far below the
+ * fold and the wizard titles dominate. None of the existing breakpoints key off
+ * height, so this file adds height-aware rules.
+ *
+ * Two triggers, OR'd:
+ *   - square-ish aspect (≤ 1.12:1, ≥ 0.72:1) — the Titan 2's defining trait
+ *   - genuinely short (≤ 600px tall) — also covers phones in landscape
+ *
+ * The goal is not just "fits" but "looks intentional": a compact, balanced hero
+ * the user can take in at a glance, with the CTA always visible.
+ */
+
+@media (min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1),
+       (max-height: 600px) {
+
+  /* ----- Landing hero: stop forcing full height, shrink the display type ---- */
+  .landing-hero {
+    min-height: 0;
+    justify-content: flex-start;
+    padding: var(--sp-4) var(--sp-5) var(--sp-6);
+    gap: 0;
+  }
+
+  .dashboard-empty {
+    /* Let the page scroll naturally instead of pinning a full-screen panel. */
+    min-height: auto;
+  }
+
+  .landing-coords { font-size: 0.6rem; margin-bottom: var(--sp-2); }
+
+  .landing-logo { margin-bottom: var(--sp-3); }
+  .landing-logo-plane { width: 24px; height: 24px; }
+  .landing-logo-flaps .flap-cell { font-size: 1.25rem; }
+
+  .landing-headline {
+    font-size: 1.85rem;
+    line-height: 1.06;
+    margin-bottom: var(--sp-3);
+  }
+  .landing-hl-city { min-height: 1.1em; margin: 0.1em 0 0.06em; }
+
+  .landing-tagline {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    max-width: 400px;
+    margin-bottom: var(--sp-4);
+  }
+
+  .landing-cta { margin-bottom: var(--sp-4); }
+  .landing-cta .btn {
+    height: 44px;
+    font-size: 0.9rem;
+    padding: 0 var(--sp-6);
+  }
+
+  .landing-proof {
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-3);
+    font-size: 0.72rem;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  /* A visible nudge that there's more below the fold — the desktop variant is
+     reused here, sitting just under the proof row. */
+  .landing-scroll-hint {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: var(--sp-5) auto 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--ink-ghost);
+    animation: scrollBounce 2.5s ease-in-out infinite;
+  }
+  .landing-scroll-hint-label {
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ----- "How it works" / features: tighten the long vertical sections ----- */
+  .landing-features { gap: var(--sp-3); }
+  .landing-feature { padding: var(--sp-4); }
+  .landing-steps { padding: var(--sp-8) var(--sp-4); }
+  .landing-section-title { font-size: 1.5rem; margin-bottom: var(--sp-6); }
+
+  /* ----- Popular-destinations: smaller circles so more fit per row ----- */
+  /* The grid is a wrapping flexbox; shrink the items rather than set columns. */
+  .dest-circle-grid { gap: var(--sp-4) var(--sp-4); }
+  .dest-circle { width: 76px; }
+  .dest-circle-img { width: 64px; height: 64px; }
+
+  /* ----- Wizard: shrink the oversized step titles, tighten the body ----- */
+  .wizard-body { padding: var(--sp-4) var(--sp-5) var(--sp-3); }
+  .wizard-step-title { font-size: 1.5rem; margin-bottom: var(--sp-1); }
+  .wizard-step-subtitle { font-size: 0.8rem; margin-bottom: var(--sp-5); }
+  .wizard-section-label { margin-top: var(--sp-4); }
+
+  /* The destination coverflow is 320px tall — far too big on a short screen. */
+  .coverflow-card { flex: 0 0 200px; height: 232px; }
+  .dest-banner { height: 180px; }
+
+  /* Generation splash icon is huge; trim it. */
+  .wizard-gen-icon { font-size: 2.5rem !important; }
+
+  /* ----- Trip detail: compress the hero so days are reachable sooner ----- */
+  .td-hero { height: 200px; }
+  .td-hero-title { font-size: 1.6rem; }
+
+  /* ----- Footer: it already collapses to a stack ≤640px; keep it tidy ----- */
+  .site-footer { padding: var(--sp-6) var(--sp-5); }
+}
+
+/* The split-flap headline's per-letter cells are sized in em, so they scale
+ * with .flap-cell font-size above. But the squarest screens (≤ 0.98:1) are
+ * also narrow enough that "adventure" can clip — let the headline breathe by
+ * allowing it to wrap its words rather than overflow. */
+@media (min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 0.98/1) {
+  .landing-headline { word-break: break-word; }
+  .landing-logo-flaps { flex-wrap: wrap; justify-content: center; }
+}
