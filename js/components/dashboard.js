@@ -5,6 +5,38 @@ import { DESTINATIONS } from '../wizard/destinations.js';
 import { formatNumber, formatWeekdayDate, formatCityList } from '../lib/locale.js';
 import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
+import { isSquareMode, onSquareModeChange } from '../lib/square-mode.js';
+import { buildDeckHtml, mountCardDeck } from '../lib/card-deck.js';
+
+// Human label for each trip stage. Maps the internal status to friendly copy
+// (the dashboard mockup uses "Live" for an in-progress trip).
+const STAGE_LABEL = {
+  planning: 'Planning',
+  upcoming: 'Upcoming',
+  active: 'Live',
+  past: 'Past',
+  generating: 'Planning',
+  failed: 'Failed',
+};
+
+// Whole days from today until the trip starts (null if no date or already begun).
+function daysUntil(trip) {
+  if (!trip.dates?.start) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(trip.dates.start + 'T00:00:00');
+  const diff = Math.round((start - today) / 86400000);
+  return diff > 0 ? diff : null;
+}
+
+// Short countdown string for the badge ("11 days", "Tomorrow", "Today").
+function countdownLabel(trip, status) {
+  if (status === 'active') return 'Today';
+  const d = daysUntil(trip);
+  if (d === null) return '';
+  if (d === 1) return 'Tomorrow';
+  return `${d} days`;
+}
 
 function hasLocalSession() {
   try {
@@ -75,9 +107,10 @@ function renderTripCard(trip, index) {
       <div class="trip-card-hero" style="${heroStyle}">
         <span class="trip-card-emoji">${trip.emoji || '🌍'}</span>
         ${isGenerating ? '<div class="trip-card-gen-shimmer"></div>' : ''}
-        <span class="trip-card-status" role="img" aria-label="Status: ${status}">
-          <span class="status-dot status-dot--${status}"></span>
+        <span class="trip-card-stage trip-card-stage--${status}">
+          <span class="status-dot status-dot--${status}"></span>${STAGE_LABEL[status] || 'Planning'}
         </span>
+        ${!isGenerating && !isFailed && countdownLabel(trip, status) ? `<span class="trip-card-countdown">${countdownLabel(trip, status)}</span>` : ''}
       </div>
       <div class="trip-card-body">
         <h3 class="trip-card-title">${escapeHtml(trip.title)}</h3>
@@ -110,6 +143,83 @@ function renderTripCard(trip, index) {
   `;
 }
 
+// Pick the trip to feature in the hero: the soonest upcoming or currently-active
+// trip. Returns its index in `trips`, or -1 if none qualifies (then no hero).
+function pickFeaturedIndex(trips) {
+  let best = -1;
+  let bestScore = Infinity;
+  trips.forEach((t, i) => {
+    if (t.status === 'generating' || t.status === 'failed') return;
+    const st = getTripStatus(t);
+    if (st === 'active') { if (-1 < bestScore) { best = i; bestScore = -1; } return; }
+    if (st === 'upcoming') {
+      const d = daysUntil(t);
+      if (d !== null && d < bestScore) { best = i; bestScore = d; }
+    }
+  });
+  return best;
+}
+
+// Large featured trip card for the top of the dashboard.
+function renderFeaturedHero(trip) {
+  const status = trip.status === 'generating' ? 'generating'
+    : trip.status === 'failed' ? 'failed' : getTripStatus(trip);
+  const heroStyle = trip.coverImage
+    ? `background-image: url('${escapeHtml(cardCoverImage(trip.coverImage))}')`
+    : 'background: linear-gradient(135deg, var(--terracotta-light), var(--teal-light))';
+  const countdown = countdownLabel(trip, status);
+  const budget = trip.budget?.total
+    ? `${escapeHtml(trip.budget.currencySymbol || '$')}${formatNumber(trip.budget.total)}`
+    : '';
+  return `
+    <article class="trip-hero animate-in" data-trip-id="${escapeHtml(trip.id)}" style="${heroStyle}">
+      <div class="trip-hero-scrim"></div>
+      <div class="trip-hero-top">
+        <span class="trip-card-stage trip-card-stage--${status}">
+          <span class="status-dot status-dot--${status}"></span>${STAGE_LABEL[status] || 'Planning'}
+        </span>
+        ${countdown ? `<span class="trip-hero-countdown">${countdown}</span>` : ''}
+      </div>
+      <div class="trip-hero-body">
+        <span class="trip-hero-label">Next trip</span>
+        <h2 class="trip-hero-title">${escapeHtml(trip.title)}</h2>
+        <div class="trip-hero-meta">
+          <span>${formatDates(trip)}</span>
+          ${budget ? `<span class="trip-hero-budget">${budget}</span>` : ''}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+// Renders the trips area: a featured hero + bento grid for normal screens
+// (.scroll-only), and a one-trip-per-card deck for square screens (.square-only).
+// Both are emitted; CSS shows whichever matches the mode.
+function renderTripsSection(trips) {
+  if (trips.length === 0) return '';
+  const featuredIdx = pickFeaturedIndex(trips);
+  const heroTrip = featuredIdx >= 0 ? trips[featuredIdx] : null;
+  const rest = trips.filter((_, i) => i !== featuredIdx);
+
+  const scroll = `
+    <div class="scroll-only">
+      ${heroTrip ? renderFeaturedHero(heroTrip) : ''}
+      <div class="trip-grid trip-grid--bento">
+        ${rest.map((t, i) => renderTripCard(t, i)).join('')}
+      </div>
+    </div>
+  `;
+
+  // Square deck: hero trip first (rendered as a normal card), then the rest.
+  const ordered = heroTrip ? [heroTrip, ...rest] : trips;
+  const deck = `<div class="square-only">${buildDeckHtml(
+    ordered.map(t => renderTripCard(t, 0)),
+    { deckClass: 'trip-deck', label: 'Your trips' }
+  )}</div>`;
+
+  return scroll + deck;
+}
+
 function renderAuthDashboard(trips) {
   const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto', 'Taipei'];
   const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
@@ -121,11 +231,7 @@ function renderAuthDashboard(trips) {
           <h1 class="dashboard-greeting">Where to next?</h1>
           <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">+ Plan a Trip</button>
         </div>
-        ${trips.length > 0 ? `
-          <div class="trip-grid">
-            ${trips.map((t, i) => renderTripCard(t, i)).join('')}
-          </div>
-        ` : `
+        ${trips.length > 0 ? renderTripsSection(trips) : `
           <div class="dashboard-no-trips">
             <div class="dashboard-no-trips-icon">✈️</div>
             <h2 class="dashboard-no-trips-title">Your next adventure starts here</h2>
@@ -401,9 +507,7 @@ export async function renderDashboard() {
           + Plan a Trip
         </button>
       </div>
-      <div class="trip-grid">
-        ${trips.map((t, i) => renderTripCard(t, i)).join('')}
-      </div>
+      ${renderTripsSection(trips)}
     `;
   }
 
@@ -538,6 +642,10 @@ export async function renderDashboard() {
   }
 
   startElapsedTicker(app, trips);
+
+  // Mount the square-mode trip deck (if present) so it pages between trips.
+  const tripDeck = app.querySelector('.trip-deck[data-deck]');
+  if (tripDeck) mountCardDeck(tripDeck, { label: 'Your trips' });
 
   const deferWork = (fn) => (typeof requestIdleCallback === 'function') ? requestIdleCallback(fn) : setTimeout(fn, 1);
 

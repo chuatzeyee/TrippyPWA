@@ -128,3 +128,335 @@
   .landing-headline { word-break: break-word; }
   .landing-logo-flaps { flex-wrap: wrap; justify-content: center; }
 }
+
+/* ============================================================================
+ * Square card-paging mode
+ *
+ * Activated by js/lib/square-mode.js setting <html data-square-mode="on">
+ * (auto on square/short viewports, or via the nav toggle). Screen renderers
+ * emit two layouts: a normal scrolling one, and a `.card-deck` paged one shown
+ * only here. The deck shows one full-viewport-height card at a time and pages
+ * horizontally; the page itself does not scroll.
+ * ========================================================================== */
+
+/* ---- Nav toggle button (always visible, like the theme toggle) ---------- */
+.nav-square-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: var(--transition-interactive);
+}
+.nav-square-toggle:hover { background: var(--surface); color: var(--ink); }
+.nav-square-toggle .nav-square-dot {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+/* Forced ON -> terracotta dot + accented icon. Forced OFF -> hollow/dim. */
+.nav-square-toggle[data-square-state="on"] { color: var(--terracotta); }
+.nav-square-toggle[data-square-state="on"] .nav-square-dot { background: var(--terracotta); }
+.nav-square-toggle[data-square-state="off"] { color: var(--ink-ghost); opacity: 0.65; }
+
+/* ---- Show/hide the two layouts based on mode --------------------------- */
+.square-only { display: none; }
+[data-square-mode="on"] .square-only { display: block; }
+[data-square-mode="on"] .scroll-only { display: none; }
+
+/* ---- The deck itself ---------------------------------------------------- */
+[data-square-mode="on"] .card-deck {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  /* Fill the viewport below the nav, leaving room for the dots/buttons row. */
+  height: calc(100dvh - var(--nav-h));
+  display: flex;
+  flex-direction: column;
+}
+[data-square-mode="on"] .card-deck-track {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  transition: transform var(--duration-slow) var(--ease-out);
+  will-change: transform;
+}
+[data-square-mode="on"] .card-deck-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--sp-4) var(--sp-5);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Paging chrome: prev/next + dots, pinned under the deck. */
+[data-square-mode="on"] .card-deck-nav {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-5) var(--sp-3);
+}
+[data-square-mode="on"] .card-deck-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-solid);
+  color: var(--ink);
+  cursor: pointer;
+  transition: var(--transition-interactive);
+}
+[data-square-mode="on"] .card-deck-btn:hover:not(:disabled) {
+  border-color: var(--terracotta);
+  color: var(--terracotta);
+}
+[data-square-mode="on"] .card-deck-btn:disabled { opacity: 0.3; cursor: default; }
+[data-square-mode="on"] .card-deck-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+[data-square-mode="on"] .card-deck-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: var(--transition-interactive);
+}
+[data-square-mode="on"] .card-deck-dot--active {
+  background: var(--terracotta);
+  transform: scale(1.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-square-mode="on"] .card-deck-track { transition: none; }
+}
+
+/* ---- Phase 1: dashboard trip deck -------------------------------------- */
+/* In square mode the dashboard greeting + new-trip button stay at the top,
+ * the destination picks / landing extras hide, and trips become a deck. */
+[data-square-mode="on"] .dashboard-dest-picks,
+[data-square-mode="on"] .dashboard .landing-features,
+[data-square-mode="on"] .dashboard .landing-steps,
+[data-square-mode="on"] .dashboard .landing-explore { display: none; }
+
+/* The dashboard fills the viewport: a fixed header row, then the deck flexes
+ * into whatever height remains so the paging dots always sit on-screen. */
+[data-square-mode="on"] .dashboard.container {
+  height: calc(100dvh - var(--nav-h));
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--sp-3);
+  padding-bottom: 0;
+  overflow: hidden;
+}
+[data-square-mode="on"] .dashboard-merged,
+[data-square-mode="on"] .dashboard-merged-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+[data-square-mode="on"] .dashboard .square-only { flex: 1 1 auto; min-height: 0; display: flex; }
+[data-square-mode="on"] .dashboard .square-only .card-deck { height: 100%; }
+
+[data-square-mode="on"] .dashboard-header {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+[data-square-mode="on"] .dashboard-greeting { font-size: 1.35rem; }
+[data-square-mode="on"] .dashboard-new-trip-btn { height: 40px; font-size: 0.85rem; padding: 0 var(--sp-4); }
+
+[data-square-mode="on"] .trip-deck .trip-card {
+  max-width: none;
+  width: 100%;
+  margin: auto 0;
+}
+[data-square-mode="on"] .trip-deck .trip-card-hero { height: 150px; }
+
+/* ---- Phase 2: square itinerary (day rail + one-stop-per-card deck) ------ */
+/* Make the trip Plan panel fill the viewport so the deck owns the space. */
+[data-square-mode="on"] .td-tab-panel--active[data-panel="plan"] {
+  height: calc(100dvh - var(--nav-h));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+[data-square-mode="on"] .td-square-itinerary { flex: 1 1 auto; min-height: 0; display: flex; }
+[data-square-mode="on"] .sq-itin {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+/* Hide the trip hero image + topbar chrome we don't need on a square screen,
+ * but keep the tab bar so the user can still reach Spending/Prep/Towns. */
+[data-square-mode="on"] .td-hero { height: 116px; }
+[data-square-mode="on"] .td-plan-footer { display: none; }
+
+.sq-itin-rail {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: var(--sp-2) var(--sp-4);
+  scroll-snap-type: x proximity;
+}
+.sq-itin-rail::-webkit-scrollbar { display: none; }
+.sq-itin-day {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-solid);
+  color: var(--ink-secondary);
+  font: var(--text-small);
+  font-weight: 600;
+  cursor: pointer;
+  scroll-snap-align: center;
+  transition: var(--transition-interactive);
+}
+.sq-itin-day-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--day-color, var(--terracotta));
+}
+.sq-itin-day--active {
+  color: #fff;
+  background: var(--day-color, var(--terracotta));
+  border-color: var(--day-color, var(--terracotta));
+}
+.sq-itin-day--active .sq-itin-day-dot { background: rgba(255,255,255,0.9); }
+
+.sq-itin-deck-host { flex: 1 1 auto; min-height: 0; display: flex; }
+.sq-itin-deck-host .card-deck { flex: 1 1 auto; height: auto; }
+.sq-itin-empty { padding: var(--sp-8); text-align: center; color: var(--ink-secondary); }
+
+/* The activity card itself. */
+.sq-itin-card { display: flex; flex-direction: column; gap: var(--sp-2); margin: auto 0; }
+.sq-itin-transit {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-left: var(--sp-2);
+  color: var(--ink-secondary);
+  font: var(--text-caption);
+}
+.sq-itin-transit-line {
+  flex: 0 0 24px;
+  height: 0;
+  border-top: 2px dotted var(--border-strong);
+}
+.sq-itin-card-inner {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--day-color, var(--terracotta));
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.sq-itin-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.sq-itin-time { font-family: var(--font-mono); font-weight: 600; color: var(--day-color, var(--terracotta)); font-size: 1.1rem; }
+.sq-itin-step { font: var(--text-caption); color: var(--ink-ghost); }
+.sq-itin-icon { color: var(--ink-secondary); }
+.sq-itin-icon svg { width: 22px; height: 22px; }
+.sq-itin-title { font: var(--text-h3); color: var(--ink); line-height: 1.25; }
+.sq-itin-venue { font: var(--text-small); color: var(--ink-secondary); }
+.sq-itin-map { color: var(--teal); text-decoration: none; margin-left: 4px; }
+.sq-itin-desc {
+  font: var(--text-small);
+  color: var(--ink-secondary);
+  line-height: 1.5;
+  /* Cap the body so a long description can't push the meta off a short card. */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sq-itin-tip {
+  font: var(--text-caption);
+  color: var(--amber);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sq-itin-meta { display: flex; gap: var(--sp-3); margin-top: auto; }
+.sq-itin-cost { font-family: var(--font-mono); font-weight: 600; color: var(--ink); }
+.sq-itin-dur { font: var(--text-caption); color: var(--ink-secondary); }
+
+/* ---- Phase 3: square spending deck ------------------------------------- */
+[data-square-mode="on"] .td-tab-panel[data-panel="spending"] {
+  height: calc(100dvh - var(--nav-h));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+[data-square-mode="on"] .td-spending-grid { flex: 1 1 auto; min-height: 0; display: flex; }
+[data-square-mode="on"] .td-spending-deck { flex: 1 1 auto; height: auto; }
+/* Stack the budget hero vertically on a narrow square card. */
+[data-square-mode="on"] .td-budget-hero { flex-direction: column; margin-bottom: 0; align-items: stretch; }
+[data-square-mode="on"] .td-budget-ring { align-self: center; }
+[data-square-mode="on"] .td-burn-bars { height: 70px; }
+
+/* ---- Phase 4: square towns deck ---------------------------------------- */
+[data-square-mode="on"] .td-tab-panel[data-panel="towns"] {
+  height: calc(100dvh - var(--nav-h));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+[data-square-mode="on"] .td-towns { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+[data-square-mode="on"] .td-towns-intro { flex: 0 0 auto; padding: var(--sp-2) var(--sp-4); margin: 0; font-size: 0.8rem; }
+[data-square-mode="on"] .td-towns-deck { flex: 1 1 auto; height: auto; }
+/* One town card fills the slide; flip interaction still works. */
+[data-square-mode="on"] .td-towns-deck .td-town-card {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: 320px;
+  margin: auto 0;
+}

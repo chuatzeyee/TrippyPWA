@@ -2,6 +2,9 @@ import { addRoute, start, navigate, onNotFound } from './router.js';
 import { renderNav } from './components/nav.js';
 import { renderDashboard } from './components/dashboard.js';
 import { logger } from './lib/logger.js';
+import { initSquareMode } from './lib/square-mode.js';
+
+initSquareMode();
 
 window.addEventListener('error', (event) => {
   logger.error('system', 'Unhandled error', {

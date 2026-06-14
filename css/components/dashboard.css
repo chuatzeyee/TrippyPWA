@@ -73,9 +73,125 @@
   display: inline-block;
 }
 
+.status-dot--planning { background: var(--steel); }
 .status-dot--upcoming { background: var(--success); }
 .status-dot--active { background: var(--amber); animation: pulse 2s infinite; }
 .status-dot--past { background: var(--ink-ghost); }
+
+/* ---- Labeled stage badge (replaces the bare status dot on cards) -------- */
+.trip-card-stage {
+  position: absolute;
+  top: var(--sp-3);
+  left: var(--sp-3);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.trip-card-stage .status-dot { width: 7px; height: 7px; }
+
+/* Countdown chip, opposite corner from the stage badge. */
+.trip-card-countdown {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font: var(--text-caption);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #fff;
+  background: var(--terracotta);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Bento grid: featured hero spans full width, rest in a tighter grid -- */
+.trip-grid--bento {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* ---- Featured hero trip ------------------------------------------------- */
+.trip-hero {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  margin-bottom: var(--sp-6);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border);
+  transition: transform var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+.trip-hero:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.trip-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 35%, rgba(0,0,0,0.78) 100%);
+}
+.trip-hero-top {
+  position: absolute;
+  top: var(--sp-4);
+  left: var(--sp-4);
+  right: var(--sp-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1;
+}
+.trip-hero-top .trip-card-stage { position: static; }
+.trip-hero-countdown {
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  font: var(--text-small);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #fff;
+  background: var(--terracotta);
+  box-shadow: var(--shadow-sm);
+}
+.trip-hero-body {
+  position: absolute;
+  left: var(--sp-5);
+  right: var(--sp-5);
+  bottom: var(--sp-5);
+  z-index: 1;
+  color: #fff;
+}
+.trip-hero-label {
+  font: var(--text-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
+}
+.trip-hero-title {
+  font: var(--text-hero);
+  color: #fff;
+  margin: var(--sp-1) 0 var(--sp-2);
+  line-height: 1.1;
+}
+.trip-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  font: var(--text-small);
+  opacity: 0.92;
+}
+.trip-hero-budget { font-family: var(--font-mono); font-weight: 600; }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
