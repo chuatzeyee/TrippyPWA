@@ -67,19 +67,26 @@ async function pool<T>(items: T[], n: number, fn: (item: T) => Promise<void>) {
   await Promise.all(workers);
 }
 
-async function resolveTrip(tripId: string): Promise<{ activities: number; towns: number }> {
+// Cap activities resolved per invocation. A 100+ venue trip done in one call
+// exceeds the function's compute budget (HTTP 546 WORKER_RESOURCE_LIMIT), so we
+// process a batch and report how many remain; the caller re-invokes until 0.
+const ACT_BATCH = 25;
+
+async function resolveTrip(tripId: string): Promise<{ activities: number; towns: number; remaining: number }> {
   // Activities that still need a photo and have a venue name.
   const { data: days } = await admin
     .from("itinerary_days")
     .select("id, activities(id, venue_name, category, latitude, longitude, photo_url)")
     .eq("trip_id", tripId);
 
-  const acts: any[] = [];
+  const pending: any[] = [];
   for (const d of (days || [])) {
     for (const a of (d.activities || [])) {
-      if (a.venue_name && !a.photo_url) acts.push(a);
+      if (a.venue_name && !a.photo_url) pending.push(a);
     }
   }
+  const acts = pending.slice(0, ACT_BATCH);
+  const remaining = Math.max(0, pending.length - acts.length);
 
   let actDone = 0;
   await pool(acts, 6, async (a) => {
@@ -97,9 +104,12 @@ async function resolveTrip(tripId: string): Promise<{ activities: number; towns:
     if (!error) actDone++;
   });
 
-  // Discover town photos live in trips.extras.towns[*].towns[*].photo.
+  // Discover town photos — only once all activities are resolved, so a batched
+  // run does its (small) town work in the final pass, not redundantly each time.
   let townDone = 0;
-  const { data: trip } = await admin.from("trips").select("extras").eq("id", tripId).single();
+  const { data: trip } = remaining === 0
+    ? await admin.from("trips").select("extras").eq("id", tripId).single()
+    : { data: null };
   const extras = trip?.extras || {};
   const groups: any[] = Array.isArray(extras.towns) ? extras.towns : [];
   if (groups.length) {
@@ -124,7 +134,7 @@ async function resolveTrip(tripId: string): Promise<{ activities: number; towns:
     }
   }
 
-  return { activities: actDone, towns: townDone };
+  return { activities: actDone, towns: townDone, remaining };
 }
 
 // True if the bearer token is a Supabase service-role JWT (role claim).

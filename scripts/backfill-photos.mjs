@@ -45,21 +45,28 @@ console.log(`Backfilling photos for ${trips.length} trip(s)`);
 
 let ok = 0, failed = 0;
 for (const { id } of trips) {
-  try {
-    // inline:true -> the function runs to completion and returns real counts,
-    // instead of backgrounding (whose time cap can cut a big trip off mid-run).
-    const res = await fetch(FN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SERVICE_KEY}` },
-      body: JSON.stringify({ tripId: id, inline: true }),
-      signal: AbortSignal.timeout(300_000),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (res.ok) { ok++; console.log(`- ${id}: ${body.activities ?? '?'} acts / ${body.towns ?? '?'} towns`); }
-    else { failed++; console.log(`- ${id}: HTTP ${res.status} ${JSON.stringify(body).slice(0, 120)}`); }
-  } catch (e) {
-    failed++; console.log(`- ${id}: ${e.message}`);
+  // The function resolves a capped batch per call (compute budget) and reports
+  // `remaining`; loop until the trip is fully done. inline:true waits for each.
+  let totalActs = 0, totalTowns = 0, tripFailed = false;
+  for (let pass = 0; pass < 12; pass++) {
+    try {
+      const res = await fetch(FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SERVICE_KEY}` },
+        body: JSON.stringify({ tripId: id, inline: true }),
+        signal: AbortSignal.timeout(180_000),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) { tripFailed = true; console.log(`- ${id}: HTTP ${res.status} ${JSON.stringify(body).slice(0, 100)}`); break; }
+      totalActs += body.activities || 0;
+      totalTowns += body.towns || 0;
+      if (!body.remaining) break; // trip fully resolved
+    } catch (e) {
+      tripFailed = true; console.log(`- ${id}: ${e.message}`); break;
+    }
   }
+  if (tripFailed) { failed++; }
+  else { ok++; console.log(`- ${id}: ${totalActs} acts / ${totalTowns} towns`); }
 }
 
 console.log(`Done: ${ok} ok, ${failed} failed`);
