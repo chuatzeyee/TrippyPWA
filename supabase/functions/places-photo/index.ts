@@ -21,23 +21,31 @@ const PEXELS_SEARCH = "https://api.pexels.com/v1/search";
 const MAPILLARY_IMAGES = "https://graph.mapillary.com/images";
 const UA = "TrippyPWA/1.0 (https://chuatzeyee.github.io; contact via repo)";
 
+// One Mapillary query over a box of `radiusM` half-width around a point.
+async function mapillaryQuery(lat: number, lng: number, radiusM: number, field: string): Promise<string | null> {
+  // Box must stay < 0.01deg per the API; 400m half-width (~0.0036deg) is safe.
+  const dLat = radiusM / 111320;
+  const dLon = radiusM / (111320 * Math.cos(lat * Math.PI / 180));
+  const bbox = `${lng - dLon},${lat - dLat},${lng + dLon},${lat + dLat}`;
+  const url = `${MAPILLARY_IMAGES}?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=${field}&bbox=${bbox}&limit=1`;
+  const res = await fetchWithTimeout(url, { headers: { accept: "application/json" } }, 8000);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.data?.[0]?.[field] || null;
+}
+
 // Real street-level photo near a coordinate (free, CC-BY-SA). Returns a ready
 // HTTPS thumbnail URL or null. Coverage is dense in cities, sparse rurally, so a
 // null result is expected and must fall through. Token optional: skipped if unset.
+// Tries a tight box first (most relevant to the venue), then widens once — a 60m
+// box often misses the nearest captured image that sits ~100-250m away.
 async function mapillaryPhoto(lat: number, lng: number, maxWidth: number): Promise<string | null> {
   if (!MAPILLARY_TOKEN) return null;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const field = maxWidth >= 1024 ? "thumb_1024_url" : "thumb_256_url";
   try {
-    // ~60m box around the point (must stay < 0.01deg per the API).
-    const dLat = 60 / 111320;
-    const dLon = 60 / (111320 * Math.cos(lat * Math.PI / 180));
-    const bbox = `${lng - dLon},${lat - dLat},${lng + dLon},${lat + dLat}`;
-    const field = maxWidth >= 1024 ? "thumb_1024_url" : "thumb_256_url";
-    const url = `${MAPILLARY_IMAGES}?access_token=${encodeURIComponent(MAPILLARY_TOKEN)}&fields=${field}&bbox=${bbox}&limit=1`;
-    const res = await fetchWithTimeout(url, { headers: { accept: "application/json" } }, 8000);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.data?.[0]?.[field] || null;
+    return (await mapillaryQuery(lat, lng, 150, field))
+        || (await mapillaryQuery(lat, lng, 400, field));
   } catch {
     return null;
   }
