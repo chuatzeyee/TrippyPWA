@@ -49,6 +49,23 @@ function stockPhrase(category) {
 
 // --- Sources ---------------------------------------------------------------
 
+// Pick a small, valid MediaWiki thumbnail. The REST summary's thumbnail.source
+// is a sized ".../NNNpx-Name" URL (~330px) that loads directly and is small
+// (~30-80KB) — ideal for our cards and the Storage quota. We only DOWNSCALE
+// when the native thumb is larger than maxWidth; we never UPSCALE (Wikipedia's
+// thumbnailer 400s on widths above the source's allowed range), and we never
+// use originalimage (often multi-MB).
+function sizedWikiThumb(d, maxWidth) {
+  const thumb = d.thumbnail?.source;
+  if (!thumb) return null;
+  const m = thumb.match(/\/(\d+)px-[^/]+$/);
+  if (m) {
+    const native = Number(m[1]);
+    if (native > maxWidth) return thumb.replace(/\/\d+px-/, `/${maxWidth}px-`);
+  }
+  return thumb;
+}
+
 async function wikipediaExact(title, maxWidth) {
   try {
     const res = await timeoutFetch(
@@ -57,9 +74,7 @@ async function wikipediaExact(title, maxWidth) {
     if (!res.ok) return null;
     const d = await res.json();
     if (d.type === "disambiguation") return null;
-    const src = d.originalimage?.source || d.thumbnail?.source;
-    if (!src) return null;
-    return src.replace(/\/\d+px-/, `/${Math.max(maxWidth, 320)}px-`);
+    return sizedWikiThumb(d, maxWidth);
   } catch { return null; }
 }
 
