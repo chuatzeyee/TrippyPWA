@@ -55,6 +55,37 @@ async function storeImage(srcUrl: string, path: string): Promise<string | null> 
   }
 }
 
+// Geocode a venue name to lat/lng via Photon (keyless), biased toward the trip's
+// destination so "Wild Honey" resolves to the right city. Returns null when the
+// name can't be placed — that venue then has no street-view fallback.
+async function geocodeVenue(name: string, bias?: { lat: number; lng: number }): Promise<{ lat: number; lng: number } | null> {
+  if (!name) return null;
+  try {
+    let url = `https://photon.komoot.io/api/?q=${encodeURIComponent(name)}&limit=1`;
+    if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
+      url += `&lat=${bias.lat}&lon=${bias.lng}&zoom=12&location_bias_scale=0.5`;
+    }
+    const res = await fetch(url, {
+      headers: { accept: "application/json", "User-Agent": "TrippyPWA/2.0 (photo geocode)" },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return null;
+    const f = (await res.json())?.features?.[0];
+    const c = f?.geometry?.coordinates;
+    if (!Array.isArray(c) || c.length < 2) return null;
+    const lng = Number(c[0]), lat = Number(c[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    // Sanity: if we have a bias, reject a match more than ~150km away (wrong city).
+    if (bias && Number.isFinite(bias.lat)) {
+      const dKm = Math.hypot((lat - bias.lat) * 111, (lng - bias.lng) * 111 * Math.cos(lat * Math.PI / 180));
+      if (dKm > 150) return null;
+    }
+    return { lat, lng };
+  } catch {
+    return null;
+  }
+}
+
 // Bounded-concurrency map (the resolver hits public APIs; keep it gentle).
 async function pool<T>(items: T[], n: number, fn: (item: T) => Promise<void>) {
   let i = 0;
@@ -88,11 +119,28 @@ async function resolveTrip(tripId: string): Promise<{ activities: number; towns:
   const acts = pending.slice(0, ACT_BATCH);
   const remaining = Math.max(0, pending.length - acts.length);
 
+  // Destination coordinate to bias geocoding of coordinate-less venues.
+  const { data: tripRow } = await admin.from("trips").select("wizard_state").eq("id", tripId).single();
+  const ws: any = tripRow?.wizard_state || {};
+  const dest = ws.multiCity ? ws.destinations?.[0] : ws.destination;
+  const bias = dest && Number.isFinite(Number(dest.lat)) && Number.isFinite(Number(dest.lng))
+    ? { lat: Number(dest.lat), lng: Number(dest.lng) } : undefined;
+
   let actDone = 0;
   await pool(acts, 6, async (a) => {
+    let lat = Number(a.latitude), lng = Number(a.longitude);
+    // No coordinates from the generator -> geocode the venue name so it can still
+    // get a street-level photo. Persist the coords (also benefits maps/towns).
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) {
+      const geo = await geocodeVenue(a.venue_name, bias);
+      if (geo) {
+        lat = geo.lat; lng = geo.lng;
+        await admin.from("activities").update({ latitude: lat, longitude: lng }).eq("id", a.id);
+      }
+    }
     const got = await resolvePhoto({
       query: a.venue_name, kind: "venue", category: a.category,
-      lat: Number(a.latitude), lng: Number(a.longitude), maxWidth: 600,
+      lat, lng, maxWidth: 600,
     }, { mapillaryToken: MAPILLARY_TOKEN });
     if (!got?.url) return;
     const stored = await storeImage(got.url, `${tripId}/act-${a.id}`);
