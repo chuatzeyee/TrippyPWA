@@ -11,7 +11,11 @@
 // instead of long scrolling pages.
 
 const STORAGE_KEY = 'trippy-square-mode'; // 'auto' | 'on' | 'off'
-const QUERY = '(min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1), (max-height: 600px)';
+// Auto-detect genuinely square PHONE screens (e.g. Unihertz Titan 2 ~416x416).
+// Require a near-1:1 aspect ratio AND a phone-sized width, so short desktop
+// windows and landscape phones (wide, or short-but-wide) do NOT get card mode.
+// A user can still force it on/off via the nav toggle.
+const QUERY = '(min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1) and (max-width: 600px)';
 
 const listeners = new Set();
 let mql = null;
