@@ -554,7 +554,7 @@ function renderActivity(activity, currencySymbol, isFirst) {
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
-        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
+        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
       </div>
     </div>
   `;
@@ -2071,7 +2071,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   }
 }
 
-function attachActivityImg(el, url, venue) {
+function attachActivityImg(el, url, venue, source) {
   const img = document.createElement('img');
   img.src = url;
   img.alt = venue;
@@ -2080,6 +2080,14 @@ function attachActivityImg(el, url, venue) {
   img.onload = () => el.classList.add('td-activity-photo--loaded');
   img.onerror = () => el.classList.add('td-activity-photo--failed');
   el.appendChild(img);
+  // A Mapillary street-level fallback is the LOCATION, not the venue — label it
+  // honestly so it never reads as a photo of the place itself.
+  if (source === 'street') {
+    const badge = document.createElement('span');
+    badge.className = 'td-activity-photo-badge';
+    badge.textContent = 'Street view';
+    el.appendChild(badge);
+  }
 }
 
 function loadActivityPhotos(container) {
@@ -2091,7 +2099,7 @@ function loadActivityPhotos(container) {
   // Legacy trips (no stored URL) fall back to a lazy live resolve as before.
   const legacy = [];
   for (const el of photoEls) {
-    if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue);
+    if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue, el.dataset.photoSource);
     else legacy.push(el);
   }
   if (!legacy.length) return null;
