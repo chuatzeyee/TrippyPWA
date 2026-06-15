@@ -554,7 +554,7 @@ function renderActivity(activity, currencySymbol, isFirst) {
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
-        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
+        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
       </div>
     </div>
   `;
@@ -2071,9 +2071,30 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   }
 }
 
+function attachActivityImg(el, url, venue) {
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = venue;
+  img.className = 'td-activity-photo-img';
+  img.loading = 'lazy';
+  img.onload = () => el.classList.add('td-activity-photo--loaded');
+  img.onerror = () => el.classList.add('td-activity-photo--failed');
+  el.appendChild(img);
+}
+
 function loadActivityPhotos(container) {
   const photoEls = container.querySelectorAll('.td-activity-photo[data-venue]');
   if (!photoEls.length) return null;
+
+  // Trips generated/backfilled after the photo-store rollout carry a persisted
+  // Storage URL (data-photo) — use it directly, no network resolve on open.
+  // Legacy trips (no stored URL) fall back to a lazy live resolve as before.
+  const legacy = [];
+  for (const el of photoEls) {
+    if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue);
+    else legacy.push(el);
+  }
+  if (!legacy.length) return null;
 
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -2087,19 +2108,12 @@ function loadActivityPhotos(container) {
 
       fetchPlacePhotoByQuery(venue, location, 600, { kind: 'venue', category: el.dataset.category }).then(url => {
         if (!url) { el.classList.add('td-activity-photo--failed'); return; }
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = venue;
-        img.className = 'td-activity-photo-img';
-        img.loading = 'lazy';
-        img.onload = () => el.classList.add('td-activity-photo--loaded');
-        img.onerror = () => el.classList.add('td-activity-photo--failed');
-        el.appendChild(img);
+        attachActivityImg(el, url, venue);
       });
     }
   }, { rootMargin: '200px' });
 
-  photoEls.forEach(el => observer.observe(el));
+  legacy.forEach(el => observer.observe(el));
   return observer;
 }
 
@@ -2337,31 +2351,41 @@ function dayRanges(days) {
   }));
 }
 
-// Lazy-load a representative photo for each town card via the places-photo
-// edge function (Google Places, cached in generate.js's photoCache). Missing
-// photos keep the gradient front — never an empty box.
+// Apply a resolved photo URL to a town card's photo layer.
+function applyTownPhoto(card, url) {
+  if (!url || !card.isConnected) return;
+  const photo = card.querySelector('.td-town-photo');
+  if (!photo) return;
+  const img = new Image();
+  img.onload = () => {
+    photo.style.backgroundImage = `url('${url.replace(/'/g, "%27")}')`;
+    photo.classList.add('td-town-photo--loaded');
+  };
+  img.src = url;
+}
+
+// Show each town card's photo. Trips with stored Storage URLs (data-town-stored)
+// use them directly; legacy trips lazily resolve via the places-photo function.
 function loadTownPhotos(host) {
   const cards = host.querySelectorAll('.td-town-card[data-town-photo]');
   if (!cards.length) return;
+  const legacy = [];
+  for (const card of cards) {
+    if (card.dataset.townStored) applyTownPhoto(card, card.dataset.townStored);
+    else legacy.push(card);
+  }
+  if (!legacy.length) return;
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
       observer.unobserve(entry.target);
       const card = entry.target;
       fetchPlacePhotoByQuery(card.dataset.townPhoto, null, 400, { kind: 'area' }).then(url => {
-        if (!url || !card.isConnected) return;
-        const photo = card.querySelector('.td-town-photo');
-        if (!photo) return;
-        const img = new Image();
-        img.onload = () => {
-          photo.style.backgroundImage = `url('${url.replace(/'/g, "%27")}')`;
-          photo.classList.add('td-town-photo--loaded');
-        };
-        img.src = url;
+        applyTownPhoto(card, url);
       });
     }
   }, { rootMargin: '150px' });
-  cards.forEach(c => observer.observe(c));
+  legacy.forEach(c => observer.observe(c));
 }
 
 // Map a raw activity category to a friendly "vibe" word for town tags.
@@ -2492,7 +2516,7 @@ async function loadTownsTab(container, trip) {
           return `
           <div class="td-town-card" role="button" tabindex="0" aria-expanded="false"
                aria-label="${esc(t.name)} — explore this neighbourhood" style="--ti: ${cardIdx++}"
-               data-town-photo="${esc(`${t.name} ${g.city || ''}`.trim())}">
+               data-town-photo="${esc(`${t.name} ${g.city || ''}`.trim())}" ${t.photo ? `data-town-stored="${esc(t.photo)}"` : ''}>
             <div class="td-town-flip">
               <div class="td-town-face td-town-front">
                 <div class="td-town-photo"></div>

@@ -115,6 +115,15 @@ async function runChunk(jobId: string) {
     const actCount = dbDays.reduce((s: number, d: any) => s + (d.activities?.length || 0), 0);
     logDb("info", `Itinerary generated (${dbDays.length}/${totalDays} days, ${actCount} activities, ${chunks.length} chunks, ${(extras.towns as any[])?.length || 0} town groups)`,
       { jobId, tripId: job.trip_id, userId: job.user_id });
+
+    // Resolve + store venue/town photos once, in a separate invocation, so this
+    // chunk's wall-clock is unaffected. Best-effort: a photo outage never blocks
+    // the (already-saved) itinerary; the client falls back to a live fetch.
+    fetch(`${SUPABASE_URL}/functions/v1/resolve-trip-photos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SERVICE_KEY}` },
+      body: JSON.stringify({ tripId: job.trip_id }),
+    }).catch(() => {});
     return;
   }
 
