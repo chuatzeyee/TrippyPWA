@@ -46,22 +46,20 @@ console.log(`Backfilling photos for ${trips.length} trip(s)`);
 let ok = 0, failed = 0;
 for (const { id } of trips) {
   try {
+    // inline:true -> the function runs to completion and returns real counts,
+    // instead of backgrounding (whose time cap can cut a big trip off mid-run).
     const res = await fetch(FN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SERVICE_KEY}` },
-      body: JSON.stringify({ tripId: id }),
+      body: JSON.stringify({ tripId: id, inline: true }),
+      signal: AbortSignal.timeout(300_000),
     });
     const body = await res.json().catch(() => ({}));
-    // The function backgrounds the work (202 accepted) on the live runtime, so a
-    // 2xx means "started". We pace between trips to avoid overlapping heavy runs.
-    if (res.ok) { ok++; console.log(`- ${id}: ${res.status} ${body.activities != null ? `${body.activities} acts / ${body.towns} towns` : 'accepted'}`); }
+    if (res.ok) { ok++; console.log(`- ${id}: ${body.activities ?? '?'} acts / ${body.towns ?? '?'} towns`); }
     else { failed++; console.log(`- ${id}: HTTP ${res.status} ${JSON.stringify(body).slice(0, 120)}`); }
   } catch (e) {
     failed++; console.log(`- ${id}: ${e.message}`);
   }
-  // Pace between trips so background photo runs don't pile up (each trip hits
-  // public photo APIs for every venue). ~8s gives a small trip time to finish.
-  await new Promise(r => setTimeout(r, 8000));
 }
 
-console.log(`Done: ${ok} triggered, ${failed} failed`);
+console.log(`Done: ${ok} ok, ${failed} failed`);

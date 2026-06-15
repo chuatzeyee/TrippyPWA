@@ -82,7 +82,7 @@ async function resolveTrip(tripId: string): Promise<{ activities: number; towns:
   }
 
   let actDone = 0;
-  await pool(acts, 4, async (a) => {
+  await pool(acts, 6, async (a) => {
     const got = await resolvePhoto({
       query: a.venue_name, kind: "venue", category: a.category,
       lat: Number(a.latitude), lng: Number(a.longitude), maxWidth: 600,
@@ -147,13 +147,16 @@ serve(async (req: Request) => {
   if (!isServiceRole(req.headers.get("Authorization") || "")) return json({ error: "Unauthorized" }, 401);
 
   try {
-    const { tripId } = await req.json();
+    const { tripId, inline } = await req.json();
     if (!tripId) return json({ error: "tripId required" }, 400);
 
-    // Background so the caller (generation worker) is not held open.
+    // The generation worker fire-and-forgets (background, returns 202 fast). The
+    // backfill driver passes inline:true and WAITS for completion — background
+    // tasks are time-capped and a large trip's many slow lookups can be cut off
+    // mid-run, leaving photos unresolved.
     // @ts-ignore EdgeRuntime is provided by the Supabase Deno runtime.
     const bg = (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil);
-    if (bg) {
+    if (bg && !inline) {
       // @ts-ignore
       EdgeRuntime.waitUntil(resolveTrip(tripId));
       return json({ accepted: true, tripId }, 202);
