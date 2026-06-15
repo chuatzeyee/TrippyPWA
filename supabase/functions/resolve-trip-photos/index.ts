@@ -14,7 +14,7 @@ import { resolvePhoto } from "../_shared/photo-resolver.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const PEXELS_API_KEY = Deno.env.get("PEXELS_API_KEY") || "";
+const MAPILLARY_TOKEN = Deno.env.get("MAPILLARY_TOKEN") || "";
 const BUCKET = "trip-photos";
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -86,11 +86,14 @@ async function resolveTrip(tripId: string): Promise<{ activities: number; towns:
     const got = await resolvePhoto({
       query: a.venue_name, kind: "venue", category: a.category,
       lat: Number(a.latitude), lng: Number(a.longitude), maxWidth: 600,
-    }, { pexelsKey: PEXELS_API_KEY });
+    }, { mapillaryToken: MAPILLARY_TOKEN });
     if (!got?.url) return;
     const stored = await storeImage(got.url, `${tripId}/act-${a.id}`);
     if (!stored) return;
-    const { error } = await admin.from("activities").update({ photo_url: stored }).eq("id", a.id);
+    // photo_source lets the UI label a street-level fallback ("Street view")
+    // so it never masquerades as a photo of the venue itself.
+    const { error } = await admin.from("activities")
+      .update({ photo_url: stored, photo_source: got.source }).eq("id", a.id);
     if (!error) actDone++;
   });
 
@@ -110,11 +113,11 @@ async function resolveTrip(tripId: string): Promise<{ activities: number; towns:
         query: `${town.name} ${city}`.trim(), kind: "area",
         lat: cell ? Number(cell[0]) : undefined, lng: cell ? Number(cell[1]) : undefined,
         maxWidth: 600,
-      }, { pexelsKey: PEXELS_API_KEY });
+      }, { mapillaryToken: MAPILLARY_TOKEN });
       if (!got?.url) return;
       const safe = String(town.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
       const stored = await storeImage(got.url, `${tripId}/town-${safe}`);
-      if (stored) { town.photo = stored; townDone++; }
+      if (stored) { town.photo = stored; town.photoSource = got.source; townDone++; }
     });
     if (townDone > 0) {
       await admin.from("trips").update({ extras }).eq("id", tripId);

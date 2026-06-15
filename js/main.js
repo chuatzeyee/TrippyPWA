@@ -118,23 +118,26 @@ onNotFound((path) => {
   `;
 });
 
-start();
-
 if (import.meta.env.DEV) {
   import('./data/trip-repository.js').then(m => {
     window.__clearAllUserData = m.clearAllUserData;
   });
 }
 
+// Restore the persisted session BEFORE resolving the first route. Routes like
+// /trip/:id fetch data that needs auth; if start() ran first (on a hard refresh)
+// the fetch fired before getSession() restored the token and failed with
+// "Something went wrong". A signed-out visitor's getSession() resolves fast
+// (null), so the landing still appears promptly.
 import('./auth/auth.js').then(async ({ initAuth, isAuthenticated, onAuthChange }) => {
-  await initAuth();
+  try { await initAuth(); } catch (e) { logger.error('auth', 'initAuth failed', { error: e?.message }); }
   renderNav();
+  start();
+
   const hash = location.hash.slice(1) || '/';
   const hasOAuthTokens = /(?:^|[&?])(?:access_token|refresh_token)=/.test(hash);
   if (hasOAuthTokens) {
     history.replaceState(null, '', location.pathname + location.search + '#/');
-    renderDashboard();
-  } else if (hash === '/' && isAuthenticated()) {
     renderDashboard();
   }
 
@@ -160,6 +163,11 @@ import('./auth/auth.js').then(async ({ initAuth, isAuthenticated, onAuthChange }
       }
     }
   });
+}).catch((e) => {
+  // Never leave the app un-started if the auth chunk fails to load.
+  logger.error('auth', 'Auth bootstrap failed; starting routes anyway', { error: e?.message });
+  renderNav();
+  start();
 });
 
 // Skip SW registration inside a native wrapper: service workers don't register

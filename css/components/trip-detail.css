@@ -2130,6 +2130,26 @@
   opacity: 1;
 }
 
+/* "Street view" badge — marks a Mapillary street-level fallback as the location,
+   not a photo of the venue itself. */
+.td-activity-photo-badge {
+  position: absolute;
+  bottom: var(--sp-2);
+  left: var(--sp-2);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font: var(--text-caption);
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
 /* ===== Trip Detail Footer ===== */
 .td-footer {
   position: sticky;

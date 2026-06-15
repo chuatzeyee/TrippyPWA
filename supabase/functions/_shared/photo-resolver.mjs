@@ -1,68 +1,53 @@
-// Multi-source photo resolver, shared by the resolve-trip-photos edge function
+// Venue/area photo resolver, shared by the resolve-trip-photos edge function
 // (Deno) and the backfill script (Node). Pure `fetch`, no runtime-specific APIs.
 //
-// Given a place (name + optional coords + category + kind), it tries several
-// FREE sources, scores the candidates, and returns the best image URL — or null
-// to fall back to a gradient. Sources, by trust:
+// HARD RULE: never a stock photo, never a confident WRONG match. We only return
+// an image that is either (a) the actual venue/area, corroborated by a trusted
+// id or by name+coordinate agreement, or (b) an HONEST street-level view of the
+// exact location (clearly labelled as such in the UI). Otherwise null → gradient.
 //
-//   VENUE (a specific place — café, museum, restaurant):
-//     1. Wikipedia exact-title summary  — real photo of a NAMED landmark
-//     2. Pexels category stock           — clean on-theme photo (needs key)
+//   VENUE (a specific place):
+//     1. OSM Overpass — node/way matching the NAME within ~150m, read its
+//        image / wikimedia_commons / wikidata tag (highest precision: name+geo)
+//     2. Wikidata — name search, GEOFENCED to within 300m via P625, then P18
+//     3. Wikipedia exact-title summary (named landmarks)
+//     4. Mapillary — real street-level photo AT the coords (source:"street",
+//        the UI labels it "Street view" so it never masquerades as the venue)
+//     5. null → gradient
 //   AREA (city / neighbourhood):
 //     1. Wikipedia exact-title -> search
-//     2. Wikimedia Commons geosearch     — CC image near the area's coords
-//     3. Pexels stock
-//
-// Why so conservative for venues: coordinate/name-fuzzy sources (Wikimedia
-// geosearch, Openverse, Mapillary) return whatever is tagged NEAR or LIKE the
-// query, which yields confident WRONG matches — a passing highway for a
-// Starbucks, a synthesiser photo for a café. For an unnamed venue an honest
-// "coffee shop" stock photo is better than a wrong real one. Areas are safe for
-// geosearch because a nearby photo genuinely represents the neighbourhood.
+//     2. Wikimedia Commons geosearch (a nearby photo represents a neighbourhood)
+//     3. Mapillary streetscape -> null
 
 const UA = "TrippyPWA/2.0 (photo resolver; github.com/chuatzeyee/TrippyPWA)";
-const TIMEOUT_MS = 8000;
+const TIMEOUT_MS = 9000;
+const COMMONS_FILEPATH = "https://commons.wikimedia.org/wiki/Special:FilePath/";
 
 function timeoutFetch(url, opts = {}) {
   return fetch(url, { ...opts, signal: AbortSignal.timeout(TIMEOUT_MS) });
 }
 
-// Concrete, photogenic stock phrase per category so Pexels returns a clear photo
-// of that KIND of place rather than an ambiguous literal noun.
-const STOCK_PHRASE = {
-  cafe: "cozy coffee shop interior", coffee: "cappuccino coffee shop",
-  restaurant: "restaurant dining table", food: "gourmet food plate",
-  dining: "restaurant dining table", dessert: "dessert plate",
-  bar: "cocktail bar interior", nightlife: "nightclub bar lights",
-  museum: "museum gallery interior", gallery: "art gallery interior",
-  art: "art gallery", culture: "cultural landmark",
-  shopping: "shopping street boutique", market: "street market stalls",
-  nature: "scenic nature landscape", park: "city park greenery",
-  beach: "tropical beach", sights: "famous landmark", landmark: "famous landmark",
-  temple: "ancient temple architecture", spa: "luxury spa wellness",
-  wellness: "luxury spa wellness", hotel: "boutique hotel room",
-};
-function stockPhrase(category) {
-  if (!category) return null;
-  return STOCK_PHRASE[String(category).toLowerCase()] || `${category} place`;
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371, toRad = (d) => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// --- Sources ---------------------------------------------------------------
+// commons "File:Foo.jpg" (or bare "Foo.jpg") -> a sized, stable image URL.
+function commonsFileUrl(file, width) {
+  const name = String(file).replace(/^File:/i, "").trim();
+  if (!name) return null;
+  return `${COMMONS_FILEPATH}${encodeURIComponent(name.replace(/ /g, "_"))}?width=${width}`;
+}
 
-// Pick a small, valid MediaWiki thumbnail. The REST summary's thumbnail.source
-// is a sized ".../NNNpx-Name" URL (~330px) that loads directly and is small
-// (~30-80KB) — ideal for our cards and the Storage quota. We only DOWNSCALE
-// when the native thumb is larger than maxWidth; we never UPSCALE (Wikipedia's
-// thumbnailer 400s on widths above the source's allowed range), and we never
-// use originalimage (often multi-MB).
+// --- Wikipedia (named landmarks) -------------------------------------------
+
 function sizedWikiThumb(d, maxWidth) {
   const thumb = d.thumbnail?.source;
   if (!thumb) return null;
   const m = thumb.match(/\/(\d+)px-[^/]+$/);
-  if (m) {
-    const native = Number(m[1]);
-    if (native > maxWidth) return thumb.replace(/\/\d+px-/, `/${maxWidth}px-`);
-  }
+  if (m && Number(m[1]) > maxWidth) return thumb.replace(/\/\d+px-/, `/${maxWidth}px-`);
   return thumb;
 }
 
@@ -83,89 +68,157 @@ async function wikipediaSearch(query, maxWidth) {
     const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=1&format=json`;
     const res = await timeoutFetch(url, { headers: { "User-Agent": UA, accept: "application/json" } });
     if (!res.ok) return null;
-    const d = await res.json();
-    const title = d.query?.search?.[0]?.title;
+    const title = (await res.json()).query?.search?.[0]?.title;
     return title ? wikipediaExact(title, maxWidth) : null;
   } catch { return null; }
 }
 
-// Images on Wikimedia Commons whose own coordinates fall within `radiusM` of the
-// point — genuinely near the venue, unlike a random street capture.
+// --- Wikidata image (P18), geofenced ---------------------------------------
+
+// Fetch a Wikidata item's P18 filename (if any), only when its P625 coordinate
+// is within `maxKm` of the target — guards against a same-named different thing.
+async function wikidataItemImage(id, lat, lng, maxKm, width) {
+  try {
+    const res = await timeoutFetch(
+      `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${id}&props=claims&format=json`,
+      { headers: { "User-Agent": UA, accept: "application/json" } });
+    if (!res.ok) return null;
+    const claims = (await res.json()).entities?.[id]?.claims || {};
+    const file = claims.P18?.[0]?.mainsnak?.datavalue?.value;
+    if (!file) return null;
+    const coord = claims.P625?.[0]?.mainsnak?.datavalue?.value;
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      if (!coord) return null; // require a coordinate to trust the match
+      if (haversineKm(lat, lng, coord.latitude, coord.longitude) > maxKm) return null;
+    }
+    return commonsFileUrl(file, width);
+  } catch { return null; }
+}
+
+async function wikidataByName(query, lat, lng, width) {
+  try {
+    const res = await timeoutFetch(
+      `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&limit=5`,
+      { headers: { "User-Agent": UA, accept: "application/json" } });
+    if (!res.ok) return null;
+    const cands = (await res.json()).search || [];
+    for (const c of cands.slice(0, 5)) {
+      const url = await wikidataItemImage(c.id, lat, lng, 0.3, width);
+      if (url) return url;
+    }
+    return null;
+  } catch { return null; }
+}
+
+// --- OSM Overpass (name + geo, highest precision) --------------------------
+
+async function osmVenuePhoto(name, lat, lng, width) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !name) return null;
+  // Match the first ~24 chars of the name (case-insensitive) within 160m.
+  const namePart = String(name).slice(0, 24).replace(/[\\"\[\]]/g, " ").trim();
+  if (!namePart) return null;
+  const q = `[out:json][timeout:20];nwr(around:160,${lat},${lng})["name"~"${namePart}",i];out tags center 5;`;
+  try {
+    const res = await timeoutFetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": UA },
+      body: "data=" + encodeURIComponent(q),
+    });
+    if (!res.ok) return null;
+    const els = (await res.json()).elements || [];
+    const el = els.find((e) => e.tags && (e.tags.image || e.tags.wikimedia_commons || e.tags.wikidata));
+    if (!el) return null;
+    const t = el.tags;
+    if (t.image && /^https?:\/\//.test(t.image)) return { url: t.image, source: "osm" };
+    if (t.wikimedia_commons) {
+      const url = commonsFileUrl(t.wikimedia_commons, width);
+      if (url) return { url, source: "wikimedia" };
+    }
+    if (t.wikidata) {
+      const url = await wikidataItemImage(t.wikidata, lat, lng, 0.5, width);
+      if (url) return { url, source: "wikidata" };
+    }
+    return null;
+  } catch { return null; }
+}
+
+// --- Wikimedia Commons geosearch (areas only) ------------------------------
+
 async function wikimediaGeo(lat, lng, radiusM, maxWidth) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   try {
     const url = `https://commons.wikimedia.org/w/api.php?action=query&format=json`
       + `&generator=geosearch&ggsnamespace=6&ggscoord=${lat}|${lng}&ggsradius=${radiusM}&ggslimit=5`
-      + `&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=${Math.max(maxWidth, 400)}`;
+      + `&prop=imageinfo&iiprop=url&iiurlwidth=${Math.max(maxWidth, 400)}`;
     const res = await timeoutFetch(url, { headers: { "User-Agent": UA, accept: "application/json" } });
     if (!res.ok) return null;
-    const d = await res.json();
-    const pages = d.query?.pages ? Object.values(d.query.pages) : [];
-    // Prefer real photographs: skip maps/diagrams/logos by filename hint.
-    const ranked = pages
+    const pages = (await res.json()).query?.pages ? Object.values((await res.json()).query.pages) : [];
+    const hit = pages
       .map((p) => p.imageinfo?.[0])
-      .filter((ii) => ii?.thumburl && !/\.(svg|png)$/i.test(ii.url || "")
+      .find((ii) => ii?.thumburl && !/\.(svg)$/i.test(ii.url || "")
         && !/\b(map|logo|diagram|plan|coat[_ ]of[_ ]arms|flag)\b/i.test(ii.url || ""));
-    return ranked[0]?.thumburl || null;
+    return hit?.thumburl || null;
   } catch { return null; }
 }
 
-async function pexels(query, maxWidth, apiKey) {
-  if (!apiKey) return null;
+// --- Mapillary street-level (honest location view) -------------------------
+
+async function mapillaryQuery(lat, lng, radiusM, field, token) {
+  const dLat = radiusM / 111320, dLon = radiusM / (111320 * Math.cos(lat * Math.PI / 180));
+  const bbox = `${lng - dLon},${lat - dLat},${lng + dLon},${lat + dLat}`;
+  const url = `https://graph.mapillary.com/images?access_token=${encodeURIComponent(token)}&fields=${field}&bbox=${bbox}&limit=1`;
+  const res = await timeoutFetch(url, { headers: { accept: "application/json" } });
+  if (!res.ok) return null;
+  return (await res.json()).data?.[0]?.[field] || null;
+}
+
+async function mapillaryStreet(lat, lng, maxWidth, token) {
+  if (!token || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const field = maxWidth >= 1024 ? "thumb_1024_url" : "thumb_256_url";
   try {
-    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`;
-    const res = await timeoutFetch(url, { headers: { Authorization: apiKey } });
-    if (!res.ok) return null;
-    const d = await res.json();
-    const p = d.photos?.[0];
-    if (!p) return null;
-    return maxWidth >= 600 ? (p.src?.large || p.src?.medium) : (p.src?.medium || p.src?.small);
+    return (await mapillaryQuery(lat, lng, 150, field, token)) || (await mapillaryQuery(lat, lng, 400, field, token));
   } catch { return null; }
 }
 
 /**
- * Resolve the best photo URL for a place.
- * @param {object} place
- * @param {string} place.query   - venue or area name (already includes city when useful)
- * @param {'venue'|'area'} [place.kind]
- * @param {string} [place.category]
- * @param {number} [place.lat]
- * @param {number} [place.lng]
- * @param {number} [place.maxWidth=600]
- * @param {object} [opts] - { pexelsKey }
- * @returns {Promise<{ url: string, source: string } | null>}
+ * Resolve the best photo for a place.
+ * @param {object} place - { query, kind?, category?, lat?, lng?, maxWidth? }
+ * @param {object} [opts] - { mapillaryToken }
+ * @returns {Promise<{ url, source } | null>}  source: osm|wikidata|wikimedia|wikipedia|street
  */
 export async function resolvePhoto(place, opts = {}) {
-  const { query, kind = "venue", category, lat, lng, maxWidth = 600 } = place;
+  const { query, kind = "venue", lat, lng, maxWidth = 600 } = place;
   if (!query) return null;
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0);
-  const pexelsKey = opts.pexelsKey || "";
-
-  let url = null;
-
-  // 1. Exact Wikipedia title (named landmarks, both kinds).
-  url = await wikipediaExact(query, maxWidth);
-  if (url) return { url, source: "wikipedia" };
+  const mapillaryToken = opts.mapillaryToken || "";
 
   if (kind === "area") {
+    let url = await wikipediaExact(query, maxWidth);
+    if (url) return { url, source: "wikipedia" };
     url = await wikipediaSearch(query, maxWidth);
     if (url) return { url, source: "wikipedia" };
     if (hasCoords) {
       url = await wikimediaGeo(lat, lng, 1000, maxWidth);
       if (url) return { url, source: "wikimedia" };
+      url = await mapillaryStreet(lat, lng, maxWidth, mapillaryToken);
+      if (url) return { url, source: "street" };
     }
-    url = await pexels(query, maxWidth, pexelsKey);
-    if (url) return { url, source: "pexels" };
     return null;
   }
 
-  // VENUE: after exact Wikipedia (handled above for named landmarks), go
-  // straight to clean on-theme category stock. We deliberately DON'T use
-  // coordinate/name-fuzzy sources (Wikimedia geosearch, Openverse, Mapillary)
-  // for venues: they return whatever is tagged NEAR or LIKE the query, which
-  // produces embarrassing wrong matches (a synthesiser for a café, a highway
-  // for a Starbucks). An honest "coffee shop" photo beats a confident wrong one.
-  url = await pexels(stockPhrase(category) || query, maxWidth, pexelsKey);
-  if (url) return { url, source: "pexels" };
+  // VENUE — real venue photo first (name+geo corroborated), then an honest
+  // street view of the exact location. Never stock, never a fuzzy wrong match.
+  if (hasCoords) {
+    const osm = await osmVenuePhoto(query, lat, lng, maxWidth);
+    if (osm) return osm;
+    const wd = await wikidataByName(query, lat, lng, maxWidth);
+    if (wd) return { url: wd, source: "wikidata" };
+  }
+  const wiki = await wikipediaExact(query, maxWidth);
+  if (wiki) return { url: wiki, source: "wikipedia" };
+  if (hasCoords) {
+    const street = await mapillaryStreet(lat, lng, maxWidth, mapillaryToken);
+    if (street) return { url: street, source: "street" };
+  }
   return null;
 }
