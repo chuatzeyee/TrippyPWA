@@ -127,7 +127,7 @@ async function resolveTrip(tripId: string): Promise<{ activities: number; towns:
     ? { lat: Number(dest.lat), lng: Number(dest.lng) } : undefined;
 
   let actDone = 0;
-  await pool(acts, 6, async (a) => {
+  await pool(acts, 8, async (a) => {
     let lat = Number(a.latitude), lng = Number(a.longitude);
     // No coordinates from the generator -> geocode the venue name so it can still
     // get a street-level photo. Persist the coords (also benefits maps/towns).

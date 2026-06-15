@@ -20,7 +20,7 @@
 //     3. Mapillary streetscape -> null
 
 const UA = "TrippyPWA/2.0 (photo resolver; github.com/chuatzeyee/TrippyPWA)";
-const TIMEOUT_MS = 9000;
+const TIMEOUT_MS = 6000;
 const COMMONS_FILEPATH = "https://commons.wikimedia.org/wiki/Special:FilePath/";
 
 function timeoutFetch(url, opts = {}) {
@@ -98,15 +98,15 @@ async function wikidataItemImage(id, lat, lng, maxKm, width) {
 async function wikidataByName(query, lat, lng, width) {
   try {
     const res = await timeoutFetch(
-      `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&limit=5`,
+      `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&limit=3`,
       { headers: { "User-Agent": UA, accept: "application/json" } });
     if (!res.ok) return null;
-    const cands = (await res.json()).search || [];
-    for (const c of cands.slice(0, 5)) {
-      const url = await wikidataItemImage(c.id, lat, lng, 0.3, width);
-      if (url) return url;
-    }
-    return null;
+    const cands = ((await res.json()).search || []).slice(0, 3);
+    // Check candidates in parallel (each is geofenced, so only a true match
+    // returns) and take the first non-null — bounds this at one round-trip.
+    const results = await Promise.all(
+      cands.map((c) => wikidataItemImage(c.id, lat, lng, 0.3, width).catch(() => null)));
+    return results.find(Boolean) || null;
   } catch { return null; }
 }
 
@@ -209,19 +209,20 @@ export async function resolvePhoto(place, opts = {}) {
     return null;
   }
 
-  // VENUE — real venue photo first (name+geo corroborated), then an honest
-  // street view of the exact location. Never stock, never a fuzzy wrong match.
-  if (hasCoords) {
-    const osm = await osmVenuePhoto(query, lat, lng, maxWidth);
-    if (osm) return osm;
-    const wd = await wikidataByName(query, lat, lng, maxWidth);
-    if (wd) return { url: wd, source: "wikidata" };
-  }
-  const wiki = await wikipediaExact(query, maxWidth);
+  // VENUE — race all sources in parallel, then pick the best by trust priority
+  // (real venue photo > honest street view). 88% of venues end at the street
+  // fallback, so awaiting each source in series wastes ~10-15s per venue waiting
+  // on slow OSM/Wikidata lookups that miss; in parallel the whole resolve is
+  // bounded by the single slowest call. Never stock, never a fuzzy wrong match.
+  const [osm, wd, wiki, street] = await Promise.all([
+    hasCoords ? osmVenuePhoto(query, lat, lng, maxWidth).catch(() => null) : Promise.resolve(null),
+    hasCoords ? wikidataByName(query, lat, lng, maxWidth).catch(() => null) : Promise.resolve(null),
+    wikipediaExact(query, maxWidth).catch(() => null),
+    hasCoords ? mapillaryStreet(lat, lng, maxWidth, mapillaryToken).catch(() => null) : Promise.resolve(null),
+  ]);
+  if (osm) return osm; // { url, source } already
+  if (wd) return { url: wd, source: "wikidata" };
   if (wiki) return { url: wiki, source: "wikipedia" };
-  if (hasCoords) {
-    const street = await mapillaryStreet(lat, lng, maxWidth, mapillaryToken);
-    if (street) return { url: street, source: "street" };
-  }
+  if (street) return { url: street, source: "street" };
   return null;
 }
