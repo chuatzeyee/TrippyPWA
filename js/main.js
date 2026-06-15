@@ -80,6 +80,16 @@ addRoute('/wizard/:step', async (params) => {
 });
 
 addRoute('/trip/:id', async (params) => {
+  // Auth is restored before routes resolve (see boot block), so this reflects
+  // the real session. A signed-out visitor gets the sign-in gate rather than a
+  // failed fetch + "Something went wrong".
+  const { isAuthenticated } = await import('./auth/auth.js');
+  if (!isAuthenticated()) {
+    const { showAuthGate } = await import('./auth/auth-ui.js');
+    showAuthGate();
+    navigate('/');
+    return;
+  }
   const { renderTripDetail } = await import('./components/trip-detail.js');
   renderTripDetail(params.id);
 });
