@@ -89,6 +89,28 @@ async function wikiSearchPhoto(query: string, maxWidth: number): Promise<string 
   }
 }
 
+// Map a raw activity category to a concrete, photogenic stock-search phrase, so
+// Pexels returns a clear photo of that KIND of place. A bare category word like
+// "cafe" can return an ambiguous street scene; "cozy coffee shop interior" does
+// not. Unknown categories fall through to the caller's default.
+const STOCK_PHRASE: Record<string, string> = {
+  cafe: "cozy coffee shop interior", coffee: "cappuccino coffee shop",
+  restaurant: "restaurant dining table", food: "gourmet food plate",
+  dining: "restaurant dining table", dessert: "dessert plate",
+  bar: "cocktail bar interior", nightlife: "nightclub bar lights",
+  museum: "museum gallery interior", gallery: "art gallery interior",
+  art: "art gallery", culture: "cultural landmark",
+  shopping: "shopping street boutique", market: "street market stalls",
+  nature: "scenic nature landscape", park: "city park greenery",
+  beach: "tropical beach", sights: "famous landmark", landmark: "famous landmark",
+  temple: "ancient temple architecture", spa: "luxury spa wellness",
+  wellness: "luxury spa wellness", hotel: "boutique hotel room",
+};
+function stockPhraseForCategory(category?: string): string | null {
+  if (!category) return null;
+  return STOCK_PHRASE[String(category).toLowerCase()] || `${category} place`;
+}
+
 // Pexels stock fallback — representative (not venue-exact) photo. Optional.
 async function pexelsPhoto(query: string, maxWidth: number): Promise<string | null> {
   if (!PEXELS_API_KEY) return null;
@@ -126,11 +148,14 @@ serve(async (req: Request) => {
     let source = "";
 
     // Resolution order:
-    //  - VENUE: exact Wikipedia title (named landmarks) -> Mapillary street photo
-    //    at the venue's coordinates (real, venue-exact) -> category stock.
-    //    We never broad-search Wikipedia for a venue: a fuzzy café-name search
-    //    pulls unrelated articles (e.g. a radio-station list), worse than none.
-    //  - AREA: exact Wikipedia title -> Wikipedia search (reliable for places).
+    //  - VENUE: exact Wikipedia title (named landmarks like "Hosier Lane") ->
+    //    category stock ("cafe", "museum"). We do NOT use Mapillary here: it
+    //    returns whatever STREET image was captured near the coordinate, not the
+    //    venue — so a Starbucks shows a passing highway, which is worse than a
+    //    clean on-theme stock photo. We also never broad-search Wikipedia for a
+    //    venue (a fuzzy café-name search pulls unrelated articles).
+    //  - AREA: exact Wikipedia title -> Wikipedia search -> Mapillary at the
+    //    coordinate (streetscape is appropriate for a neighbourhood) -> stock.
     url = await wikiSummaryPhoto(query, maxWidth);
     if (url) source = "wikipedia";
 
@@ -139,16 +164,24 @@ serve(async (req: Request) => {
       if (url) source = "wikipedia";
     }
 
-    if (!url && kind === "venue" && location?.lat && location?.lng) {
+    if (!url && kind === "venue") {
+      // On-theme stock by category, mapped to a concrete, photogenic phrase so
+      // the result reads as that KIND of place ("cafe" -> "cozy coffee shop
+      // interior") rather than an ambiguous literal noun.
+      const stockQuery = stockPhraseForCategory(category) || query;
+      url = await pexelsPhoto(stockQuery, maxWidth);
+      if (url) source = "pexels";
+    }
+
+    if (!url && kind === "area" && location?.lat && location?.lng) {
+      // Street-level imagery is meaningful for a neighbourhood/area.
       url = await mapillaryPhoto(Number(location.lat), Number(location.lng), maxWidth);
       if (url) source = "mapillary";
     }
 
     if (!url) {
-      // Stock fallback: for a venue, search by its category ("cafe", "museum") so
-      // the photo is at least on-theme rather than a random name match.
-      const stockQuery = kind === "venue" && category ? String(category) : query;
-      url = await pexelsPhoto(stockQuery, maxWidth);
+      // Final stock fallback (areas, or venues with no category).
+      url = await pexelsPhoto(query, maxWidth);
       if (url) source = "pexels";
     }
 
