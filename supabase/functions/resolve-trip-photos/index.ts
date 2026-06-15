@@ -40,6 +40,9 @@ async function storeImage(srcUrl: string, path: string): Promise<string | null> 
     if (!contentType.startsWith("image/")) return null;
     const bytes = new Uint8Array(await res.arrayBuffer());
     if (bytes.byteLength < 1024) return null; // junk/placeholder guard
+    // Backstop against the free Storage tier: the resolver returns ~30-200KB
+    // thumbnails, so anything above 1.5MB is an un-resized original we skip.
+    if (bytes.byteLength > 1_500_000) return null;
     const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
     const fullPath = `${path}.${ext}`;
     const { error } = await admin.storage.from(BUCKET).upload(fullPath, bytes, {
