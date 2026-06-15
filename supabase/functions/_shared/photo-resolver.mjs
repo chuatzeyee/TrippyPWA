@@ -117,12 +117,15 @@ async function osmVenuePhoto(name, lat, lng, width) {
   // Match the first ~24 chars of the name (case-insensitive) within 160m.
   const namePart = String(name).slice(0, 24).replace(/[\\"\[\]]/g, " ").trim();
   if (!namePart) return null;
-  const q = `[out:json][timeout:20];nwr(around:160,${lat},${lng})["name"~"${namePart}",i];out tags center 5;`;
+  const q = `[out:json][timeout:8];nwr(around:160,${lat},${lng})["name"~"${namePart}",i];out tags center 5;`;
   try {
-    const res = await timeoutFetch("https://overpass-api.de/api/interpreter", {
+    // Overpass is the slowest, lowest-hit source; cap it tight so a slow shared
+    // instance can't dominate the per-trip wall-clock.
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": UA },
       body: "data=" + encodeURIComponent(q),
+      signal: AbortSignal.timeout(7000),
     });
     if (!res.ok) return null;
     const els = (await res.json()).elements || [];
