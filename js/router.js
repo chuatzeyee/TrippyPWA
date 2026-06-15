@@ -35,6 +35,14 @@ export function navigate(path) {
   location.hash = path;
 }
 
+// Re-run the handler for the current hash without a navigation. Used when a
+// global display mode (e.g. square card mode) changes and the active view must
+// rebuild with the other layout — its decks/observers mount at render time, so
+// a plain CSS swap is not enough.
+export function reloadCurrentRoute() {
+  resolve();
+}
+
 export function onNotFound(handler) {
   notFoundHandler = handler;
 }

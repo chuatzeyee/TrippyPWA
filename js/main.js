@@ -1,10 +1,13 @@
-import { addRoute, start, navigate, onNotFound } from './router.js';
+import { addRoute, start, navigate, onNotFound, reloadCurrentRoute } from './router.js';
 import { renderNav } from './components/nav.js';
 import { renderDashboard } from './components/dashboard.js';
 import { logger } from './lib/logger.js';
-import { initSquareMode } from './lib/square-mode.js';
+import { initSquareMode, onSquareModeChange } from './lib/square-mode.js';
 
 initSquareMode();
+// When the viewport crosses the square threshold (rotate/resize), the effective
+// mode flips — rebuild the active view so its card decks mount (or unmount).
+onSquareModeChange(() => reloadCurrentRoute());
 
 window.addEventListener('error', (event) => {
   logger.error('system', 'Unhandled error', {

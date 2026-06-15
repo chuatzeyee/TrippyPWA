@@ -179,6 +179,10 @@
   position: relative;
   overflow: hidden;
   width: 100%;
+  /* Square mode is a phone interface; when it is FORCED on a wide screen, keep
+   * the deck a centered phone-width column rather than stretching edge-to-edge. */
+  max-width: 480px;
+  margin-inline: auto;
   /* Fill the viewport below the nav, leaving room for the dots/buttons row. */
   height: calc(100dvh - var(--nav-h));
   display: flex;

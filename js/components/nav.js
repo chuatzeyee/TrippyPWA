@@ -1,4 +1,4 @@
-import { navigate } from '../router.js';
+import { navigate, reloadCurrentRoute } from '../router.js';
 import { getSquareOverride, cycleSquareOverride } from '../lib/square-mode.js';
 
 const SQUARE_LABELS = {
@@ -143,6 +143,11 @@ export function renderNav() {
     squareBtn.dataset.squareState = next;
     squareBtn.setAttribute('aria-label', SQUARE_LABELS[next]);
     squareBtn.setAttribute('title', SQUARE_LABELS[next]);
+    // The override may change the persisted value without flipping the effective
+    // mode (e.g. auto->on on a screen already auto-on), so the central
+    // onSquareModeChange subscriber won't fire. Reload here to guarantee the
+    // active view rebuilds with the right layout + deck mounting.
+    reloadCurrentRoute();
   });
 
   import('../auth/auth-ui.js').then(({ renderAuthButton }) => {
