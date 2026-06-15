@@ -2171,6 +2171,15 @@
   margin: 0 auto;
 }
 
+.td-footer-credit {
+  text-align: center;
+  margin-top: var(--sp-3);
+  font-size: 0.66rem;
+  color: var(--ink-ghost);
+}
+.td-footer-credit a { color: var(--ink-secondary); text-decoration: none; }
+.td-footer-credit a:hover { color: var(--terracotta); }
+
 .td-footer-pill {
   display: inline-flex;
   align-items: center;
@@ -2614,11 +2623,18 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--sp-4);
+    align-items: start;
   }
 
   .td-spending-grid > * {
     margin-top: 0;
     margin-bottom: 0;
+  }
+
+  /* The budget ring + burn chart is wide content: span both columns as a
+   * banner so it does not stretch to a tall, mostly-empty grid cell. */
+  .td-spending-grid > .td-budget-hero {
+    grid-column: 1 / -1;
   }
 
   .td-prep-grid {
@@ -3148,13 +3164,15 @@
 
 .td-towns-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--sp-4);
 }
 
 .td-town-card {
   position: relative;
-  height: 132px;
+  /* Taller cards give room for the atmosphere blurb + vibe tags (front) and
+   * the Eat/See venue rails (back) of the Discover redesign. */
+  height: 230px;
   cursor: pointer;
   perspective: 900px;
   outline-offset: 3px;
@@ -3255,16 +3273,37 @@
   margin-bottom: auto;
 }
 
-.td-town-name {
-  font: var(--text-small);
+.td-town-breadcrumb {
+  font-size: 0.6rem;
   font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+}
+.td-town-card:has(.td-town-photo--loaded) .td-town-breadcrumb { color: rgba(243, 239, 231, 0.7); }
+
+.td-town-name {
+  font: var(--text-h3);
+  font-family: var(--font-heading);
+  font-weight: 400;
   color: var(--ink);
-  line-height: 1.2;
+  line-height: 1.15;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.td-town-blurb {
+  font-size: 0.7rem;
+  color: var(--ink-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.td-town-card:has(.td-town-photo--loaded) .td-town-blurb { color: rgba(243, 239, 231, 0.82); }
 
 .td-town-venues {
   font-size: 0.66rem;
@@ -3311,29 +3350,63 @@
 
 .td-town-back {
   transform: rotateY(180deg);
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: stretch;
   gap: var(--sp-2);
+  padding: var(--sp-3);
+  overflow-y: auto;
+  scrollbar-width: thin;
   background: linear-gradient(150deg, rgba(212, 115, 88, 0.14) 0%, var(--surface-solid) 70%);
   border-color: rgba(212, 115, 88, 0.35);
 }
 
-.td-town-back-label {
+.td-town-back-name {
+  font: var(--text-h3);
+  font-family: var(--font-heading);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+/* Eat & Drink / See & Do venue rails on the back. */
+.td-town-rail { display: flex; flex-direction: column; gap: 4px; }
+.td-town-rail-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+}
+.td-town-rail-items { display: flex; flex-wrap: wrap; gap: 4px; }
+.td-town-venue-chip {
   font-size: 0.66rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 3px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-inset);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terracotta); }
+
+.td-town-back-label {
+  font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--ink-ghost);
+  margin-top: var(--sp-1);
 }
 
 .td-town-days {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  justify-content: center;
-  max-height: 76px;
-  overflow-y: auto;
-  padding: 0 var(--sp-1);
-  scrollbar-width: thin;
+  justify-content: flex-start;
+  padding: 0;
 }
 
 .td-town-day {

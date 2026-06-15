@@ -15,8 +15,7 @@
  * the user can take in at a glance, with the CTA always visible.
  */
 
-@media (min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1),
-       (max-height: 600px) {
+@media (min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1) and (max-width: 600px) {
 
   /* ----- Landing hero: stop forcing full height, shrink the display type ---- */
   .landing-hero {
@@ -296,15 +295,25 @@
   gap: var(--sp-3);
   margin-bottom: var(--sp-2);
 }
-[data-square-mode="on"] .dashboard-greeting { font-size: 1.35rem; }
-[data-square-mode="on"] .dashboard-new-trip-btn { height: 40px; font-size: 0.85rem; padding: 0 var(--sp-4); }
+[data-square-mode="on"] .dashboard-greeting { font-size: 1.15rem; flex: 0 0 auto; }
+[data-square-mode="on"] .dashboard-new-trip-btn { height: 38px; font-size: 0.8rem; padding: 0 var(--sp-3); white-space: nowrap; flex: 0 0 auto; }
+/* Tighten the deck slide padding on the dashboard so the trip card centers
+ * with breathing room rather than overflowing on a short square screen. */
+[data-square-mode="on"] .dashboard .square-only .card-deck-slide { padding: var(--sp-2) var(--sp-4); }
 
 [data-square-mode="on"] .trip-deck .trip-card {
   max-width: none;
   width: 100%;
   margin: auto 0;
 }
-[data-square-mode="on"] .trip-deck .trip-card-hero { height: 150px; }
+/* Cap the hero so the whole card (hero + title + dates + budget) fits within a
+ * single ~416px slide without the body being clipped below the fold. The hero
+ * scales with the slide via vh, bounded so it never dominates. */
+[data-square-mode="on"] .trip-deck .trip-card-hero {
+  height: clamp(96px, 30vh, 150px);
+}
+[data-square-mode="on"] .trip-deck .trip-card-body { padding: var(--sp-3) var(--sp-4); gap: var(--sp-1); }
+[data-square-mode="on"] .trip-deck .trip-card-title { font-size: 1.25rem; }
 
 /* ---- Phase 2: square itinerary (day rail + one-stop-per-card deck) ------ */
 /* Make the trip Plan panel fill the viewport so the deck owns the space. */

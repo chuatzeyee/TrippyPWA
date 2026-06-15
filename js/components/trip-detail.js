@@ -30,6 +30,7 @@ const MD = {
   beach: 'M13.13 14.56l1.43-1.43 6.44 6.44L19.57 21zm4.29-5.73l2.86-2.86c-3.95-3.95-10.35-3.96-14.3-.02 3.93-1.3 8.31-.25 11.44 2.88zM5.95 5.98c-3.94 3.95-3.93 10.35.02 14.3l2.86-2.86C5.7 14.29 4.65 9.91 5.95 5.98zm.02-.02l-.01.01c-.38 3.01 1.17 6.88 4.3 10.02l5.73-5.73c-3.13-3.13-7.01-4.68-10.02-4.3z',
   ticket: 'M20 12c0-1.1.9-2 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-1.99.9-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2zm-4.42 4.8L12 14.5l-3.58 2.3 1.08-4.12-3.29-2.69 4.24-.25L12 5.8l1.54 3.95 4.24.25-3.29 2.69 1.09 4.11z',
   place: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+  travelExplore: 'M12 2C8.14 2 5 5.14 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.13.48 1.53 0C14.58 18.92 19 13.17 19 9c0-3.86-3.14-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
   walk: 'M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7',
   flightTakeoff: 'M2.5 19h19v2h-19v-2zm19.57-9.36c-.21-.8-1.04-1.28-1.84-1.06L14.92 10l-6.9-6.43-1.93.51 4.14 7.17-4.97 1.33-1.97-1.54-1.45.39 2.59 4.49s7.12-1.9 16.57-4.43c.81-.23 1.28-1.05 1.07-1.85z',
   tram: 'M19 16.94V8.5c0-2.79-2.61-3.4-6.01-3.49l.76-1.51H17V2H7v1.5h4.75l-.76 1.52C7.86 5.11 5 5.73 5 8.5v8.44c0 1.45 1.19 2.66 2.59 2.97L6 21.5v.5h2.23l2-2H14l2 2h2v-.5L16.5 20h-.08c1.69 0 2.58-1.37 2.58-3.06zm-7 1.56c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm5-4.5H7V9h10v5z',
@@ -268,8 +269,14 @@ function renderTripFooter(trip) {
   if (trip.travelers > 1) {
     pills.push(`<span class="td-footer-pill">${mdIcon(MD.walk, 12)} ${trip.travelers}</span>`);
   }
-  if (pills.length === 0) return '';
-  return `<div class="td-footer"><div class="td-footer-pills">${pills.join('')}</div></div>`;
+  // Photo-source attribution. The free providers we use require (Mapillary,
+  // CC-BY-SA) or appreciate (Wikimedia, Pexels) a visible credit.
+  const credit = `<div class="td-footer-credit">Photos via
+    <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia</a>,
+    <a href="https://www.mapillary.com" target="_blank" rel="noopener">Mapillary</a> (CC BY-SA) &amp;
+    <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a></div>`;
+  if (pills.length === 0) return `<div class="td-footer">${credit}</div>`;
+  return `<div class="td-footer"><div class="td-footer-pills">${pills.join('')}</div>${credit}</div>`;
 }
 
 function classifyTransportType(mode) {
@@ -547,7 +554,7 @@ function renderActivity(activity, currencySymbol, isFirst) {
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
-        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
+        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
       </div>
     </div>
   `;
@@ -1648,7 +1655,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           <button class="td-tab td-tab--active" data-tab="plan" role="tab" aria-selected="true">${mdIcon(MD.calendarToday, 15)} Plan</button>
           <button class="td-tab" data-tab="spending" role="tab" aria-selected="false">${mdIcon(MD.ticket, 15)} Spending</button>
           <button class="td-tab" data-tab="prep" role="tab" aria-selected="false">${mdIcon(MD.checklist, 15)} Prep</button>
-          <button class="td-tab" data-tab="towns" role="tab" aria-selected="false">${mdIcon(MD.place, 15)} Towns</button>
+          <button class="td-tab" data-tab="towns" role="tab" aria-selected="false">${mdIcon(MD.travelExplore, 15)} Discover</button>
         </nav>
         <div class="td-topbar-actions">
           <button class="td-action-btn" data-action="share" title="Share itinerary" aria-label="Share itinerary">
@@ -2078,7 +2085,7 @@ function loadActivityPhotos(container) {
       const lng = parseFloat(el.dataset.lng);
       const location = (!isNaN(lat) && !isNaN(lng) && lat !== 0) ? { lat, lng } : null;
 
-      fetchPlacePhotoByQuery(venue, location, 600).then(url => {
+      fetchPlacePhotoByQuery(venue, location, 600, { kind: 'venue', category: el.dataset.category }).then(url => {
         if (!url) { el.classList.add('td-activity-photo--failed'); return; }
         const img = document.createElement('img');
         img.src = url;
@@ -2341,7 +2348,7 @@ function loadTownPhotos(host) {
       if (!entry.isIntersecting) continue;
       observer.unobserve(entry.target);
       const card = entry.target;
-      fetchPlacePhotoByQuery(card.dataset.townPhoto, null, 400).then(url => {
+      fetchPlacePhotoByQuery(card.dataset.townPhoto, null, 400, { kind: 'area' }).then(url => {
         if (!url || !card.isConnected) return;
         const photo = card.querySelector('.td-town-photo');
         if (!photo) return;
@@ -2366,25 +2373,47 @@ const VIBE_BY_CATEGORY = {
   spa: 'Wellness', wellness: 'Wellness',
 };
 
-// Derive up to 3 vibe tags per town by tallying the categories of activities that
-// fall within its cells. Pure render-time computation, no backend data needed.
-function computeTownVibes(trip) {
+// Categories that read as "eat & drink" vs "see & do" for the Discover rails.
+const EAT_CATEGORIES = new Set(['food', 'restaurant', 'cafe', 'coffee', 'bar', 'nightlife', 'market', 'dining', 'dessert', 'street food']);
+
+// Build a one-line "atmosphere" blurb for a town from its top vibes. Warm,
+// second-person, derived (no backend); falls back gracefully with no vibes.
+function townBlurb(name, vibes) {
+  if (!vibes.length) return `A stop on your route worth a wander.`;
+  const lead = vibes.slice(0, 2).map(v => v.toLowerCase()).join(' and ');
+  return `Known for its ${lead} — a neighbourhood to slow down and explore.`;
+}
+
+// Derive per-town Discover detail: vibe tags, a blurb, and Eat & Drink / See & Do
+// venue lists, all by matching activities to the town's geocoded cells. Pure
+// render-time computation, no backend data needed.
+function computeTownDetail(trip) {
   const townCells = collectTownCells(trip.extras);
-  const byTown = new Map(); // town name -> Map(vibe -> count)
+  const acc = new Map(); // town -> { vibes:Map, eat:[], see:[], eatSeen:Set, seeSeen:Set }
   for (const d of trip.itinerary_days || []) {
     for (const a of d.activities || []) {
       const town = localityForActivity(a, townCells);
       if (!town) continue;
-      const vibe = VIBE_BY_CATEGORY[(a.category || '').toLowerCase()];
-      if (!vibe) continue;
-      if (!byTown.has(town)) byTown.set(town, new Map());
-      const m = byTown.get(town);
-      m.set(vibe, (m.get(vibe) || 0) + 1);
+      if (!acc.has(town)) acc.set(town, { vibes: new Map(), eat: [], see: [], seen: new Set() });
+      const t = acc.get(town);
+      const cat = (a.category || '').toLowerCase();
+      const vibe = VIBE_BY_CATEGORY[cat];
+      if (vibe) t.vibes.set(vibe, (t.vibes.get(vibe) || 0) + 1);
+      const label = a.venue_name || a.title;
+      if (label && !t.seen.has(label)) {
+        t.seen.add(label);
+        const lat = Number(a.latitude), lng = Number(a.longitude);
+        const mapsUrl = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0 ? `https://maps.google.com/?q=${lat},${lng}` : '';
+        const entry = { label, category: cat, mapsUrl };
+        if (EAT_CATEGORIES.has(cat)) { if (t.eat.length < 4) t.eat.push(entry); }
+        else { if (t.see.length < 4) t.see.push(entry); }
+      }
     }
   }
   const out = new Map();
-  for (const [town, m] of byTown) {
-    out.set(town, [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]));
+  for (const [town, t] of acc) {
+    const vibes = [...t.vibes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(e => e[0]);
+    out.set(town, { vibes, blurb: townBlurb(town, vibes), eat: t.eat, see: t.see });
   }
   return out;
 }
@@ -2394,7 +2423,7 @@ async function loadTownsTab(container, trip) {
   _townsLoaded = true;
   const host = container.querySelector('#td-towns');
   if (!host) return;
-  const townVibes = computeTownVibes(trip);
+  const townDetail = computeTownDetail(trip);
 
   // Fast path: towns were pre-computed at generation time (extras.towns).
   // Server records dayNumber only — resolve dayIndex against the loaded days.
@@ -2443,27 +2472,42 @@ async function loadTownsTab(container, trip) {
 
   const showCityHeadings = groups.length > 1;
   let cardIdx = 0;
+  const venueRail = (title, items) => items.length ? `
+    <div class="td-town-rail">
+      <span class="td-town-rail-title">${title}</span>
+      <div class="td-town-rail-items">
+        ${items.map(v => v.mapsUrl
+          ? `<a class="td-town-venue-chip" href="${v.mapsUrl}" target="_blank" rel="noopener">${esc(v.label)}</a>`
+          : `<span class="td-town-venue-chip">${esc(v.label)}</span>`).join('')}
+      </div>
+    </div>` : '';
+
   host.innerHTML = `
-    <p class="td-towns-intro">${groups.reduce((n, g) => n + g.towns.length, 0)} neighbourhoods &amp; towns on this trip. Tap a card to see when you'll be there.</p>
+    <p class="td-towns-intro">${groups.reduce((n, g) => n + g.towns.length, 0)} neighbourhoods &amp; towns to discover on this trip. Tap a card to explore.</p>
     ${groups.map(g => `
       ${showCityHeadings ? `<h4 class="td-towns-city">${flagImg((trip.wizard_state?.destinations || []).find(d => d.name === g.city)?.flag, 18)} ${esc(g.city)}</h4>` : ''}
       <div class="td-towns-grid">
-        ${g.towns.map(t => `
+        ${g.towns.map(t => {
+          const detail = townDetail.get(t.name) || { vibes: [], blurb: '', eat: [], see: [] };
+          return `
           <div class="td-town-card" role="button" tabindex="0" aria-expanded="false"
-               aria-label="${esc(t.name)} — show visit days" style="--ti: ${cardIdx++}"
+               aria-label="${esc(t.name)} — explore this neighbourhood" style="--ti: ${cardIdx++}"
                data-town-photo="${esc(`${t.name} ${g.city || ''}`.trim())}">
             <div class="td-town-flip">
               <div class="td-town-face td-town-front">
                 <div class="td-town-photo"></div>
                 <div class="td-town-front-content">
-                  <span class="td-town-icon">${mdIcon(MD.place, 18)}</span>
+                  ${g.city ? `<span class="td-town-breadcrumb">${esc(g.city)}</span>` : ''}
                   <span class="td-town-name">${esc(t.name)}</span>
-                  ${(townVibes.get(t.name) || []).length ? `<span class="td-town-vibes">${(townVibes.get(t.name) || []).map(v => `<span class="td-town-vibe">${esc(v)}</span>`).join('')}</span>` : ''}
-                  ${t.venues.length ? `<span class="td-town-venues">${esc(t.venues.slice(0, 2).join(' · '))}</span>` : ''}
-                  <span class="td-town-count">${t.activityCount} ${t.activityCount === 1 ? 'stop' : 'stops'}</span>
+                  ${detail.vibes.length ? `<span class="td-town-vibes">${detail.vibes.map(v => `<span class="td-town-vibe">${esc(v)}</span>`).join('')}</span>` : ''}
+                  ${detail.blurb ? `<span class="td-town-blurb">${esc(detail.blurb)}</span>` : ''}
+                  <span class="td-town-count">${t.activityCount} ${t.activityCount === 1 ? 'stop' : 'stops'} · tap to explore</span>
                 </div>
               </div>
               <div class="td-town-face td-town-back">
+                <span class="td-town-back-name">${esc(t.name)}</span>
+                ${venueRail('Eat &amp; Drink', detail.eat)}
+                ${venueRail('See &amp; Do', detail.see)}
                 <span class="td-town-back-label">You're here on</span>
                 <div class="td-town-days">
                   ${dayRanges(t.days).map(r => `
@@ -2473,7 +2517,7 @@ async function loadTownsTab(container, trip) {
               </div>
             </div>
           </div>
-        `).join('')}
+        `; }).join('')}
       </div>
     `).join('')}`;
 
