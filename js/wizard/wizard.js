@@ -1555,6 +1555,7 @@ function renderStep6(el) {
 
   const extras = [
     { key: 'mustDo', label: 'Must-do activities', icon: '📌', placeholder: 'e.g. Visit Sagrada Familia' },
+    { key: 'research', label: 'Paste your research', icon: '📋', placeholder: 'Paste any notes, rough plans, or venue lists you already have — any format. We\'ll build the itinerary around them.', textarea: true },
     { key: 'dietary', label: 'Dietary needs', icon: '🥗', placeholder: 'e.g. Vegetarian, nut allergy' },
     { key: 'avoid', label: 'Things to avoid', icon: '🚫', placeholder: 'e.g. Touristy restaurants, long bus rides' },
   ];
@@ -1637,7 +1638,9 @@ function renderStep6(el) {
               <span class="summary-extra-plus">${isOpen ? '−' : '+'}</span>
             </button>
             <div class="summary-extra-field" ${isOpen ? '' : 'style="display:none"'}>
-              <input class="input" type="text" id="summary-${e.key}" placeholder="${e.placeholder}" value="${escapeHtml(val)}">
+              ${e.textarea
+                ? `<textarea class="input" id="summary-${e.key}" rows="5" maxlength="4000" placeholder="${e.placeholder}" style="resize: vertical;">${escapeHtml(val)}</textarea>`
+                : `<input class="input" type="text" id="summary-${e.key}" placeholder="${e.placeholder}" value="${escapeHtml(val)}">`}
             </div>
           </div>
         `;
@@ -1652,6 +1655,7 @@ function renderStep6(el) {
       ...state.summary,
       freeText: el.querySelector('#summary-text')?.value || '',
       mustDo: el.querySelector('#summary-mustDo')?.value || '',
+      research: el.querySelector('#summary-research')?.value || '',
       dietary: el.querySelector('#summary-dietary')?.value || '',
       avoid: el.querySelector('#summary-avoid')?.value || ''
     };

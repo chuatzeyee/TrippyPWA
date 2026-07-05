@@ -111,6 +111,13 @@ addRoute('/shared/:token', async (params) => {
   renderSharedTrip(params.token);
 });
 
+addRoute('/trip/:id/read', async (params) => {
+  const { isAuthenticated } = await import('./auth/auth.js');
+  if (!isAuthenticated()) { navigate('/'); return; }
+  const { renderOwnerReadView } = await import('./components/shared-trip.js');
+  renderOwnerReadView(params.id);
+});
+
 onNotFound((path) => {
   const safePath = path.split('?')[0].split('&')[0].replace(/[<>"']/g, '');
   const app = document.getElementById('app');
