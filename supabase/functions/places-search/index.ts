@@ -1,75 +1,55 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeadersFor, getCallerUserId, fetchWithTimeout, json } from "../_shared/http.ts";
 
-const GOOGLE_PLACES_API_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY") || "";
-const PLACES_API_BASE = "https://places.googleapis.com/v1";
+// Venue autocomplete for the activity editor — FREE (Photon/OSM, keyless).
+// Replaces Google Places Text Search, which billed per keystroke-search.
+// Response contract unchanged: { results: [{ placeId, name, address, lat, lng, types, primaryType }] }
+
+const PHOTON = "https://photon.komoot.io/api/";
+const UA = "TrippyPWA/2.0 (place search; github.com/chuatzeyee/TrippyPWA)";
 
 serve(async (req: Request) => {
   const corsHeaders = corsHeadersFor(req);
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const userId = await getCallerUserId(req);
   if (!userId) return json({ error: "Unauthorized" }, 401, corsHeaders);
 
   try {
-    if (!GOOGLE_PLACES_API_KEY) {
-      return json({ error: "GOOGLE_PLACES_API_KEY not configured" }, 500, corsHeaders);
-    }
-
     const { query, location, maxResults = 5 } = await req.json();
+    if (!query) return json({ error: "query is required" }, 400, corsHeaders);
 
-    if (!query || query.length < 2) {
-      return json({ results: [] }, 200, corsHeaders);
-    }
-
-    const searchBody: Record<string, unknown> = {
-      textQuery: query,
-      maxResultCount: Math.min(maxResults, 10),
-    };
-
+    let url = `${PHOTON}?q=${encodeURIComponent(query)}&limit=${Math.min(Number(maxResults) || 5, 10)}`;
     if (location?.lat && location?.lng) {
-      searchBody.locationBias = {
-        circle: {
-          center: { latitude: location.lat, longitude: location.lng },
-          radius: 50000.0,
-        },
-      };
+      url += `&lat=${location.lat}&lon=${location.lng}&zoom=12&location_bias_scale=0.5`;
     }
 
-    const res = await fetchWithTimeout(`${PLACES_API_BASE}/places:searchText`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
-        "X-Goog-FieldMask":
-          "places.id,places.displayName,places.formattedAddress,places.location,places.types,places.primaryType",
-      },
-      body: JSON.stringify(searchBody),
-    });
-
-    if (!res.ok) {
-      console.error(`Places API returned ${res.status}`);
-      return json({ error: "Places search failed" }, 502, corsHeaders);
-    }
+    const res = await fetchWithTimeout(url, { headers: { "User-Agent": UA, accept: "application/json" } });
+    if (!res.ok) return json({ error: "Place search failed" }, 502, corsHeaders);
 
     const data = await res.json();
-    const results = (data.places || []).map((p: any) => ({
-      placeId: p.id,
-      name: p.displayName?.text || "",
-      address: p.formattedAddress || "",
-      lat: p.location?.latitude || null,
-      lng: p.location?.longitude || null,
-      types: p.types || [],
-      primaryType: p.primaryType || "",
-    }));
+    const results = (data.features || [])
+      .filter((f: any) => f.properties?.name)
+      .map((f: any) => {
+        const p = f.properties || {};
+        const address = [p.housenumber && p.street ? `${p.housenumber} ${p.street}` : p.street, p.district, p.city, p.country]
+          .filter(Boolean).join(", ");
+        return {
+          placeId: p.osm_id ? `osm-${p.osm_type || "N"}${p.osm_id}` : "",
+          name: p.name,
+          address,
+          lat: f.geometry?.coordinates?.[1] ?? null,
+          lng: f.geometry?.coordinates?.[0] ?? null,
+          types: [p.osm_key, p.osm_value].filter(Boolean),
+          primaryType: p.osm_value || "",
+        };
+      });
 
     return new Response(JSON.stringify({ results }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
     });
-  } catch (err: any) {
+  } catch {
     console.error("Places search error");
     return json({ error: "Internal server error" }, 500, corsHeaders);
   }
