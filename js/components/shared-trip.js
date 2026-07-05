@@ -59,6 +59,21 @@ export async function renderSharedTrip(token) {
     return;
   }
 
+  renderReadView(app, trip, { mode: 'shared' });
+}
+
+// The same clean reader layout, for the OWNER (feedback: "loved the share view
+// — offer it in the creator page too"). Fetches the trip normally, no token.
+export async function renderOwnerReadView(tripId) {
+  const app = document.getElementById('app');
+  app.innerHTML = '<div class="container" style="padding:var(--sp-16) 0;text-align:center"><div class="adm-loading">Loading...</div></div>';
+  const { fetchTripById } = await import('../data/trip-repository.js');
+  const { data: trip } = await fetchTripById(tripId);
+  if (!trip) { location.hash = `/trip/${tripId}`; return; }
+  renderReadView(app, trip, { mode: 'owner', tripId });
+}
+
+function renderReadView(app, trip, { mode, tripId }) {
   const days = trip.itinerary_days || [];
   const ownerName = trip.owner?.display_name || 'A Trippy traveler';
   const dateRange = trip.start_date && trip.end_date
@@ -125,21 +140,24 @@ export async function renderSharedTrip(token) {
       </div>`;
   }
 
+  const isOwner = mode === 'owner';
   app.innerHTML = `
     <div class="container shared-trip">
       <div class="shared-banner">
-        <div class="shared-banner-badge">Shared Itinerary</div>
+        <div class="shared-banner-badge">${isOwner ? 'Reader View' : 'Shared Itinerary'}</div>
         <h1 class="text-hero">${esc(trip.emoji)} ${esc(trip.title)}</h1>
         <p class="shared-banner-meta">${dateRange} · ${trip.travelers || 1} traveler${(trip.travelers || 1) > 1 ? 's' : ''}</p>
-        <p class="shared-banner-by">Planned by ${esc(ownerName)}</p>
+        ${isOwner ? '' : `<p class="shared-banner-by">Planned by ${esc(ownerName)}</p>`}
       </div>
 
       <div class="shared-days">${daysHtml}</div>
       ${extrasHtml}
 
       <div class="shared-cta">
-        <p class="text-body" style="color:var(--ink-secondary)">Want to plan your own trip?</p>
-        <button class="btn btn--primary btn--pill btn--lg" onclick="location.hash='/'">Try Trippy</button>
+        ${isOwner
+          ? `<button class="btn btn--primary btn--pill btn--lg" onclick="location.hash='/trip/${esc(tripId)}'">Back to full view</button>`
+          : `<p class="text-body" style="color:var(--ink-secondary)">Want to plan your own trip?</p>
+             <button class="btn btn--primary btn--pill btn--lg" onclick="location.hash='/'">Try Trippy</button>`}
       </div>
     </div>`;
 }

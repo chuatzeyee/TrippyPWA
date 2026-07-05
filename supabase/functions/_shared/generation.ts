@@ -185,6 +185,7 @@ export function buildPromptAndSchema(wizardState: any, opts: { dayFrom?: number;
 
   const extras: string[] = [];
   if (wizardState.summary?.mustDo) extras.push(`Must-do: ${wizardState.summary.mustDo}`);
+  if (wizardState.summary?.research) extras.push(`TRAVELER'S OWN RESEARCH (they already planned parts of this trip — treat any specific venues, days, or timings below as FIXED and build the rest of the itinerary around them; fill gaps with your own suggestions):\n${String(wizardState.summary.research).slice(0, 4000)}`);
   if (wizardState.summary?.dietary) extras.push(`Dietary needs: ${wizardState.summary.dietary}`);
   if (wizardState.summary?.avoid) extras.push(`Avoid: ${wizardState.summary.avoid}`);
   if (wizardState.summary?.freeText) extras.push(`Additional notes: ${wizardState.summary.freeText}`);
@@ -237,7 +238,7 @@ ${extras.length > 0 ? "\nSPECIAL REQUESTS:\n- " + extras.join("\n- ") : ""}
 CRITICAL REQUIREMENTS:
 1. Every activity MUST have a specific startTime in 24h format (e.g. "09:00", "14:30"). Plan from morning wake-up to evening.
 2. Activities should be in chronological order by startTime.
-3. Include MEALS: breakfast, lunch, dinner, and coffee/snack breaks as separate activities with specific restaurant recommendations.
+3. Include MEALS: breakfast, lunch, dinner, and coffee/snack breaks as separate activities with specific restaurant recommendations. NEVER schedule the same restaurant, cafe, or bar more than ONCE in the entire trip (including any days listed under TRIP SO FAR) — every meal is a chance to try somewhere new. Vary cuisines and price points across days. Small towns still have multiple eateries; find them. The ONLY exception is the traveler's own hotel when they explicitly asked for it.
 4. For EVERY activity after the first of each day, include "transportOptions" — an array of UP TO 3 realistic ways to get from the previous venue:
    a) "walk" — walking directions (omit if distance > 25 min walk)
    b) "public" — public transit (tram, metro, mrt, bus, train, ferry) with route number/name and line name
@@ -459,6 +460,41 @@ export function validateItinerary(data: any, expectedDays: number): { issues: st
     issues.push(`Expected ${expectedDays} days, got ${data.days.length} — remainder regenerates next pass`);
   }
   return { issues, fatal: false };
+}
+
+// Feedback bug: the model scheduled the same restaurant 3 times in 2 days.
+// Non-fatal repair: drop days that repeat a food venue already used (in prior
+// chunks or earlier in this one) from the SECOND occurrence on — the cursor
+// regenerates the dropped days with the strengthened no-repeat prompt.
+const FOOD_CATEGORIES = /restaurant|cafe|coffee|food|bar|dessert|dining|breakfast|lunch|dinner/i;
+export function dedupeFoodVenues(data: any, priorDays: any[] = []): string[] {
+  const seen = new Set<string>();
+  const norm = (v: string) => String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  for (const d of priorDays || []) {
+    for (const a of d.activities || []) {
+      if (a.venue_name && FOOD_CATEGORIES.test(a.category || "")) seen.add(norm(a.venue_name));
+    }
+  }
+  const issues: string[] = [];
+  const keptDays: any[] = [];
+  for (const d of data.days) {
+    let dupe = "";
+    for (const a of d.activities || []) {
+      const cat = a.category || a.timeSlot || "";
+      const venue = a.venueName ?? a.venue_name;
+      if (!venue || !FOOD_CATEGORIES.test(cat)) continue;
+      const key = norm(venue);
+      if (seen.has(key)) { dupe = venue; break; }
+      seen.add(key);
+    }
+    if (dupe) {
+      issues.push(`Day ${d.dayNumber ?? d.day_number}: repeated food venue "${dupe}" — day dropped for regeneration`);
+      break; // keep days before the dupe; everything from here regenerates
+    }
+    keptDays.push(d);
+  }
+  if (issues.length) data.days = keptDays; // may be empty -> chunk retries
+  return issues;
 }
 
 export async function callGemini(

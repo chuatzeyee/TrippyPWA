@@ -182,10 +182,43 @@
 /* ===== Hero Banner ===== */
 .td-hero {
   position: relative;
-  height: 200px;
+  height: 150px;
   border-radius: var(--r-xl);
   overflow: hidden;
   margin-bottom: var(--sp-4);
+}
+
+/* Slim sticky strip that replaces the hero once it scrolls out of view. */
+.td-stickybar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: none;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  margin: 0 calc(-1 * var(--sp-2)) var(--sp-2);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--border);
+}
+.td-stickybar--visible { display: flex; }
+.td-stickybar-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.td-stickybar-dates {
+  margin-left: auto;
+  font: var(--text-caption);
+  font-family: var(--font-mono);
+  color: var(--ink-secondary);
+  white-space: nowrap;
 }
 
 .td-hero-img {
@@ -2129,6 +2162,168 @@
 .td-activity-photo--loaded .td-activity-photo-img {
   opacity: 1;
 }
+
+/* ---- Collaborators (co-editing) ------------------------------------------ */
+.td-collab-list { display: flex; flex-direction: column; gap: 6px; margin-top: var(--sp-3); }
+.td-collab-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font: var(--text-caption);
+}
+.td-collab-mail { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.td-collab-role { color: var(--ink-ghost); margin-left: auto; white-space: nowrap; }
+.td-collab-remove { border: none; background: none; color: var(--ink-secondary); cursor: pointer; font-size: 1rem; line-height: 1; }
+.td-collab-remove:hover { color: var(--error); }
+.td-collab-empty { font: var(--text-caption); color: var(--ink-ghost); margin-top: var(--sp-2); }
+
+/* ---- Chat edits drawer --------------------------------------------------- */
+.td-chat-fab {
+  position: fixed;
+  right: var(--sp-5);
+  bottom: var(--sp-5);
+  z-index: var(--z-sticky);
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: var(--terracotta);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-interactive);
+}
+.td-chat-fab:hover { background: var(--terracotta-hover); }
+
+.td-chat-drawer {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: calc(var(--sp-5) + 60px);
+  z-index: var(--z-sticky);
+  width: min(380px, calc(100vw - 2 * var(--sp-4)));
+  max-height: 60vh;
+  display: none;
+  flex-direction: column;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-xl);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.td-chat-drawer--open { display: flex; }
+.td-chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  font: var(--text-small);
+  font-weight: 700;
+  color: var(--ink);
+}
+.td-chat-close { border: none; background: none; color: var(--ink-secondary); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+.td-chat-log {
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.td-chat-msg { font: var(--text-small); line-height: 1.45; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); max-width: 92%; }
+.td-chat-msg--user { align-self: flex-end; background: var(--terracotta-light); color: var(--ink); }
+.td-chat-msg--bot { align-self: flex-start; background: var(--surface-inset); color: var(--ink); }
+.td-chat-edits { display: flex; flex-direction: column; gap: 6px; margin-top: var(--sp-2); }
+.td-chat-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  font: var(--text-caption);
+}
+.td-chat-edit--add { border-left: 3px solid var(--success); }
+.td-chat-edit--remove { border-left: 3px solid var(--error); }
+.td-chat-edit--modify { border-left: 3px solid var(--amber); }
+.td-chat-edit-reason { color: var(--ink-ghost); }
+.td-chat-apply-row { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); }
+.td-chat-form {
+  display: flex;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+.td-chat-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-inset);
+  color: var(--ink);
+  font: var(--text-small);
+}
+
+/* ---- Tap-for-alternatives ------------------------------------------------ */
+.td-alt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: var(--sp-2);
+  padding: 4px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-secondary);
+  font: var(--text-caption);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-interactive);
+}
+.td-alt-btn:hover { border-color: var(--terracotta); color: var(--terracotta); }
+
+.td-alt-panel {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-inset);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.td-alt-label {
+  font: var(--text-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--terracotta);
+}
+.td-alt-loading { font: var(--text-small); color: var(--ink-secondary); }
+.td-alt-chip {
+  text-align: left;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-solid);
+  cursor: pointer;
+  transition: var(--transition-interactive);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.td-alt-chip:hover:not(:disabled) { border-color: var(--terracotta); }
+.td-alt-chip:disabled { opacity: 0.6; cursor: default; }
+.td-alt-chip-name { font: var(--text-small); font-weight: 600; color: var(--ink); }
+.td-alt-chip-desc { font: var(--text-caption); color: var(--ink-secondary); }
 
 /* "Street view" badge — marks a Mapillary street-level fallback as the location,
    not a photo of the venue itself. */

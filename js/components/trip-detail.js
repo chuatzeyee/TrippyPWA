@@ -10,6 +10,8 @@ import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
 import { isSquareMode } from '../lib/square-mode.js';
 import { renderSquareItinerary } from './square-itinerary.js';
+import { bindAlternatives } from './alternatives.js';
+import { mountItineraryChat } from './itinerary-chat.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -555,6 +557,7 @@ function renderActivity(activity, currencySymbol, isFirst) {
         ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
         ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
+        ${activity.id ? `<button class="td-alt-btn" data-alt-for="${activity.id}" title="Suggest alternatives">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
       </div>
     </div>
   `;
@@ -1615,6 +1618,14 @@ async function showShareModal(trip) {
         <label class="td-share-label">Recipient email</label>
         <input type="email" class="td-share-email" placeholder="friend@example.com">
         <button class="td-share-send btn btn--primary btn--pill" style="width:100%;margin-top:var(--sp-3)">Send Invite</button>
+
+        <div class="td-share-divider"><span>co-editing</span></div>
+        <label class="td-share-label">Invite a collaborator (they sign in with this email and can edit this trip with you)</label>
+        <div class="td-share-link-row">
+          <input type="email" class="td-collab-email" placeholder="family@example.com">
+          <button class="td-collab-add">Add</button>
+        </div>
+        <div class="td-collab-list"></div>
       </div>
     </div>
   `;
@@ -1640,6 +1651,38 @@ async function showShareModal(trip) {
     window.open(`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`, '_self');
     close();
   });
+
+  // Collaborators (co-editing)
+  const { listCollaborators, inviteCollaborator, removeCollaborator } = await import('../data/collab-repository.js');
+  const listEl = overlay.querySelector('.td-collab-list');
+  const refreshCollabs = async () => {
+    const { data: collabs } = await listCollaborators(trip.id);
+    listEl.innerHTML = collabs.length
+      ? collabs.map(c => `
+          <div class="td-collab-row">
+            <span class="td-collab-mail">${esc(c.invited_email)}</span>
+            <span class="td-collab-role">${esc(c.role)}${c.user_id ? '' : ' · not joined yet'}</span>
+            <button class="td-collab-remove" data-collab-id="${esc(c.id)}" aria-label="Remove">×</button>
+          </div>`).join('')
+      : '<div class="td-collab-empty">No collaborators yet.</div>';
+  };
+  refreshCollabs();
+  overlay.querySelector('.td-collab-add').addEventListener('click', async () => {
+    const emailEl = overlay.querySelector('.td-collab-email');
+    const email = emailEl.value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { emailEl.focus(); return; }
+    const { error } = await inviteCollaborator(trip.id, email);
+    if (error) { showToast(error.includes('duplicate') ? 'Already invited' : 'Invite failed', 'error'); return; }
+    emailEl.value = '';
+    showToast(`${email} can now edit this trip`);
+    refreshCollabs();
+  });
+  listEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-collab-id]');
+    if (!btn) return;
+    await removeCollaborator(btn.dataset.collabId);
+    refreshCollabs();
+  });
 }
 
 function renderDayPicker(app, trip, jumpToToday = false) {
@@ -1658,6 +1701,9 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           <button class="td-tab" data-tab="towns" role="tab" aria-selected="false">${mdIcon(MD.travelExplore, 15)} Discover</button>
         </nav>
         <div class="td-topbar-actions">
+          <button class="td-action-btn" data-action="read-view" title="Reader view" aria-label="Reader view">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+          </button>
           <button class="td-action-btn" data-action="share" title="Share itinerary" aria-label="Share itinerary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
           </button>
@@ -1687,7 +1733,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           }
         }
         return heroImage ? `
-        <div class="td-hero">
+        <div class="td-hero" id="td-hero">
           <img class="td-hero-img" src="${esc(heroImage)}" alt="${esc(shortTitle)}" loading="eager">
           <div class="td-hero-overlay"></div>
           ${countdownHtml ? `<div class="td-hero-countdown">${countdownHtml}</div>` : ''}
@@ -1701,6 +1747,12 @@ function renderDayPicker(app, trip, jumpToToday = false) {
       })()}
 
       ${!heroImage ? `<header class="td-header"><span class="td-emoji">${heroFlag || trip.emoji || mdIcon(MD.place, 28)}</span><h1 class="td-title">${esc(shortTitle)}</h1></header>` : ''}
+
+      <div class="td-stickybar" id="td-stickybar" aria-hidden="true">
+        ${heroFlag ? `<span class="td-stickybar-flag">${heroFlag}</span>` : ''}
+        <span class="td-stickybar-title">${esc(shortTitle)}</span>
+        ${dateRange ? `<span class="td-stickybar-dates">${esc(dateRange)}</span>` : ''}
+      </div>
 
       <div class="td-tab-panel td-tab-panel--active" data-panel="plan">
         <div class="td-square-itinerary square-only" id="td-square-itinerary"></div>
@@ -1778,6 +1830,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   app.querySelectorAll('[data-action="back"]').forEach(el => el.addEventListener('click', () => navigate('/')));
 
   app.querySelector('[data-action="share"]')?.addEventListener('click', () => showShareModal(trip));
+  app.querySelector('[data-action="read-view"]')?.addEventListener('click', () => navigate(`/trip/${trip.id}/read`));
 
   app.querySelector('[data-action="pdf"]')?.addEventListener('click', async () => {
     const btn = app.querySelector('[data-action="pdf"]');
@@ -2021,8 +2074,45 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   });
   bindCollapsibleSections(app);
   bindSidebar(app);
+  mountItineraryChat(app.querySelector('.td-wrap') || app, trip, () => renderTripDetail(trip.id));
+
+  // Collaboration: claim any pending invitation for this login, and reload the
+  // view when a collaborator saves (LWW "google docs lite" — debounced so our
+  // own rapid edits don't thrash re-renders).
+  let collabUnsub = null;
+  import('../data/collab-repository.js').then(({ claimInvitations, onRemoteActivityChanges }) => {
+    claimInvitations();
+    const dayIds = (trip.itinerary_days || []).map(d => d.id).filter(Boolean);
+    let t = null;
+    collabUnsub = onRemoteActivityChanges(dayIds, () => {
+      clearTimeout(t);
+      t = setTimeout(() => renderTripDetail(trip.id), 1200);
+    });
+  });
+  bindAlternatives(app, trip, (activity, cardEl) => {
+    // Rebuild the whole activity wrapper (card + its getting-there block) from
+    // the updated in-memory model, then rehydrate its photo.
+    const wrapper = cardEl?.closest('.td-activity');
+    if (!wrapper) return;
+    const temp = document.createElement('div');
+    temp.innerHTML = renderActivity(activity, sym, false).trim();
+    const fresh = temp.querySelector('.td-activity');
+    if (fresh) { wrapper.replaceWith(fresh); loadActivityPhotos(fresh.parentElement || app); }
+  });
   const photoObserver = loadActivityPhotos(app);
   scrollSpyCleanup = setupDayScrollSpy(app);
+
+  // Collapse the tall hero into a slim sticky strip once it scrolls away, so
+  // the itinerary owns the viewport (feedback: header ate too much space).
+  let heroObserver = null;
+  const heroEl = app.querySelector('#td-hero');
+  const stickyBar = app.querySelector('#td-stickybar');
+  if (heroEl && stickyBar) {
+    heroObserver = new IntersectionObserver(([e]) => {
+      stickyBar.classList.toggle('td-stickybar--visible', !e.isIntersecting);
+    }, { threshold: 0 });
+    heroObserver.observe(heroEl);
+  }
 
   // Square mode: render the no-scroll, one-stop-per-card itinerary into its
   // host. Built lazily so the scroll view stays the default on normal screens.
@@ -2048,6 +2138,8 @@ function renderDayPicker(app, trip, jumpToToday = false) {
     if (photoObserver) photoObserver.disconnect();
     if (squareItinCleanup) { squareItinCleanup(); squareItinCleanup = null; }
     if (squareSpendingDeck) { squareSpendingDeck.destroy(); squareSpendingDeck = null; }
+    if (heroObserver) { heroObserver.disconnect(); heroObserver = null; }
+    if (collabUnsub) { collabUnsub(); collabUnsub = null; }
   });
 
   if (jumpToToday && trip.start_date) {

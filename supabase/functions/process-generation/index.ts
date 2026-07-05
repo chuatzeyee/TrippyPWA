@@ -12,7 +12,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
-  buildPromptAndSchema, validateItinerary, callGemini, callMistral,
+  buildPromptAndSchema, validateItinerary, dedupeFoodVenues, callGemini, callMistral,
   toDbDays, buildExtras, planChunks, tripDayCount, dateForDay, sanitizeDbDays,
 } from "../_shared/generation.ts";
 import { computeTownGroups } from "../_shared/towns.ts";
@@ -186,6 +186,17 @@ async function runChunk(jobId: string) {
     if (fatal) {
       result = { data: null, error: `Validation failed: ${issues[0]}` };
       logDb("warn", `${provider} produced an invalid chunk ${chunkIdx + 1}`, { jobId, tripId: job.trip_id, issues });
+    } else {
+      // Drop days that repeat a food venue (partial-day salvage; the cursor
+      // regenerates dropped days). If the FIRST day repeats, the chunk is empty
+      // and falls through to the provider-retry path like any bad chunk.
+      const dupeIssues = dedupeFoodVenues(result.data, (job.result_days as any[]) || []);
+      if (dupeIssues.length) {
+        logDb("warn", `Chunk ${chunkIdx + 1} repeated venues`, { jobId, tripId: job.trip_id, issues: dupeIssues });
+        if (result.data.days.length === 0) {
+          result = { data: null, error: `Validation failed: ${dupeIssues[0]}` };
+        }
+      }
     }
   }
 
