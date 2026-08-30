@@ -192,7 +192,8 @@ import('./auth/auth.js').then(async ({ initAuth, isAuthenticated, onAuthChange }
 // caching. window.Capacitor is injected by the wrapper at runtime.
 const isNativeWrapper = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
 if ('serviceWorker' in navigator && !isNativeWrapper) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // BASE_URL keeps this working under the GH Pages /TrippyPWA/ base ('/sw.js' 404s there).
+  navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
 }
 
 const btt = document.createElement('button');

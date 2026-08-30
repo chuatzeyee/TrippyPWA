@@ -15,7 +15,8 @@ const STORAGE_KEY = 'trippy-square-mode'; // 'auto' | 'on' | 'off'
 // Require a near-1:1 aspect ratio AND a phone-sized width, so short desktop
 // windows and landscape phones (wide, or short-but-wide) do NOT get card mode.
 // A user can still force it on/off via the nav toggle.
-const QUERY = '(min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1) and (max-width: 600px)';
+// 768px cap covers the Titan 2's 1440x1440 panel at DPR 2 (720px CSS viewport).
+const QUERY = '(min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1) and (max-width: 768px)';
 
 const listeners = new Set();
 let mql = null;
