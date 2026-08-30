@@ -15,7 +15,7 @@
  * the user can take in at a glance, with the CTA always visible.
  */
 
-@media (min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1) and (max-width: 600px) {
+@media (min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1) and (max-width: 768px) {
 
   /* ----- Landing hero: stop forcing full height, shrink the display type ---- */
   .landing-hero {
