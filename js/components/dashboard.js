@@ -597,13 +597,20 @@ function waitForSession() {
 // The #app listeners are bound once, before any early return in renderDashboard,
 // so the reconnect card's buttons work even when the dashboard never fully rendered.
 // Every handler reads what it needs from the DOM (or _dashboardTrips).
+// True for elements inside dashboard markup (main view, reconnect card and the
+// pre-rendered landing all use the .dashboard root).
+const inDashboard = (el) => Boolean(el?.closest?.('.dashboard'));
+
 function bindDashboardHandlers(app) {
   if (_clickHandlerBound) return;
   _clickHandlerBound = true;
   // Keyboard activation for the destination circles (divs with role="button").
   // Forward Enter/Space to the click handler below; preventDefault stops Space
   // from scrolling the page.
+  // These listeners live on #app for the whole session, so they must ignore
+  // events from other views (the trip page also carries data-trip-id).
   app.addEventListener('keydown', (e) => {
+    if (!inDashboard(e.target)) return;
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const destCard = e.target.closest('.dest-circle[data-city]');
     if (!destCard) return;
@@ -611,6 +618,7 @@ function bindDashboardHandlers(app) {
     destCard.click();
   });
   app.addEventListener('click', async (e) => {
+    if (!inDashboard(e.target)) return;
     const destCard = e.target.closest('.dest-circle[data-city]');
     if (destCard) {
       const auth = await getAuth();
@@ -730,7 +738,7 @@ function bindDashboardHandlers(app) {
   // the original thumbnail. Image errors don't bubble, so listen in capture.
   app.addEventListener('error', (e) => {
     const img = e.target;
-    if (!(img instanceof HTMLImageElement) || !img.dataset.fallback) return;
+    if (!(img instanceof HTMLImageElement) || !img.dataset.fallback || !inDashboard(img)) return;
     const fallback = img.dataset.fallback;
     delete img.dataset.fallback;
     img.removeAttribute('srcset');
