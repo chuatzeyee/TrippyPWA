@@ -1295,6 +1295,8 @@
   object-fit: cover;
   display: inline-block;
   vertical-align: middle;
+  /* Hairline so white flag fields (Japan, Singapore) don't vanish on light cards. */
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 /* ===== Weather Badge ===== */
@@ -1497,14 +1499,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--sp-3);
   padding: var(--sp-3) var(--sp-4);
-  background: rgba(40, 38, 34, 0.85);
+  background: var(--surface-inset);
+  border-bottom: 1px solid var(--border);
 }
 
 .td-flight-leg-label {
-  font-size: 0.7rem;
+  font: var(--text-caption);
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--ink-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -1512,18 +1516,31 @@
 .td-flight-leg-airline {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
+  gap: var(--sp-2);
+  min-width: 0;
+  font: var(--text-small);
   font-weight: 600;
-  color: #fff;
+  color: var(--ink);
 }
 
+/* Square airline logo tile (the image carries its own background colour). */
 .td-airline-logo {
-  height: 18px;
-  width: auto;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 3px;
+  border-radius: var(--r-md);
   object-fit: contain;
-  filter: brightness(0) invert(1);
-  opacity: 0.85;
+  /* Airline logos are drawn for a white backdrop (their PNGs are white-filled). */
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.td-flight-airline-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .td-flight-route {
@@ -1583,11 +1600,11 @@
 
 .td-flight-duration {
   text-align: center;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--terracotta);
+  font: var(--text-small);
+  font-weight: 600;
+  color: var(--ink);
   margin-top: calc(var(--sp-1) * -1);
-  padding-bottom: var(--sp-3);
+  padding: 0 var(--sp-4) var(--sp-3);
 }
 
 .td-flight-bottom {
@@ -1619,10 +1636,11 @@
 
 .td-flight-number {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--ink-ghost);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .td-flight-book {
@@ -1631,16 +1649,14 @@
   gap: 5px;
   font-size: 0.82rem;
   font-weight: 600;
+  /* Full strength: at 0.8 opacity teal fell to about 3.7:1 on the dark strip. */
   color: var(--teal);
   text-decoration: none;
-  opacity: 0.8;
-  transition: opacity 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .td-flight-book:hover {
-  opacity: 1;
   text-decoration: underline;
 }
 
@@ -1729,6 +1745,147 @@
   .td-flight-stopover-code {
     font-size: 0.65rem;
   }
+}
+
+/* ===== Flight leg card layout =====
+   Slots, top to bottom: header, booking row, journey (route, stop label,
+   duration), details, price row, tip. Every slot after the header carries its
+   own top spacing, so a slot a leg doesn't have takes no room. The header has
+   room for the 28px logo, so a leg showing the airline name instead (no logo,
+   or one that failed to load) keeps the same height. */
+.td-flight-legs--flights .td-flight-leg-header {
+  min-height: 52px;
+}
+
+.td-flight-booking {
+  margin-top: var(--sp-4);
+  padding: 0 var(--sp-4);
+}
+
+.td-flight-journey {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+/* Same side padding as the header and details, so the codes line up with them. */
+.td-flight-journey .td-flight-route {
+  padding: var(--sp-1) var(--sp-4) 0;
+}
+
+.td-flight-journey .td-flight-connection-label,
+.td-flight-journey .td-flight-duration {
+  margin: 0;
+  padding: 0 var(--sp-4);
+}
+
+/* Depart / Arrive / Seats / Baggage: caption labels in a column, values in
+   the body font, each pair on its own row. */
+.td-flight-details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--sp-3) var(--sp-4);
+  margin: var(--sp-5) 0 0;
+  padding: 0 var(--sp-4);
+}
+
+.td-flight-details dt {
+  font: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+}
+
+.td-flight-details dd {
+  margin: 0;
+  font: var(--text-small);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Depart / Arrive: the time leads, the airport sits under it in a quieter
+   caption, so every leg has two lines in these rows. */
+.td-flight-when {
+  display: block;
+  font-weight: 600;
+}
+
+.td-flight-where {
+  display: block;
+  margin-top: 2px;
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+/* Price on its own line, booking links under it. A leg card is too narrow
+   for both on one line once the price is a phrase ("S$3,430 return for two"),
+   and stacking in every leg keeps the two cards alike. */
+.td-flight-legs--flights .td-flight-bottom {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
+  background: var(--surface-inset);
+}
+
+/* The price reads as a sentence in the body font; only the amount keeps the
+   mono used for costs. Ferry, bus and train cards keep the base rule. */
+.td-flight-legs--flights .td-flight-price {
+  max-width: 100%;
+  font: var(--text-small);
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.td-flight-legs--flights .td-flight-price:empty {
+  display: none;
+}
+
+.td-flight-price-amount {
+  font-family: var(--font-mono);
+}
+
+/* Light theme: amber and teal text on white or the beige strip fall to about
+   2.5:1. Mixing in ink brings them to about 4.8:1 and 5:1 (WCAG AA). */
+[data-theme="light"] .td-flight-connection-label,
+[data-theme="light"] .td-flight-stopover-code {
+  color: color-mix(in srgb, var(--amber) 60%, var(--ink));
+}
+
+[data-theme="light"] .td-flight-book {
+  color: color-mix(in srgb, var(--teal) 60%, var(--ink));
+}
+
+.td-flight-legs--flights .td-flight-tip {
+  padding: var(--sp-4);
+}
+
+/* A leg that ends without a price row or tip still gets bottom breathing room. */
+.td-flight-legs--flights .td-flight-leg > :last-child:not(.td-flight-bottom):not(.td-flight-tip) {
+  margin-bottom: var(--sp-5);
+}
+
+/* Side by side, the two legs share row heights (subgrid), so the route, the
+   details and the price rows line up across both cards. */
+@supports (grid-template-rows: subgrid) {
+  .td-flight-legs--flights > .td-flight-leg {
+    display: grid;
+    grid-row: span 6;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+  }
+
+  .td-flight-legs--flights .td-flight-leg-header { grid-row: 1; }
+  .td-flight-legs--flights .td-flight-booking { grid-row: 2; }
+  .td-flight-legs--flights .td-flight-journey { grid-row: 3; }
+  .td-flight-legs--flights .td-flight-details { grid-row: 4; align-self: start; }
+  .td-flight-legs--flights .td-flight-bottom { grid-row: 5; }
+  .td-flight-legs--flights .td-flight-tip { grid-row: 6; }
 }
 
 /* ===== Accommodation Grid ===== */
@@ -3773,28 +3930,41 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
 
 /* ===== Booked flights & stays, booking deadlines (trip import) ===== */
 .td-booked-badge {
-  display: inline-block;
-  margin-left: var(--sp-2);
-  padding: 1px 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
   border-radius: var(--r-pill);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
   color: #fff;
   background: var(--success);
-  vertical-align: middle;
 }
-.td-accom-head .td-booked-badge { margin-left: 0; }
-.td-booked-meta {
-  list-style: none;
-  margin: var(--sp-2) 0 0;
-  padding: 0;
+
+/* "Booked" pill + "Ref ABC123", on booked flights and stays alike. */
+.td-booking-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-1) var(--sp-3);
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.td-booking-ref {
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+.td-booking-ref-code {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--ink-ghost);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  -webkit-user-select: all;
+  user-select: all;
 }
 .td-accom-stay {
   margin-top: var(--sp-1);
@@ -3932,8 +4102,9 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
 }
 
 /* Photo placeholders: --pending shimmers (the base ::before) while the server
-   finds photos; --none is a still placeholder (nothing found, or not running). */
-.td-activity-photo--none::before { animation: none; }
+   finds photos. --none (nothing found, or no lookup running) collapses the
+   block entirely: an empty box reads as a broken image. */
+.td-activity-photo--none { display: none; }
 
 .td-spending-note {
   margin: var(--sp-2) 0 0;

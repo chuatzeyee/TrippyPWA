@@ -95,7 +95,8 @@ Follow these rules exactly:
 12. Put deadlines (book by, pay by, free cancellation until) in "bookingChecklist", with the date in "by".
 13. "destination" is the main city of the trip. Give "lat" and "lng" only if you are sure. "dailyBudget" is my spending budget per person per day in the destination currency; leave it out if I didn't give one.
 14. Do not include passport numbers, card numbers or phone numbers.
-15. If your reply gets cut off, I will type continue. Then carry on from the exact character where you stopped, in a new \`\`\`json code block, without repeating anything.
+15. Do not use em dashes, en dashes or middle dots anywhere in the text (titles, descriptions, tips, notes or any other value). Use a comma, "and" or "to" instead, for example "Sapporo to Otaru" or "Ramen, then a night walk".
+16. If your reply gets cut off, I will type continue. Then carry on from the exact character where you stopped, in a new \`\`\`json code block, without repeating anything.
 
 Template:
 ${TEMPLATE_JSON}

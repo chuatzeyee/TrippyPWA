@@ -14,7 +14,10 @@ import { isSquareMode } from '../lib/square-mode.js';
 import { renderSquareItinerary } from './square-itinerary.js';
 import { bindAlternatives } from './alternatives.js';
 import { mountItineraryChat } from './itinerary-chat.js';
-import { resolveTripPhotos, isResolvingPhotos, getPhotoProgress, isPhotoOnlyChange, fetchTripPhotos, PHOTO_FIELDS } from '../services/trip-photos.js';
+import {
+  resolveTripPhotos, isResolvingPhotos, getPhotoProgress, isPhotoOnlyChange, fetchTripPhotos, PHOTO_FIELDS,
+  wantsActivityPhoto, isPendingPhoto,
+} from '../services/trip-photos.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -136,53 +139,65 @@ const IATA_TO_FLAG = {
   JNB: 'za', CPT: 'za', NBO: 'ke', CAI: 'eg', ADD: 'et',
 };
 
-const AIRLINE_LOGOS = {
-  'singapore airlines': 'https://upload.wikimedia.org/wikipedia/en/6/6b/Singapore_Airlines_Logo_2.svg',
-  'scoot': 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Scoot_logo.svg',
-  'jetstar': 'https://upload.wikimedia.org/wikipedia/commons/a/a3/Jetstar_logo.svg',
-  'qantas': 'https://upload.wikimedia.org/wikipedia/en/0/02/Qantas_Airways_logo_2016.svg',
-  'air asia': 'https://upload.wikimedia.org/wikipedia/commons/f/f5/AirAsia_New_Logo.svg',
-  'airasia': 'https://upload.wikimedia.org/wikipedia/commons/f/f5/AirAsia_New_Logo.svg',
-  'malaysia airlines': 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Malaysia_Airlines_Logo.svg',
-  'cathay pacific': 'https://upload.wikimedia.org/wikipedia/en/1/17/Cathay_Pacific_logo.svg',
-  'thai airways': 'https://upload.wikimedia.org/wikipedia/en/6/6b/Thai_Airways_Logo.svg',
-  'emirates': 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Emirates_logo.svg',
-  'qatar airways': 'https://upload.wikimedia.org/wikipedia/en/9/9b/Qatar_Airways_Logo.svg',
-  'british airways': 'https://upload.wikimedia.org/wikipedia/en/4/42/British_Airways_Logo.svg',
-  'lufthansa': 'https://upload.wikimedia.org/wikipedia/commons/b/b8/Lufthansa_Logo_2018.svg',
-  'air france': 'https://upload.wikimedia.org/wikipedia/commons/4/44/Air_France_Logo.svg',
-  'ana': 'https://upload.wikimedia.org/wikipedia/commons/9/98/All_Nippon_Airways_Logo.svg',
-  'japan airlines': 'https://upload.wikimedia.org/wikipedia/commons/5/58/JAL_logo_2011.svg',
-  'korean air': 'https://upload.wikimedia.org/wikipedia/en/3/3b/Korean_Air_Logo.svg',
-  'garuda indonesia': 'https://upload.wikimedia.org/wikipedia/en/9/9a/Garuda_Indonesia_Logo_2009.svg',
-  'virgin australia': 'https://upload.wikimedia.org/wikipedia/en/4/4f/Virgin_Australia_logo.svg',
-  'air new zealand': 'https://upload.wikimedia.org/wikipedia/en/2/24/Air_New_Zealand_logo.svg',
-  'finnair': 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Finnair_Logo.svg',
-  'aeroflot': 'https://upload.wikimedia.org/wikipedia/commons/2/26/Aeroflot_logo.svg',
-  'sas': 'https://upload.wikimedia.org/wikipedia/commons/e/e6/SAS_Scandinavian_Airlines_logo.svg',
-  'scandinavian airlines': 'https://upload.wikimedia.org/wikipedia/commons/e/e6/SAS_Scandinavian_Airlines_logo.svg',
-  'norwegian': 'https://upload.wikimedia.org/wikipedia/commons/5/50/Norwegian_Air_Shuttle_logo.svg',
-  'icelandair': 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Icelandair_logo.svg',
-  'klm': 'https://upload.wikimedia.org/wikipedia/commons/c/c7/KLM_logo.svg',
-  'turkish airlines': 'https://upload.wikimedia.org/wikipedia/commons/0/00/Turkish_Airlines_logo_2019_compact.svg',
-  'etihad': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Etihad_Airways_Logo.svg',
-  'etihad airways': 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Etihad_Airways_Logo.svg',
-  'swiss': 'https://upload.wikimedia.org/wikipedia/commons/f/f8/Swiss_International_Air_Lines_Logo_2011.svg',
-  'lot': 'https://upload.wikimedia.org/wikipedia/commons/a/a9/LOT_Polish_Airlines_logo_2011.svg',
-  'lot polish airlines': 'https://upload.wikimedia.org/wikipedia/commons/a/a9/LOT_Polish_Airlines_logo_2011.svg',
-  'air baltic': 'https://upload.wikimedia.org/wikipedia/commons/6/69/AirBaltic_logo.svg',
-  'vietnam airlines': 'https://upload.wikimedia.org/wikipedia/en/a/a7/Vietnam_Airlines_Logo.svg',
-  'cebu pacific': 'https://upload.wikimedia.org/wikipedia/commons/1/13/Cebu_Pacific_Logo_2022.svg',
-  'air india': 'https://upload.wikimedia.org/wikipedia/commons/5/5b/Air_India_2023.svg',
-  'china airlines': 'https://upload.wikimedia.org/wikipedia/en/1/15/China_Airlines_logo.svg',
-  'eva air': 'https://upload.wikimedia.org/wikipedia/en/1/1c/EVA_Air_logo.svg',
+// Airline name (lower case) to IATA code. Vetted by hand: the logo service
+// answers an unknown code with some other airline's logo rather than an error,
+// so only a real code may reach it.
+const AIRLINE_CODES = {
+  'singapore airlines': 'SQ', scoot: 'TR', jetstar: 'JQ', qantas: 'QF',
+  'air asia': 'AK', airasia: 'AK', 'malaysia airlines': 'MH', 'cathay pacific': 'CX',
+  'thai airways': 'TG', emirates: 'EK', 'qatar airways': 'QR', 'british airways': 'BA',
+  lufthansa: 'LH', 'air france': 'AF', ana: 'NH', 'all nippon airways': 'NH',
+  'japan airlines': 'JL', jal: 'JL', 'korean air': 'KE', 'garuda indonesia': 'GA',
+  'virgin australia': 'VA', 'air new zealand': 'NZ', finnair: 'AY', aeroflot: 'SU',
+  sas: 'SK', 'scandinavian airlines': 'SK', norwegian: 'DY', icelandair: 'FI', klm: 'KL',
+  'turkish airlines': 'TK', etihad: 'EY', 'etihad airways': 'EY', swiss: 'LX',
+  lot: 'LO', 'lot polish airlines': 'LO', 'air baltic': 'BT', airbaltic: 'BT',
+  'vietnam airlines': 'VN', 'cebu pacific': '5J', 'air india': 'AI',
+  'china airlines': 'CI', 'eva air': 'BR',
 };
 
-function airlineLogo(name) {
-  if (!name) return '';
-  const url = AIRLINE_LOGOS[name.toLowerCase().trim()];
-  if (!url) return '';
-  return `<img src="${url}" alt="" class="td-airline-logo" loading="lazy">`;
+// "TR892" or "TR 892": a two-character IATA prefix followed by the number.
+const FLIGHT_NUMBER_PREFIX = /^([A-Z0-9]{2})\s?\d/;
+
+// The leg's IATA airline code from the vetted name map, else from its flight
+// number (a code needs at least one letter: "5J" yes, "12" no). '' when unsure.
+function airlineCode(airline, flightNumber) {
+  const named = AIRLINE_CODES[String(airline || '').trim().toLowerCase()];
+  if (named) return named;
+  const m = String(flightNumber || '').trim().toUpperCase().match(FLIGHT_NUMBER_PREFIX);
+  return m && /[A-Z]/.test(m[1]) ? m[1] : '';
+}
+
+const AIRLINE_LOGO_PX = 28;
+
+// Square airline logo, or '' when the airline can't be identified. A logo that
+// fails to load is swapped for the airline name (bindAirlineLogos).
+function airlineLogo(airline, flightNumber) {
+  const code = airlineCode(airline, flightNumber);
+  if (!code) return '';
+  const name = String(airline || '').trim();
+  return `<img class="td-airline-logo" src="https://pics.avs.io/al_square/64/64/${code}@2x.png" alt="${esc(name)}" data-airline="${esc(name)}" width="${AIRLINE_LOGO_PX}" height="${AIRLINE_LOGO_PX}" decoding="async">`;
+}
+
+function swapBrokenLogo(img) {
+  const name = img.dataset.airline || '';
+  if (!name) { img.remove(); return; }
+  const text = document.createElement('span');
+  text.className = 'td-flight-airline-name';
+  text.textContent = name;
+  img.replaceWith(text);
+}
+
+// Image errors don't bubble, so listen in the capture phase on the render root.
+function bindAirlineLogos(root, signal) {
+  root.addEventListener('error', (e) => {
+    const img = e.target;
+    if (img instanceof HTMLImageElement && img.classList.contains('td-airline-logo')) swapBrokenLogo(img);
+  }, { capture: true, signal });
+  // Any that already failed before the listener was attached.
+  root.querySelectorAll('img.td-airline-logo').forEach((img) => {
+    if (img.complete && img.naturalWidth === 0) swapBrokenLogo(img);
+  });
 }
 
 function airportFlag(code) {
@@ -623,7 +638,7 @@ function renderActivity(activity, currencySymbol, isFirst, tripCode = '') {
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
-        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${credit ? `data-photo-credit="${esc(credit)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
+        ${wantsActivityPhoto(activity) ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${credit ? `data-photo-credit="${esc(credit)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
         ${activity.id ? `<button type="button" class="td-alt-btn" data-alt-for="${esc(activity.id)}" title="Suggest alternatives" aria-expanded="false">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
       </div>
     </div>
@@ -1006,6 +1021,74 @@ function parseFlightRoute(route) {
   return { stops: codes.length === 1 ? codes : [route.trim()] };
 }
 
+// "Booked" pill and the booking reference, shared by booked flights and stays.
+function bookingRowHtml(ref, extraClass = '') {
+  const code = plainText(ref).slice(0, 40);
+  return `
+    <div class="td-booking-row${extraClass ? ` ${extraClass}` : ''}">
+      <span class="td-booked-badge">Booked</span>
+      ${code ? `<span class="td-booking-ref">Ref <span class="td-booking-ref-code">${esc(code)}</span></span>` : ''}
+    </div>`;
+}
+
+// Flight details (mostly from an imported booking), each under its own label.
+// Imported values sometimes repeat the label ("Departs Wed 13 Jan 06:10"), so a
+// leading label word is dropped.
+const FLIGHT_DETAILS = [
+  ['depart', 'Depart', /^(?:departure|departs?)\b[\s:,]*/i],
+  ['arrive', 'Arrive', /^(?:arrival|arrives?)\b[\s:,]*/i],
+  ['seats', 'Seats', /^seats?\b[\s:,]*/i],
+  ['baggage', 'Baggage', /^baggage\b[\s:,]*/i],
+];
+
+// A stored string or number as trimmed text; anything else (objects from a
+// malformed trip) as ''.
+function plainText(value) {
+  return typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
+}
+
+// "Wed 13 Jan 06:10, SIN T1" splits after the time into when ("Wed 13 Jan
+// 06:10") and where ("SIN T1"). A value with no time before a comma stays whole.
+const WHEN_WHERE = /^(.*?\d{1,2}[:.]\d{2}(?:\s?[ap]\.?m\.?)?)\s*,\s*(\S.*)$/i;
+
+function splitWhenWhere(text) {
+  const m = WHEN_WHERE.exec(text);
+  return m ? [m[1], m[2]] : [text, ''];
+}
+
+// Depart and Arrive read boarding-pass style: the time leads on its own line,
+// the airport sits under it. Both legs then take two lines per row and line up.
+function flightDetailValueHtml(key, value) {
+  if (key !== 'depart' && key !== 'arrive') return esc(value);
+  const [when, where] = splitWhenWhere(value);
+  return `<span class="td-flight-when">${esc(when)}</span>${where ? `<span class="td-flight-where">${esc(where)}</span>` : ''}`;
+}
+
+function flightDetailsHtml(leg) {
+  const rows = FLIGHT_DETAILS
+    .map(([key, label, lead]) => [key, label, plainText(leg[key]).replace(lead, '').trim()])
+    .filter(([, , value]) => value);
+  if (!rows.length) return '';
+  return `
+    <dl class="td-flight-details">
+      ${rows.map(([key, label, value]) => `<dt>${label}</dt><dd>${flightDetailValueHtml(key, value)}</dd>`).join('')}
+    </dl>`;
+}
+
+// The figure in a price line ("S$3,430", "SGD 450", "~¥19-32k"): a currency
+// mark, then digits, optionally a range.
+const PRICE_AMOUNT = /~?(?:[A-Z]{0,3}[$€£¥₩₹฿]|\b[A-Z]{3}\s?)\d(?:[\d,.]*\d)?[kKmM]?(?:\s?[-\u2013]\s?(?:[A-Z]{0,3}[$€£¥₩₹฿])?\d(?:[\d,.]*\d)?[kKmM]?)?/;
+
+// A flight price line in the body font, with only the amount in mono (the
+// design system sets costs in mono; the words around it are prose).
+function flightPriceHtml(priceRange) {
+  const text = addThousandSeps(plainText(priceRange));
+  const m = PRICE_AMOUNT.exec(text);
+  if (!m) return esc(text);
+  const end = m.index + m[0].length;
+  return `${esc(text.slice(0, m.index))}<span class="td-flight-price-amount">${esc(m[0])}</span>${esc(text.slice(end))}`;
+}
+
 function renderFlightContent(extras, trip) {
   const flights = extras?.flights;
   if (!flights) return '';
@@ -1018,8 +1101,10 @@ function renderFlightContent(extras, trip) {
     const viaStops = stops.length > 2 ? stops.slice(1, -1) : [];
     const isConnecting = viaStops.length > 0;
 
-    const logo = airlineLogo(leg.airline);
-    const flightNo = leg.flightNumber || '';
+    const flightNo = plainText(leg.flightNumber);
+    const airlineName = plainText(leg.airline);
+    const logo = airlineLogo(airlineName, flightNo);
+    const airlineHtml = `${logo || (airlineName ? `<span class="td-flight-airline-name">${esc(airlineName)}</span>` : '')}${flightNo ? `<span class="td-flight-number">${esc(flightNo)}</span>` : ''}`;
     const gfDate = label === 'Outbound' ? trip?.start_date : trip?.end_date;
     const gfParams = new URLSearchParams({ q: `Flights from ${from} to ${to}${gfDate ? ` on ${gfDate}` : ''}` });
     const gfLink = `https://www.google.com/travel/flights?${gfParams.toString()}`;
@@ -1073,21 +1158,12 @@ function renderFlightContent(extras, trip) {
 
     const booked = isBookedLeg(leg);
     const manageUrl = safeUrl(leg.manageUrl);
-    const bookedMeta = [
-      leg.depart && `Departs ${leg.depart}`,
-      leg.arrive && `Arrives ${leg.arrive}`,
-      leg.seats && `Seats ${leg.seats}`,
-      leg.baggage,
-    ].filter(Boolean);
-    const bottomHtml = booked
-      ? `
+    const priceHtml = flightPriceHtml(leg.priceRange);
+    let bottomHtml = '';
+    if (!booked) {
+      bottomHtml = `
         <div class="td-flight-bottom">
-          <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
-          ${manageUrl ? `<a class="td-flight-book" href="${esc(manageUrl)}" target="_blank" rel="noopener noreferrer">Manage booking ${ICONS.openInNew}</a>` : ''}
-        </div>`
-      : `
-        <div class="td-flight-bottom">
-          <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
+          <div class="td-flight-price">${priceHtml}</div>
           <div class="td-flight-book-group">
             <a class="td-flight-book" href="${esc(skyLink.url)}" target="_blank" rel="noopener noreferrer" data-booking-click="skyscanner" data-booking-kind="flight">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1099,16 +1175,29 @@ function renderFlightContent(extras, trip) {
             </a>
           </div>
         </div>`;
+    } else if (priceHtml || manageUrl) {
+      // A booked leg with neither a price nor a manage link gets no empty strip.
+      bottomHtml = `
+        <div class="td-flight-bottom">
+          <div class="td-flight-price">${priceHtml}</div>
+          ${manageUrl ? `<a class="td-flight-book" href="${esc(manageUrl)}" target="_blank" rel="noopener noreferrer">Manage booking ${ICONS.openInNew}</a>` : ''}
+        </div>`;
+    }
 
+    // Fixed slots (header, booking, journey, details, price row, tip) so the two
+    // leg cards line up row by row (see .td-flight-legs--flights in the CSS).
     return `
       <div class="td-flight-leg${isConnecting ? ' td-flight-leg--connecting' : ''}${booked ? ' td-flight-leg--booked' : ''}">
         <div class="td-flight-leg-header">
-          <span class="td-flight-leg-label">${esc(label)}${booked ? `<span class="td-booked-badge">Booked${leg.bookingRef ? `, ref ${esc(leg.bookingRef)}` : ''}</span>` : ''}</span>
-          <span class="td-flight-leg-airline">${logo}${logo ? '' : esc(leg.airline || '')}${flightNo ? `<span class="td-flight-number">${esc(flightNo)}</span>` : ''}</span>
+          <span class="td-flight-leg-label">${esc(label)}</span>
+          ${airlineHtml ? `<span class="td-flight-leg-airline">${airlineHtml}</span>` : ''}
         </div>
-        ${routeHtml}
-        <div class="td-flight-duration">${esc(leg.duration)}</div>
-        ${bookedMeta.length ? `<ul class="td-booked-meta">${bookedMeta.map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+        ${booked ? bookingRowHtml(leg.bookingRef, 'td-flight-booking') : ''}
+        <div class="td-flight-journey">
+          ${routeHtml}
+          ${leg.duration ? `<div class="td-flight-duration">${esc(leg.duration)}</div>` : ''}
+        </div>
+        ${flightDetailsHtml(leg)}
         ${bottomHtml}
         ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(leg.tips)}</div>` : ''}
       </div>
@@ -1116,7 +1205,7 @@ function renderFlightContent(extras, trip) {
   };
 
   return `
-    <div class="td-flight-legs">
+    <div class="td-flight-legs td-flight-legs--flights">
       ${renderLeg(flights.outbound, 'Outbound', trip)}
       ${renderLeg(flights.inbound, 'Return', trip)}
     </div>
@@ -1259,7 +1348,7 @@ function renderAccommodationContent(extras, trip) {
       <div class="td-accom-option">
         <div class="td-accom-head">
           ${a.badge ? `<span class="td-accom-badge" style="background: ${BADGE_COLORS[a.badge] || 'var(--terracotta)'}">${esc(a.badge)}</span>` : ''}
-          ${a.booked ? `<span class="td-booked-badge">${ref ? `Booked, ref ${esc(ref)}` : 'Booked'}</span>` : ''}
+          ${a.booked ? bookingRowHtml(ref) : ''}
           <div class="td-accom-name">${esc(a.name)}</div>
           ${a.area || a.type ? `<div class="td-accom-area">${esc([a.area, a.type].filter(Boolean).join(', '))}</div>` : ''}
           ${address ? `<div class="td-accom-address">${esc(address)} <a class="td-maps-link" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Map ${ICONS.openInNew}</a></div>` : ''}
@@ -2521,6 +2610,7 @@ function renderDayPicker(app, trip, opts = {}) {
 
   const wrap = app.querySelector('.td-wrap');
   view.wrap = wrap;
+  bindAirlineLogos(wrap, signal);
 
   app.querySelectorAll('[data-action="back"]').forEach(el => el.addEventListener('click', () => navigate('/')));
 
@@ -2914,15 +3004,6 @@ function attachActivityImg(el, url, venue, source, credit = '') {
   }
 }
 
-// Server photo resolution only targets these (resolve-trip-photos NO_PHOTO_CATEGORIES).
-const NO_PHOTO_CATEGORIES = new Set(['transport', 'flight', 'arrival', 'departure']);
-
-// An imported activity the photo worker hasn't handled yet.
-function isPendingPhoto(activity) {
-  return Boolean(activity?.venue_name) && !activity.photo_url && !activity.photo_source
-    && !NO_PHOTO_CATEGORIES.has(String(activity.category || '').toLowerCase());
-}
-
 // Put a stored photo state (url / source / credit) onto an existing card's
 // photo element, in place.
 function applyActivityPhoto(el, activity, credit) {
@@ -2989,8 +3070,12 @@ function applyPhotoSnapshot(view, { credits, activities }) {
     const photoEl = card.querySelector('.td-activity-photo');
     if (photoEl) applyActivityPhoto(photoEl, found.activity, creditText(_photoCredits[row.id]));
   }
-  // Anything still without a photo has been tried: stop the shimmer.
-  view.wrap.querySelectorAll('.td-activity-photo--pending').forEach(el => {
+}
+
+// Resolution is over: a placeholder still waiting has no photo coming, so it
+// collapses (--none hides the block) instead of staying an empty box.
+function collapsePendingPhotos(root) {
+  root.querySelectorAll('.td-activity-photo--pending').forEach(el => {
     el.classList.remove('td-activity-photo--pending');
     el.classList.add('td-activity-photo--none');
   });
@@ -3014,7 +3099,8 @@ function bindPhotoStatus(view) {
     if (!d.finished) {
       clearTimeout(hideTimer);
       show(photoProgressText(d));
-      // Resolution started after this render: pending placeholders shimmer again.
+      // Resolution started after this render: collapsed pending placeholders
+      // open up and shimmer while it runs.
       view.wrap.querySelectorAll('.td-activity-photo--none:not([data-photo]):not([data-photo-source])').forEach(ph => {
         ph.classList.replace('td-activity-photo--none', 'td-activity-photo--pending');
       });
@@ -3023,6 +3109,9 @@ function bindPhotoStatus(view) {
     const { data } = await fetchTripPhotos(view.tripId);
     if (_view !== view) return;
     if (data) applyPhotoSnapshot(view, data);
+    // Even when the final read fails, nothing is left shimmering (unless a new
+    // run started meanwhile).
+    if (!isResolvingPhotos(view.tripId)) collapsePendingPhotos(view.wrap);
     const n = Number(d.added) || 0;
     show(!d.ok ? "We couldn't add photos right now. We'll try again next time you open this trip."
       : n > 0 ? `Photos added for ${n} place${n === 1 ? '' : 's'}`
@@ -3037,7 +3126,8 @@ function bindPhotoStatus(view) {
 
 // Imported trips get real photos from the server worker, driven by the client.
 // If that run stopped (tab closed, app killed), pick it up when the owner opens
-// the trip again; once per trip per session.
+// the trip again. A run that finished is not repeated in this session; one that
+// failed (server busy, offline) is tried again the next time the trip opens.
 const _photoResumeTried = new Set();
 
 function resumePhotoResolution(trip) {
@@ -3047,7 +3137,15 @@ function resumePhotoResolution(trip) {
   if (!pending) return;
   _photoResumeTried.add(trip.id);
   resolveTripPhotos(trip.id, { title: trip.title || '' })
-    .catch(err => logger.warn('data', 'Photo resume failed', { tripId: trip.id, error: err?.message }));
+    .then((result) => {
+      if (result?.ok) return;
+      _photoResumeTried.delete(trip.id);
+      logger.warn('data', 'Photo resume failed', { tripId: trip.id, error: result?.error });
+    })
+    .catch((err) => {
+      _photoResumeTried.delete(trip.id);
+      logger.warn('data', 'Photo resume failed', { tripId: trip.id, error: err?.message });
+    });
 }
 
 // Imported cards never look photos up live, so after a venue change
@@ -3072,12 +3170,12 @@ function loadActivityPhotos(container, trip) {
   const legacy = [];
   for (const el of photoEls) {
     if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue, el.dataset.photoSource, el.dataset.photoCredit);
-    // 'none' = the photo resolver checked and found no trustworthy photo: keep the
-    // gradient rather than live-resolving a generic stock image.
+    // 'none' = the photo resolver checked and found no trustworthy photo: the
+    // block collapses rather than live-resolving a generic stock image.
     else if (el.dataset.photoSource === 'none') el.classList.add('td-activity-photo--none');
     // Imported trips (and any trip whose photos are being resolved right now)
     // wait for the server worker instead of live stock lookups: shimmer while
-    // it runs, a plain placeholder otherwise.
+    // it runs, collapsed otherwise (it opens again if a run starts).
     else if (imported || resolving) el.classList.add(resolving ? 'td-activity-photo--pending' : 'td-activity-photo--none');
     else legacy.push(el);
   }
