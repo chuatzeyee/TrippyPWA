@@ -22,9 +22,17 @@ export async function signInWithGoogle() {
   return { error: error?.message || null };
 }
 
+// The trip import draft can hold booking references: never leave it behind on
+// a signed-out device.
+const IMPORT_DRAFT_KEY = 'trippy_import_draft'; // the key trip-import-modal.js writes
+function clearImportDraft() {
+  try { localStorage.removeItem(IMPORT_DRAFT_KEY); } catch { /* no storage */ }
+}
+
 export async function signOut() {
   if (!supabase) return;
   await supabase.auth.signOut();
+  clearImportDraft();
   window.location.hash = '#/';
   window.location.reload();
 }
@@ -50,6 +58,7 @@ export async function initAuth() {
   supabase.auth.onAuthStateChange((event, session) => {
     currentUser = session?.user || null;
     setCachedUser(currentUser);
+    if (event === 'SIGNED_OUT') clearImportDraft();
     notifyListeners(event, session);
   });
 }

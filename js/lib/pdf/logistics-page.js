@@ -166,7 +166,7 @@ function renderAccommodation(doc, ctx, extras) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(...C.inkSecondary);
-      doc.text(`${a.area || ''} · ${a.type || ''}`, cx + 4, ctx.y + 14);
+      doc.text([a.area, a.type].filter(Boolean).join(', '), cx + 4, ctx.y + 14);
 
       if (a.priceRange) {
         doc.setFont('courier', 'bold');
@@ -180,7 +180,7 @@ function renderAccommodation(doc, ctx, extras) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(6.5);
         doc.setTextColor(...C.inkSecondary);
-        doc.text(`· ${highlights[h]}`, cx + 4, ctx.y + 25 + h * 4);
+        doc.text(`- ${highlights[h]}`, cx + 4, ctx.y + 25 + h * 4);
       }
     }
 

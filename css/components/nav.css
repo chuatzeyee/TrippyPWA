@@ -182,8 +182,12 @@
   to { transform: rotate(360deg); }
 }
 
+/* Installed app on phones: the nav holds the only home, profile, sign out,
+   theme and square layout controls, so it must stay. It scrolls away with the
+   page instead of pinning to the top, so the trip view's own sticky bars keep
+   the top edge (their standalone offsets assume no pinned nav). */
 @media (display-mode: standalone) and (max-width: 768px) {
   .app-nav {
-    display: none;
+    position: relative;
   }
 }

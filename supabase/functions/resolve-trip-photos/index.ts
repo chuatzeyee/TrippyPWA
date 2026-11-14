@@ -18,7 +18,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   resolvePhotoCandidates, geocodeVenue, isOfficialSite, imageDims, looksLikePhoto, safeFetch, readCapped, MAX_IMAGE_BYTES,
+  canCheckDns,
 } from "../_shared/photo-resolver.mjs";
+import { CORS_MAX_AGE, bearerToken, isServiceRoleRequest } from "../_shared/http.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -32,6 +34,7 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Max-Age": CORS_MAX_AGE,
 };
 
 function json(body: unknown, status: number) {
@@ -209,22 +212,6 @@ async function resolveTrip(tripId: string, ownerCall = false) {
   return { activities: actDone, attempted: acts.length, towns: townDone, cover: coverDone, remaining };
 }
 
-function bearer(auth: string): string {
-  return auth.replace(/^Bearer\s+/i, "").trim();
-}
-
-// True if the bearer token is a Supabase service-role JWT (role claim).
-function isServiceRole(token: string): boolean {
-  if (!token) return false;
-  if (SERVICE_KEY && token === SERVICE_KEY) return true;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return payload?.role === "service_role";
-  } catch {
-    return false;
-  }
-}
-
 // The signed-in user owns this trip (token verified by GoTrue, not just decoded).
 async function isTripOwner(token: string, tripId: string): Promise<boolean> {
   if (!token) return false;
@@ -237,12 +224,19 @@ async function isTripOwner(token: string, tripId: string): Promise<boolean> {
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const token = bearer(req.headers.get("Authorization") || "");
+    const token = bearerToken(req);
     const { tripId, inline } = await req.json().catch(() => ({}));
     if (!tripId || typeof tripId !== "string" || !/^[0-9a-f-]{36}$/i.test(tripId)) return json({ error: "tripId required" }, 400);
 
-    const service = isServiceRole(token);
+    // Service callers (process-generation, backfill script) send the exact
+    // service-role key; everyone else must be the trip owner with a JWT that
+    // GoTrue verifies. A JWT's role claim is never trusted on its own: with
+    // --no-verify-jwt nothing upstream has checked its signature.
+    const service = await isServiceRoleRequest(req);
     if (!service && !(await isTripOwner(token, tripId))) return json({ error: "Unauthorized" }, 401);
+    // The SSRF guard fails closed without DNS: without a resolver every fetch
+    // would be refused and each venue wrongly marked 'none'. Stop instead.
+    if (!canCheckDns()) return json({ error: "Photo fetching is unavailable right now" }, 503);
     if (!service && await ownerBudgetExceeded(tripId)) return json({ error: "Daily photo limit reached for this trip" }, 429);
 
     // Service callers may fire-and-forget (background, 202). Owners always run

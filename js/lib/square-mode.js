@@ -20,6 +20,15 @@ const QUERY = '(min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1) and (ma
 
 const listeners = new Set();
 let mql = null;
+// Last accepted auto-detect result and the viewport width it was taken at.
+// Renderers read this rather than the live query so markup always matches the
+// <html> attribute, even while a viewport change is being ignored.
+let autoOn = null;
+let autoWidth = 0;
+let recheckPending = false;
+// Wait for the soft keyboard to finish closing before re-checking.
+const KEYBOARD_SETTLE_MS = 400;
+const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit']);
 
 function readOverride() {
   try {
@@ -38,6 +47,44 @@ function autoMatches() {
   }
 }
 
+function detectAuto() {
+  autoOn = autoMatches();
+  autoWidth = window.innerWidth;
+}
+
+// A focused text field means the on-screen keyboard is (or is about to be) up.
+function isEditing() {
+  const el = document.activeElement;
+  if (!el || el === document.body) return false;
+  if (el.isContentEditable || el.tagName === 'TEXTAREA') return true;
+  return el.tagName === 'INPUT' && !NON_TEXT_INPUTS.has((el.type || 'text').toLowerCase());
+}
+
+// Viewport changed. With interactive-widget=resizes-content, opening the Android
+// keyboard shrinks the viewport height and can make a tall phone look square;
+// flipping then would rebuild the view and destroy the field being typed in.
+// So: ignore height-only changes while editing (the keyboard), and defer a real
+// change (rotation) until editing ends.
+function onViewportChange() {
+  if (isEditing()) {
+    if (window.innerWidth !== autoWidth) recheckPending = true;
+    return;
+  }
+  recheckPending = false;
+  detectAuto();
+  apply();
+}
+
+function onFocusOut() {
+  if (!recheckPending) return;
+  setTimeout(() => {
+    if (!recheckPending || isEditing()) return;
+    recheckPending = false;
+    detectAuto();
+    apply();
+  }, KEYBOARD_SETTLE_MS);
+}
+
 /** @returns {'auto'|'on'|'off'} the persisted user preference. */
 export function getSquareOverride() {
   return readOverride();
@@ -48,7 +95,8 @@ export function isSquareMode() {
   const override = readOverride();
   if (override === 'on') return true;
   if (override === 'off') return false;
-  return autoMatches();
+  if (autoOn === null) detectAuto();
+  return autoOn;
 }
 
 function apply() {
@@ -101,10 +149,12 @@ export function initSquareMode() {
   if (!mql) {
     try {
       mql = window.matchMedia(QUERY);
-      mql.addEventListener('change', apply);
+      mql.addEventListener('change', onViewportChange);
+      document.addEventListener('focusout', onFocusOut);
     } catch {
       mql = null;
     }
   }
+  detectAuto();
   apply();
 }

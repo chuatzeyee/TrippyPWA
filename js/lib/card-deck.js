@@ -15,7 +15,26 @@
 //   </div>
 // The chrome (progress dots, prev/next buttons) is injected by mountCardDeck().
 
+import { escapeHtml } from '../data/day-builder.js';
+
 const SWIPE_THRESHOLD = 40; // px of horizontal travel before a swipe counts
+const FOCUSABLE = 'a,button,input,select,textarea,[tabindex]';
+// Remembers an element's own tabindex ('' when it had none) while the deck
+// parks it at -1 on an offscreen slide, so it comes back unchanged.
+const SAVED_TABINDEX = 'data-deck-tabindex';
+
+function parkTabindex(el) {
+  if (!el.hasAttribute(SAVED_TABINDEX)) el.setAttribute(SAVED_TABINDEX, el.getAttribute('tabindex') ?? '');
+  el.setAttribute('tabindex', '-1');
+}
+
+function restoreTabindex(el) {
+  if (!el.hasAttribute(SAVED_TABINDEX)) return;
+  const original = el.getAttribute(SAVED_TABINDEX);
+  el.removeAttribute(SAVED_TABINDEX);
+  if (original === '') el.removeAttribute('tabindex');
+  else el.setAttribute('tabindex', original);
+}
 
 /**
  * @typedef {Object} DeckHandle
@@ -47,7 +66,7 @@ export function mountCardDeck(deck, opts = {}) {
     <button class="card-deck-btn card-deck-btn--prev" aria-label="Previous">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </button>
-    <div class="card-deck-dots" role="tablist" aria-label="${opts.label || 'Cards'}">
+    <div class="card-deck-dots" role="tablist" aria-label="${escapeHtml(opts.label || 'Cards')}">
       ${slides.map((_, i) => `<button class="card-deck-dot" role="tab" aria-label="Card ${i + 1} of ${slides.length}" data-deck-dot="${i}"></button>`).join('')}
     </div>
     <button class="card-deck-btn card-deck-btn--next" aria-label="Next">
@@ -66,11 +85,9 @@ export function mountCardDeck(deck, opts = {}) {
       const active = i === index;
       s.classList.toggle('card-deck-slide--active', active);
       s.setAttribute('aria-hidden', active ? 'false' : 'true');
-      // Keep offscreen slides out of the tab order.
-      s.querySelectorAll('a,button,input,select,textarea,[tabindex]').forEach(el => {
-        if (active) el.removeAttribute('tabindex');
-        else el.setAttribute('tabindex', '-1');
-      });
+      // Keep offscreen slides out of the tab order; the active slide gets each
+      // element's own tabindex back (e.g. tabindex="0" on role=button cards).
+      s.querySelectorAll(FOCUSABLE).forEach(active ? restoreTabindex : parkTabindex);
     });
     dots.forEach((d, i) => d.classList.toggle('card-deck-dot--active', i === index));
     prevBtn.disabled = index === 0;
@@ -134,6 +151,7 @@ export function mountCardDeck(deck, opts = {}) {
       track.removeEventListener('pointerdown', onStart);
       track.removeEventListener('pointerup', onEnd);
       deck.removeEventListener('keydown', onKey);
+      slides.forEach(s => s.querySelectorAll(`[${SAVED_TABINDEX}]`).forEach(restoreTabindex));
       nav.remove();
     }
   };
@@ -181,7 +199,7 @@ export function wrapChildrenIntoDeck(host, opts = {}) {
 export function buildDeckHtml(slidesHtml, opts = {}) {
   const cls = opts.deckClass ? ` ${opts.deckClass}` : '';
   return `
-    <div class="card-deck${cls}" data-deck${opts.label ? ` aria-label="${opts.label}"` : ''}>
+    <div class="card-deck${cls}" data-deck${opts.label ? ` aria-label="${escapeHtml(opts.label)}"` : ''}>
       <div class="card-deck-track">
         ${slidesHtml.map(html => `<section class="card-deck-slide">${html}</section>`).join('')}
       </div>

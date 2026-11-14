@@ -53,12 +53,19 @@
 
 .toast-close {
   flex-shrink: 0;
+  /* 44px hit area (the glyph stays small); negative margin keeps the toast compact. */
+  min-width: 44px;
+  min-height: 44px;
+  margin: calc(-1 * var(--sp-3)) calc(-1 * var(--sp-3)) calc(-1 * var(--sp-3)) 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--ink-ghost);
   font-size: 1.1rem;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 0;
   line-height: 1;
 }
 

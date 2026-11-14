@@ -1,6 +1,6 @@
 import { navigate } from '../router.js';
 import { escapeHtml } from '../data/day-builder.js';
-import { loadWizardState, saveWizardState, updateWizardField, clearWizardState, canAdvance } from './wizard-state.js';
+import { loadWizardState, saveWizardState, updateWizardField, clearWizardState, canAdvance, fixedDayCount, MAX_TRIP_DAYS } from './wizard-state.js';
 import { searchDestinations, getPopularDestinations, DESTINATIONS, makeCustomDestination } from './destinations.js';
 import { resolveCity } from './city-resolver.js';
 import { loadCatalogue, searchCatalogue, hydrateCity } from './city-catalogue.js';
@@ -263,7 +263,7 @@ function renderFooterPills() {
     pills.push(`<span class="wizard-footer-pill">${flagImg(state.destination.flag, 14)} <strong>${escapeHtml(state.destination.name)}</strong></span>`);
   }
   if (state.dates.start && state.dates.end) {
-    pills.push(`<span class="wizard-footer-pill">📅 ${formatDateShort(state.dates.start)} &ndash; ${formatDateShort(state.dates.end)}</span>`);
+    pills.push(`<span class="wizard-footer-pill">📅 ${formatDateShort(state.dates.start)} to ${formatDateShort(state.dates.end)}</span>`);
   } else if (state.dates.duration && state.dates.season) {
     pills.push(`<span class="wizard-footer-pill">📅 ~${state.dates.duration}d, ${state.dates.season}</span>`);
   }
@@ -822,7 +822,7 @@ async function runEnrichment(typed) {
     return;
   }
   if (!resolved) {
-    showToast(`Couldn't find ${typed.name} — using it as typed.`, 'info');
+    showToast(`Couldn't find ${typed.name}, so we're using it as typed.`, 'info');
     return;
   }
 
@@ -932,13 +932,12 @@ function renderStep2(el) {
 
   const dateContent = el.querySelector('#date-content');
   if (state.dates.mode === 'fixed') {
-    const dayCount = state.dates.start && state.dates.end
-      ? Math.round((new Date(state.dates.end) - new Date(state.dates.start)) / 86400000) + 1
-      : 0;
+    const dayCount = fixedDayCount(state.dates);
+    const tooLong = dayCount > MAX_TRIP_DAYS;
     dateContent.innerHTML = `
       <p class="text-small" style="color: var(--ink-secondary); margin-bottom: var(--sp-3); text-align: center;">
         ${state.dates.start && state.dates.end
-          ? `${formatDate(state.dates.start)} → ${formatDate(state.dates.end)}`
+          ? `${formatDate(state.dates.start)} to ${formatDate(state.dates.end)}`
           : 'Tap your departure date, then your return date'}
       </p>
       <div id="cal-container"></div>
@@ -947,10 +946,11 @@ function renderStep2(el) {
           <span class="date-preview-days">${dayCount}</span>
           <span class="date-preview-label">day${dayCount !== 1 ? 's' : ''} of adventure</span>
         </div>
+        ${tooLong ? `<p class="text-small" role="alert" style="color: var(--terracotta); text-align: center; margin-top: var(--sp-2);">Trips can be up to ${MAX_TRIP_DAYS} days long. Please shorten the dates.</p>` : ''}
         <div id="free-day-section"></div>
       ` : ''}
     `;
-    if (dayCount > 0) {
+    if (dayCount > 0 && !tooLong) {
       renderFreeDayChips(dateContent.querySelector('#free-day-section'), el);
     }
     renderCalendar(dateContent.querySelector('#cal-container'), {
@@ -1001,7 +1001,7 @@ function renderStep2(el) {
       ${state.dates.duration ? `
         <div class="date-preview">
           <span class="date-preview-days">${state.dates.duration}</span>
-          <span class="date-preview-label">day${state.dates.duration !== 1 ? 's' : ''}${state.dates.season ? ` · ${seasons.find(s => s.value === state.dates.season)?.title || ''}` : ''}</span>
+          <span class="date-preview-label">day${state.dates.duration !== 1 ? 's' : ''}${state.dates.season ? `, ${seasons.find(s => s.value === state.dates.season)?.title || ''}` : ''}</span>
         </div>
         <div id="free-day-section"></div>
       ` : ''}
@@ -1087,7 +1087,7 @@ function renderStep3(el) {
       <button class="budget-stepper-btn" data-budget-step="-${stepSize}" aria-label="Decrease budget">−</button>
       <div class="budget-stepper-value">
         <div class="budget-stepper-amount">${destSym}${formatNumber(currentAmount)}</div>
-        <div class="budget-stepper-currency">per day · ${escapeHtml(destCode)}</div>
+        <div class="budget-stepper-currency">per day in ${escapeHtml(destCode)}</div>
         ${showHome ? `<div class="budget-stepper-home">${homeSym}${formatNumber(homeEquiv)} ${homeCode}</div>` : ''}
       </div>
       <button class="budget-stepper-btn" data-budget-step="${stepSize}" aria-label="Increase budget">+</button>
@@ -1277,15 +1277,15 @@ function renderStep4(el) {
     { key: 'business', seat: '🥂', title: 'Business', desc: 'Flat-bed vibes' }
   ];
   const times = [
-    { icon: '🌅', value: 'morning', label: 'Morning', range: '6am–12pm' },
-    { icon: '☀️', value: 'afternoon', label: 'Afternoon', range: '12–5pm' },
-    { icon: '🌆', value: 'evening', label: 'Evening', range: '5–10pm' },
-    { icon: '🌙', value: 'redeye', label: 'Red-eye', range: '10pm–6am' },
+    { icon: '🌅', value: 'morning', label: 'Morning', range: '6am to 12pm' },
+    { icon: '☀️', value: 'afternoon', label: 'Afternoon', range: '12 to 5pm' },
+    { icon: '🌆', value: 'evening', label: 'Evening', range: '5 to 10pm' },
+    { icon: '🌙', value: 'redeye', label: 'Red-eye', range: '10pm to 6am' },
     { icon: '🤷', value: 'any', label: 'Any', range: 'Whatever\'s cheapest' }
   ];
   const connections = [
     { key: 'direct', icon: '✈️→', label: 'Direct' },
-    { key: '1 stop', icon: '✈️·✈️', label: '1 Stop' },
+    { key: '1 stop', icon: '✈️✈️', label: '1 Stop' },
     { key: 'any', icon: '🔀', label: 'Any Route' }
   ];
 
@@ -1525,7 +1525,7 @@ function renderStylePreview() {
         ${!thumb ? '🧭' : ''}
       </div>
       <div class="wizard-preview-body">
-        <span class="wizard-preview-dest">${escapeHtml(destName)}${dayCount ? ` · ${dayCount} days` : ''}</span>
+        <span class="wizard-preview-dest">${escapeHtml(destName)}${dayCount ? `, ${dayCount} days` : ''}</span>
         <span class="wizard-preview-lean">A ${paceWord} trip, ${escapeHtml(lean)}</span>
       </div>
     </div>
@@ -1535,11 +1535,11 @@ function renderStylePreview() {
 function renderStep6(el) {
   const dest = state.destination;
   const destName = state.multiCity && state.destinations.length > 0
-    ? state.destinations.map(d => d.name).join(' → ')
+    ? state.destinations.map(d => d.name).join(' to ')
     : dest?.name || 'Not set';
 
   const dateLabel = state.dates.start
-    ? `${formatDateShort(state.dates.start)} → ${formatDateShort(state.dates.end)}`
+    ? `${formatDateShort(state.dates.start)} to ${formatDateShort(state.dates.end)}`
     : `~${state.dates.duration} days, ${state.dates.season || 'flexible'}`;
   const dateYear = state.dates.start ? new Date(state.dates.start + 'T00:00:00').getFullYear() : '';
 
@@ -1555,7 +1555,7 @@ function renderStep6(el) {
 
   const extras = [
     { key: 'mustDo', label: 'Must-do activities', icon: '📌', placeholder: 'e.g. Visit Sagrada Familia' },
-    { key: 'research', label: 'Paste your research', icon: '📋', placeholder: 'Paste any notes, rough plans, or venue lists you already have — any format. We\'ll build the itinerary around them.', textarea: true },
+    { key: 'research', label: 'Paste your research', icon: '📋', placeholder: 'Paste any notes, rough plans, or venue lists you already have, in any format. We\'ll build the itinerary around them.', textarea: true },
     { key: 'dietary', label: 'Dietary needs', icon: '🥗', placeholder: 'e.g. Vegetarian, nut allergy' },
     { key: 'avoid', label: 'Things to avoid', icon: '🚫', placeholder: 'e.g. Touristy restaurants, long bus rides' },
   ];
@@ -1709,7 +1709,7 @@ async function renderGeneration() {
       const { error } = await signInWithGoogle();
       if (error) {
         // Keep the branded button intact; surface the failure via a toast.
-        showToast("Sign-in didn't go through — please try again.", 'error');
+        showToast("Sign-in didn't go through. Please try again.", 'error');
       }
     });
     app.querySelector('[data-wizard-gen="back"]')?.addEventListener('click', () => {
@@ -1725,7 +1725,7 @@ async function renderGeneration() {
       <div class="wizard-gen">
         <div class="wizard-gen-icon" style="animation: float 3s ease-in-out infinite;">&#9992;&#65039;</div>
         <h2 class="wizard-step-title" style="margin-bottom: var(--sp-3); font-size: 1.5rem;">Setting up your trip...</h2>
-        <p style="color: var(--ink-secondary); font-size: 0.9rem;">Saving your choices — this only takes a moment.</p>
+        <p style="color: var(--ink-secondary); font-size: 0.9rem;">Saving your choices. This only takes a moment.</p>
       </div>
     </div>
     <style>@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }</style>
@@ -1743,7 +1743,7 @@ async function renderGeneration() {
           <div class="wizard-gen">
             <div class="wizard-gen-icon">&#9888;&#65039;</div>
             <h2 class="wizard-step-title" style="margin-bottom: var(--sp-3); font-size: 1.5rem;">Something went wrong</h2>
-            <p style="color: var(--ink-secondary); margin-bottom: var(--sp-6); font-size: 0.9rem;">We couldn't start planning your trip just now. Your choices are saved — give it another go.</p>
+            <p style="color: var(--ink-secondary); margin-bottom: var(--sp-6); font-size: 0.9rem;">We couldn't start planning your trip just now. Your choices are saved, so give it another go.</p>
             <button class="btn btn--primary btn--pill" id="gen-retry">Try Again</button>
             <button class="btn btn--ghost btn--pill" style="margin-top: var(--sp-3); font-size: 0.8rem;" data-wizard-gen="back">Back to Summary</button>
           </div>
@@ -1768,7 +1768,7 @@ async function renderGeneration() {
         <div class="wizard-gen">
           <div class="wizard-gen-icon">&#9888;&#65039;</div>
           <h2 class="wizard-step-title" style="margin-bottom: var(--sp-3); font-size: 1.5rem;">Something went wrong</h2>
-          <p style="color: var(--ink-secondary); margin-bottom: var(--sp-6); font-size: 0.9rem;">We couldn't start planning your trip just now. Your choices are saved — give it another go.</p>
+          <p style="color: var(--ink-secondary); margin-bottom: var(--sp-6); font-size: 0.9rem;">We couldn't start planning your trip just now. Your choices are saved, so give it another go.</p>
           <button class="btn btn--primary btn--pill" id="gen-retry">Try Again</button>
           <button class="btn btn--ghost btn--pill" style="margin-top: var(--sp-3); font-size: 0.8rem;" data-wizard-gen="back">Back to Summary</button>
         </div>

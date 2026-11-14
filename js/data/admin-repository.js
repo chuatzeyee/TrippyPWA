@@ -61,6 +61,7 @@ export async function fetchAdminStats() {
 }
 
 export async function updateUserRole(userId, role) {
+  if (role !== 'user' && role !== 'admin') return { error: 'Invalid role' };
   const { error } = await supabase
     .from('profiles')
     .update({ role })

@@ -1,18 +1,20 @@
 import { navigate, onRouteLeave } from '../router.js';
 import { fetchTripById, deleteTrip } from '../data/trip-repository.js';
+import { getUser } from '../lib/supabase.js';
 import { formatNumber, formatDateRange, formatWeekdayDate, getLocale, formatCityList } from '../lib/locale.js';
 import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { shortenTransitName } from '../data/transit-lines.js';
 import { hotelSearchLinks, flightSearchLink, trackBookingClick, BOOKING_DISCLOSURE } from '../services/booking-links.js';
-import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, photoCreditText } from '../lib/trip-extras.js';
+import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg } from '../lib/trip-extras.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
 import { isSquareMode } from '../lib/square-mode.js';
 import { renderSquareItinerary } from './square-itinerary.js';
 import { bindAlternatives } from './alternatives.js';
 import { mountItineraryChat } from './itinerary-chat.js';
+import { resolveTripPhotos, isResolvingPhotos, getPhotoProgress, isPhotoOnlyChange, fetchTripPhotos, PHOTO_FIELDS } from '../services/trip-photos.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -100,10 +102,14 @@ function addThousandSeps(str) {
   return (str || '').replace(/\d{4,}/g, m => formatNumber(m));
 }
 
+// Flag codes come from stored trip data; only a real ISO-style code (e.g. "jp",
+// "gb-sct") may reach the image URL.
+const FLAG_CODE = /^[a-z]{2}(-[a-z]{2,3})?$/i;
+
 function flagImg(code, size = 24) {
-  if (!code) return '';
+  if (!code || !FLAG_CODE.test(String(code))) return '';
   const w = size <= 20 ? 40 : 80;
-  return `<img src="https://flagcdn.com/w${w}/${code}.png" width="${size}" height="${Math.round(size * 0.75)}" alt="" class="td-flag-img">`;
+  return `<img src="https://flagcdn.com/w${w}/${String(code).toLowerCase()}.png" width="${size}" height="${Math.round(size * 0.75)}" alt="" class="td-flag-img">`;
 }
 
 const IATA_TO_FLAG = {
@@ -222,9 +228,55 @@ function formatDuration(minutes) {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+// Returns HTML-safe text (the symbol comes from stored trip data).
 function formatCost(amount, symbol) {
   if (!amount || amount === 0) return 'Free';
-  return `${symbol || '$'}${formatNumber(amount)}`;
+  return `${esc(symbol || '$')}${formatNumber(amount)}`;
+}
+
+// ===== Per-activity currency =====
+// Activities carry their own cost_currency. Totals are shown in the trip's
+// currency, so other currencies are converted when both rates are known and
+// otherwise left out (and counted) rather than added up as if they matched.
+function tripCurrencyCode(trip) {
+  const ws = trip?.wizard_state;
+  const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
+  return String(dest?.currencyCode || trip?.budget_currency || 'USD').toUpperCase();
+}
+
+// The activity's own currency when it is a real code that differs from the
+// trip's; '' when it is priced in the trip currency (or the code is unusable).
+function foreignCurrency(activity, tripCode) {
+  const code = String(activity?.cost_currency || '').trim().toUpperCase();
+  return /^[A-Z]{3}$/.test(code) && code !== tripCode ? code : '';
+}
+
+function costInTripCurrency(activity, tripCode) {
+  const amount = Number(activity?.cost_amount) || 0;
+  if (!amount) return 0;
+  const from = foreignCurrency(activity, tripCode);
+  if (!from) return amount;
+  if (canConvert(from) && canConvert(tripCode)) return convert(amount, from, tripCode);
+  return null;
+}
+
+function sumCosts(activities, tripCode) {
+  let total = 0;
+  let excluded = 0;
+  for (const a of activities || []) {
+    const c = costInTripCurrency(a, tripCode);
+    if (c === null) excluded++;
+    else total += c;
+  }
+  return { total, excluded };
+}
+
+// Cost badge for one activity: its own currency code when it differs from the
+// trip's, otherwise the trip symbol. HTML-safe.
+function activityCostLabel(activity, sym, tripCode) {
+  const code = foreignCurrency(activity, tripCode);
+  if (code && activity.cost_amount) return `${esc(code)} ${formatNumber(activity.cost_amount)}`;
+  return formatCost(activity.cost_amount, sym);
 }
 
 function catIcon(category) {
@@ -259,10 +311,10 @@ function renderTripFooter(trip) {
   }
   if (ws.budget?.dailyAmount > 0) {
     const sym = dest?.currencySymbol || '$';
-    pills.push(`<span class="td-footer-pill">${mdIcon(MD.restaurant, 12)} ${sym}${formatNumber(ws.budget.dailyAmount)}/day</span>`);
+    pills.push(`<span class="td-footer-pill">${mdIcon(MD.restaurant, 12)} ${esc(sym)}${formatNumber(Number(ws.budget.dailyAmount) || 0)}/day</span>`);
   }
   if (ws.accommodation?.type) {
-    pills.push(`<span class="td-footer-pill">${ACCOM_LABELS[ws.accommodation.type] || ws.accommodation.type}</span>`);
+    pills.push(`<span class="td-footer-pill">${esc(ACCOM_LABELS[ws.accommodation.type] || ws.accommodation.type)}</span>`);
   }
   if (ws.style?.activities?.length > 0) {
     const label = ws.style.activities.length <= 3
@@ -270,8 +322,8 @@ function renderTripFooter(trip) {
       : ws.style.activities.slice(0, 2).join(', ') + ` +${ws.style.activities.length - 2}`;
     pills.push(`<span class="td-footer-pill">${mdIcon(MD.place, 12)} ${esc(label)}</span>`);
   }
-  if (trip.travelers > 1) {
-    pills.push(`<span class="td-footer-pill">${mdIcon(MD.walk, 12)} ${trip.travelers}</span>`);
+  if (Number(trip.travelers) > 1) {
+    pills.push(`<span class="td-footer-pill">${mdIcon(MD.walk, 12)} ${Number(trip.travelers)}</span>`);
   }
   // Photo-source attribution. Per-photo credits (creator + licence) are shown on
   // each photo; this line credits the free providers overall.
@@ -533,10 +585,19 @@ const NO_COST_CATEGORIES = new Set(['departure', 'arrival', 'flight', 'check-in'
 // Photo credits for the trip being rendered (extras.photoCredits[activityId]).
 let _photoCredits = {};
 
-function renderActivity(activity, currencySymbol, isFirst) {
+// Visible attribution for a Creative Commons photo ("Photo: creator, licence,
+// via"). Formatted here so the separator follows the app's copy rules.
+function creditText(credit) {
+  if (!credit || typeof credit !== 'object') return '';
+  const parts = [credit.creator, credit.license, credit.via].map(v => String(v || '').trim()).filter(Boolean);
+  return parts.length ? `Photo: ${parts.join(', ')}` : '';
+}
+
+function renderActivity(activity, currencySymbol, isFirst, tripCode = '') {
   const icon = catIcon(activity.category);
   const cat = (activity.category || '').toLowerCase();
-  const cost = NO_COST_CATEGORIES.has(cat) && !activity.cost_amount ? '' : formatCost(activity.cost_amount, currencySymbol);
+  const cost = NO_COST_CATEGORIES.has(cat) && !activity.cost_amount ? '' : activityCostLabel(activity, currencySymbol, tripCode);
+  const credit = creditText(_photoCredits[activity.id]);
   const duration = formatDuration(activity.duration_minutes);
   const time = activity.start_time || '';
   const lat = Number(activity.latitude);
@@ -550,7 +611,7 @@ function renderActivity(activity, currencySymbol, isFirst) {
     <div class="td-activity">
       ${time ? `<div class="td-activity-time">${esc(time)}</div>` : '<div class="td-activity-time"></div>'}
       <div class="td-activity-dot" data-time="${esc(time)}"></div>
-      <div class="td-activity-card" data-activity-id="${activity.id || ''}">
+      <div class="td-activity-card" data-activity-id="${esc(activity.id || '')}">
         <div class="td-activity-card-top">
           <span class="td-activity-icon">${icon}</span>
           <div class="td-activity-card-cost">
@@ -562,8 +623,8 @@ function renderActivity(activity, currencySymbol, isFirst) {
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
-        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${photoCreditText(_photoCredits[activity.id]) ? `data-photo-credit="${esc(photoCreditText(_photoCredits[activity.id]))}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
-        ${activity.id ? `<button class="td-alt-btn" data-alt-for="${activity.id}" title="Suggest alternatives">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
+        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${credit ? `data-photo-credit="${esc(credit)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
+        ${activity.id ? `<button type="button" class="td-alt-btn" data-alt-for="${esc(activity.id)}" title="Suggest alternatives" aria-expanded="false">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
       </div>
     </div>
   `;
@@ -574,17 +635,19 @@ function tripHeader(trip) {
   const ws = trip.wizard_state;
   const wsDest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
   const sym = wsDest?.currencySymbol || trip.budget_currency_symbol || '$';
+  const tripCode = tripCurrencyCode(trip);
   const shortTitle = ws?.multiCity && ws?.destinations?.length > 0
     ? formatCityList(ws.destinations.map(d => d.name))
     : ws?.destination?.name || trip.title || 'My Trip';
 
   let totalCost = 0;
   let totalActivities = 0;
+  let excludedCosts = 0;
   for (const d of days) {
-    for (const a of d.activities || []) {
-      totalCost += a.cost_amount || 0;
-      totalActivities++;
-    }
+    const { total, excluded } = sumCosts(d.activities, tripCode);
+    totalCost += total;
+    excludedCosts += excluded;
+    totalActivities += (d.activities || []).length;
   }
 
   const flag = ws?.multiCity
@@ -597,67 +660,302 @@ function tripHeader(trip) {
   // request a larger render to avoid the upscaled/pixelated look.
   const heroImage = rawHeroImage ? rawHeroImage.replace(/\/\d+px-/, '/1280px-') : rawHeroImage;
 
-  const dateRange = formatDateRange(trip.start_date, trip.end_date);
+  // Ranges read "1 to 5 Jun" (copy rule: no en dash), whatever the formatter emits.
+  const dateRange = plainDashes(formatDateRange(trip.start_date, trip.end_date));
 
   const dayCount = days.length || (trip.start_date && trip.end_date
     ? Math.round((new Date(trip.end_date + 'T00:00:00') - new Date(trip.start_date + 'T00:00:00')) / 86400000) + 1
     : 0);
 
-  return { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange };
+  return { days, dayCount, sym, tripCode, shortTitle, totalCost, totalActivities, excludedCosts, flag, heroImage, dateRange };
 }
 
-export async function renderTripDetail(rawTripId) {
-  const [tripId, qs] = rawTripId.split('?');
-  const jumpToToday = new URLSearchParams(qs || '').get('today') === '1';
+// Copy rule for text this view doesn't own (shared formatters, visa data
+// files): ranges read "5 to 7", and an em dash becomes a comma.
+function plainDashes(text) {
+  return String(text || '').replace(/\s*\u2013\s*/g, ' to ').replace(/\s*\u2014\s*/g, ', ');
+}
 
-  const app = document.getElementById('app');
-  app.innerHTML = `<div class="td-wrap"><div class="td-loading">Loading trip...</div></div>`;
+// ===== View lifecycle =====
+// One trip view is live at a time. Everything a render attaches outside its own
+// DOM (window listeners, observers, the realtime channel, timers) is registered
+// on _view and torn down before the next render and when the route changes.
+// _renderToken guards async work: a fetch that resolves after the user moved
+// on (another trip, Back, or a newer refresh) is dropped instead of painting.
+let _renderToken = 0;
+let _view = null;
+let _unregisterLeave = null;
 
-  const { data: trip, error } = await fetchTripById(tripId);
+function isTripRoute(tripId) {
+  const path = location.hash.slice(1).split('?')[0];
+  return path === `/trip/${tripId}` || path === `/trip/${encodeURIComponent(tripId)}`;
+}
 
-  if (error || !trip) {
-    if (error) logger.error('data', 'Trip load failed', { tripId, error });
-    const notFound = !error && !trip;
-    app.innerHTML = `
-      <div class="td-wrap">
-        <button class="td-back" data-action="back">${ICONS.arrowBack} Back</button>
-        <div class="td-error-state">
-          <div class="td-error-icon">${ICONS.info}</div>
-          <h2 class="td-error-title">${notFound ? "We couldn't find this trip" : 'Something went wrong'}</h2>
-          <p class="td-error-msg">${notFound ? 'It may have been deleted, or the link is no longer valid.' : 'Check your connection and try again.'}</p>
-          <div class="td-error-actions">
-            ${notFound ? '' : '<button class="btn btn--primary btn--pill" data-action="retry">Try again</button>'}
-            <button class="btn btn--ghost btn--pill" data-action="back">Back to Trips</button>
-          </div>
+function isCurrentRender(token, tripId) {
+  return token === _renderToken && isTripRoute(tripId);
+}
+
+function teardownView() {
+  const view = _view;
+  if (!view) return;
+  _view = null;
+  view.controller.abort();
+  clearTimeout(view.refreshTimer);
+  for (const fn of view.cleanups.splice(0)) {
+    try { fn(); } catch { /* one failing cleanup must not block the rest */ }
+  }
+  view.chat?.destroy();
+}
+
+function ensureLeaveHandler() {
+  if (_unregisterLeave) return;
+  _unregisterLeave = onRouteLeave(() => {
+    _unregisterLeave = null;
+    _renderToken++;
+    teardownView();
+  });
+}
+
+// Register a cleanup on the live view (observers created after first paint).
+function addViewCleanup(fn) {
+  if (fn && _view) _view.cleanups.push(fn);
+}
+
+function trackObserver(observer) {
+  if (observer) addViewCleanup(() => observer.disconnect());
+}
+
+function renderTripSkeleton() {
+  const day = `
+    <div class="td-skel-day">
+      <div class="td-skel-num skel-shimmer"></div>
+      <div class="td-skel-lines">
+        <div class="td-skel-line skel-shimmer"></div>
+        <div class="td-skel-line td-skel-line--short skel-shimmer"></div>
+      </div>
+    </div>`;
+  return `
+    <div class="td-wrap td-skel" role="status" aria-busy="true">
+      <span class="td-skel-label">Loading trip</span>
+      <div class="td-skel-topbar">
+        <div class="td-skel-tabs skel-shimmer"></div>
+        <div class="td-skel-actions skel-shimmer"></div>
+      </div>
+      <div class="td-skel-hero skel-shimmer"></div>
+      <div class="td-skel-days">${day}${day}${day}</div>
+    </div>`;
+}
+
+function renderTripError(app, rawTripId, kind) {
+  const notFound = kind === 'not_found';
+  app.innerHTML = `
+    <div class="td-wrap">
+      <button class="td-back" data-action="back">${ICONS.arrowBack} Back</button>
+      <div class="td-error-state" role="alert">
+        <div class="td-error-icon">${ICONS.info}</div>
+        <h2 class="td-error-title">${notFound ? "We couldn't find this trip" : 'Something went wrong'}</h2>
+        <p class="td-error-msg">${notFound ? 'It may have been deleted, or the link is no longer valid.' : 'Check your connection and try again.'}</p>
+        <div class="td-error-actions">
+          ${notFound ? '' : '<button class="btn btn--primary btn--pill" data-action="retry">Try again</button>'}
+          <button class="btn btn--ghost btn--pill" data-action="back">Back to Trips</button>
         </div>
       </div>
-    `;
-    app.querySelector('[data-action="retry"]')?.addEventListener('click', () => renderTripDetail(rawTripId));
-    app.querySelectorAll('[data-action="back"]').forEach(b => b.addEventListener('click', () => navigate('/')));
-    return;
-  }
+    </div>
+  `;
+  app.querySelector('[data-action="retry"]')?.addEventListener('click', () => renderTripDetail(rawTripId));
+  app.querySelectorAll('[data-action="back"]').forEach(b => b.addEventListener('click', () => navigate('/')));
+}
 
-  if (!getHomeCurrency()) {
-    try {
-      const { fetchProfile } = await import('../data/profile-repository.js');
-      const { data: profile } = await fetchProfile();
-      if (profile?.home_currency) {
-        setHomeCurrency(profile.home_currency, profile.home_currency_symbol || '$');
-      }
-    } catch {}
+async function ensureHomeCurrency() {
+  if (getHomeCurrency()) return;
+  try {
+    const { fetchProfile } = await import('../data/profile-repository.js');
+    const { data: profile } = await fetchProfile();
+    if (profile?.home_currency) {
+      setHomeCurrency(profile.home_currency, profile.home_currency_symbol || '$');
+    }
+  } catch (err) {
+    logger.warn('data', 'Home currency lookup failed', { error: err?.message });
   }
+}
 
+// Older trips stored ground transport under extras.flights; show it as transport.
+function normaliseTransport(trip) {
   if (trip.wizard_state?.transport?.mode && trip.extras?.flights && !trip.extras?.transport) {
     const mode = trip.wizard_state.transport.mode;
     const f = trip.extras.flights;
-    trip.extras.transport = {
-      outbound: f.outbound ? { ...f.outbound, mode, operator: f.outbound.airline || '' } : undefined,
-      inbound: f.inbound ? { ...f.inbound, mode, operator: f.inbound.airline || '' } : undefined
+    trip.extras = {
+      ...trip.extras,
+      transport: {
+        outbound: f.outbound ? { ...f.outbound, mode, operator: f.outbound.airline || '' } : undefined,
+        inbound: f.inbound ? { ...f.inbound, mode, operator: f.inbound.airline || '' } : undefined
+      },
     };
     delete trip.extras.flights;
   }
+  return trip;
+}
 
-  renderDayPicker(app, trip, jumpToToday);
+export async function renderTripDetail(rawTripId) {
+  const [tripId, qs] = String(rawTripId || '').split('?');
+  const jumpToToday = new URLSearchParams(qs || '').get('today') === '1';
+  const app = document.getElementById('app');
+  // The route may have changed while this chunk was loading.
+  if (!app || !tripId || !isTripRoute(tripId)) return;
+
+  const token = ++_renderToken;
+  teardownView();
+  ensureLeaveHandler();
+  app.innerHTML = renderTripSkeleton();
+
+  try {
+    const { data: trip, error, stale } = await fetchTripById(tripId);
+    if (!isCurrentRender(token, tripId)) return;
+
+    if (error || !trip) {
+      const notFound = error === 'not_found' || (!error && !trip);
+      if (error && !notFound) logger.error('data', 'Trip load failed', { tripId, error });
+      renderTripError(app, rawTripId, notFound ? 'not_found' : 'error');
+      return;
+    }
+
+    await ensureHomeCurrency();
+    if (!isCurrentRender(token, tripId)) return;
+
+    renderDayPicker(app, normaliseTransport(trip), { jumpToToday, stale: Boolean(stale) });
+  } catch (err) {
+    logger.error('data', 'Trip render failed', { tripId, error: err?.message, stack: err?.stack });
+    if (isCurrentRender(token, tripId)) {
+      teardownView();
+      renderTripError(app, rawTripId, 'error');
+    }
+  }
+}
+
+// What the user is looking at, so a refresh can put it back.
+function captureViewState(app) {
+  const grid = app.querySelector('.td-day-grid');
+  return {
+    scrollY: window.scrollY,
+    tab: app.querySelector('.td-tab--active')?.dataset.tab || 'plan',
+    gridOpen: Boolean(grid?.classList.contains('td-day-grid--has-open')),
+    openDays: [...(grid?.querySelectorAll('.td-day-card--open[data-day-index]') || [])].map(c => c.dataset.dayIndex),
+    openSections: [...(grid?.querySelectorAll('.td-day-card--open[data-section]') || [])].map(c => c.dataset.section),
+  };
+}
+
+function restoreViewState(app, trip, state) {
+  if (!state) return;
+  if (state.tab && state.tab !== 'plan') activateTab(app, trip, state.tab);
+  const grid = app.querySelector('.td-day-grid');
+  if (grid && state.gridOpen) {
+    grid.classList.add('td-day-grid--has-open');
+    for (const i of state.openDays) grid.querySelector(`.td-day-card[data-day-index="${i}"]`)?.classList.add('td-day-card--open');
+    for (const name of state.openSections) grid.querySelector(`.td-day-card[data-section="${name}"]`)?.classList.add('td-day-card--open');
+    syncDayHeaderExpanded(grid);
+  }
+  requestAnimationFrame(() => window.scrollTo(0, state.scrollY));
+}
+
+// Anything the user is typing into or in the middle of. A refresh would throw
+// it away, so remote updates wait behind a "Refresh" notice instead.
+function isEditorOpen(root) {
+  if (!root) return false;
+  // Edit mode sits on .td-wrap itself, which querySelector never matches.
+  if (root.matches?.('.td-edit-mode')) return true;
+  if (root.querySelector('.td-edit-mode, .td-activity-card--editing, .td-chat-drawer--open, .td-alt-panel')) return true;
+  const active = document.activeElement;
+  return Boolean(active && root.contains(active)
+    && active.matches('input:not([type="checkbox"]):not([type="radio"]), textarea, select'));
+}
+
+/**
+ * Re-fetch the open trip and re-render it without the loading screen, keeping
+ * scroll position, the active tab, open days and the chat drawer.
+ */
+async function refreshTripInPlace({ force = false } = {}) {
+  const view = _view;
+  const app = document.getElementById('app');
+  if (!view || !app) return;
+  const tripId = view.tripId;
+  const token = ++_renderToken;
+  try {
+    const { data: trip, error, stale } = await fetchTripById(tripId);
+    if (!isCurrentRender(token, tripId) || _view !== view) return;
+    if (error === 'not_found') { teardownView(); renderTripError(app, tripId, 'not_found'); return; }
+    // Offline or failed: keep what is on screen rather than swapping in a cache.
+    if (error || !trip || stale) {
+      if (error) logger.warn('data', 'Trip refresh failed', { tripId, error });
+      return;
+    }
+    if (!force && isEditorOpen(app)) { showUpdateNotice(view); return; }
+    await ensureHomeCurrency();
+    if (!isCurrentRender(token, tripId) || _view !== view) return;
+    const state = captureViewState(app);
+    const chat = view.chat;
+    view.chat = null; // handed over to the new render
+    try {
+      renderDayPicker(app, normaliseTransport(trip), { restore: state, chat });
+    } catch (err) {
+      // A half-built view is worse than an honest error with Retry.
+      logger.error('data', 'Trip re-render failed', { tripId, error: err?.message, stack: err?.stack });
+      chat?.destroy();
+      teardownView();
+      renderTripError(app, tripId, 'error');
+    }
+  } catch (err) {
+    logger.warn('data', 'Trip refresh failed', { tripId, error: err?.message });
+  }
+}
+
+function showUpdateNotice(view) {
+  const wrap = view.wrap;
+  if (!wrap?.isConnected || wrap.querySelector('.td-update-notice')) return;
+  const bar = document.createElement('div');
+  bar.className = 'td-update-notice';
+  bar.setAttribute('role', 'status');
+  bar.innerHTML = '<span>This trip was updated.</span><button type="button" class="td-update-notice-btn">Refresh</button>';
+  bar.querySelector('button').addEventListener('click', () => {
+    bar.remove();
+    refreshTripInPlace({ force: true });
+  });
+  wrap.prepend(bar);
+}
+
+function findActivity(trip, id) {
+  for (const day of trip.itinerary_days || []) {
+    const acts = day.activities || [];
+    const idx = acts.findIndex(a => a.id === id);
+    if (idx >= 0) return { day, acts, idx, activity: acts[idx] };
+  }
+  return null;
+}
+
+// A realtime row change for this trip. Our own writes are ignored, photo and
+// coordinate fills are patched onto the card, and anything else (a
+// collaborator's edit) triggers a debounced silent refresh.
+function handleActivityChange(view, payload, isLocalWrite) {
+  if (_view !== view) return;
+  const row = payload?.new && Object.keys(payload.new).length ? payload.new : null;
+  const id = row?.id || payload?.old?.id;
+  const type = payload?.eventType;
+  const keys = type === 'INSERT' && row?.day_id ? [id, `day:${row.day_id}`] : [id];
+  if (isLocalWrite(keys)) return;
+
+  if (type === 'UPDATE' && row) {
+    const found = findActivity(view.trip, row.id);
+    if (found && isPhotoOnlyChange(found.activity, row)) {
+      patchActivityPhoto(view, found.activity, row);
+      return;
+    }
+  }
+
+  clearTimeout(view.refreshTimer);
+  view.refreshTimer = setTimeout(() => {
+    if (_view !== view) return;
+    if (isEditorOpen(view.wrap)) showUpdateNotice(view);
+    else refreshTripInPlace();
+  }, 1200);
 }
 
 function parseFlightRoute(route) {
@@ -805,7 +1103,7 @@ function renderFlightContent(extras, trip) {
     return `
       <div class="td-flight-leg${isConnecting ? ' td-flight-leg--connecting' : ''}${booked ? ' td-flight-leg--booked' : ''}">
         <div class="td-flight-leg-header">
-          <span class="td-flight-leg-label">${esc(label)}${booked ? `<span class="td-booked-badge">Booked${leg.bookingRef ? ` · ${esc(leg.bookingRef)}` : ''}</span>` : ''}</span>
+          <span class="td-flight-leg-label">${esc(label)}${booked ? `<span class="td-booked-badge">Booked${leg.bookingRef ? `, ref ${esc(leg.bookingRef)}` : ''}</span>` : ''}</span>
           <span class="td-flight-leg-airline">${logo}${logo ? '' : esc(leg.airline || '')}${flightNo ? `<span class="td-flight-number">${esc(flightNo)}</span>` : ''}</span>
         </div>
         ${routeHtml}
@@ -880,7 +1178,7 @@ function renderTransportContent(extras) {
             <div class="td-flight-code">${esc(to)}</div>
           </div>
         </div>
-        <div class="td-flight-duration">${esc(leg.duration)}${leg.frequency ? ` · ${esc(leg.frequency)}` : ''}</div>
+        <div class="td-flight-duration">${esc([leg.duration, leg.frequency].filter(Boolean).join(', '))}</div>
         <div class="td-flight-bottom">
           <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
           ${transportBookingLink(leg.mode, from, to)}
@@ -932,24 +1230,40 @@ function renderAccommodationContent(extras, trip) {
 
   function parseFeatures(highlights) {
     if (!highlights) return [];
-    return highlights
+    // Usually a sentence; some model fallbacks send a list instead.
+    const text = Array.isArray(highlights) ? highlights.join(', ') : String(highlights);
+    return text
       .split(/[.,;]\s*/)
       .map(s => s.trim())
       .filter(s => s.length > 2)
       .map(s => s.charAt(0).toUpperCase() + s.slice(1));
   }
 
+  // "12 Jun to 15 Jun, 3 nights" (formatted here: the shared helper's label
+  // uses an arrow and a middle dot).
+  const stayLabel = (a) => {
+    const stay = stayInfo(a.checkIn, a.checkOut);
+    if (!stay) return '';
+    const fmt = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString(getLocale(), { day: 'numeric', month: 'short' });
+    return `${fmt(a.checkIn)} to ${fmt(a.checkOut)}, ${stay.nights} night${stay.nights === 1 ? '' : 's'}`;
+  };
+
   const renderOption = (a) => {
     const features = parseFeatures(a.highlights);
-    const stay = stayInfo(a.checkIn, a.checkOut);
+    const stay = stayLabel(a);
+    const ref = String(a.bookingRef || '').trim().slice(0, 40);
+    const address = String(a.address || '').trim().slice(0, 300);
+    // A booked stay needs its own page, not hotel search results.
+    const links = accomBookingLinks(a, trip).filter(l => !a.booked || l.label === 'Direct');
     return `
       <div class="td-accom-option">
         <div class="td-accom-head">
           ${a.badge ? `<span class="td-accom-badge" style="background: ${BADGE_COLORS[a.badge] || 'var(--terracotta)'}">${esc(a.badge)}</span>` : ''}
-          ${a.booked ? '<span class="td-booked-badge">Booked</span>' : ''}
+          ${a.booked ? `<span class="td-booked-badge">${ref ? `Booked, ref ${esc(ref)}` : 'Booked'}</span>` : ''}
           <div class="td-accom-name">${esc(a.name)}</div>
-          <div class="td-accom-area">${esc(a.area)} · ${esc(a.type)}</div>
-          ${stay ? `<div class="td-accom-stay">${esc(stay.label)}</div>` : ''}
+          ${a.area || a.type ? `<div class="td-accom-area">${esc([a.area, a.type].filter(Boolean).join(', '))}</div>` : ''}
+          ${address ? `<div class="td-accom-address">${esc(address)} <a class="td-maps-link" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Map ${ICONS.openInNew}</a></div>` : ''}
+          ${stay ? `<div class="td-accom-stay">${esc(stay)}</div>` : ''}
         </div>
         <div class="td-accom-price">${esc(a.priceRange)}</div>
         ${features.length > 0 ? `
@@ -958,8 +1272,8 @@ function renderAccommodationContent(extras, trip) {
           </ul>
         ` : ''}
         <div class="td-accom-links">
-          ${accomBookingLinks(a, trip).map(l => `
-            <a class="td-accom-link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-booking-click="${esc(l.label.toLowerCase())}" data-booking-kind="hotel">${l.icon} ${l.label}</a>
+          ${links.map(l => `
+            <a class="td-accom-link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-booking-click="${esc(l.label.toLowerCase())}" data-booking-kind="hotel">${l.icon} ${esc(l.label)}</a>
           `).join('')}
         </div>
       </div>
@@ -986,10 +1300,38 @@ function renderAccommodationContent(extras, trip) {
   return `<div class="td-accom-grid">${accom.map(renderOption).join('')}</div>${disclosure}`;
 }
 
+// Ticks live in localStorage; a corrupted entry must not stop the trip opening.
+function readStoredJson(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || '{}');
+    return value && typeof value === 'object' ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+// Stable per-item key: group, label and deadline hashed together, so items with
+// the same (or non-Latin) labels in different groups don't share a tick.
+function checklistKey(group, item) {
+  const text = `${group || ''}|${item?.label || ''}|${item?.by || ''}`;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return `ck-${(h >>> 0).toString(36)}`;
+}
+
+// Keys saved before checklistKey existed (label slug only). Still honoured
+// until the item is ticked or unticked again.
+function legacyChecklistKey(item) {
+  return (item?.label || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+}
+
 function renderBookingChecklist(extras, tripId) {
   const groups = extras?.bookingChecklist;
   if (!Array.isArray(groups) || groups.length === 0) return '';
-  const stored = JSON.parse(localStorage.getItem(`checklist-${tripId}`) || '{}');
+  const stored = readStoredJson(`checklist-${tripId}`);
   return `
     <div class="td-section-card" data-section="checklist">
       <div class="td-section-header">
@@ -1001,16 +1343,18 @@ function renderBookingChecklist(extras, tripId) {
           <div class="td-checklist-group-label">${esc(g.group)}</div>
           <div class="td-checklist-items">
             ${sortChecklistItems(g.items).map(it => {
-              const key = (it.label || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+              const key = checklistKey(g.group, it);
+              const legacy = legacyChecklistKey(it);
+              const done = key in stored ? Boolean(stored[key]) : Boolean(legacy && stored[legacy]);
               const due = deadlineInfo(it.by);
               const url = safeUrl(it.url);
-              const meta = [it.day ? `Day ${it.day}` : '', it.note || ''].filter(Boolean).join(' · ');
+              const meta = [it.day ? `Day ${it.day}` : '', it.note || ''].filter(Boolean).join(', ');
               return `
-                <label class="td-check-item ${stored[key] ? 'td-check-item--done' : ''}">
-                  <input type="checkbox" data-check-key="${key}" ${stored[key] ? 'checked' : ''}>
+                <label class="td-check-item ${done ? 'td-check-item--done' : ''}">
+                  <input type="checkbox" data-check-key="${esc(key)}" ${done ? 'checked' : ''}>
                   <span class="td-check-content">
                     <span class="td-check-label">${esc(it.label)}</span>
-                    ${due ? `<span class="td-check-deadline td-check-deadline--${due.state}">${esc(due.label)}${due.state === 'overdue' ? ' · overdue' : ''}</span>` : ''}
+                    ${due ? `<span class="td-check-deadline td-check-deadline--${esc(due.state)}">${esc(due.label)}${due.state === 'overdue' ? ', overdue' : ''}</span>` : ''}
                     ${meta ? `<span class="td-check-meta">${esc(meta)}</span>` : ''}
                   </span>
                   ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="td-check-link">Book ${ICONS.openInNew}</a>` : ''}
@@ -1028,9 +1372,9 @@ function bindChecklist(container, tripId) {
   container.querySelectorAll('.td-check-item input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', () => {
       const key = cb.dataset.checkKey;
-      const stored = JSON.parse(localStorage.getItem(`checklist-${tripId}`) || '{}');
-      if (cb.checked) stored[key] = true;
-      else delete stored[key];
+      const stored = readStoredJson(`checklist-${tripId}`);
+      // Store false explicitly so an old label-slug tick can't re-check it.
+      stored[key] = cb.checked;
       localStorage.setItem(`checklist-${tripId}`, JSON.stringify(stored));
       cb.closest('.td-check-item').classList.toggle('td-check-item--done', cb.checked);
     });
@@ -1038,7 +1382,7 @@ function bindChecklist(container, tripId) {
 }
 
 function renderTripQuickChecklist(extras, tripId) {
-  const stored = JSON.parse(localStorage.getItem(`trip-quick-${tripId}`) || '{}');
+  const stored = readStoredJson(`trip-quick-${tripId}`);
   const items = [];
   if (extras?.flights) {
     items.push({ key: 'flights', label: 'Flights', icon: MD.flightTakeoff, target: 'flights' });
@@ -1084,7 +1428,7 @@ function bindQuickChecklist(container, tripId) {
     const checkbox = row.querySelector('input[type="checkbox"]');
     checkbox.addEventListener('change', () => {
       const key = checkbox.dataset.quickKey;
-      const stored = JSON.parse(localStorage.getItem(`trip-quick-${tripId}`) || '{}');
+      const stored = readStoredJson(`trip-quick-${tripId}`);
       if (checkbox.checked) stored[key] = true;
       else delete stored[key];
       localStorage.setItem(`trip-quick-${tripId}`, JSON.stringify(stored));
@@ -1115,12 +1459,7 @@ function bindQuickChecklist(container, tripId) {
         const section = container.querySelector(`[data-section="${target}"]`);
         if (!section) return;
         if (section.classList.contains('td-day-card')) {
-          const grid = section.closest('.td-day-grid');
-          if (grid) {
-            grid.classList.add('td-day-grid--has-open');
-            grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
-            syncDayHeaderExpanded(grid);
-          }
+          openDayCard(section.closest('.td-day-grid'), section);
         } else {
           section.classList.remove('td-section-card--collapsed');
         }
@@ -1166,18 +1505,18 @@ async function loadVisaAdvisories(container, trip) {
           <h3 class="td-section-title">Entry requirements</h3>
         </div>
         ${advisories.map(a => `
-          <div class="td-visa-item td-visa-item--${a.level}">
+          <div class="td-visa-item td-visa-item--${esc(a.level)}">
             <div class="td-visa-item-main">
               <span class="td-visa-flag">${flagImg(a.country.toLowerCase(), 20)}</span>
               <div class="td-visa-text">
-                <span class="td-visa-name">${esc(a.label)}</span>
-                ${a.auth ? `<span class="td-visa-meta">${esc(a.auth.fee)} · valid ${esc(a.auth.validity)}</span>` : ''}
-                ${a.applyBy ? `<span class="td-visa-deadline">${a.applyFrom ? `Submit ${fmtDate(a.applyFrom)} – departure` : `Apply by ${fmtDate(a.applyBy)}`}</span>` : ''}
-                ${a.auth?.note ? `<span class="td-visa-note">${esc(a.auth.note)}</span>` : ''}
-                ${a.extraNote ? `<span class="td-visa-note">${esc(a.extraNote)}</span>` : ''}
+                <span class="td-visa-name">${esc(plainDashes(a.label))}</span>
+                ${a.auth ? `<span class="td-visa-meta">${esc(plainDashes([a.auth.fee, a.auth.validity ? `valid ${a.auth.validity}` : ''].filter(Boolean).join(', ')))}</span>` : ''}
+                ${a.applyBy ? `<span class="td-visa-deadline">${esc(a.applyFrom ? `Submit from ${fmtDate(a.applyFrom)} until departure` : `Apply by ${fmtDate(a.applyBy)}`)}</span>` : ''}
+                ${a.auth?.note ? `<span class="td-visa-note">${esc(plainDashes(a.auth.note))}</span>` : ''}
+                ${a.extraNote ? `<span class="td-visa-note">${esc(plainDashes(a.extraNote))}</span>` : ''}
               </div>
             </div>
-            ${a.auth?.url ? `<a class="btn btn--secondary btn--pill td-visa-apply" href="${esc(a.auth.url)}" target="_blank" rel="noopener noreferrer">Official site ↗</a>` : ''}
+            ${safeUrl(a.auth?.url) ? `<a class="btn btn--secondary btn--pill td-visa-apply" href="${esc(safeUrl(a.auth.url))}" target="_blank" rel="noopener noreferrer">Official site ${ICONS.openInNew}</a>` : ''}
           </div>
         `).join('')}
         <p class="td-visa-disclaimer">${esc(VISA_DISCLAIMER)}</p>
@@ -1214,13 +1553,31 @@ const SECTION_ICONS = {
   accommodation: mdIcon(MD.hotel, 28)
 };
 
-function buildSectionCards(extras, totalCards, trip) {
+// Entry stagger for the wallet cards: short and capped so the last card is in
+// place quickly, and skipped entirely on a refresh.
+function cardAnimStyle(n, animate) {
+  return animate ? `animation-delay: ${Math.min(Math.max(n, 0), 5) * 40}ms` : 'animation: none';
+}
+
+// "12 to 18° Sunny" from day weather, using only the values that are present.
+function weatherText(w) {
+  if (!w || typeof w !== 'object') return '';
+  const temps = [w.lowC, w.highC]
+    .filter(v => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)))
+    .map(v => Math.round(Number(v)));
+  if (!temps.length) return '';
+  const range = temps.length === 2 && temps[0] !== temps[1] ? `${temps[0]} to ${temps[1]}°` : `${temps[temps.length - 1]}°`;
+  const label = weatherLabel(typeof w.condition === 'string' ? w.condition : '');
+  return label ? `${range} ${label}` : range;
+}
+
+function buildSectionCards(extras, totalCards, trip, animate = true) {
   const cards = [];
   let i = 0;
   if (extras?.flights) {
     i++;
     cards.push(`
-      <div class="td-day-card td-day-card--section" data-section="flights" style="--i: ${i}; --total: ${totalCards}; animation-delay: ${(i - 1) * 80}ms">
+      <div class="td-day-card td-day-card--section" data-section="flights" style="--i: ${i}; --total: ${totalCards}; ${cardAnimStyle(i - 1, animate)}">
         <div class="td-day-card-header">
           <div class="td-day-num td-day-num--section td-day-num--flights">${SECTION_ICONS.flights}</div>
           <div class="td-day-info">
@@ -1239,7 +1596,7 @@ function buildSectionCards(extras, totalCards, trip) {
     const modeLabel = TRANSPORT_MODE_LABELS[mode] || 'Transport';
     const modeIcon = TRANSPORT_MODE_MD[mode] ? mdIcon(TRANSPORT_MODE_MD[mode], 28) : SECTION_ICONS.transport;
     cards.push(`
-      <div class="td-day-card td-day-card--section" data-section="transport" style="--i: ${i}; --total: ${totalCards}; animation-delay: ${(i - 1) * 80}ms">
+      <div class="td-day-card td-day-card--section" data-section="transport" style="--i: ${i}; --total: ${totalCards}; ${cardAnimStyle(i - 1, animate)}">
         <div class="td-day-card-header">
           <div class="td-day-num td-day-num--section td-day-num--transport">${modeIcon}</div>
           <div class="td-day-info">
@@ -1256,7 +1613,7 @@ function buildSectionCards(extras, totalCards, trip) {
   if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) {
     i++;
     cards.push(`
-      <div class="td-day-card td-day-card--section" data-section="accommodation" style="--i: ${i}; --total: ${totalCards}; animation-delay: ${(i - 1) * 80}ms">
+      <div class="td-day-card td-day-card--section" data-section="accommodation" style="--i: ${i}; --total: ${totalCards}; ${cardAnimStyle(i - 1, animate)}">
         <div class="td-day-card-header">
           <div class="td-day-num td-day-num--section td-day-num--accommodation">${SECTION_ICONS.accommodation}</div>
           <div class="td-day-info">
@@ -1273,7 +1630,7 @@ function buildSectionCards(extras, totalCards, trip) {
   return cards.join('');
 }
 
-function renderSidebar(trip, days, sym, totalCost) {
+function renderSidebar(trip, days, sym, totalCost, tripCode = tripCurrencyCode(trip)) {
   const extras = trip.extras;
   const sectionItems = [];
 
@@ -1300,9 +1657,9 @@ function renderSidebar(trip, days, sym, totalCost) {
 
   const dayItems = days.map((d, i) => {
     const acts = d.activities || [];
-    const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
+    const dayCost = sumCosts(acts, tripCode).total;
     return `<div class="td-sidebar-item td-sidebar-item--day" data-sidebar-day="${i}">
-      <span class="td-sidebar-item-num">${d.day_number}</span>
+      <span class="td-sidebar-item-num">${esc(d.day_number)}</span>
       <div class="td-sidebar-item-info">
         <div class="td-sidebar-item-title">${esc(d.title || `Day ${d.day_number}`)}</div>
         <div class="td-sidebar-item-meta">${acts.length} activities</div>
@@ -1379,13 +1736,15 @@ function renderBurnChart(dayRows, sym) {
     </div>`;
 }
 
-function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities) {
+function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts = 0) {
   const ws = trip.wizard_state;
   const wsDest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
-  const destCode = wsDest?.currencyCode || trip.budget_currency || 'USD';
+  const destCode = tripCurrencyCode(trip);
   const home = getHomeCurrency();
   const homeCode = home?.code || '';
   const homeSym = home?.symbol || '';
+  const symHtml = esc(sym);
+  const homeSymHtml = esc(homeSym);
   const showConversion = homeCode && homeCode !== destCode && canConvert(destCode) && canConvert(homeCode);
   const homeTotal = showConversion ? convert(totalCost, destCode, homeCode) : 0;
   const destName = wsDest?.name || trip.title || '';
@@ -1407,6 +1766,7 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
     } else {
       exchangeLine = `1 ${homeCode} = ${sym}${fmtRate(destPerHome)} ${destCode}`;
     }
+    // exchangeLine is plain text; it is escaped where it is rendered.
     // Scale the reference amounts to the destination currency's magnitude so the
     // converted figures are not all rounded to zero.
     if (homePerDest > 0 && homePerDest < 0.02) refAmounts = [10000, 50000, 100000, 500000];
@@ -1417,7 +1777,7 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
 
   const dayRows = days.map(d => {
     const acts = d.activities || [];
-    const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
+    const dayCost = sumCosts(acts, destCode).total;
     return { dayNumber: d.day_number, title: d.title, actCount: acts.length, cost: dayCost };
   });
 
@@ -1426,7 +1786,7 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
     for (const a of d.activities || []) {
       const cat = a.category || 'other';
       if (!categories[cat]) categories[cat] = 0;
-      categories[cat] += a.cost_amount || 0;
+      categories[cat] += costInTripCurrency(a, destCode) || 0;
     }
   }
   const sortedCats = Object.entries(categories).sort((a, b) => b[1] - a[1]);
@@ -1434,7 +1794,10 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
   // Planned budget target for the ring: daily budget x travelers x days.
   const travelers = trip.travelers || trip.wizard_state?.travelers || 1;
   const plannedBudget = (trip.budget_daily || 0) * travelers * (dayCount || days.length || 0);
-  const ringHomeLine = showConversion ? `≈ ${homeSym}${formatNumber(homeTotal)} ${homeCode}` : '';
+  const ringHomeLine = showConversion ? `≈ ${homeSymHtml}${formatNumber(homeTotal)} ${esc(homeCode)}` : '';
+  const excludedNote = excludedCosts > 0
+    ? `<p class="td-spending-note">${excludedCosts} ${excludedCosts === 1 ? 'cost is' : 'costs are'} in another currency we can't convert, so ${excludedCosts === 1 ? "it isn't" : "they aren't"} included in these totals.</p>`
+    : '';
 
   return `
     ${totalCost > 0 ? `
@@ -1447,9 +1810,10 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
       <div class="td-total">
         <div class="td-total-label">Estimated Trip Total</div>
         <div class="td-total-amount">${formatCost(totalCost, sym)}</div>
-        <div class="td-total-sub">${dayCount} days · ${totalActivities} activities</div>
+        <div class="td-total-sub">${dayCount} days, ${totalActivities} activities</div>
+        ${excludedNote}
         ${showConversion ? `
-          <div class="td-total-home">≈ ${homeSym}${formatNumber(homeTotal)} ${homeCode}</div>
+          <div class="td-total-home">≈ ${homeSymHtml}${formatNumber(homeTotal)} ${esc(homeCode)}</div>
           <div class="td-exchange">
             <div class="td-exchange-label">${mdIcon(MD.info, 14)} Exchange Rate</div>
             <div class="td-exchange-hero">
@@ -1465,8 +1829,8 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
                   : converted.toFixed(3);
                 return `
                 <div class="td-exchange-tile">
-                  <span class="td-exchange-tile-from">${sym}${formatNumber(a)}</span>
-                  <span class="td-exchange-tile-to">${homeSym}${shown}</span>
+                  <span class="td-exchange-tile-from">${symHtml}${formatNumber(a)}</span>
+                  <span class="td-exchange-tile-to">${homeSymHtml}${shown}</span>
                 </div>
               `; }).join('')}
             </div>
@@ -1480,7 +1844,7 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
         <div class="td-spending-table">
           ${dayRows.map(r => `
             <div class="td-spending-row">
-              <span class="td-spending-day">Day ${r.dayNumber}</span>
+              <span class="td-spending-day">Day ${esc(r.dayNumber)}</span>
               <span class="td-spending-day-title">${esc(r.title || 'Day ' + r.dayNumber)}</span>
               <span class="td-spending-acts">${r.actCount} activities</span>
               <span class="td-spending-cost">${formatCost(r.cost, sym)}</span>
@@ -1587,14 +1951,12 @@ function bindSidebar(container) {
       dayCardManualSwitch = true;
       setTimeout(() => { dayCardManualSwitch = false; }, 600);
 
-      grid.classList.add('td-day-grid--has-open');
-      grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
-      syncDayHeaderExpanded(grid);
+      openDayCard(grid, card);
       updateSidebarActive(container, dayIndex);
 
       setTimeout(() => {
         card.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        grid.querySelectorAll('.td-day-card[data-day-date]').forEach(c => injectNowKnob(c));
+        injectNowKnob(card);
       }, 100);
     });
   });
@@ -1608,12 +1970,7 @@ function bindSidebar(container) {
       dayCardManualSwitch = true;
       setTimeout(() => { dayCardManualSwitch = false; }, 600);
 
-      const grid = section.closest('.td-day-grid');
-      if (grid) {
-        grid.classList.add('td-day-grid--has-open');
-        grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
-        syncDayHeaderExpanded(grid);
-      }
+      openDayCard(section.closest('.td-day-grid'), section);
 
       setTimeout(() => {
         (section.querySelector('.td-day-card-header') || section).scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1622,15 +1979,64 @@ function bindSidebar(container) {
   });
 }
 
-async function showShareModal(trip) {
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Modal dialog behaviour for an overlay panel: focus moves inside, Tab stays
+ * inside, Escape closes, and focus goes back to the opener afterwards.
+ * Returns a release function to call when the dialog closes.
+ * @param {HTMLElement} dialog
+ * @param {{ onClose?: () => void, returnFocus?: Element | null, initialFocus?: HTMLElement | null }} [options]
+ */
+export function bindModalA11y(dialog, { onClose, returnFocus = document.activeElement, initialFocus = null } = {}) {
+  const focusables = () => [...dialog.querySelectorAll(FOCUSABLE)].filter(el => el.getClientRects().length > 0);
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); onClose?.(); return; }
+    if (e.key !== 'Tab') return;
+    const items = focusables();
+    if (!items.length) { e.preventDefault(); return; }
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (!dialog.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  document.addEventListener('keydown', onKey);
+  requestAnimationFrame(() => (initialFocus || focusables()[0])?.focus());
+  return () => {
+    document.removeEventListener('keydown', onKey);
+    if (returnFocus?.isConnected && typeof returnFocus.focus === 'function') returnFocus.focus();
+  };
+}
+
+// Friendly copy for share/collaborator failures (never the raw backend text).
+function shareErrorText(action) {
+  return `Couldn't ${action}. Check your connection and try again.`;
+}
+
+async function copyText(text, input) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch { /* fall through to the selection-based copy */ }
+  try {
+    input.focus();
+    input.select();
+    return document.execCommand?.('copy') === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Share dialog. Nothing is published until the user taps "Create share link",
+ * and an active link can be withdrawn with "Stop sharing".
+ */
+async function showShareModal(trip, opener = document.activeElement) {
   const existing = document.querySelector('.td-share-overlay');
-  if (existing) existing.remove();
+  existing?._dispose?.();
+  existing?.remove();
 
-  const { createShareLink } = await import('../data/share-repository.js');
-  const { data, error } = await createShareLink(trip.id);
-  if (error) { showToast('Share failed: ' + error, 'error'); logger.error('share', 'Share creation failed from trip detail', { error }); return; }
-
-  const shareUrl = `${location.origin}${location.pathname}#/shared/${data.share_token}`;
   const ws = trip.wizard_state;
   const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
   const tripLabel = dest?.name || trip.title || 'My Trip';
@@ -1638,76 +2044,205 @@ async function showShareModal(trip) {
   const overlay = document.createElement('div');
   overlay.className = 'td-share-overlay';
   overlay.innerHTML = `
-    <div class="td-share-modal">
+    <div class="td-share-modal" role="dialog" aria-modal="true" aria-labelledby="td-share-title">
       <div class="td-share-header">
-        <h3 class="td-share-title">Share Itinerary</h3>
-        <button class="td-share-close">&times;</button>
+        <h3 class="td-share-title" id="td-share-title">Share Itinerary</h3>
+        <button type="button" class="td-share-close" aria-label="Close">&times;</button>
       </div>
       <div class="td-share-body">
-        <label class="td-share-label">Share link</label>
-        <div class="td-share-link-row">
-          <input type="text" class="td-share-url" value="${esc(shareUrl)}" readonly>
-          <button class="td-share-copy">Copy</button>
+        <div class="td-share-link-section" aria-live="polite">
+          <p class="td-share-status">Checking sharing...</p>
         </div>
-        <div class="td-share-divider"><span>or send via email</span></div>
-        <label class="td-share-label">Recipient email</label>
-        <input type="email" class="td-share-email" placeholder="friend@example.com">
-        <button class="td-share-send btn btn--primary btn--pill" style="width:100%;margin-top:var(--sp-3)">Send Invite</button>
 
         <div class="td-share-divider"><span>co-editing</span></div>
-        <label class="td-share-label">Invite a collaborator (they sign in with this email and can edit this trip with you)</label>
+        <label class="td-share-label" for="td-collab-email">Invite a collaborator (they sign in with this email and can edit this trip with you)</label>
         <div class="td-share-link-row">
-          <input type="email" class="td-collab-email" placeholder="family@example.com">
-          <button class="td-collab-add">Add</button>
+          <input type="email" class="td-collab-email" id="td-collab-email" placeholder="family@example.com" autocomplete="email">
+          <button type="button" class="td-collab-add">Add</button>
         </div>
-        <div class="td-collab-list"></div>
+        <div class="td-collab-list" aria-live="polite"></div>
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.classList.add('td-share-overlay--open'));
 
-  const close = () => { overlay.classList.remove('td-share-overlay--open'); setTimeout(() => overlay.remove(), 200); };
+  let release = () => {};
+  let unregisterLeave = () => {};
+  overlay._dispose = () => { release(); release = () => {}; unregisterLeave(); };
+  const close = () => {
+    overlay._dispose();
+    overlay.classList.remove('td-share-overlay--open');
+    setTimeout(() => overlay.remove(), 200);
+  };
+  release = bindModalA11y(overlay.querySelector('.td-share-modal'), { onClose: close, returnFocus: opener });
+  // Leaving the trip (Back) closes the dialog instead of leaving it over the next page.
+  unregisterLeave = onRouteLeave(close);
   overlay.querySelector('.td-share-close').addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 
-  overlay.querySelector('.td-share-copy').addEventListener('click', async () => {
-    const copyBtn = overlay.querySelector('.td-share-copy');
-    try { await navigator.clipboard.writeText(shareUrl); } catch { /* fallback below */ }
-    copyBtn.textContent = 'Copied!';
-    setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+  const section = overlay.querySelector('.td-share-link-section');
+  let share = null;
+  let repo;
+  try {
+    repo = await import('../data/share-repository.js');
+  } catch (err) {
+    logger.error('share', 'Share module failed to load', { error: err?.message });
+    section.innerHTML = `<p class="td-share-status td-share-status--error">${esc(shareErrorText('load sharing'))}</p>`;
+  }
+
+  const renderPrivate = () => {
+    section.innerHTML = `
+      <p class="td-share-status">This trip is private. A share link lets anyone who has it view the itinerary (booking references aren't shown).</p>
+      <button type="button" class="btn btn--primary btn--pill td-share-create">Create share link</button>`;
+  };
+
+  const renderShared = () => {
+    const shareUrl = `${location.origin}${location.pathname}#/shared/${encodeURIComponent(share.share_token)}`;
+    section.innerHTML = `
+      <label class="td-share-label" for="td-share-url">Share link</label>
+      <div class="td-share-link-row">
+        <input type="text" class="td-share-url" id="td-share-url" value="${esc(shareUrl)}" readonly>
+        <button type="button" class="td-share-copy">Copy</button>
+      </div>
+      <p class="td-share-hint" role="status"></p>
+      <button type="button" class="td-share-stop">Stop sharing</button>
+      <div class="td-share-divider"><span>or send via email</span></div>
+      <label class="td-share-label" for="td-share-email">Recipient email</label>
+      <input type="email" class="td-share-email" id="td-share-email" placeholder="friend@example.com" autocomplete="email">
+      <button type="button" class="td-share-send btn btn--primary btn--pill">Send Invite</button>`;
+    section.dataset.url = shareUrl;
+  };
+
+  const renderLoadError = () => {
+    section.innerHTML = `
+      <p class="td-share-status td-share-status--error">${esc(shareErrorText('check sharing'))}</p>
+      <button type="button" class="btn btn--ghost btn--pill td-share-retry">Try again</button>`;
+  };
+
+  const loadShare = async () => {
+    section.innerHTML = '<p class="td-share-status">Checking sharing...</p>';
+    const { data, error } = await repo.getShareForTrip(trip.id);
+    if (!overlay.isConnected) return;
+    if (error) { logger.warn('share', 'Share lookup failed', { tripId: trip.id, error }); renderLoadError(); return; }
+    share = data || null;
+    if (share) renderShared(); else renderPrivate();
+  };
+
+  section.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !repo) return;
+
+    if (btn.classList.contains('td-share-retry')) { loadShare(); return; }
+
+    if (btn.classList.contains('td-share-create')) {
+      btn.disabled = true;
+      btn.textContent = 'Creating link...';
+      const { data, error } = await repo.createShareLink(trip.id);
+      if (!overlay.isConnected) return;
+      if (error || !data?.share_token) {
+        logger.error('share', 'Share creation failed from trip detail', { error });
+        showToast(shareErrorText('create a share link'), 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create share link';
+        return;
+      }
+      share = data;
+      renderShared();
+      section.querySelector('.td-share-copy')?.focus();
+      return;
+    }
+
+    if (btn.classList.contains('td-share-copy')) {
+      const input = section.querySelector('.td-share-url');
+      const hint = section.querySelector('.td-share-hint');
+      const ok = await copyText(section.dataset.url || input.value, input);
+      if (ok) {
+        btn.textContent = 'Copied';
+        if (hint) hint.textContent = '';
+        setTimeout(() => { if (btn.isConnected) btn.textContent = 'Copy'; }, 2000);
+      } else {
+        input.focus();
+        input.select();
+        if (hint) hint.textContent = 'Copying is blocked here. The link is selected: press and hold it to copy.';
+      }
+      return;
+    }
+
+    if (btn.classList.contains('td-share-stop')) {
+      if (!confirm('Stop sharing? The current link will stop working for everyone who has it.')) return;
+      btn.disabled = true;
+      btn.textContent = 'Stopping...';
+      const { error } = await repo.deleteShareLink(share.id);
+      if (!overlay.isConnected) return;
+      if (error) {
+        logger.error('share', 'Stop sharing failed', { tripId: trip.id, error });
+        showToast(shareErrorText('stop sharing'), 'error');
+        btn.disabled = false;
+        btn.textContent = 'Stop sharing';
+        return;
+      }
+      showToast('Sharing stopped. The old link no longer works.', 'success');
+      // Re-check: older duplicate links for this trip would still be live.
+      await loadShare();
+      return;
+    }
+
+    if (btn.classList.contains('td-share-send')) {
+      const emailEl = section.querySelector('.td-share-email');
+      const email = emailEl.value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { emailEl.focus(); return; }
+      const shareUrl = section.dataset.url;
+      const subject = encodeURIComponent(`Check out my ${tripLabel} itinerary`);
+      const body = encodeURIComponent(`Hey! I planned a trip to ${tripLabel} and wanted to share the itinerary with you:\n\n${shareUrl}\n\nPowered by Trippy`);
+      window.open(`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`, '_self');
+      close();
+    }
   });
 
-  overlay.querySelector('.td-share-send').addEventListener('click', () => {
-    const email = overlay.querySelector('.td-share-email').value.trim();
-    if (!email) { overlay.querySelector('.td-share-email').focus(); return; }
-    const subject = encodeURIComponent(`Check out my ${tripLabel} itinerary`);
-    const body = encodeURIComponent(`Hey! I planned a trip to ${tripLabel} and wanted to share the itinerary with you:\n\n${shareUrl}\n\nPowered by Trippy`);
-    window.open(`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`, '_self');
-    close();
-  });
+  if (repo) loadShare();
 
   // Collaborators (co-editing)
-  const { listCollaborators, inviteCollaborator, removeCollaborator } = await import('../data/collab-repository.js');
+  let collabRepo;
+  try {
+    collabRepo = await import('../data/collab-repository.js');
+  } catch (err) {
+    logger.error('share', 'Collaborator module failed to load', { error: err?.message });
+    return;
+  }
+  const { listCollaborators, inviteCollaborator, removeCollaborator } = collabRepo;
   const listEl = overlay.querySelector('.td-collab-list');
   const refreshCollabs = async () => {
-    const { data: collabs } = await listCollaborators(trip.id);
+    const { data: collabs, error } = await listCollaborators(trip.id);
+    if (!overlay.isConnected) return;
+    if (error) {
+      logger.warn('share', 'Collaborator list failed', { tripId: trip.id, error });
+      listEl.innerHTML = `<div class="td-collab-empty">${esc(shareErrorText('load collaborators'))}</div>`;
+      return;
+    }
     listEl.innerHTML = collabs.length
       ? collabs.map(c => `
           <div class="td-collab-row">
             <span class="td-collab-mail">${esc(c.invited_email)}</span>
-            <span class="td-collab-role">${esc(c.role)}${c.user_id ? '' : ' · not joined yet'}</span>
-            <button class="td-collab-remove" data-collab-id="${esc(c.id)}" aria-label="Remove">×</button>
+            <span class="td-collab-role">${esc(c.role)}${c.user_id ? '' : ', not joined yet'}</span>
+            <button type="button" class="td-collab-remove" data-collab-id="${esc(c.id)}" data-collab-email="${esc(c.invited_email)}" aria-label="Remove ${esc(c.invited_email)}">×</button>
           </div>`).join('')
       : '<div class="td-collab-empty">No collaborators yet.</div>';
   };
   refreshCollabs();
-  overlay.querySelector('.td-collab-add').addEventListener('click', async () => {
+  overlay.querySelector('.td-collab-add').addEventListener('click', async (e) => {
+    const addBtn = e.currentTarget;
     const emailEl = overlay.querySelector('.td-collab-email');
     const email = emailEl.value.trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { emailEl.focus(); return; }
+    addBtn.disabled = true;
     const { error } = await inviteCollaborator(trip.id, email);
-    if (error) { showToast(error.includes('duplicate') ? 'Already invited' : 'Invite failed', 'error'); return; }
+    addBtn.disabled = false;
+    if (error) {
+      logger.warn('share', 'Collaborator invite failed', { tripId: trip.id, error });
+      showToast(/duplicate/i.test(error) ? 'Already invited' : shareErrorText('send the invite'), 'error');
+      return;
+    }
     emailEl.value = '';
     showToast(`${email} can now edit this trip`);
     refreshCollabs();
@@ -1715,19 +2250,135 @@ async function showShareModal(trip) {
   listEl.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-collab-id]');
     if (!btn) return;
-    await removeCollaborator(btn.dataset.collabId);
+    if (!confirm(`Remove ${btn.dataset.collabEmail || 'this collaborator'}? They will lose access to this trip.`)) return;
+    btn.disabled = true;
+    const { error } = await removeCollaborator(btn.dataset.collabId);
+    if (error) {
+      logger.warn('share', 'Collaborator removal failed', { tripId: trip.id, error });
+      showToast(shareErrorText('remove the collaborator'), 'error');
+      btn.disabled = false;
+      return;
+    }
     refreshCollabs();
   });
 }
 
-function renderDayPicker(app, trip, jumpToToday = false) {
+// Generating / failed / empty trips get an explanation instead of a blank plan.
+function renderStatusCard(trip) {
+  const hasDays = (trip.itinerary_days || []).length > 0;
+  if (trip.status === 'generating') {
+    return `
+      <div class="td-status-card" role="status" data-trip-status="generating">
+        <span class="td-status-spinner" aria-hidden="true"></span>
+        <div class="td-status-text">
+          <strong>${hasDays ? 'Building a new itinerary' : 'Building your itinerary'}</strong>
+          <p>${hasDays ? "You're seeing your current plan until the new one is ready." : 'This usually takes 1 to 2 minutes. You can leave this page and come back.'}</p>
+        </div>
+      </div>`;
+  }
+  if (trip.status === 'failed') {
+    // Only the owner can restart planning (the status update is owner-only).
+    const canRetry = Boolean(trip.user_id) && trip.user_id === getUser()?.id;
+    return `
+      <div class="td-status-card td-status-card--failed" role="alert" data-trip-status="failed">
+        <div class="td-status-text">
+          <strong>${hasDays ? "We couldn't build a new itinerary" : "We couldn't build this itinerary"}</strong>
+          <p>${hasDays ? 'Your current plan is unchanged.' : 'Something went wrong while planning this trip.'}</p>
+        </div>
+        ${canRetry ? '<button type="button" class="btn btn--primary btn--pill btn--sm" data-action="retry-generation">Try again</button>' : ''}
+      </div>`;
+  }
+  if (!hasDays) {
+    return `
+      <div class="td-status-card" data-trip-status="empty">
+        <div class="td-status-text">
+          <strong>No days planned yet</strong>
+          <p>${trip.wizard_state?.imported ? 'This trip was imported without any days.' : 'Regenerate the itinerary to fill in your days.'}</p>
+        </div>
+        ${trip.wizard_state?.imported ? '' : '<button type="button" class="btn btn--primary btn--pill btn--sm" data-action="regenerate-empty">Edit and regenerate</button>'}
+      </div>`;
+  }
+  return '';
+}
+
+// Watch a generating trip: refresh when the new itinerary lands, switch to the
+// failed card if it doesn't. Retry restarts generation from the failed card.
+function bindTripStatus(view) {
+  const { trip, wrap } = view;
+  const slot = wrap.querySelector('.td-status-slot');
+  const watch = () => {
+    import('../services/generation-manager.js').then(({ onGenerationUpdate, resumeStaleGenerations }) => {
+      if (_view !== view) return;
+      resumeStaleGenerations([trip]).catch(err => logger.warn('generation', 'Resume watch failed', { tripId: trip.id, error: err?.message }));
+      const off = onGenerationUpdate((id, status) => {
+        if (id !== trip.id || !status || _view !== view) return;
+        if (status.status === 'done') refreshTripInPlace();
+        else if (status.status === 'failed') {
+          trip.status = 'failed';
+          if (slot) slot.innerHTML = renderStatusCard(trip);
+        }
+      });
+      view.cleanups.push(off);
+    }).catch(err => logger.warn('generation', 'Generation watch unavailable', { tripId: trip.id, error: err?.message }));
+  };
+  if (trip.status === 'generating') watch();
+
+  slot?.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-action="regenerate-empty"]')) {
+      const { showEditModal } = await import('./trip-edit.js');
+      showEditModal(trip);
+      return;
+    }
+    const retry = e.target.closest('[data-action="retry-generation"]');
+    if (!retry) return;
+    retry.disabled = true;
+    retry.textContent = 'Starting...';
+    try {
+      const { updateTripStatus } = await import('../data/trip-repository.js');
+      const { startGeneration } = await import('../services/generation-manager.js');
+      // Returns { error } rather than throwing; never show a status that wasn't saved.
+      const { error } = await updateTripStatus(trip.id, 'generating');
+      if (_view !== view) return;
+      if (error) throw new Error(error);
+      trip.status = 'generating';
+      if (slot) slot.innerHTML = renderStatusCard(trip);
+      watch();
+      startGeneration(trip.id, trip.wizard_state);
+    } catch (err) {
+      logger.error('generation', 'Retry from trip page failed', { tripId: trip.id, error: err?.message });
+      showToast("Couldn't restart planning. Try again.", 'error');
+      retry.disabled = false;
+      retry.textContent = 'Try again';
+    }
+  }, { signal: view.controller.signal });
+}
+
+/**
+ * Render a loaded trip into #app.
+ * @param {HTMLElement} app
+ * @param {object} trip
+ * @param {{ jumpToToday?: boolean, stale?: boolean, restore?: object, chat?: object }} [opts]
+ *   restore: view state from captureViewState (silent refresh, no entry animation)
+ *   chat: an existing chat drawer controller to carry over
+ */
+function renderDayPicker(app, trip, opts = {}) {
+  const { jumpToToday = false, stale = false, restore = null, chat = null } = opts;
+  teardownView();
+  ensureLeaveHandler();
+  const view = {
+    tripId: trip.id, trip, wrap: null, chat: null, refreshTimer: null,
+    cleanups: [], controller: new AbortController(),
+  };
+  _view = view;
+  const { signal } = view.controller;
+  const animate = !restore;
+
   _photoCredits = trip.extras?.photoCredits || {};
-  if (scrollSpyCleanup) { scrollSpyCleanup(); scrollSpyCleanup = null; }
-  const { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange } = tripHeader(trip);
+  const { days, dayCount, sym, tripCode, shortTitle, totalCost, totalActivities, excludedCosts, flag, heroImage, dateRange } = tripHeader(trip);
   const heroFlag = flagImg(flag, 32);
 
   app.innerHTML = `
-    <div class="td-wrap td-fade-in">
+    <div class="td-wrap${animate ? ' td-fade-in' : ''}" data-trip-id="${esc(trip.id)}">
       <div class="td-topbar">
         <button class="td-back" data-action="back">${ICONS.arrowBack} Trips</button>
         <nav class="td-tabs" role="tablist">
@@ -1782,7 +2433,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
       ` : countdownHtml;
       })()}
 
-      ${!heroImage ? `<header class="td-header"><span class="td-emoji">${heroFlag || trip.emoji || mdIcon(MD.place, 28)}</span><h1 class="td-title">${esc(shortTitle)}</h1></header>` : ''}
+      ${!heroImage ? `<header class="td-header"><span class="td-emoji">${heroFlag || (trip.emoji ? esc(trip.emoji) : mdIcon(MD.place, 28))}</span><h1 class="td-title">${esc(shortTitle)}</h1></header>` : ''}
 
       <div class="td-stickybar" id="td-stickybar" aria-hidden="true">
         ${heroFlag ? `<span class="td-stickybar-flag">${heroFlag}</span>` : ''}
@@ -1790,23 +2441,28 @@ function renderDayPicker(app, trip, jumpToToday = false) {
         ${dateRange ? `<span class="td-stickybar-dates">${esc(dateRange)}</span>` : ''}
       </div>
 
+      ${stale ? '<div class="td-stale-note" role="status">Offline, showing your last saved copy</div>' : ''}
+      <div class="td-status-slot">${renderStatusCard(trip)}</div>
+      <div class="td-photo-status" role="status" hidden></div>
+
       <div class="td-tab-panel td-tab-panel--active" data-panel="plan">
         <div class="td-square-itinerary square-only" id="td-square-itinerary"></div>
         <div class="td-body scroll-only">
-          ${renderSidebar(trip, days, sym, totalCost)}
+          ${renderSidebar(trip, days, sym, totalCost, tripCode)}
           <div class="td-main">
             <div class="td-day-grid" data-tz="${esc(trip.timezone || trip.wizard_state?.destination?.timezone || '')}">
-          ${(() => { const offset = countSectionCards(trip.extras); const total = days.length + offset; const townCells = collectTownCells(trip.extras); return buildSectionCards(trip.extras, total, trip) + days.map((d, i) => {
+          ${(() => { const offset = countSectionCards(trip.extras); const total = days.length + offset; const townCells = collectTownCells(trip.extras); return buildSectionCards(trip.extras, total, trip, animate) + days.map((d, i) => {
             const acts = d.activities || [];
-            const dayCost = acts.reduce((sum, a) => sum + (a.cost_amount || 0), 0);
+            const dayCost = sumCosts(acts, tripCode).total;
             const dateStr = d.date ? formatDate(d.date) : '';
+            const weather = weatherText(d.weather);
             return `
-              <div class="td-day-card" data-day-index="${i}" data-day-date="${d.date || ''}" style="--i: ${i + offset + 1}; --total: ${total}; animation-delay: ${(i + offset) * 80}ms">
+              <div class="td-day-card" data-day-index="${i}" data-day-date="${esc(d.date || '')}" style="--i: ${i + offset + 1}; --total: ${total}; ${cardAnimStyle(i + offset, animate)}">
                 <div class="td-day-card-header">
-                  ${calendarIcon(d.day_number)}
+                  ${calendarIcon(esc(d.day_number))}
                   <div class="td-day-info">
                     <h3 class="td-day-card-title">${esc(d.title || `Day ${d.day_number}`)}</h3>
-                    ${dateStr ? `<span class="td-day-date">${dateStr}${d.weather?.highC != null ? ` <span class="td-day-weather">${d.weather.lowC}–${d.weather.highC}° ${weatherLabel(d.weather.condition)}</span>` : ''}</span>` : ''}
+                    ${dateStr ? `<span class="td-day-date">${esc(dateStr)}${weather ? ` <span class="td-day-weather">${esc(weather)}</span>` : ''}</span>` : ''}
                   </div>
                   <span class="td-day-chevron">›</span>
                 </div>
@@ -1821,7 +2477,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
                           waypoint = `<div class="td-locality-waypoint">${mdIcon(MD.place, 12)}<span>${esc(locality)}</span><i></i></div>`;
                           prevLocality = locality;
                         }
-                        return waypoint + renderActivity(a, sym, ai === 0);
+                        return waypoint + renderActivity(a, sym, ai === 0, tripCode);
                       }).join('');
                     })()}
                   </div>
@@ -1838,13 +2494,13 @@ function renderDayPicker(app, trip, jumpToToday = false) {
         </div>
         <div class="td-plan-footer">
           <button class="td-back-inline" data-action="back">${ICONS.arrowBack} Back to Trips</button>
-          <button class="td-delete td-delete--inline" data-action="delete" data-trip-id="${trip.id}">${ICONS.delete} Delete Trip</button>
+          ${trip.user_id && trip.user_id === getUser()?.id ? `<button class="td-delete td-delete--inline" data-action="delete" data-trip-id="${esc(trip.id)}">${ICONS.delete} Delete Trip</button>` : ''}
         </div>
       </div>
 
       <div class="td-tab-panel" data-panel="spending">
         <div class="td-spending-grid">
-          ${renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities)}
+          ${renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts)}
         </div>
       </div>
 
@@ -1863,9 +2519,12 @@ function renderDayPicker(app, trip, jumpToToday = false) {
     ${renderTripFooter(trip)}
   `;
 
+  const wrap = app.querySelector('.td-wrap');
+  view.wrap = wrap;
+
   app.querySelectorAll('[data-action="back"]').forEach(el => el.addEventListener('click', () => navigate('/')));
 
-  app.querySelector('[data-action="share"]')?.addEventListener('click', () => showShareModal(trip));
+  app.querySelector('[data-action="share"]')?.addEventListener('click', (e) => showShareModal(trip, e.currentTarget));
   app.querySelector('[data-action="read-view"]')?.addEventListener('click', () => navigate(`/trip/${trip.id}/read`));
 
   app.querySelector('[data-action="pdf"]')?.addEventListener('click', async () => {
@@ -1884,7 +2543,7 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           btn.innerHTML = `<span class="td-pdf-progress"><span class="td-pdf-spinner"></span>${label}... ${pct}%</span>`;
         }
       });
-      showToast('PDF exported!');
+      showToast('PDF exported');
     } catch (err) {
       showToast('PDF export failed', 'error'); logger.error('data', 'PDF export failed', { error: err.message, stack: err.stack });
     }
@@ -1893,201 +2552,78 @@ function renderDayPicker(app, trip, jumpToToday = false) {
     btn.disabled = false;
   });
 
+  const leaveEditMode = async () => {
+    const { exitEditMode } = await import('./activity-editor.js');
+    exitEditMode(wrap);
+    if (wrap._editClickHandler) { wrap.removeEventListener('click', wrap._editClickHandler); wrap._editClickHandler = null; }
+    if (wrap._editSavedHandler) { wrap.removeEventListener('activity-saved', wrap._editSavedHandler); wrap._editSavedHandler = null; }
+    wrap.querySelector('.td-edit-bar')?.remove();
+  };
+
   app.querySelector('[data-action="edit"]')?.addEventListener('click', async () => {
-    const wrap = app.querySelector('.td-wrap');
-    const isEditing = wrap.classList.contains('td-edit-mode');
+    if (wrap.classList.contains('td-edit-mode')) { await leaveEditMode(); return; }
 
-    if (isEditing) {
-      const { exitEditMode } = await import('./activity-editor.js');
-      exitEditMode(wrap);
-      if (wrap._editClickHandler) { wrap.removeEventListener('click', wrap._editClickHandler); wrap._editClickHandler = null; }
-      if (wrap._editSavedHandler) { wrap.removeEventListener('activity-saved', wrap._editSavedHandler); wrap._editSavedHandler = null; }
-      wrap.querySelector('.td-edit-bar')?.remove();
-    } else {
-      const { enterEditMode, exitEditMode, makeActivityEditable, refreshActivityPhoto, fetchDirections } = await import('./activity-editor.js');
+    const { enterEditMode, makeActivityEditable } = await import('./activity-editor.js');
 
-      const editBar = document.createElement('div');
-      editBar.className = 'td-edit-bar';
-      editBar.innerHTML = `
-        <span>Editing Itinerary</span>
-        <div class="td-edit-bar-actions">
-          <button class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" data-action="done-edit">Done</button>
-        </div>
-      `;
-      const firstDay = wrap.querySelector('.td-day-grid, .td-day-card');
-      if (firstDay) firstDay.parentNode.insertBefore(editBar, firstDay);
-      else wrap.appendChild(editBar);
+    const editBar = document.createElement('div');
+    editBar.className = 'td-edit-bar';
+    editBar.innerHTML = `
+      <span>Editing Itinerary</span>
+      <div class="td-edit-bar-actions">
+        <button type="button" class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" data-action="done-edit">Done</button>
+      </div>
+    `;
+    const firstDay = wrap.querySelector('.td-day-grid, .td-day-card');
+    if (firstDay) firstDay.parentNode.insertBefore(editBar, firstDay);
+    else wrap.appendChild(editBar);
 
-      editBar.querySelector('[data-action="done-edit"]').addEventListener('click', () => {
-        exitEditMode(wrap);
-        if (wrap._editClickHandler) { wrap.removeEventListener('click', wrap._editClickHandler); wrap._editClickHandler = null; }
-        if (wrap._editSavedHandler) { wrap.removeEventListener('activity-saved', wrap._editSavedHandler); wrap._editSavedHandler = null; }
-        editBar.remove();
-      });
+    editBar.querySelector('[data-action="done-edit"]').addEventListener('click', leaveEditMode);
 
-      const wsDest = trip.wizard_state?.multiCity
-        ? trip.wizard_state?.destinations?.[0]
-        : trip.wizard_state?.destination;
-      const tripLocation = wsDest?.lat && wsDest?.lng ? { lat: wsDest.lat, lng: wsDest.lng } : null;
+    const wsDest = trip.wizard_state?.multiCity
+      ? trip.wizard_state?.destinations?.[0]
+      : trip.wizard_state?.destination;
+    const tripLocation = wsDest?.lat && wsDest?.lng ? { lat: wsDest.lat, lng: wsDest.lng } : null;
 
-      enterEditMode(wrap, trip);
+    enterEditMode(wrap, trip);
 
-      wrap._editClickHandler = async (e) => {
-        if (!wrap.classList.contains('td-edit-mode')) return;
+    wrap._editClickHandler = async (e) => {
+      if (!wrap.classList.contains('td-edit-mode')) return;
 
-        const delBtnEl = e.target.closest('.ae-delete-btn');
-        if (delBtnEl) {
-          const card = delBtnEl.closest('.td-activity-card');
-          const actId = card?.dataset.activityId;
-          if (!actId) return;
-          if (!confirm('Delete this activity?')) return;
-          const { deleteActivityById } = await import('../data/trip-repository.js');
-          const { error } = await deleteActivityById(actId);
-          if (error) { showToast('Could not delete activity', 'error'); return; }
-          // Drop from the in-memory model and remove its wrapper (+ the following
-          // getting-there block, which described travel to the deleted stop).
-          for (const day of (trip.itinerary_days || [])) {
-            if (!day.activities) continue;
-            const idx = day.activities.findIndex(a => a.id === actId);
-            if (idx >= 0) { day.activities.splice(idx, 1); break; }
-          }
-          // renderActivity emits the getting-there block BEFORE its activity
-          // wrapper (it describes travel TO this stop), so remove the PREVIOUS
-          // sibling, not the next one.
-          const wrapper = card.closest('.td-activity');
-          const prevGetting = wrapper?.previousElementSibling;
-          if (prevGetting?.classList.contains('td-getting-there')) prevGetting.remove();
-          wrapper?.remove();
-          showToast('Activity deleted');
-          return;
-        }
-
-        const editBtnEl = e.target.closest('.ae-edit-btn');
-        const card = editBtnEl ? editBtnEl.closest('.td-activity-card') : null;
-        if (!card) return;
-
-        const actId = card.dataset.activityId;
+      const delBtnEl = e.target.closest('.ae-delete-btn');
+      if (delBtnEl) {
+        const card = delBtnEl.closest('.td-activity-card');
+        const actId = card?.dataset.activityId;
         if (!actId) return;
+        if (!confirm('Delete this activity?')) return;
+        await deleteActivityInPlace(wrap, trip, actId, card);
+        return;
+      }
 
-        let matchedActivity = null;
-        for (const day of (trip.itinerary_days || [])) {
-          for (const act of (day.activities || [])) {
-            if (act.id === actId) { matchedActivity = act; break; }
-          }
-          if (matchedActivity) break;
-        }
-        if (!matchedActivity) return;
+      const editBtnEl = e.target.closest('.ae-edit-btn');
+      const card = editBtnEl ? editBtnEl.closest('.td-activity-card') : null;
+      if (!card) return;
 
-        makeActivityEditable(card, matchedActivity, tripLocation);
-      };
-      wrap.addEventListener('click', wrap._editClickHandler);
+      const actId = card.dataset.activityId;
+      if (!actId) return;
 
-      wrap._editSavedHandler = async (e) => {
-        const { activity: savedActivity, venueChanged } = e.detail;
-        const wsDest2 = trip.wizard_state?.multiCity ? trip.wizard_state?.destinations?.[0] : trip.wizard_state?.destination;
-        const sym = wsDest2?.currencySymbol || trip.budget_currency_symbol || '$';
+      const matchedActivity = findActivity(trip, actId)?.activity;
+      if (!matchedActivity) return;
 
-        const rebuildCard = (act, isFirst) => {
-          const html = renderActivity(act, sym, isFirst);
-          const card = wrap.querySelector(`[data-activity-id="${act.id}"]`);
-          if (!card) return;
-          const activityWrapper = card.closest('.td-activity');
-          if (!activityWrapper) return;
+      makeActivityEditable(card, matchedActivity, tripLocation);
+    };
+    wrap.addEventListener('click', wrap._editClickHandler);
 
-          const temp = document.createElement('div');
-          temp.innerHTML = html.trim();
-          const newGettingThere = temp.querySelector('.td-getting-there');
-          const newActivityDiv = temp.querySelector('.td-activity');
-
-          const prevSibling = activityWrapper.previousElementSibling;
-          const hadGettingThere = prevSibling?.classList.contains('td-getting-there');
-
-          if (hadGettingThere) {
-            if (newGettingThere) {
-              prevSibling.replaceWith(newGettingThere);
-            } else {
-              prevSibling.remove();
-            }
-          } else if (newGettingThere) {
-            activityWrapper.before(newGettingThere);
-          }
-
-          if (newActivityDiv) {
-            activityWrapper.replaceWith(newActivityDiv);
-            loadActivityPhotos(newActivityDiv);
-            if (wrap.classList.contains('td-edit-mode')) {
-              const newCard = newActivityDiv.querySelector('.td-activity-card');
-              if (newCard) {
-                newCard.style.position = 'relative';
-                const btn = document.createElement('button');
-                btn.className = 'ae-edit-btn';
-                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
-                btn.title = 'Edit this activity';
-                newCard.appendChild(btn);
-              }
-            }
-          }
-        };
-
-        const { updateActivityById: updateAct } = await import('../data/trip-repository.js');
-
-        for (const day of (trip.itinerary_days || [])) {
-          const acts = day.activities || [];
-          const idx = acts.findIndex(a => a.id === savedActivity.id);
-          if (idx < 0) continue;
-
-          const prev = idx > 0 ? acts[idx - 1] : null;
-          const next = idx < acts.length - 1 ? acts[idx + 1] : null;
-
-          if (venueChanged) {
-            const savedLoc = { lat: savedActivity.latitude, lng: savedActivity.longitude, name: savedActivity.venue_name };
-
-            if (prev && (prev.latitude || prev.venue_name)) {
-              const prevLoc = { lat: prev.latitude, lng: prev.longitude, name: prev.venue_name };
-              const dirs = await fetchDirections(prevLoc, savedLoc);
-              if (dirs?.options?.length) {
-                Object.assign(savedActivity, {
-                  getting_there: dirs.gettingThere,
-                  transport_mode: dirs.transportMode,
-                  transport_duration: dirs.transportDuration,
-                  transport_cost: dirs.transportCost,
-                  transport_options: dirs.options,
-                });
-                await updateAct(savedActivity.id, {
-                  gettingThere: dirs.gettingThere, transportMode: dirs.transportMode,
-                  transportDuration: dirs.transportDuration, transportCost: dirs.transportCost,
-                  transportOptions: dirs.options,
-                });
-              }
-            }
-
-            if (next && (next.latitude || next.venue_name)) {
-              const nextLoc = { lat: next.latitude, lng: next.longitude, name: next.venue_name };
-              const dirs = await fetchDirections(savedLoc, nextLoc);
-              if (dirs?.options?.length) {
-                Object.assign(next, {
-                  getting_there: dirs.gettingThere,
-                  transport_mode: dirs.transportMode,
-                  transport_duration: dirs.transportDuration,
-                  transport_cost: dirs.transportCost,
-                  transport_options: dirs.options,
-                });
-                await updateAct(next.id, {
-                  gettingThere: dirs.gettingThere, transportMode: dirs.transportMode,
-                  transportDuration: dirs.transportDuration, transportCost: dirs.transportCost,
-                  transportOptions: dirs.options,
-                });
-                rebuildCard(next, false);
-              }
-            }
-          }
-
-          rebuildCard(savedActivity, idx === 0);
-          break;
-        }
-      };
-      wrap.addEventListener('activity-saved', wrap._editSavedHandler);
-    }
+    wrap._editSavedHandler = async (e) => {
+      const { activity: savedActivity, venueChanged } = e.detail;
+      const found = findActivity(trip, savedActivity.id);
+      if (!found) return;
+      // Show the saved card straight away; directions follow if the venue moved.
+      rebuildActivityCard(wrap, trip, savedActivity, found.idx === 0);
+      if (isPendingPhoto(savedActivity)) restartPhotoResolution(trip);
+      refreshTotals(wrap, trip);
+      if (venueChanged) await refreshDirectionsAround(wrap, trip, savedActivity);
+    };
+    wrap.addEventListener('activity-saved', wrap._editSavedHandler);
   });
 
   app.querySelector('[data-action="regenerate"]')?.addEventListener('click', async () => {
@@ -2098,85 +2634,102 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   bindDelete(app);
   _townsLoaded = false; // new trip render = fresh towns panel
   bindTabs(app, trip);
-  bindDayCards(app);
+  bindDayCards(app, animate);
   bindChecklist(app, trip.id);
   bindQuickChecklist(app, trip.id);
   loadVisaAdvisories(app, trip);
+  bindTripStatus(view);
 
   // Affiliate click telemetry (links open in a new tab; no navigation race).
-  app.addEventListener('click', (e) => {
+  // Bound to this render's root and aborted with it, so clicks count once.
+  wrap.addEventListener('click', (e) => {
     const link = e.target.closest('[data-booking-click]');
     if (link) trackBookingClick(link.dataset.bookingClick, trip.id, link.dataset.bookingKind);
-  });
+  }, { signal });
   bindCollapsibleSections(app);
   bindSidebar(app);
-  mountItineraryChat(app.querySelector('.td-wrap') || app, trip, () => renderTripDetail(trip.id));
 
-  // Collaboration: claim any pending invitation for this login, and reload the
-  // view when a collaborator saves (LWW "google docs lite" — debounced so our
-  // own rapid edits don't thrash re-renders).
-  let collabUnsub = null;
-  import('../data/collab-repository.js').then(({ claimInvitations, onRemoteActivityChanges }) => {
-    claimInvitations();
-    const dayIds = (trip.itinerary_days || []).map(d => d.id).filter(Boolean);
-    let t = null;
-    collabUnsub = onRemoteActivityChanges(dayIds, () => {
-      clearTimeout(t);
-      t = setTimeout(() => renderTripDetail(trip.id), 1200);
+  // Chat drawer: carried over from the previous render on a refresh, so an
+  // open conversation survives; otherwise mounted fresh.
+  if (chat) {
+    chat.attach(wrap);
+    chat.setTrip(trip);
+    view.chat = chat;
+  } else {
+    // Chat adds and venue changes leave imported cards without a photo.
+    view.chat = mountItineraryChat(wrap, trip, async () => {
+      await refreshTripInPlace({ force: true });
+      if (_view?.trip) restartPhotoResolution(_view.trip);
     });
-  });
-  bindAlternatives(app, trip, (activity, cardEl) => {
+  }
+
+  // Collaboration + photo worker: realtime activity changes. Our own writes are
+  // ignored, photo fills are patched in place, collaborator edits refresh
+  // silently (see handleActivityChange).
+  import('../data/collab-repository.js').then(({ claimInvitations, onRemoteActivityChanges, isLocalWrite }) => {
+    if (_view !== view) return;
+    if (!restore) claimInvitations().catch(err => logger.warn('data', 'Claim invitations failed', { error: err?.message }));
+    const dayIds = (trip.itinerary_days || []).map(d => d.id).filter(Boolean);
+    const unsub = onRemoteActivityChanges(dayIds, (payload) => handleActivityChange(view, payload, isLocalWrite));
+    view.cleanups.push(unsub);
+  }).catch(err => logger.warn('data', 'Realtime unavailable', { tripId: trip.id, error: err?.message }));
+
+  bindAlternatives(wrap, trip, async (activity) => {
     // Rebuild the whole activity wrapper (card + its getting-there block) from
-    // the updated in-memory model, then rehydrate its photo.
-    const wrapper = cardEl?.closest('.td-activity');
-    if (!wrapper) return;
-    const temp = document.createElement('div');
-    temp.innerHTML = renderActivity(activity, sym, false).trim();
-    const fresh = temp.querySelector('.td-activity');
-    if (fresh) { wrapper.replaceWith(fresh); loadActivityPhotos(fresh.parentElement || app); }
-  });
-  const photoObserver = loadActivityPhotos(app);
-  scrollSpyCleanup = setupDayScrollSpy(app);
+    // the updated in-memory model, then route to and from the new venue.
+    const found = findActivity(trip, activity.id);
+    if (!found) return;
+    rebuildActivityCard(wrap, trip, activity, found.idx === 0);
+    if (isPendingPhoto(activity)) restartPhotoResolution(trip);
+    refreshTotals(wrap, trip);
+    await refreshDirectionsAround(wrap, trip, activity);
+  }, { signal });
+
+  // Photos: resume an interrupted import resolution first, so its placeholders
+  // shimmer instead of firing live lookups, then show the status line.
+  if (!restore) resumePhotoResolution(trip);
+  trackObserver(loadActivityPhotos(app, trip));
+  bindPhotoStatus(view);
+  const spyCleanup = setupDayScrollSpy(app);
+  if (spyCleanup) view.cleanups.push(spyCleanup);
 
   // Collapse the tall hero into a slim sticky strip once it scrolls away, so
   // the itinerary owns the viewport (feedback: header ate too much space).
-  let heroObserver = null;
   const heroEl = app.querySelector('#td-hero');
   const stickyBar = app.querySelector('#td-stickybar');
   if (heroEl && stickyBar) {
-    heroObserver = new IntersectionObserver(([e]) => {
+    const heroObserver = new IntersectionObserver(([e]) => {
       stickyBar.classList.toggle('td-stickybar--visible', !e.isIntersecting);
     }, { threshold: 0 });
     heroObserver.observe(heroEl);
+    trackObserver(heroObserver);
   }
 
   // Square mode: render the no-scroll, one-stop-per-card itinerary into its
   // host. Built lazily so the scroll view stays the default on normal screens.
-  let squareItinCleanup = null;
-  let squareSpendingDeck = null;
   if (isSquareMode()) {
     const host = app.querySelector('#td-square-itinerary');
-    squareItinCleanup = renderSquareItinerary(host, trip, days, sym, { formatCost, catIcon, formatDuration });
+    const squareItinCleanup = renderSquareItinerary(host, trip, days, sym, {
+      formatCost, catIcon, formatDuration,
+      costLabel: (a) => activityCostLabel(a, sym, tripCode),
+    });
+    view.cleanups.push(squareItinCleanup);
 
     // Spending panel: page through its sections instead of scrolling.
     import('../lib/card-deck.js').then(({ wrapChildrenIntoDeck }) => {
+      if (_view !== view) return;
       const spendingGrid = app.querySelector('[data-panel="spending"] .td-spending-grid');
       if (spendingGrid && !spendingGrid.querySelector('.card-deck')) {
-        squareSpendingDeck = wrapChildrenIntoDeck(spendingGrid, { deckClass: 'td-spending-deck', label: 'Spending' });
+        const deck = wrapChildrenIntoDeck(spendingGrid, { deckClass: 'td-spending-deck', label: 'Spending' });
+        if (deck) view.cleanups.push(() => deck.destroy());
       }
-    });
+    }).catch(err => logger.warn('ui', 'Spending deck unavailable', { error: err?.message }));
   }
 
-  // Tear down window-level listeners/observers when navigating away from the
-  // trip view (the in-render cleanup only fires on re-render of this same view).
-  onRouteLeave(() => {
-    if (scrollSpyCleanup) { scrollSpyCleanup(); scrollSpyCleanup = null; }
-    if (photoObserver) photoObserver.disconnect();
-    if (squareItinCleanup) { squareItinCleanup(); squareItinCleanup = null; }
-    if (squareSpendingDeck) { squareSpendingDeck.destroy(); squareSpendingDeck = null; }
-    if (heroObserver) { heroObserver.disconnect(); heroObserver = null; }
-    if (collabUnsub) { collabUnsub(); collabUnsub = null; }
-  });
+  if (restore) {
+    restoreViewState(app, trip, restore);
+    return;
+  }
 
   if (jumpToToday && trip.start_date) {
     const tripTz = trip.timezone || trip.wizard_state?.destination?.timezone;
@@ -2186,20 +2739,155 @@ function renderDayPicker(app, trip, jumpToToday = false) {
     const dayCard = app.querySelector(`.td-day-card[data-day-index="${todayDayNum - 1}"]`);
     if (dayCard) {
       const grid = app.querySelector('.td-day-grid');
-      if (grid) {
-        grid.classList.add('td-day-grid--has-open');
-        grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
-        syncDayHeaderExpanded(grid);
-      }
+      openDayCard(grid, dayCard);
       setTimeout(() => {
+        if (!dayCard.isConnected) return;
         dayCard.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        grid?.querySelectorAll('.td-day-card[data-day-date]').forEach(c => injectNowKnob(c));
+        injectNowKnob(dayCard);
       }, 500);
     }
   }
 }
 
+// Re-render one activity (and the "Getting there" block that leads to it) from
+// the in-memory model, in place.
+function rebuildActivityCard(wrap, trip, act, isFirst) {
+  const card = cardForActivity(wrap, act.id);
+  const activityWrapper = card?.closest('.td-activity');
+  if (!activityWrapper) return null;
+  const { sym, tripCode } = tripHeader(trip);
+
+  const temp = document.createElement('div');
+  temp.innerHTML = renderActivity(act, sym, isFirst, tripCode).trim();
+  const newGettingThere = temp.querySelector('.td-getting-there');
+  const newActivityDiv = temp.querySelector('.td-activity');
+
+  const prevSibling = activityWrapper.previousElementSibling;
+  if (prevSibling?.classList.contains('td-getting-there')) {
+    if (newGettingThere) prevSibling.replaceWith(newGettingThere);
+    else prevSibling.remove();
+  } else if (newGettingThere) {
+    activityWrapper.before(newGettingThere);
+  }
+  if (!newActivityDiv) return null;
+
+  activityWrapper.replaceWith(newActivityDiv);
+  trackObserver(loadActivityPhotos(newActivityDiv, trip));
+  if (wrap.classList.contains('td-edit-mode')) {
+    const newCard = newActivityDiv.querySelector('.td-activity-card');
+    import('./activity-editor.js').then(m => m.addEditButtons(newCard));
+  }
+  return newActivityDiv;
+}
+
+// Route to and from an activity whose venue changed (editor save, Alternatives
+// swap): it gets new directions from the stop before it, and the stop after it
+// gets new directions from it. Each write is marked as our own.
+async function refreshDirectionsAround(wrap, trip, act, { before = true, after = true } = {}) {
+  const found = findActivity(trip, act.id);
+  if (!found) return;
+  const { acts, idx } = found;
+  const prev = before && idx > 0 ? acts[idx - 1] : null;
+  const next = after && idx < acts.length - 1 ? acts[idx + 1] : null;
+  if (!prev && !next) return;
+
+  const [{ fetchDirections }, { updateActivityById }, { withLocalWrite }] = await Promise.all([
+    import('./activity-editor.js'), import('../data/trip-repository.js'), import('../data/collab-repository.js'),
+  ]);
+  const loc = (a) => ({ lat: a.latitude, lng: a.longitude, name: a.venue_name });
+  const routeTo = async (target, from, to) => {
+    const dirs = await fetchDirections(from, to);
+    if (!dirs?.options?.length) return false;
+    Object.assign(target, {
+      getting_there: dirs.gettingThere,
+      transport_mode: dirs.transportMode,
+      transport_duration: dirs.transportDuration,
+      transport_cost: dirs.transportCost,
+      transport_options: dirs.options,
+    });
+    const { error } = await withLocalWrite([target.id], () => updateActivityById(target.id, {
+      gettingThere: dirs.gettingThere, transportMode: dirs.transportMode,
+      transportDuration: dirs.transportDuration, transportCost: dirs.transportCost,
+      transportOptions: dirs.options,
+    }));
+    if (error) logger.warn('data', 'Saving directions failed', { activityId: target.id, error });
+    return true;
+  };
+
+  if (prev && (prev.latitude || prev.venue_name) && await routeTo(act, loc(prev), loc(act)) && wrap.isConnected) {
+    rebuildActivityCard(wrap, trip, act, false);
+  }
+  if (next && (next.latitude || next.venue_name) && await routeTo(next, loc(act), loc(next)) && wrap.isConnected) {
+    rebuildActivityCard(wrap, trip, next, false);
+  }
+}
+
+// Edit-mode delete: remove the row, then fix the stop after it (it is either
+// the day's first stop now, or needs directions from the stop before) and the
+// totals.
+async function deleteActivityInPlace(wrap, trip, actId, card) {
+  const [{ deleteActivityById }, { withLocalWrite }] = await Promise.all([
+    import('../data/trip-repository.js'), import('../data/collab-repository.js'),
+  ]);
+  const { error } = await withLocalWrite([actId], () => deleteActivityById(actId));
+  if (error) { showToast('Could not delete activity', 'error'); return; }
+
+  const found = findActivity(trip, actId);
+  const prev = found && found.idx > 0 ? found.acts[found.idx - 1] : null;
+  const next = found && found.idx < found.acts.length - 1 ? found.acts[found.idx + 1] : null;
+  if (found) found.acts.splice(found.idx, 1);
+
+  // renderActivity emits the getting-there block BEFORE its activity wrapper
+  // (it describes travel TO this stop), so remove the PREVIOUS sibling.
+  const wrapper = card.closest('.td-activity');
+  const prevGetting = wrapper?.previousElementSibling;
+  if (prevGetting?.classList.contains('td-getting-there')) prevGetting.remove();
+  wrapper?.remove();
+  refreshTotals(wrap, trip);
+  showToast('Activity deleted');
+
+  if (!next) return;
+  if (!prev) {
+    rebuildActivityCard(wrap, trip, next, true);
+    return;
+  }
+  // The next stop's directions described travel from the deleted one.
+  await refreshDirectionsAround(wrap, trip, prev, { before: false });
+}
+
+// Recompute every cost and count shown for the trip from the in-memory model
+// after an edit, delete or swap: day footers, sidebar, and the Spending tab.
+function refreshTotals(wrap, trip) {
+  if (!wrap?.isConnected) return;
+  const { days, sym, tripCode, totalCost, totalActivities, excludedCosts, dayCount } = tripHeader(trip);
+  days.forEach((d, i) => {
+    const acts = d.activities || [];
+    const cost = formatCost(sumCosts(acts, tripCode).total, sym);
+    const card = wrap.querySelector(`.td-day-card[data-day-index="${i}"]`);
+    const meta = card?.querySelector('.td-day-footer-meta');
+    const costEl = card?.querySelector('.td-day-footer-cost');
+    if (meta) meta.textContent = `${acts.length} activities`;
+    if (costEl) costEl.innerHTML = cost;
+    const item = wrap.querySelector(`[data-sidebar-day="${i}"]`);
+    const itemMeta = item?.querySelector('.td-sidebar-item-meta');
+    const itemCost = item?.querySelector('.td-sidebar-item-cost');
+    if (itemMeta) itemMeta.textContent = `${acts.length} activities`;
+    if (itemCost) itemCost.innerHTML = cost;
+  });
+  const total = wrap.querySelector('.td-sidebar-total-amount');
+  if (total) total.innerHTML = formatCost(totalCost, sym);
+  // The square-mode spending deck owns its markup; it picks up totals on the next render.
+  const spending = wrap.querySelector('[data-panel="spending"] .td-spending-grid');
+  if (spending && !spending.querySelector('.card-deck')) {
+    spending.innerHTML = renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts);
+  }
+}
+
 function attachActivityImg(el, url, venue, source, credit = '') {
+  // Re-attaching (a realtime patch, then the final credit refresh) must not
+  // stack a second image, badge or credit on the card.
+  el.querySelectorAll('.td-activity-photo-img, .td-activity-photo-badge, .td-activity-photo-credit').forEach(n => n.remove());
+  el.classList.remove('td-activity-photo--loaded', 'td-activity-photo--failed', 'td-activity-photo--none');
   const img = document.createElement('img');
   img.src = url;
   img.alt = venue;
@@ -2226,9 +2914,157 @@ function attachActivityImg(el, url, venue, source, credit = '') {
   }
 }
 
-function loadActivityPhotos(container) {
+// Server photo resolution only targets these (resolve-trip-photos NO_PHOTO_CATEGORIES).
+const NO_PHOTO_CATEGORIES = new Set(['transport', 'flight', 'arrival', 'departure']);
+
+// An imported activity the photo worker hasn't handled yet.
+function isPendingPhoto(activity) {
+  return Boolean(activity?.venue_name) && !activity.photo_url && !activity.photo_source
+    && !NO_PHOTO_CATEGORIES.has(String(activity.category || '').toLowerCase());
+}
+
+// Put a stored photo state (url / source / credit) onto an existing card's
+// photo element, in place.
+function applyActivityPhoto(el, activity, credit) {
+  const url = activity.photo_url || '';
+  const source = activity.photo_source || '';
+  const sameImage = url && el.dataset.photo === url && el.querySelector('.td-activity-photo-img');
+  const sameCredit = (el.dataset.photoCredit || '') === (credit || '');
+  if (url) el.dataset.photo = url; else delete el.dataset.photo;
+  if (source) el.dataset.photoSource = source; else delete el.dataset.photoSource;
+  if (credit) el.dataset.photoCredit = credit; else delete el.dataset.photoCredit;
+  el.classList.remove('td-activity-photo--pending');
+  if (url) {
+    // Re-attaching restarts the fade-in, so an unchanged photo is left alone.
+    if (sameImage && sameCredit) return;
+    attachActivityImg(el, url, el.dataset.venue || activity.venue_name || '', source, credit);
+  } else if (source === 'none') {
+    el.classList.add('td-activity-photo--none');
+  }
+}
+
+// Coordinates filled in later (geocoding) also feed the card's Map link.
+function patchActivityCoords(card, activity) {
+  const lat = Number(activity.latitude);
+  const lng = Number(activity.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return;
+  const photoEl = card.querySelector('.td-activity-photo');
+  if (photoEl) { photoEl.dataset.lat = String(lat); photoEl.dataset.lng = String(lng); }
+  const venueEl = card.querySelector('.td-activity-venue');
+  if (!venueEl) return;
+  const href = `https://maps.google.com/?q=${lat},${lng}`;
+  const link = venueEl.querySelector('.td-maps-link');
+  if (link) { link.href = href; return; }
+  venueEl.insertAdjacentHTML('beforeend', ` <a href="${href}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>`);
+}
+
+function cardForActivity(root, id) {
+  return [...root.querySelectorAll('.td-activity-card[data-activity-id]')].find(c => c.dataset.activityId === id) || null;
+}
+
+// Realtime photo/coordinate update for one activity: model + card, no reload.
+function patchActivityPhoto(view, activity, row) {
+  for (const key of PHOTO_FIELDS) if (key in row) activity[key] = row[key];
+  const card = cardForActivity(view.wrap, activity.id);
+  if (!card) return;
+  if ('latitude' in row || 'longitude' in row) patchActivityCoords(card, activity);
+  const photoEl = card.querySelector('.td-activity-photo');
+  if (photoEl && ('photo_url' in row || 'photo_source' in row)) {
+    applyActivityPhoto(photoEl, activity, creditText(_photoCredits[activity.id]));
+  }
+}
+
+// One read at the end of a resolution: every stored photo plus the credits
+// (written after the photos), patched onto the cards in place.
+function applyPhotoSnapshot(view, { credits, activities }) {
+  _photoCredits = { ..._photoCredits, ...credits };
+  view.trip.extras = { ...(view.trip.extras || {}), photoCredits: _photoCredits };
+  for (const row of activities) {
+    const found = findActivity(view.trip, row.id);
+    if (!found) continue;
+    for (const key of PHOTO_FIELDS) if (key in row) found.activity[key] = row[key];
+    const card = cardForActivity(view.wrap, row.id);
+    if (!card) continue;
+    patchActivityCoords(card, found.activity);
+    const photoEl = card.querySelector('.td-activity-photo');
+    if (photoEl) applyActivityPhoto(photoEl, found.activity, creditText(_photoCredits[row.id]));
+  }
+  // Anything still without a photo has been tried: stop the shimmer.
+  view.wrap.querySelectorAll('.td-activity-photo--pending').forEach(el => {
+    el.classList.remove('td-activity-photo--pending');
+    el.classList.add('td-activity-photo--none');
+  });
+}
+
+function photoProgressText({ done = 0, total = 0 } = {}) {
+  return total > 0
+    ? `Finding photos for your places (${Math.min(done, total)} of ${total})`
+    : 'Finding photos for your places';
+}
+
+// Status line for background photo resolution, fed by 'trippy:photos' events.
+function bindPhotoStatus(view) {
+  const el = view.wrap.querySelector('.td-photo-status');
+  if (!el) return;
+  let hideTimer = null;
+  const show = (text) => { el.textContent = text; el.hidden = false; };
+  const onPhotos = async (e) => {
+    const d = e.detail || {};
+    if (d.tripId !== view.tripId || _view !== view) return;
+    if (!d.finished) {
+      clearTimeout(hideTimer);
+      show(photoProgressText(d));
+      // Resolution started after this render: pending placeholders shimmer again.
+      view.wrap.querySelectorAll('.td-activity-photo--none:not([data-photo]):not([data-photo-source])').forEach(ph => {
+        ph.classList.replace('td-activity-photo--none', 'td-activity-photo--pending');
+      });
+      return;
+    }
+    const { data } = await fetchTripPhotos(view.tripId);
+    if (_view !== view) return;
+    if (data) applyPhotoSnapshot(view, data);
+    const n = Number(d.added) || 0;
+    show(!d.ok ? "We couldn't add photos right now. We'll try again next time you open this trip."
+      : n > 0 ? `Photos added for ${n} place${n === 1 ? '' : 's'}`
+      : "We couldn't find photos for these places.");
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => { el.hidden = true; }, 4000);
+  };
+  window.addEventListener('trippy:photos', onPhotos);
+  view.cleanups.push(() => { window.removeEventListener('trippy:photos', onPhotos); clearTimeout(hideTimer); });
+  if (isResolvingPhotos(view.tripId)) show(photoProgressText(getPhotoProgress(view.tripId) || {}));
+}
+
+// Imported trips get real photos from the server worker, driven by the client.
+// If that run stopped (tab closed, app killed), pick it up when the owner opens
+// the trip again; once per trip per session.
+const _photoResumeTried = new Set();
+
+function resumePhotoResolution(trip) {
+  if (!trip.wizard_state?.imported || isResolvingPhotos(trip.id) || _photoResumeTried.has(trip.id)) return;
+  if (!trip.user_id || trip.user_id !== getUser()?.id) return; // only the owner may run the worker
+  const pending = (trip.itinerary_days || []).some(d => (d.activities || []).some(isPendingPhoto));
+  if (!pending) return;
+  _photoResumeTried.add(trip.id);
+  resolveTripPhotos(trip.id, { title: trip.title || '' })
+    .catch(err => logger.warn('data', 'Photo resume failed', { tripId: trip.id, error: err?.message }));
+}
+
+// Imported cards never look photos up live, so after a venue change
+// (editor, Alternatives) or a chat edit the worker runs again for the new
+// pending activities (resumePhotoResolution checks the owner and the pending
+// rows).
+function restartPhotoResolution(trip) {
+  if (!trip?.wizard_state?.imported) return;
+  _photoResumeTried.delete(trip.id);
+  resumePhotoResolution(trip);
+}
+
+function loadActivityPhotos(container, trip) {
   const photoEls = container.querySelectorAll('.td-activity-photo[data-venue]');
   if (!photoEls.length) return null;
+  const imported = Boolean(trip?.wizard_state?.imported);
+  const resolving = Boolean(trip && isResolvingPhotos(trip.id));
 
   // Trips generated/backfilled after the photo-store rollout carry a persisted
   // Storage URL (data-photo) — use it directly, no network resolve on open.
@@ -2238,7 +3074,12 @@ function loadActivityPhotos(container) {
     if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue, el.dataset.photoSource, el.dataset.photoCredit);
     // 'none' = the photo resolver checked and found no trustworthy photo: keep the
     // gradient rather than live-resolving a generic stock image.
-    else if (el.dataset.photoSource !== 'none') legacy.push(el);
+    else if (el.dataset.photoSource === 'none') el.classList.add('td-activity-photo--none');
+    // Imported trips (and any trip whose photos are being resolved right now)
+    // wait for the server worker instead of live stock lookups: shimmer while
+    // it runs, a plain placeholder otherwise.
+    else if (imported || resolving) el.classList.add(resolving ? 'td-activity-photo--pending' : 'td-activity-photo--none');
+    else legacy.push(el);
   }
   if (!legacy.length) return null;
 
@@ -2253,6 +3094,7 @@ function loadActivityPhotos(container) {
       const location = (!isNaN(lat) && !isNaN(lng) && lat !== 0) ? { lat, lng } : null;
 
       fetchPlacePhotoByQuery(venue, location, 600, { kind: 'venue', category: el.dataset.category }).then(url => {
+        if (!el.isConnected || el.dataset.photo) return;
         if (!url) { el.classList.add('td-activity-photo--failed'); return; }
         attachActivityImg(el, url, venue);
       });
@@ -2332,7 +3174,6 @@ function injectNowKnob(card) {
   timeline.appendChild(knob);
 }
 
-let scrollSpyCleanup = null;
 let dayCardManualSwitch = false;
 
 function getAdjacentDayCard(card, direction) {
@@ -2396,24 +3237,36 @@ function setupDayScrollSpy(container) {
   };
 }
 
-// Keep aria-expanded on every day-card header in sync with the grid's actual
-// open/closed state. Called from every path that toggles td-day-grid--has-open
-// (the header itself, the quick-checklist row, the sidebar, the today-jump).
+// Keep aria-expanded on every day-card header in sync with its card's actual
+// open state. Called from every path that opens or closes cards (the header
+// itself, the quick-checklist row, the sidebar, the today-jump, town chips).
 function syncDayHeaderExpanded(grid) {
   if (!grid) return;
-  const expanded = grid.classList.contains('td-day-grid--has-open');
-  grid.querySelectorAll('.td-day-card-header').forEach(h => h.setAttribute('aria-expanded', String(expanded)));
+  grid.querySelectorAll('.td-day-card').forEach(card => {
+    card.querySelector('.td-day-card-header')?.setAttribute('aria-expanded', String(card.classList.contains('td-day-card--open')));
+  });
 }
 
-function bindDayCards(container) {
+// Un-stack the wallet and open just this card (plus any already open), so a
+// tap never lays out the whole itinerary at once.
+function openDayCard(grid, card) {
+  if (!grid || !card) return;
+  grid.classList.add('td-day-grid--has-open');
+  card.classList.add('td-day-card--open');
+  syncDayHeaderExpanded(grid);
+}
+
+function bindDayCards(container, animate = true) {
   const grid = container.querySelector('.td-day-grid');
   if (!grid) return;
 
-  grid.querySelectorAll('.td-day-card').forEach(card => {
-    card.addEventListener('animationend', () => {
-      card.style.animation = 'none';
-    }, { once: true });
-  });
+  if (animate) {
+    grid.querySelectorAll('.td-day-card').forEach(card => {
+      card.addEventListener('animationend', () => {
+        card.style.animation = 'none';
+      }, { once: true });
+    });
+  }
 
   grid.querySelectorAll('.td-day-card-header').forEach(header => {
     // Make the header a real keyboard-operable control.
@@ -2425,23 +3278,24 @@ function bindDayCards(container) {
       dayCardManualSwitch = true;
       setTimeout(() => { dayCardManualSwitch = false; }, 600);
       const card = header.closest('.td-day-card');
-      const isExpanded = grid.classList.contains('td-day-grid--has-open');
 
-      if (isExpanded) {
-        grid.classList.remove('td-day-grid--has-open');
-        grid.querySelectorAll('.td-day-card--open').forEach(c => c.classList.remove('td-day-card--open'));
+      if (card.classList.contains('td-day-card--open')) {
+        // Close this day; restack the wallet once nothing is open.
+        card.classList.remove('td-day-card--open');
+        if (!grid.querySelector('.td-day-card--open')) grid.classList.remove('td-day-grid--has-open');
         syncDayHeaderExpanded(grid);
-      } else {
-        grid.classList.add('td-day-grid--has-open');
-        grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
-        syncDayHeaderExpanded(grid);
-        const dayIdx = card.dataset.dayIndex;
-        if (dayIdx != null) updateSidebarActive(container, dayIdx);
-        setTimeout(() => {
-          card.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
-          grid.querySelectorAll('.td-day-card[data-day-date]').forEach(c => injectNowKnob(c));
-        }, 380);
+        return;
       }
+
+      const wasStacked = !grid.classList.contains('td-day-grid--has-open');
+      openDayCard(grid, card);
+      const dayIdx = card.dataset.dayIndex;
+      if (dayIdx != null) updateSidebarActive(container, dayIdx);
+      setTimeout(() => {
+        if (!card.isConnected) return;
+        card.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        injectNowKnob(card);
+      }, wasStacked ? 380 : 60);
     };
 
     header.addEventListener('click', toggle);
@@ -2451,21 +3305,21 @@ function bindDayCards(container) {
   });
 }
 
+function activateTab(container, trip, target) {
+  const tab = container.querySelector(`.td-tab[data-tab="${target}"]`);
+  if (!tab) return;
+  container.querySelectorAll('.td-tab').forEach(t => { t.classList.remove('td-tab--active'); t.setAttribute('aria-selected', 'false'); });
+  container.querySelectorAll('.td-tab-panel').forEach(p => p.classList.remove('td-tab-panel--active'));
+  tab.classList.add('td-tab--active');
+  tab.setAttribute('aria-selected', 'true');
+  container.querySelector(`[data-panel="${target}"]`)?.classList.add('td-tab-panel--active');
+  // Towns geocode lazily on first open (network cost), then cache.
+  if (target === 'towns' && trip) loadTownsTab(container, trip);
+}
+
 function bindTabs(container, trip) {
-  const tabs = container.querySelectorAll('.td-tab');
-  const panels = container.querySelectorAll('.td-tab-panel');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      const target = tab.dataset.tab;
-      tabs.forEach(t => { t.classList.remove('td-tab--active'); t.setAttribute('aria-selected', 'false'); });
-      panels.forEach(p => p.classList.remove('td-tab-panel--active'));
-      tab.classList.add('td-tab--active');
-      tab.setAttribute('aria-selected', 'true');
-      const panel = container.querySelector(`[data-panel="${target}"]`);
-      if (panel) panel.classList.add('td-tab-panel--active');
-      // Towns geocode lazily on first open (network cost), then cache.
-      if (target === 'towns' && trip) loadTownsTab(container, trip);
-    });
+  container.querySelectorAll('.td-tab').forEach(tab => {
+    tab.addEventListener('click', () => activateTab(container, trip, tab.dataset.tab));
   });
 }
 
@@ -2493,7 +3347,7 @@ function dayRanges(days) {
     dayIndex: r.dayIndex,
     label: r.start === r.end ? `Day ${r.start}`
       : r.end === r.start + 1 ? `Day ${r.start}, ${r.end}`
-      : `Day ${r.start}–${r.end}`,
+      : `Days ${r.start} to ${r.end}`,
   }));
 }
 
@@ -2551,7 +3405,7 @@ const EAT_CATEGORIES = new Set(['food', 'restaurant', 'cafe', 'coffee', 'bar', '
 function townBlurb(name, vibes) {
   if (!vibes.length) return `A stop on your route worth a wander.`;
   const lead = vibes.slice(0, 2).map(v => v.toLowerCase()).join(' and ');
-  return `Known for its ${lead} — a neighbourhood to slow down and explore.`;
+  return `Known for its ${lead}. A neighbourhood to slow down and explore.`;
 }
 
 // Derive per-town Discover detail: vibe tags, a blurb, and Eat & Drink / See & Do
@@ -2661,7 +3515,7 @@ async function loadTownsTab(container, trip) {
           const detail = townDetail.get(t.name) || { vibes: [], blurb: '', eat: [], see: [] };
           return `
           <div class="td-town-card" role="button" tabindex="0" aria-expanded="false"
-               aria-label="${esc(t.name)} — explore this neighbourhood" style="--ti: ${cardIdx++}"
+               aria-label="${esc(t.name)}, explore this neighbourhood" style="--ti: ${cardIdx++}"
                data-town-photo="${esc(`${t.name} ${g.city || ''}`.trim())}" ${t.photo ? `data-town-stored="${esc(t.photo)}"` : ''}>
             <div class="td-town-flip">
               <div class="td-town-face td-town-front">
@@ -2671,7 +3525,7 @@ async function loadTownsTab(container, trip) {
                   <span class="td-town-name">${esc(t.name)}</span>
                   ${detail.vibes.length ? `<span class="td-town-vibes">${detail.vibes.map(v => `<span class="td-town-vibe">${esc(v)}</span>`).join('')}</span>` : ''}
                   ${detail.blurb ? `<span class="td-town-blurb">${esc(detail.blurb)}</span>` : ''}
-                  <span class="td-town-count">${t.activityCount} ${t.activityCount === 1 ? 'stop' : 'stops'} · tap to explore</span>
+                  <span class="td-town-count">${Number(t.activityCount) || 0} ${Number(t.activityCount) === 1 ? 'stop' : 'stops'}, tap to explore</span>
                 </div>
               </div>
               <div class="td-town-face td-town-back">
@@ -2681,7 +3535,7 @@ async function loadTownsTab(container, trip) {
                 <span class="td-town-back-label">You're here on</span>
                 <div class="td-town-days">
                   ${dayRanges(t.days).map(r => `
-                    <button class="td-town-day" data-town-day-index="${r.dayIndex}">${r.label}</button>
+                    <button type="button" class="td-town-day" data-town-day-index="${Number(r.dayIndex) || 0}">${esc(r.label)}</button>
                   `).join('')}
                 </div>
               </div>
@@ -2711,7 +3565,7 @@ async function loadTownsTab(container, trip) {
     });
   });
 
-  // Day chip → switch to Plan, expand all day cards, scroll to the chosen day
+  // Day chip: switch to Plan, open that day card, scroll to it
   // (same mechanics as the prep-checklist jump).
   host.querySelectorAll('[data-town-day-index]').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -2725,12 +3579,7 @@ async function loadTownsTab(container, trip) {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const card = container.querySelector(`.td-day-card[data-day-index="${dayIndex}"]`);
         if (!card) return;
-        const grid = card.closest('.td-day-grid');
-        if (grid) {
-          grid.classList.add('td-day-grid--has-open');
-          grid.querySelectorAll('.td-day-card').forEach(c => c.classList.add('td-day-card--open'));
-          syncDayHeaderExpanded(grid);
-        }
+        openDayCard(card.closest('.td-day-grid'), card);
         (card.querySelector('.td-day-card-header') || card).scrollIntoView({ behavior: 'smooth', block: 'start' });
       }));
     });

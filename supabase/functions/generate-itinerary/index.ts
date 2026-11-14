@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CORS_MAX_AGE, getCallerUserId, readJsonBody } from "../_shared/http.ts";
+
+// LEGACY: the app generates through process-generation (async job queue). This
+// endpoint is kept for reference only; it now requires a signed-in caller and a
+// bounded body so it cannot be used as an anonymous LLM relay. Prefer deleting
+// the deployed function: `supabase functions delete generate-itinerary`.
+const MAX_BODY_BYTES = 64_000;
 
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
@@ -22,12 +29,13 @@ function logToDb(level: string, category: string, message: string, metadata: Rec
     source: "edge",
     user_id: (metadata.userId as string) || null,
     trip_id: (metadata.tripId as string) || null,
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 }
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Max-Age": CORS_MAX_AGE,
 };
 
 const FETCH_TIMEOUT = 120_000;
@@ -489,6 +497,12 @@ serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const userId = await getCallerUserId(req);
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
     if (!MISTRAL_API_KEY && !GEMINI_API_KEY) {
       return new Response(
@@ -497,7 +511,11 @@ serve(async (req: Request) => {
       );
     }
 
-    const wizardState = await req.json();
+    const { body: wizardState, status } = await readJsonBody(req, MAX_BODY_BYTES);
+    if (status) {
+      return new Response(JSON.stringify({ error: status === 413 ? "Request too large" : "Invalid JSON" }),
+        { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     if (!wizardState?.destination?.name && !(wizardState?.destinations?.length > 0)) {
       return new Response(

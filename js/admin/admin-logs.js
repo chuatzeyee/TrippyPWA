@@ -1,5 +1,6 @@
 import { fetchLogs, fetchLogStats, deleteOldLogs } from '../data/admin-repository.js';
 import { showToast } from '../components/toast.js';
+import { escapeHtml as esc } from '../data/day-builder.js';
 
 let logs = [];
 let logCount = 0;
@@ -26,12 +27,6 @@ const CATEGORY_BADGES = {
   edge: 'adm-badge--muted',
   system: 'adm-badge--muted',
 };
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s || '';
-  return d.innerHTML;
-}
 
 function relativeTime(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -146,7 +141,7 @@ function renderLogRow(log) {
             ${log.trip_id ? `<div class="adm-log-detail-field"><strong>Trip ID:</strong> ${esc(log.trip_id)}</div>` : ''}
             ${provider ? `<div class="adm-log-detail-field"><strong>Model:</strong> ${esc(provider)}</div>` : ''}
             ${log.user_agent ? `<div class="adm-log-detail-field"><strong>User Agent:</strong> ${esc(log.user_agent)}</div>` : ''}
-            <div class="adm-log-detail-field"><strong>Full timestamp:</strong> ${new Date(log.created_at).toLocaleString()}</div>
+            <div class="adm-log-detail-field"><strong>Full timestamp:</strong> ${esc(new Date(log.created_at).toLocaleString())}</div>
             ${stack ? `<div class="adm-log-detail-field"><strong>Stack Trace:</strong><pre class="adm-log-detail-json">${esc(stack)}</pre></div>` : ''}
             <div class="adm-log-detail-field"><strong>Metadata:</strong><pre class="adm-log-detail-json">${esc(metaStr)}</pre></div>
           </div>
@@ -159,18 +154,18 @@ function renderLogRow(log) {
     : '<span class="adm-log-no-model">-</span>';
 
   return `
-    <tr class="${rowClass}" data-log-id="${log.id}">
-      <td><span class="adm-badge ${levelClass}">${log.level}</span></td>
-      <td class="adm-log-time" title="${new Date(log.created_at).toLocaleString()}">
+    <tr class="${rowClass}" data-log-id="${esc(log.id)}">
+      <td><span class="adm-badge ${levelClass}">${esc(log.level)}</span></td>
+      <td class="adm-log-time" title="${esc(new Date(log.created_at).toLocaleString())}">
         <span class="adm-log-time-abs">${formatTime(log.created_at)}</span>
         <span class="adm-log-time-rel">${relativeTime(log.created_at)}</span>
       </td>
-      <td><span class="adm-badge ${catClass}">${log.category}</span></td>
+      <td><span class="adm-badge ${catClass}">${esc(log.category)}</span></td>
       <td class="adm-log-user" title="${esc(userName || (log.user_id ? log.user_id : ''))}">${userName ? esc(userName) : '<span class="adm-log-no-model">-</span>'}</td>
       <td class="adm-log-dest" title="${esc(tripTitle || '')}">${tripTitle ? esc(tripTitle) : '<span class="adm-log-no-model">-</span>'}</td>
       <td>${providerBadge}</td>
       <td class="adm-log-message" title="${esc(log.message)}">${esc(log.message)}</td>
-      <td><button class="adm-log-expand-btn" data-log-id="${log.id}">${isExpanded ? '&#9650;' : '&#9660;'}</button></td>
+      <td><button class="adm-log-expand-btn" data-log-id="${esc(log.id)}">${isExpanded ? '&#9650;' : '&#9660;'}</button></td>
     </tr>${detail}`;
 }
 

@@ -13,8 +13,11 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* `backwards`, not `both`: a fill that keeps transform: translateY(0) after the
+   animation makes .td-wrap the containing block for position: fixed children,
+   so the chat button and drawer scrolled away with the page. */
 .td-fade-in {
-  animation: tdFadeIn 0.25s var(--ease-out) both;
+  animation: tdFadeIn 0.25s var(--ease-out) backwards;
 }
 
 @keyframes tdFadeIn {
@@ -2177,7 +2180,22 @@
 }
 .td-collab-mail { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 .td-collab-role { color: var(--ink-ghost); margin-left: auto; white-space: nowrap; }
-.td-collab-remove { border: none; background: none; color: var(--ink-secondary); cursor: pointer; font-size: 1rem; line-height: 1; }
+.td-collab-remove {
+  flex-shrink: 0;
+  min-width: 40px;
+  min-height: 40px;
+  margin: -8px -6px -8px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
 .td-collab-remove:hover { color: var(--error); }
 .td-collab-empty { font: var(--text-caption); color: var(--ink-ghost); margin-top: var(--sp-2); }
 
@@ -2228,7 +2246,20 @@
   font-weight: 700;
   color: var(--ink);
 }
-.td-chat-close { border: none; background: none; color: var(--ink-secondary); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+.td-chat-close {
+  min-width: 44px;
+  min-height: 44px;
+  margin: calc(-1 * var(--sp-2)) calc(-1 * var(--sp-3)) calc(-1 * var(--sp-2)) 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--ink-secondary);
+  font-size: 1.3rem;
+  cursor: pointer;
+  line-height: 1;
+}
 .td-chat-log {
   flex: 1 1 auto;
   min-height: 120px;
@@ -2369,6 +2400,15 @@
     margin-left: calc(-1 * var(--sp-6));
     margin-right: calc(-1 * var(--sp-6));
     width: calc(100% + var(--sp-6) * 2);
+  }
+}
+
+/* Narrow phones: a sticky footer of wrapping pills plus the photo credit took
+   about a quarter of the screen. It sits at the end of the page instead. */
+@media (max-width: 767px) {
+  .td-footer {
+    position: static;
+    animation: none;
   }
 }
 
@@ -2913,8 +2953,8 @@
 }
 
 .td-share-close {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2961,7 +3001,8 @@
   padding: var(--sp-2) var(--sp-3);
 }
 
-.td-share-copy {
+.td-share-copy,
+.td-collab-add {
   flex-shrink: 0;
   font-size: 0.8rem;
   font-weight: 600;
@@ -2974,7 +3015,8 @@
   transition: background var(--duration-fast);
 }
 
-.td-share-copy:hover { background: rgba(234, 88, 12, 0.24); }
+.td-share-copy:hover,
+.td-collab-add:hover { background: rgba(234, 88, 12, 0.24); }
 
 .td-share-divider {
   display: flex;
@@ -2993,7 +3035,8 @@
   background: var(--border);
 }
 
-.td-share-email {
+.td-share-email,
+.td-collab-email {
   width: 100%;
   font: var(--text-body);
   color: var(--ink);
@@ -3005,9 +3048,11 @@
   transition: border-color var(--duration-fast);
 }
 
-.td-share-email:focus {
+.td-share-email:focus,
+.td-collab-email:focus {
   border-color: var(--terracotta);
 }
+.td-collab-email { flex: 1; min-width: 0; width: auto; }
 
 @media (display-mode: standalone) {
   .td-day-card--open .td-day-card-header {
@@ -3152,6 +3197,23 @@
 .ae-edit-btn:focus-visible,
 .ae-delete-btn:focus-visible {
   opacity: 1;
+}
+
+/* 28px circles, 44px hit areas (the delete button sits 34px left of edit, so
+   the invisible extensions meet without overlapping). */
+.ae-edit-btn::after,
+.ae-delete-btn::after {
+  content: '';
+  position: absolute;
+  inset: -8px -3px;
+}
+
+/* Touch screens have no hover: keep edit controls visible in edit mode. */
+@media (hover: none) {
+  .td-edit-mode .ae-edit-btn,
+  .td-edit-mode .ae-delete-btn {
+    opacity: 1;
+  }
 }
 
 /* ── Activity Editor Form ── */
@@ -3767,4 +3829,148 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
   overflow: hidden;
   text-overflow: ellipsis;
   pointer-events: none;
+}
+
+/* ===== Trip loading skeleton (matches hero, tabs, day cards) ===== */
+.td-skel-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.td-skel-topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.td-skel-tabs { width: min(320px, 70%); height: 40px; border-radius: var(--r-pill); }
+.td-skel-actions { width: 96px; height: 40px; border-radius: var(--r-pill); }
+.td-skel-hero { height: 150px; border-radius: var(--r-xl); margin-bottom: var(--sp-5); }
+.td-skel-days { display: grid; gap: var(--sp-3); }
+.td-skel-day {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface-solid);
+}
+.td-skel-num { width: 44px; height: 44px; border-radius: var(--r-md); flex-shrink: 0; background-color: var(--surface-inset); }
+.td-skel-lines { flex: 1; display: grid; gap: var(--sp-2); }
+.td-skel-line { height: 14px; border-radius: var(--r-sm); width: 70%; background-color: var(--surface-inset); }
+.td-skel-line--short { width: 40%; }
+
+/* ===== Trip status, offline note, update notice, photo progress ===== */
+.td-status-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+.td-status-card--failed { border-color: var(--error); }
+.td-status-text { flex: 1 1 220px; min-width: 0; }
+.td-status-text strong { display: block; font: var(--text-small); font-weight: 700; color: var(--ink); }
+.td-status-text p { margin: 2px 0 0; font: var(--text-caption); color: var(--ink-secondary); }
+.td-status-spinner {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--terracotta);
+  border-radius: 50%;
+  animation: tdSpin 0.9s linear infinite;
+}
+@keyframes tdSpin { to { transform: rotate(360deg); } }
+
+.td-stale-note,
+.td-photo-status {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--surface-inset);
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+.td-photo-status[hidden] { display: none; }
+
+.td-update-notice {
+  position: fixed;
+  top: calc(var(--nav-h) + var(--sp-3));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: calc(var(--z-sticky) + 5);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  max-width: calc(100vw - 2 * var(--sp-4));
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+  font: var(--text-small);
+  color: var(--ink);
+}
+.td-update-notice-btn {
+  min-height: 36px;
+  padding: 0 var(--sp-4);
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--terracotta);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Photo placeholders: --pending shimmers (the base ::before) while the server
+   finds photos; --none is a still placeholder (nothing found, or not running). */
+.td-activity-photo--none::before { animation: none; }
+
+.td-spending-note {
+  margin: var(--sp-2) 0 0;
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+.td-accom-address {
+  margin-top: var(--sp-1);
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+/* ===== Share dialog states ===== */
+.td-share-link-section { margin-bottom: var(--sp-5); }
+.td-share-status { margin: 0 0 var(--sp-3); font: var(--text-small); color: var(--ink-secondary); }
+.td-share-status--error { color: var(--error); }
+.td-share-hint { margin: calc(-1 * var(--sp-3)) 0 var(--sp-3); font: var(--text-caption); color: var(--ink-secondary); }
+.td-share-hint:empty { display: none; }
+.td-share-copy, .td-collab-add { min-height: 44px; }
+.td-share-stop {
+  min-height: 44px;
+  margin-bottom: var(--sp-4);
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--error);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.td-share-send { width: 100%; margin-top: var(--sp-3); }
+
+/* Reduced motion: no staggered wallet entrance (cards appear together). */
+@media (prefers-reduced-motion: reduce) {
+  .td-day-card,
+  .td-footer { animation-delay: 0s !important; }
+  .td-status-spinner { animation: none; }
 }

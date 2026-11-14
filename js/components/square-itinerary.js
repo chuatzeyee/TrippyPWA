@@ -9,14 +9,10 @@
 // venue_name, transport_options / getting_there).
 
 import { buildDeckHtml, mountCardDeck } from '../lib/card-deck.js';
+import { escapeHtml } from '../data/day-builder.js';
 
 // Trippy's 7-day accent sequence (matches tokens.css --day-N).
 const DAY_VARS = ['--day-1', '--day-2', '--day-3', '--day-4', '--day-5', '--day-6', '--day-7'];
-
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 function dayColorVar(dayNumber) {
   return `var(${DAY_VARS[(dayNumber - 1) % DAY_VARS.length]})`;
@@ -28,20 +24,21 @@ function transitSummary(activity) {
   const opts = activity.transport_options;
   if (Array.isArray(opts) && opts.length > 0) {
     const o = opts[0];
-    const bits = [o.mode, o.duration].filter(Boolean).map(esc);
-    return bits.join(' · ') || esc(o.label || 'Getting there');
+    const bits = [o.mode, o.duration].filter(Boolean);
+    return bits.join(', ') || o.label || 'Getting there';
   }
   if (activity.getting_there) {
-    const meta = [activity.transport_mode, activity.transport_duration].filter(Boolean).map(esc);
-    return meta.length ? meta.join(' · ') : esc(activity.getting_there);
+    const meta = [activity.transport_mode, activity.transport_duration].filter(Boolean);
+    return meta.length ? meta.join(', ') : activity.getting_there;
   }
   return '';
 }
 
 function activityCard(activity, opts) {
-  const { sym, dayColor, isFirst, index, total, dayLabel, formatCost, catIcon, formatDuration } = opts;
+  const { sym, dayColor, isFirst, index, total, dayLabel, formatCost, catIcon, formatDuration, costLabel } = opts;
   const time = activity.start_time || '';
-  const cost = activity.cost_amount ? formatCost(activity.cost_amount, sym) : '';
+  // costLabel (optional) shows an activity priced in another currency in its own code.
+  const cost = activity.cost_amount ? (costLabel ? costLabel(activity) : formatCost(activity.cost_amount, sym)) : '';
   const duration = formatDuration(activity.duration_minutes);
   const lat = Number(activity.latitude);
   const lng = Number(activity.longitude);
@@ -54,18 +51,18 @@ function activityCard(activity, opts) {
       ${transit ? `
         <div class="sq-itin-transit">
           <span class="sq-itin-transit-line"></span>
-          <span class="sq-itin-transit-label">${esc(transit)}</span>
+          <span class="sq-itin-transit-label">${escapeHtml(transit)}</span>
         </div>` : ''}
       <div class="sq-itin-card-inner" style="--day-color: ${dayColor}">
         <div class="sq-itin-card-top">
-          <span class="sq-itin-time">${time ? esc(time) : ''}</span>
-          <span class="sq-itin-step">${dayLabel} · stop ${index + 1}/${total}</span>
+          <span class="sq-itin-time">${time ? escapeHtml(time) : ''}</span>
+          <span class="sq-itin-step">${escapeHtml(dayLabel)}, stop ${index + 1} of ${total}</span>
         </div>
         <div class="sq-itin-icon">${catIcon(activity.category)}</div>
-        <h3 class="sq-itin-title">${esc(activity.title)}</h3>
-        ${activity.venue_name ? `<div class="sq-itin-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="sq-itin-map">Map</a>` : ''}</div>` : ''}
-        ${activity.description ? `<p class="sq-itin-desc">${esc(activity.description)}</p>` : ''}
-        ${activity.tips ? `<p class="sq-itin-tip">${esc(activity.tips)}</p>` : ''}
+        <h3 class="sq-itin-title">${escapeHtml(activity.title)}</h3>
+        ${activity.venue_name ? `<div class="sq-itin-venue">${escapeHtml(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="sq-itin-map">Map</a>` : ''}</div>` : ''}
+        ${activity.description ? `<p class="sq-itin-desc">${escapeHtml(activity.description)}</p>` : ''}
+        ${activity.tips ? `<p class="sq-itin-tip">${escapeHtml(activity.tips)}</p>` : ''}
         <div class="sq-itin-meta">
           ${cost ? `<span class="sq-itin-cost">${cost}</span>` : ''}
           ${duration ? `<span class="sq-itin-dur">${duration}</span>` : ''}
@@ -81,7 +78,7 @@ function activityCard(activity, opts) {
  * @param {object} trip
  * @param {Array} days - trip.itinerary_days
  * @param {string} sym - currency symbol
- * @param {{ formatCost: Function, catIcon: Function, formatDuration: Function }} helpers
+ * @param {{ formatCost: Function, catIcon: Function, formatDuration: Function, costLabel?: Function }} helpers
  * @returns {() => void} cleanup
  */
 export function renderSquareItinerary(host, trip, days, sym, helpers) {
@@ -119,6 +116,7 @@ export function renderSquareItinerary(host, trip, days, sym, helpers) {
     const slides = acts.map((a, ai) => activityCard(a, {
       sym, dayColor, isFirst: ai === 0, index: ai, total: acts.length, dayLabel,
       formatCost: helpers.formatCost, catIcon: helpers.catIcon, formatDuration: helpers.formatDuration,
+      costLabel: helpers.costLabel,
     }));
     deckHost.innerHTML = buildDeckHtml(slides, { deckClass: 'sq-itin-deck', label: dayLabel });
     deck = mountCardDeck(deckHost.querySelector('[data-deck]'), { label: dayLabel });

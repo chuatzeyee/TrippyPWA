@@ -48,10 +48,22 @@ export function clearWizardState() {
   sessionStorage.removeItem(SESSION_KEY);
 }
 
+// Same ceiling as process-generation and trip import: longer trips are refused.
+export const MAX_TRIP_DAYS = 60;
+
+// Days in a fixed date range, counting both ends (0 when a date is missing).
+export function fixedDayCount(dates) {
+  if (!dates?.start || !dates?.end) return 0;
+  return Math.round((new Date(dates.end) - new Date(dates.start)) / 86400000) + 1;
+}
+
 export function canAdvance(state) {
   switch (state.currentStep) {
     case 1: return state.multiCity ? state.destinations.length >= 2 : !!state.destination?.name;
-    case 2: return (state.dates.start && state.dates.end) || (state.dates.duration && state.dates.season);
+    case 2:
+      // Fixed dates win over a duration when both are set (as on the server).
+      if (state.dates.start && state.dates.end) return fixedDayCount(state.dates) <= MAX_TRIP_DAYS;
+      return state.dates.duration && state.dates.season;
     case 3: return (state.budget.dailyAmount || 0) > 0;
     case 4: return !!state.accommodation.type || !!state.accommodation.settled;
     case 5: return true;

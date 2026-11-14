@@ -3,12 +3,7 @@ import { isAdmin, fetchAdminStats, fetchAllUsers, fetchAllTrips, updateUserRole,
 import { logger } from '../lib/logger.js';
 import { showToast } from '../components/toast.js';
 import { renderLogsPanel, bindLogEvents, loadLogs, loadLogStats, stopAutoRefresh } from './admin-logs.js';
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s || '';
-  return d.innerHTML;
-}
+import { escapeHtml as esc } from '../data/day-builder.js';
 
 function formatDate(iso) {
   if (!iso) return '-';
@@ -39,12 +34,14 @@ function isValidCountryCode(code) {
   return typeof code === 'string' && /^[a-z]{2}$/.test(code);
 }
 
-function isValidUrl(url) {
+// Normalised http(s) avatar URL, or '' (output the parsed href, never the raw
+// string: a value can parse as a URL and still contain quotes).
+function avatarSrc(url) {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : '';
   } catch {
-    return false;
+    return '';
   }
 }
 
@@ -74,7 +71,7 @@ function buildStatCards(stats, logStats) {
           <span class="adm-stat-value">${stats.totalUsers}</span>
           <span class="adm-stat-label">Users</span>
         </div>
-        <span class="adm-stat-sub">+${stats.recentUsers} this month &middot; +${stats.weeklyUsers} this week</span>
+        <span class="adm-stat-sub">+${stats.recentUsers} this month, +${stats.weeklyUsers} this week</span>
       </div>
       <div class="adm-stat-card">
         <div class="adm-stat-icon adm-stat-icon--teal">${STAT_ICONS.trips}</div>
@@ -82,7 +79,7 @@ function buildStatCards(stats, logStats) {
           <span class="adm-stat-value">${stats.totalTrips}</span>
           <span class="adm-stat-label">Trips</span>
         </div>
-        <span class="adm-stat-sub">+${stats.recentTrips} this month &middot; +${stats.weeklyTrips} this week</span>
+        <span class="adm-stat-sub">+${stats.recentTrips} this month, +${stats.weeklyTrips} this week</span>
       </div>
       <div class="adm-stat-card">
         <div class="adm-stat-icon adm-stat-icon--sage">${STAT_ICONS.generated}</div>
@@ -90,7 +87,7 @@ function buildStatCards(stats, logStats) {
           <span class="adm-stat-value">${stats.generatedTrips}</span>
           <span class="adm-stat-label">Generated</span>
         </div>
-        <span class="adm-stat-sub">${stats.activeTrips} active &middot; ${stats.generatingTrips} in progress</span>
+        <span class="adm-stat-sub">${stats.activeTrips} active, ${stats.generatingTrips} in progress</span>
       </div>
       <div class="adm-stat-card">
         <div class="adm-stat-icon adm-stat-icon--amber">${STAT_ICONS.admin}</div>
@@ -98,7 +95,7 @@ function buildStatCards(stats, logStats) {
           <span class="adm-stat-value">${stats.totalAdmins}</span>
           <span class="adm-stat-label">Admins</span>
         </div>
-        <span class="adm-stat-sub">${stats.failedTrips} failed &middot; ${stats.planningTrips} planning</span>
+        <span class="adm-stat-sub">${stats.failedTrips} failed, ${stats.planningTrips} planning</span>
       </div>
       <div class="adm-stat-card">
         <div class="adm-stat-icon adm-stat-icon--error">${STAT_ICONS.logs}</div>
@@ -106,13 +103,14 @@ function buildStatCards(stats, logStats) {
           <span class="adm-stat-value">${logStats.errors}</span>
           <span class="adm-stat-label">Errors</span>
         </div>
-        <span class="adm-stat-sub">${logStats.warnings} warnings &middot; ${logStats.total} total logs</span>
+        <span class="adm-stat-sub">${logStats.warnings} warnings, ${logStats.total} total logs</span>
       </div>
     </div>`;
 }
 
 function buildUserRow(u, tripCount) {
   const name = formatName(u.display_name);
+  const avatar = u.avatar_url ? avatarSrc(u.avatar_url) : '';
   const initials = name === 'Anonymous' ? '?' : name.split(' ').map(w => w[0]).join('').slice(0, 2);
   const locationParts = [];
   if (isValidCountryCode(u.home_flag)) locationParts.push(`<img src="https://flagcdn.com/w40/${u.home_flag}.png" width="18" height="13" alt="" class="adm-flag">`);
@@ -123,11 +121,11 @@ function buildUserRow(u, tripCount) {
   const onboarded = u.onboarding_complete ? '' : '<span class="adm-badge adm-badge--amber" title="Has not completed onboarding">Pending</span>';
 
   return `
-    <tr data-user-id="${u.id}">
+    <tr data-user-id="${esc(u.id)}">
       <td>
         <div class="adm-user-cell">
-          ${u.avatar_url && isValidUrl(u.avatar_url)
-            ? `<img src="${esc(u.avatar_url)}" class="adm-avatar" alt="" loading="lazy">`
+          ${avatar
+            ? `<img src="${esc(avatar)}" class="adm-avatar" alt="" loading="lazy">`
             : `<div class="adm-avatar adm-avatar--initials">${esc(initials)}</div>`}
           <div class="adm-user-info">
             <span class="adm-user-name">${esc(name)}</span>
@@ -138,14 +136,14 @@ function buildUserRow(u, tripCount) {
       <td>${location}</td>
       <td>
         <div class="adm-badge-group">
-          <span class="adm-badge ${u.role === 'admin' ? 'adm-badge--terracotta' : 'adm-badge--muted'}">${u.role}</span>
+          <span class="adm-badge ${u.role === 'admin' ? 'adm-badge--terracotta' : 'adm-badge--muted'}">${esc(u.role)}</span>
           ${isNomad}${onboarded}
         </div>
       </td>
       <td class="adm-center">${tripCount}</td>
       <td class="adm-mono">${formatDate(u.created_at)}</td>
       <td>
-        <select class="adm-role-select" data-user-id="${u.id}" data-current="${u.role}">
+        <select class="adm-role-select" data-user-id="${esc(u.id)}" data-current="${esc(u.role)}">
           <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
           <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
         </select>
@@ -156,12 +154,13 @@ function buildUserRow(u, tripCount) {
 function buildTripRow(t, owner) {
   const days = t.itinerary_days?.length || 0;
   const dateRange = t.start_date
-    ? `${formatDate(t.start_date)}${t.end_date ? ' → ' + formatDate(t.end_date) : ''}`
+    ? `${formatDate(t.start_date)}${t.end_date ? ' to ' + formatDate(t.end_date) : ''}`
     : '-';
   const budget = t.budget_daily
     ? `${t.budget_currency || '$'}${t.budget_daily}/day`
     : '-';
   const ownerName = formatName(owner?.display_name);
+  const ownerAvatar = owner?.avatar_url ? avatarSrc(owner.avatar_url) : '';
 
   return `
     <tr>
@@ -170,28 +169,28 @@ function buildTripRow(t, owner) {
           <span class="adm-trip-emoji">${esc(t.emoji || '✈️')}</span>
           <div class="adm-trip-info">
             <span class="adm-trip-title">${esc(t.title || 'Untitled Trip')}</span>
-            <span class="adm-trip-meta">${days} day${days !== 1 ? 's' : ''} &middot; ${esc(budget)} &middot; ${t.travelers || 1} traveler${(t.travelers || 1) !== 1 ? 's' : ''}</span>
+            <span class="adm-trip-meta">${days} day${days !== 1 ? 's' : ''}, ${esc(budget)}, ${esc(t.travelers || 1)} traveler${(t.travelers || 1) !== 1 ? 's' : ''}</span>
           </div>
         </div>
       </td>
       <td>
         <div class="adm-user-cell adm-user-cell--compact">
-          ${owner?.avatar_url && isValidUrl(owner.avatar_url) ? `<img src="${esc(owner.avatar_url)}" class="adm-avatar adm-avatar--sm" alt="" loading="lazy">` : ''}
+          ${ownerAvatar ? `<img src="${esc(ownerAvatar)}" class="adm-avatar adm-avatar--sm" alt="" loading="lazy">` : ''}
           <span>${esc(ownerName)}</span>
         </div>
       </td>
-      <td><span class="adm-badge ${STATUS_BADGES[t.status] || 'adm-badge--muted'}">${t.status || 'unknown'}</span>${t.extras?.provider ? ` <span class="adm-badge adm-badge--muted" style="font-size:.65rem">${esc(t.extras.provider)}</span>` : ''}</td>
-      <td class="adm-mono adm-nowrap">${dateRange}</td>
+      <td><span class="adm-badge ${STATUS_BADGES[t.status] || 'adm-badge--muted'}">${esc(t.status || 'unknown')}</span>${t.extras?.provider ? ` <span class="adm-badge adm-badge--muted" style="font-size:.65rem">${esc(t.extras.provider)}</span>` : ''}</td>
+      <td class="adm-mono adm-nowrap">${esc(dateRange)}</td>
       <td class="adm-mono">${formatDate(t.created_at)}</td>
       <td>
         <div class="adm-actions">
-          <button class="adm-btn adm-btn--ghost adm-view-trip" data-trip-id="${t.id}" title="View trip">
+          <button class="adm-btn adm-btn--ghost adm-view-trip" data-trip-id="${esc(t.id)}" title="View trip">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
-          ${t.status !== 'generating' ? `<button class="adm-btn adm-btn--retry adm-retry-trip" data-trip-id="${t.id}" title="${t.status === 'failed' ? 'Retry generation' : 'Regenerate itinerary'}">
+          ${t.status !== 'generating' ? `<button class="adm-btn adm-btn--retry adm-retry-trip" data-trip-id="${esc(t.id)}" title="${t.status === 'failed' ? 'Retry generation' : 'Regenerate itinerary'}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
           </button>` : ''}
-          <button class="adm-btn adm-btn--danger adm-delete-trip" data-trip-id="${t.id}" title="Delete trip">
+          <button class="adm-btn adm-btn--danger adm-delete-trip" data-trip-id="${esc(t.id)}" title="Delete trip">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
           </button>
         </div>
@@ -338,7 +337,7 @@ export async function renderAdminDashboard() {
         <div class="adm-filter-group">
           <select class="adm-filter-select" data-filter="trip-status">
             <option value="all" ${tripStatusFilter === 'all' ? 'selected' : ''}>All Status</option>
-            ${statuses.map(s => `<option value="${s}" ${tripStatusFilter === s ? 'selected' : ''}>${s}</option>`).join('')}
+            ${statuses.map(s => `<option value="${esc(s)}" ${tripStatusFilter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
           </select>
         </div>
         <span class="adm-result-count">${filtered.length} of ${trips.length} trips</span>

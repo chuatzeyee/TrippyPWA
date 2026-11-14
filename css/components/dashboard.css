@@ -1210,3 +1210,56 @@
 }
 
 .dashboard-no-trips .dashboard-import-btn { margin-top: var(--sp-3); }
+
+/* ---- Trip cards: keyboard access and cover images ---------------------- */
+/* An <a> stretched over the card opens the trip (Enter works, screen readers
+ * announce it). Buttons inside the card sit above it. */
+.trip-card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+}
+.trip-card-link:focus-visible {
+  outline: 2px solid var(--terracotta);
+  outline-offset: -3px;
+}
+.trip-card-now-btn,
+.trip-card-fail-actions {
+  position: relative;
+  z-index: 3;
+}
+/* Covers are <img> so the browser picks a width and lazy-loads off-screen cards. */
+.trip-card-cover,
+.trip-hero-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.trip-card-shared {
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--teal);
+}
+
+/* ---- Empty, error and offline states ------------------------------------ */
+.dashboard-no-trips-hint {
+  font: var(--text-small);
+  font-weight: 400;
+  color: var(--ink-secondary);
+  max-width: 360px;
+  margin: var(--sp-1) 0 0;
+}
+.dashboard-load-error { margin-top: var(--sp-6); }
+.dashboard-stale-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  font: var(--text-small);
+  font-weight: 400;
+  color: var(--ink-secondary);
+  margin: 0 0 var(--sp-4);
+}

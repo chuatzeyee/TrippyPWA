@@ -14,7 +14,7 @@ export function showAuthGate() {
   modal.innerHTML = `
     <div class="modal-header">
       <span class="modal-title">Sign in to continue</span>
-      <button class="modal-close" data-dismiss>&times;</button>
+      <button type="button" class="modal-close" data-dismiss aria-label="Close">&times;</button>
     </div>
     <div class="modal-body" style="text-align: center; padding: var(--sp-6) var(--sp-4);">
       <div style="font-size: 2.5rem; margin-bottom: var(--sp-3);">&#9992;&#65039;</div>
@@ -55,8 +55,14 @@ export function renderAuthButton(container) {
   onAuthChange(() => render(container));
 }
 
+let menuListeners = null; // AbortController for the account menu's document listeners
+
 function render(container) {
   const user = getCurrentUser();
+  // render() runs again on every auth change: drop the previous render's
+  // document listeners instead of stacking them.
+  menuListeners?.abort();
+  menuListeners = null;
 
   if (!user) {
     container.innerHTML = `
@@ -80,33 +86,50 @@ function render(container) {
 
   container.innerHTML = `
     <div class="auth-user" id="auth-user">
-      ${avatar
-        ? `<img class="auth-avatar" src="${escapeHtml(avatar)}" alt="${name}" referrerpolicy="no-referrer">`
-        : `<span class="auth-avatar auth-avatar--initials">${initials}</span>`
-      }
-      <div class="auth-dropdown" id="auth-dropdown">
+      <button type="button" class="auth-user-toggle" id="auth-user-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="auth-dropdown" aria-label="Account menu">
+        ${avatar
+          ? `<img class="auth-avatar" src="${escapeHtml(avatar)}" alt="" referrerpolicy="no-referrer">`
+          : `<span class="auth-avatar auth-avatar--initials" aria-hidden="true">${initials}</span>`
+        }
+      </button>
+      <div class="auth-dropdown" id="auth-dropdown" role="menu" aria-label="${name}">
         <div class="auth-dropdown-name">${name}</div>
-        <button class="auth-dropdown-item" id="auth-edit-profile">Edit Profile</button>
-        <button class="auth-dropdown-item" id="auth-sign-out">Sign out</button>
+        <button type="button" class="auth-dropdown-item" id="auth-edit-profile" role="menuitem">Edit Profile</button>
+        <button type="button" class="auth-dropdown-item" id="auth-sign-out" role="menuitem">Sign out</button>
       </div>
     </div>
   `;
 
   const userEl = container.querySelector('#auth-user');
+  const toggle = container.querySelector('#auth-user-toggle');
   const dropdown = container.querySelector('#auth-dropdown');
 
-  userEl.addEventListener('click', (e) => {
+  const setOpen = (open, { returnFocus = false } = {}) => {
+    dropdown.classList.toggle('auth-dropdown--open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    if (open) dropdown.querySelector('.auth-dropdown-item')?.focus();
+    else if (returnFocus) toggle.focus();
+  };
+
+  toggle.addEventListener('click', (e) => {
     e.stopPropagation();
-    dropdown.classList.toggle('auth-dropdown--open');
+    setOpen(!dropdown.classList.contains('auth-dropdown--open'));
   });
 
-  document.addEventListener('click', () => {
-    dropdown.classList.remove('auth-dropdown--open');
-  }, { once: true });
+  menuListeners = new AbortController();
+  const { signal } = menuListeners;
+  document.addEventListener('click', (e) => {
+    if (!userEl.contains(e.target)) setOpen(false);
+  }, { signal });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dropdown.classList.contains('auth-dropdown--open')) {
+      setOpen(false, { returnFocus: true });
+    }
+  }, { signal });
 
   container.querySelector('#auth-edit-profile').addEventListener('click', (e) => {
     e.stopPropagation();
-    dropdown.classList.remove('auth-dropdown--open');
+    setOpen(false);
     location.hash = '#/profile';
   });
 
