@@ -37,6 +37,18 @@ describe('AI_PROMPT', () => {
     expect(AI_PROMPT.trimEnd().endsWith('My trip information:')).toBe(true);
   });
 
+  it('tells the assistant to write no em dashes, en dashes or middle dots', () => {
+    expect(AI_PROMPT).toContain('Do not use em dashes, en dashes or middle dots anywhere in the text');
+    expect(AI_PROMPT).toMatch(/Use a comma, "and" or "to" instead/);
+    expect(BANNED.test(AI_PROMPT)).toBe(false);
+  });
+
+  it('keeps the rules numbered in order', () => {
+    const numbers = [...AI_PROMPT.matchAll(/^(\d+)\. /gm)].map(m => Number(m[1]));
+    expect(numbers).toEqual(Array.from({ length: numbers.length }, (_, i) => i + 1));
+    expect(numbers.length).toBeGreaterThanOrEqual(16);
+  });
+
   it('a reply that is only the template in a json fence imports', () => {
     expect(validateTripImport(`\`\`\`json\n${TEMPLATE_JSON}\n\`\`\``).ok).toBe(true);
   });

@@ -10,6 +10,38 @@
 
 const DEFAULT_MAX_CALLS = 15; // 15 x 8 venues: plenty for a 2-week trip
 
+// A failed call (a non-2xx answer such as a 546 compute limit on one batch, or a
+// network error) is retried after these waits, one per consecutive failure. A
+// call that still fails after the last wait ends the run (4 failures in a row);
+// a successful call resets the count. Retries count toward maxCalls.
+export const RETRY_DELAYS_MS = [2000, 5000, 10000];
+
+// Activity categories that never get a photo (getting from A to B is not a
+// place to look at). Mirrors NO_PHOTO_CATEGORIES in
+// supabase/functions/resolve-trip-photos/index.ts, which never resolves these,
+// so a photo box for them would stay empty for good. Keep the two in sync.
+export const NO_PHOTO_CATEGORIES = new Set(['transport', 'flight', 'arrival', 'departure']);
+
+/**
+ * True when an activity gets a photo block at all: it names a venue and is not
+ * a getting-there category.
+ * @param {{ venue_name?: string, category?: string }} activity
+ * @returns {boolean}
+ */
+export function wantsActivityPhoto(activity) {
+  return Boolean(activity?.venue_name) && !NO_PHOTO_CATEGORIES.has(String(activity.category || '').toLowerCase());
+}
+
+/**
+ * An activity the photo worker has not handled yet: it wants a photo and has
+ * neither a stored photo nor a verdict (photo_source).
+ * @param {{ venue_name?: string, category?: string, photo_url?: string, photo_source?: string }} activity
+ * @returns {boolean}
+ */
+export function isPendingPhoto(activity) {
+  return wantsActivityPhoto(activity) && !activity.photo_url && !activity.photo_source;
+}
+
 // tripId -> { promise, done, total, added } for resolutions in flight.
 const active = new Map();
 
@@ -54,14 +86,49 @@ async function notifyIfAway(tripId, result, title) {
   } catch { /* toast is best effort */ }
 }
 
-async function runResolution(tripId, { invoke, onProgress, maxCalls }, state) {
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// HTTP status of a failed functions.invoke call, when the error carries the
+// response (FunctionsHttpError.context is the Response). 0 when unknown.
+function errorStatus(error) {
+  const status = Number(error?.context?.status ?? error?.status);
+  return Number.isFinite(status) ? status : 0;
+}
+
+// A 4xx answer (bad request, not the owner, daily limit reached) says the same
+// thing on a retry; everything else (5xx, 546, network) may be transient.
+function isRetryable(error) {
+  const status = errorStatus(error);
+  return !(status >= 400 && status < 500 && status !== 408);
+}
+
+async function runResolution(tripId, { invoke, onProgress, maxCalls, sleep }, state) {
   const call = invoke || (async (...args) => (await import('../lib/supabase.js')).supabase.functions.invoke(...args));
   let photos = 0;
   let cover = false;
+  let failures = 0;
   try {
     for (let i = 0; i < maxCalls; i++) {
-      const { data, error } = await call('resolve-trip-photos', { body: { tripId, inline: true } });
-      if (error || !data) return { ok: false, photos, cover, error: error?.message || 'No response' };
+      let reply;
+      let thrown = null;
+      try {
+        reply = await call('resolve-trip-photos', { body: { tripId, inline: true } });
+      } catch (err) {
+        thrown = err || new Error('Photo lookup failed');
+      }
+      const error = thrown || reply?.error || null;
+      const data = thrown ? null : reply?.data;
+      if (error || !data) {
+        failures++;
+        const message = error?.message || (thrown ? 'Photo lookup failed' : 'No response');
+        const lastCall = i + 1 >= maxCalls;
+        if (!isRetryable(error) || failures > RETRY_DELAYS_MS.length || lastCall) {
+          return { ok: false, photos, cover, error: message };
+        }
+        await sleep(RETRY_DELAYS_MS[failures - 1]);
+        continue;
+      }
+      failures = 0;
       const attempted = data.attempted || 0;
       const remaining = data.remaining ?? 0;
       photos += data.activities || 0;
@@ -83,10 +150,12 @@ async function runResolution(tripId, { invoke, onProgress, maxCalls }, state) {
 /**
  * Resolve and store photos for a trip. Concurrent calls for the same trip share
  * one run. Resolves to { ok, photos, cover, error? }.
+ * A failed call is retried with backoff (RETRY_DELAYS_MS) before the run gives up.
  * @param {string} tripId
- * @param {{ invoke?: Function, onProgress?: Function, maxCalls?: number, title?: string }} [opts]
+ * @param {{ invoke?: Function, onProgress?: Function, maxCalls?: number, title?: string,
+ *   sleep?: (ms: number) => Promise<void> }} [opts] sleep: the backoff wait (injectable for tests)
  */
-export function resolveTripPhotos(tripId, { invoke, onProgress, maxCalls = DEFAULT_MAX_CALLS, title = '' } = {}) {
+export function resolveTripPhotos(tripId, { invoke, onProgress, maxCalls = DEFAULT_MAX_CALLS, title = '', sleep = wait } = {}) {
   const running = active.get(tripId);
   if (running) return running.promise;
 
@@ -94,7 +163,7 @@ export function resolveTripPhotos(tripId, { invoke, onProgress, maxCalls = DEFAU
   active.set(tripId, state);
   emit({ tripId, done: 0, total: 0, finished: false, ok: true, added: 0 });
 
-  state.promise = runResolution(tripId, { invoke, onProgress, maxCalls }, state).then((result) => {
+  state.promise = runResolution(tripId, { invoke, onProgress, maxCalls, sleep }, state).then((result) => {
     // Clear the flag before announcing the end, so listeners that re-check
     // isResolvingPhotos() see the finished state.
     active.delete(tripId);
