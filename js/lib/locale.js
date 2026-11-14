@@ -58,18 +58,19 @@ export function formatDateRange(startStr, endStr) {
   const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
   const sameYear = s.getFullYear() === e.getFullYear();
 
+  // "3 to 10 Jan 2026": plain "to" instead of an en dash (UI copy rule).
   if (sameMonth) {
     const month = fmt(s, { month: 'short' });
-    return `${s.getDate()}–${e.getDate()} ${month} ${e.getFullYear()}`;
+    return `${s.getDate()} to ${e.getDate()} ${month} ${e.getFullYear()}`;
   }
   if (sameYear) {
     const sF = fmt(s, { day: 'numeric', month: 'short' });
     const eF = fmt(e, { day: 'numeric', month: 'short' });
-    return `${sF} – ${eF} ${e.getFullYear()}`;
+    return `${sF} to ${eF} ${e.getFullYear()}`;
   }
   const sF = fmt(s, { day: 'numeric', month: 'short', year: 'numeric' });
   const eF = fmt(e, { day: 'numeric', month: 'short', year: 'numeric' });
-  return `${sF} – ${eF}`;
+  return `${sF} to ${eF}`;
 }
 
 export function formatWeekdayDate(dateStr) {

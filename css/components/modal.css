@@ -63,7 +63,7 @@
 .modal-title { font: var(--text-h2); }
 
 .modal-close {
-  width: 32px; height: 32px;
+  width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
   border: none; background: transparent;
   border-radius: var(--r-md); cursor: pointer;
@@ -79,3 +79,12 @@
   gap: var(--sp-2);
   justify-content: flex-end;
 }
+
+/* Inline validation message inside the Edit & Regenerate sheet (trip-edit.js). */
+.trip-edit-error {
+  margin: var(--sp-2) 0 0;
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--error);
+}
+.trip-edit-error[hidden] { display: none; }

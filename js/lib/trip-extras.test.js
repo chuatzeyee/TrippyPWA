@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, photoCreditText } from './trip-extras.js';
+import { formatDateRange, setLocaleFromFlag } from './locale.js';
+
+const FORBIDDEN_GLYPHS = /[\u2014\u2013\u00B7\u2022\u2192]/;
 
 describe('safeUrl', () => {
   it('keeps http(s) URLs', () => {
@@ -13,6 +16,22 @@ describe('safeUrl', () => {
   });
   it('percent-encodes quotes so the URL cannot break out of an attribute', () => {
     expect(safeUrl('https://x.com/"onmouseover="a')).not.toContain('"');
+  });
+  it('is safe inside a CSS url(\'...\') value', () => {
+    const breakout = safeUrl("https://e.com/a');position:fixed;inset:0;background:url(https://evil.example/x.png");
+    expect(breakout).toBe('https://e.com/a%27%29;position:fixed;inset:0;background:url%28https://evil.example/x.png');
+    for (const raw of [
+      "https://e.com/it's (1).jpg",
+      'https://e.com/q?a=1\\&b=(2)',
+      'https://e.com/p#frag\\x"y',
+      'https://e.com/a b\tc',
+    ]) {
+      expect(safeUrl(raw), raw).toMatch(/^https:\/\/e\.com\//);
+      expect(safeUrl(raw), raw).not.toMatch(/['"()\\\s]/);
+    }
+  });
+  it('keeps already-safe URLs unchanged', () => {
+    expect(safeUrl('https://upload.wikimedia.org/a/b/Foo_bar.jpg?w=960')).toBe('https://upload.wikimedia.org/a/b/Foo_bar.jpg?w=960');
   });
   it('returns empty for junk', () => {
     expect(safeUrl('')).toBe('');
@@ -48,8 +67,11 @@ describe('deadlineInfo', () => {
 
 describe('stayInfo', () => {
   it('computes nights and a label', () => {
-    expect(stayInfo('2027-01-13', '2027-01-17')).toEqual({ nights: 4, label: '13 Jan → 17 Jan · 4 nights' });
-    expect(stayInfo('2027-01-17', '2027-01-18').label).toBe('17 Jan → 18 Jan · 1 night');
+    expect(stayInfo('2027-01-13', '2027-01-17')).toEqual({ nights: 4, label: '13 Jan to 17 Jan (4 nights)' });
+    expect(stayInfo('2027-01-17', '2027-01-18').label).toBe('17 Jan to 18 Jan (1 night)');
+  });
+  it('uses no dashes, middle dots or arrows in the label', () => {
+    expect(stayInfo('2027-01-13', '2027-01-17').label).not.toMatch(FORBIDDEN_GLYPHS);
   });
   it('returns null when dates are missing, invalid or reversed', () => {
     expect(stayInfo(null, '2027-01-17')).toBeNull();
@@ -83,8 +105,30 @@ describe('isBookedLeg', () => {
 
 describe('photoCreditText', () => {
   it('formats creator, licence and source', () => {
-    expect(photoCreditText({ creator: 'Higa4', license: 'CC0', via: 'Wikimedia Commons' })).toBe('Photo: Higa4 · CC0 · Wikimedia Commons');
+    expect(photoCreditText({ creator: 'Higa4', license: 'CC0', via: 'Wikimedia Commons' })).toBe('Photo: Higa4, CC0, Wikimedia Commons');
+    expect(photoCreditText({ creator: 'A', license: 'B', via: 'C' })).not.toMatch(FORBIDDEN_GLYPHS);
     expect(photoCreditText({ via: 'morino-uta.com' })).toBe('Photo: morino-uta.com');
     expect(photoCreditText(null)).toBe('');
+  });
+});
+
+// locale.js has no test file of its own; formatDateRange feeds the trip hero and
+// cards, so its copy-rule check lives here with the other display helpers.
+describe('formatDateRange', () => {
+  setLocaleFromFlag('gb');
+
+  it('joins ranges with "to" instead of an en dash', () => {
+    expect(formatDateRange('2026-01-03', '2026-01-10')).toBe('3 to 10 Jan 2026');
+    expect(formatDateRange('2026-01-28', '2026-02-03')).toBe('28 Jan to 3 Feb 2026');
+    expect(formatDateRange('2025-12-28', '2026-01-03')).toBe('28 Dec 2025 to 3 Jan 2026');
+  });
+  it('formats a single date and handles a missing start', () => {
+    expect(formatDateRange('2026-01-03')).toBe('3 Jan 2026');
+    expect(formatDateRange('')).toBe('');
+  });
+  it('never emits dashes, middle dots or arrows', () => {
+    for (const [a, b] of [['2026-01-03', '2026-01-10'], ['2026-01-28', '2026-02-03'], ['2025-12-28', '2026-01-03']]) {
+      expect(formatDateRange(a, b)).not.toMatch(FORBIDDEN_GLYPHS);
+    }
   });
 });

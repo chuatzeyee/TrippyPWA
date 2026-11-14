@@ -367,9 +367,21 @@ textarea.input {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    /* Staggered entrances set inline delays; with motion reduced, show
+       everything at once instead of fading cards in one by one. */
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
   }
+}
+
+/* Route changes move focus to the view's heading (or #app) so screen readers
+   announce the new screen; those targets are not controls, so no ring. */
+#app:focus,
+#app h1[tabindex="-1"]:focus {
+  outline: none;
 }
 
 /* Global keyboard focus indicator. Keyboard users get a clear ring on any
@@ -518,3 +530,75 @@ body:has(.wizard) .site-footer { display: none; }
 @media (display-mode: standalone) {
   .site-footer { display: none; }
 }
+
+/* Shown when a stored session can't be confirmed for lack of a connection. */
+.offline-view {
+  padding: var(--sp-12) 0 var(--sp-16);
+  max-width: 560px;
+}
+
+.offline-view-text {
+  color: var(--ink-secondary);
+  margin: var(--sp-2) 0 var(--sp-6);
+}
+
+.offline-trips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.offline-trip {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  min-height: 48px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.offline-trip:hover { border-color: var(--terracotta); }
+.offline-trip-title { font-weight: 600; }
+.offline-trip-dates { color: var(--ink-secondary); font-size: 0.85rem; white-space: nowrap; }
+
+/* "A new version is ready" prompt from the service worker update flow. */
+.app-update {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: max-content;
+  max-width: calc(100vw - var(--sp-6));
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-lg);
+  color: var(--ink);
+  font: var(--text-small);
+}
+
+.app-update-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.app-update-close:hover { background: var(--border); }

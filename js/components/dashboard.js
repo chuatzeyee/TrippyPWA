@@ -1,5 +1,6 @@
-import { navigate } from '../router.js';
+import { navigate, reloadCurrentRoute } from '../router.js';
 import { logger } from '../lib/logger.js';
+import { hasLocalSession } from '../lib/supabase.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { getAllTrips } from '../data/registry.js';
 import { DESTINATIONS } from '../wizard/destinations.js';
@@ -39,10 +40,10 @@ function countdownLabel(trip, status) {
   return `${d} days`;
 }
 
-function hasLocalSession() {
-  try {
-    return Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-  } catch { return false; }
+// Async renders must only write into #app while the dashboard is still the route.
+function isDashboardRoute() {
+  const path = location.hash.replace(/^#/, '').split('?')[0];
+  return path === '' || path === '/';
 }
 
 let _authModule = null;
@@ -52,7 +53,7 @@ async function getAuth() {
 }
 
 function flagImg(code, size = 20) {
-  if (!code) return '';
+  if (!code || !/^[a-z]{2}(-[a-z]{2,3})?$/.test(code)) return '';
   const w = size <= 20 ? 40 : 80;
   return `<img src="https://flagcdn.com/w${w}/${code}.png" width="${size}" height="${Math.round(size * 0.75)}" alt="" style="border-radius:2px; object-fit:cover;">`;
 }
@@ -71,7 +72,7 @@ function formatDates(trip) {
   if (!trip.dates?.start) return 'Dates TBD';
   const dateStr = formatWeekdayDate(trip.dates.start);
   const dayCount = trip.dayCount || 0;
-  return `${dateStr}${dayCount > 0 ? ` · ${dayCount} days` : ''}`;
+  return `${dateStr}${dayCount > 0 ? `, ${dayCount} ${dayCount === 1 ? 'day' : 'days'}` : ''}`;
 }
 
 // Show the trip total converted into the traveler's home currency, e.g.
@@ -87,26 +88,47 @@ function tripCardHomeTotal(budget) {
   return `<span class="trip-card-budget-home">&asymp; ${escapeHtml(home.symbol || '')}${formatNumber(converted)}</span>`;
 }
 
-// Trip cards source their cover from a ~250px Wikipedia thumbnail, but the hero
-// fills the full card width, so it looks soft on high-DPI phones. Upscale the
-// thumbnail request to 1280px (no-op when the URL isn't a sized Wikipedia thumb).
-function cardCoverImage(url) {
+const COVER_GRADIENT = 'background: linear-gradient(135deg, var(--terracotta-light), var(--teal-light))';
+// Wikimedia's standard thumbnail widths; other widths may be refused.
+const COVER_WIDTHS = [500, 960, 1280];
+
+// Trip covers are usually ~250px Wikipedia thumbnails (".../250px-Name.jpg").
+// Offer a few widths and let the browser pick one for the card size and pixel
+// density. If a width larger than the original is refused, the error handler
+// in renderDashboard falls back to the original URL (data-fallback).
+function coverImg(url, { cls, sizes, lazy }) {
   if (!url) return '';
-  return url.replace(/\/\d+px-/, '/1280px-');
+  const sized = /\/\d+px-/.test(url);
+  const at = (w) => url.replace(/\/\d+px-/, `/${w}px-`);
+  const srcset = sized ? COVER_WIDTHS.map(w => `${at(w)} ${w}w`).join(', ') : '';
+  return `<img class="${cls}" src="${escapeHtml(sized ? at(COVER_WIDTHS[0]) : url)}"
+    ${srcset ? `srcset="${escapeHtml(srcset)}" sizes="${sizes}"` : ''}
+    data-fallback="${escapeHtml(url)}" alt="" ${lazy ? 'loading="lazy"' : ''} decoding="async">`;
+}
+
+// Database emoji is user text; a flag fallback is our own markup.
+function tripEmojiHtml(trip) {
+  if (trip.emoji) return escapeHtml(trip.emoji);
+  return flagImg(trip.flag, 20) || '🌍';
+}
+
+// A real link over the whole card, so trips open with the keyboard (Enter) and
+// screen readers announce them. Buttons inside the card sit above it.
+function tripLink(trip) {
+  return `<a class="trip-card-link" href="#/trip/${encodeURIComponent(trip.id)}" aria-label="${escapeHtml(`Open ${trip.title}`)}"></a>`;
 }
 
 function renderTripCard(trip, index) {
   const isGenerating = trip.status === 'generating';
   const isFailed = trip.status === 'failed';
   const status = isGenerating ? 'generating' : isFailed ? 'failed' : getTripStatus(trip);
-  const heroStyle = trip.coverImage
-    ? `background-image: url('${escapeHtml(cardCoverImage(trip.coverImage))}')`
-    : 'background: linear-gradient(135deg, var(--terracotta-light), var(--teal-light))';
 
   return `
     <article class="trip-card ${isGenerating ? 'trip-card--generating' : ''} ${isFailed ? 'trip-card--failed' : ''} animate-in" style="animation-delay: ${index * 60}ms" data-trip-id="${escapeHtml(trip.id)}">
-      <div class="trip-card-hero" style="${heroStyle}">
-        <span class="trip-card-emoji">${trip.emoji || '🌍'}</span>
+      ${isGenerating || isFailed ? '' : tripLink(trip)}
+      <div class="trip-card-hero" style="${COVER_GRADIENT}">
+        ${coverImg(trip.coverImage, { cls: 'trip-card-cover', sizes: '(max-width: 640px) 100vw, 420px', lazy: true })}
+        <span class="trip-card-emoji">${tripEmojiHtml(trip)}</span>
         ${isGenerating ? '<div class="trip-card-gen-shimmer"></div>' : ''}
         <span class="trip-card-stage trip-card-stage--${status}">
           <span class="status-dot status-dot--${status}"></span>${STAGE_LABEL[status] || 'Planning'}
@@ -117,19 +139,20 @@ function renderTripCard(trip, index) {
         <h3 class="trip-card-title">${escapeHtml(trip.title)}</h3>
         <div class="trip-card-meta">
           <span>${formatDates(trip)}</span>
+          ${trip.shared ? '<span class="trip-card-shared">Shared with you</span>' : ''}
         </div>
         ${isGenerating ? `
           <div class="trip-card-gen-status">
             <span class="trip-card-gen-dots"><span></span><span></span><span></span></span>
             <span class="trip-card-gen-label">Planning your itinerary</span>
-            <span class="trip-card-gen-eta">Usually takes 1&ndash;2 minutes <span class="trip-card-gen-elapsed" data-gen-elapsed></span></span>
+            <span class="trip-card-gen-eta">Usually takes 1 to 2 minutes <span class="trip-card-gen-elapsed" data-gen-elapsed></span></span>
           </div>
         ` : isFailed ? `
           <div class="trip-card-gen-status">
             <span style="color: var(--terracotta); font-size: 0.85rem;">Generation failed. Try again?</span>
             <div class="trip-card-fail-actions">
               <button class="btn btn--secondary btn--sm btn--pill" data-retry-trip="${escapeHtml(trip.id)}">Retry</button>
-              <button class="btn btn--ghost btn--sm btn--pill" data-delete-trip="${escapeHtml(trip.id)}">Delete</button>
+              ${trip.shared ? '' : `<button class="btn btn--ghost btn--sm btn--pill" data-delete-trip="${escapeHtml(trip.id)}">Delete</button>`}
             </div>
           </div>
         ` : trip.budget?.total ? `
@@ -165,16 +188,15 @@ function pickFeaturedIndex(trips) {
 function renderFeaturedHero(trip) {
   const status = trip.status === 'generating' ? 'generating'
     : trip.status === 'failed' ? 'failed' : getTripStatus(trip);
-  const heroStyle = trip.coverImage
-    ? `background-image: url('${escapeHtml(cardCoverImage(trip.coverImage))}')`
-    : 'background: linear-gradient(135deg, var(--terracotta-light), var(--teal-light))';
   const countdown = countdownLabel(trip, status);
   const budget = trip.budget?.total
     ? `${escapeHtml(trip.budget.currencySymbol || '$')}${formatNumber(trip.budget.total)}`
     : '';
   return `
-    <article class="trip-hero animate-in" data-trip-id="${escapeHtml(trip.id)}" style="${heroStyle}">
+    <article class="trip-hero animate-in" data-trip-id="${escapeHtml(trip.id)}" style="${COVER_GRADIENT}">
+      ${coverImg(trip.coverImage, { cls: 'trip-hero-cover', sizes: '(max-width: 1024px) 100vw, 80vw', lazy: false })}
       <div class="trip-hero-scrim"></div>
+      ${tripLink(trip)}
       <div class="trip-hero-top">
         <span class="trip-card-stage trip-card-stage--${status}">
           <span class="status-dot status-dot--${status}"></span>${STAGE_LABEL[status] || 'Planning'}
@@ -221,9 +243,55 @@ function renderTripsSection(trips) {
   return scroll + deck;
 }
 
-function renderAuthDashboard(trips) {
+function renderNoTrips() {
+  return `
+    <div class="dashboard-no-trips">
+      <div class="dashboard-no-trips-icon">✈️</div>
+      <h2 class="dashboard-no-trips-title">Your next adventure starts here</h2>
+      <p class="dashboard-no-trips-text">Tell us where and how you like to travel, and we'll craft a day by day plan in minutes.</p>
+      <button class="btn btn--primary btn--lg btn--pill" data-action="new-trip">+ Plan your first trip</button>
+      <button class="btn btn--ghost btn--lg btn--pill dashboard-import-btn" data-action="import-trip">Import trip</button>
+      <p class="dashboard-no-trips-hint">Already booked? Bring your flights, hotels and plans in from your emails or notes.</p>
+    </div>`;
+}
+
+// The trip list couldn't be fetched: say so instead of showing "no trips".
+function renderLoadError() {
+  return `
+    <div class="dashboard-no-trips dashboard-load-error" role="alert">
+      <h2 class="dashboard-no-trips-title">We couldn't load your trips</h2>
+      <p class="dashboard-no-trips-text">Check your connection and try again. Your saved trips are not affected.</p>
+      <button class="btn btn--primary btn--lg btn--pill" data-action="retry-trips">Try again</button>
+    </div>`;
+}
+
+function renderStaleNote() {
+  return `
+    <p class="dashboard-stale-note" role="status">
+      We couldn't reach Trippy, so these are the trips we loaded earlier.
+      <button class="btn btn--ghost btn--sm btn--pill" data-action="retry-trips">Try again</button>
+    </p>`;
+}
+
+// A stored session that still couldn't be confirmed after a while.
+function renderReconnect() {
+  return `
+    <div class="dashboard container">
+      <div class="dashboard-no-trips dashboard-load-error" data-dashboard-waiting role="alert">
+        <h1 class="dashboard-no-trips-title">We can't reach Trippy right now</h1>
+        <p class="dashboard-no-trips-text">Your sign-in needs a connection to refresh. Check your connection and try again, or sign in again.</p>
+        <button class="btn btn--primary btn--lg btn--pill" data-action="retry-session">Try again</button>
+        <button class="btn btn--ghost btn--lg btn--pill" data-action="sign-in">Sign in again</button>
+      </div>
+    </div>`;
+}
+
+function renderAuthDashboard(trips, { loadError = false, stale = false } = {}) {
   const featured = ['Tokyo', 'Paris', 'Bali', 'Bangkok', 'Barcelona', 'Melbourne', 'Seoul', 'Istanbul', 'New York', 'Kyoto', 'Taipei'];
   const dests = featured.map(n => DESTINATIONS.find(d => d.name === n)).filter(Boolean);
+  const body = trips.length > 0
+    ? `${stale ? renderStaleNote() : ''}${renderTripsSection(trips)}`
+    : loadError ? renderLoadError() : renderNoTrips();
 
   return `
     <div class="dashboard-merged">
@@ -231,19 +299,11 @@ function renderAuthDashboard(trips) {
         <div class="dashboard-header">
           <h1 class="dashboard-greeting">Where to next?</h1>
           <div class="dashboard-header-actions">
-            <button class="btn btn--ghost btn--lg btn--pill dashboard-import-btn" data-action="import-trip" title="Import a trip from a Trippy JSON file">Import trip</button>
+            <button class="btn btn--ghost btn--lg btn--pill dashboard-import-btn" data-action="import-trip">Import trip</button>
             <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">+ Plan a Trip</button>
           </div>
         </div>
-        ${trips.length > 0 ? renderTripsSection(trips) : `
-          <div class="dashboard-no-trips">
-            <div class="dashboard-no-trips-icon">✈️</div>
-            <h2 class="dashboard-no-trips-title">Your next adventure starts here</h2>
-            <p class="dashboard-no-trips-text">Tell us where and how you like to travel — we'll craft a day-by-day plan in minutes.</p>
-            <button class="btn btn--primary btn--lg btn--pill" data-action="new-trip">+ Plan your first trip</button>
-            <button class="btn btn--ghost btn--lg btn--pill dashboard-import-btn" data-action="import-trip" title="Import a trip from a Trippy JSON file">Import trip</button>
-          </div>
-        `}
+        ${body}
         <section class="dashboard-dest-picks">
           <h3 class="landing-section-title">Popular destinations</h3>
           <div class="dest-circle-grid">
@@ -275,7 +335,7 @@ function renderEmpty() {
         <div class="landing-grid-dots"></div>
       </div>
       <section class="landing-hero">
-        <div class="landing-coords">1.3521&deg;N 103.8198&deg;E &mdash; SIN &rarr; anywhere</div>
+        <div class="landing-coords">1.3521&deg;N 103.8198&deg;E | SIN to anywhere</div>
         <div class="landing-logo">
           <svg class="landing-logo-plane" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
           <span class="landing-logo-flaps landing-glitch" data-text="TRIPPY">${'TRIPPY'.split('').map(flap).join('')}</span>
@@ -420,7 +480,7 @@ function startElapsedTicker(app, trips) {
       const secs = Math.floor((Date.now() - start) / 1000);
       const mm = Math.floor(secs / 60);
       const ss = String(secs % 60).padStart(2, '0');
-      span.textContent = `· ${mm}:${ss}`;
+      span.textContent = `(${mm}:${ss})`;
     }
     if (!anyVisible) { clearInterval(_elapsedTimer); _elapsedTimer = null; }
   };
@@ -428,100 +488,108 @@ function startElapsedTicker(app, trips) {
   _elapsedTimer = setInterval(tick, 1000);
 }
 
-export async function renderDashboard() {
-  const app = document.getElementById('app');
-  let trips = [];
-  let skipRender = false;
-
-  const preRendered = app.querySelector('[data-prerendered]');
-  if (preRendered && !hasLocalSession()) {
-    preRendered.removeAttribute('data-prerendered');
-    const skel = app.querySelector('.app-skel');
-    if (skel) skel.remove();
-    skipRender = true;
-  }
-
-  if (!skipRender) {
-  let loggedIn = false;
-  const hasSession = hasLocalSession();
-  if (hasSession) {
-    try { loggedIn = (await getAuth()).isAuthenticated(); } catch {}
-  }
-  const probablyLoggedIn = !loggedIn && hasSession;
-  if (loggedIn || probablyLoggedIn) {
-    app.innerHTML = renderSkeleton();
-    if (probablyLoggedIn) return;
-    try {
-      const { fetchAllTrips } = await import('../data/trip-repository.js');
-      const { data } = await fetchAllTrips();
-      trips = (data || []).map(t => {
-        const ws = t.wizard_state;
-        const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
-        const itineraryCount = Array.isArray(t.itinerary_days) ? t.itinerary_days.length : 0;
-        const dateDayCount = t.start_date && t.end_date
-          ? Math.round((new Date(t.end_date) - new Date(t.start_date)) / 86400000) + 1
-          : 0;
-        const dayCount = itineraryCount || dateDayCount;
-        let activityTotal = 0;
-        if (Array.isArray(t.itinerary_days)) {
-          for (const day of t.itinerary_days) {
-            if (Array.isArray(day.activities)) {
-              for (const a of day.activities) activityTotal += (a.cost_amount || 0);
-            }
-          }
-        }
-        const budgetEstimate = (t.budget_daily || 0) * (t.travelers || 1) * (dayCount || 7);
-        // For multi-city, show "A, B & C" from the wizard state rather than the
-        // stored title (which the AI may have set to "A to B").
-        const displayTitle = ws?.multiCity && ws?.destinations?.length > 0
-          ? formatCityList(ws.destinations.map(d => d.name))
-          : t.title;
-        return {
-          id: t.id,
-          title: displayTitle,
-          emoji: t.emoji || flagImg(dest?.flag, 20) || '🌍',
-          status: t.status,
-          dates: { start: t.start_date, end: t.end_date },
-          dayCount,
-          budget: {
-            currencySymbol: dest?.currencySymbol || t.budget_currency_symbol || '$',
-            currencyCode: dest?.currencyCode || t.budget_currency || 'USD',
-            total: activityTotal > 0 ? activityTotal : budgetEstimate,
-            spent: 0
-          },
-          coverImage: t.cover_image || dest?.image || ''
-        };
-      });
-    } catch {
-      trips = [];
+// Card data for one row from fetchAllTrips().
+function toCardTrip(t) {
+  const ws = t.wizard_state;
+  const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
+  const itineraryCount = Array.isArray(t.itinerary_days) ? t.itinerary_days.length : 0;
+  const dateDayCount = t.start_date && t.end_date
+    ? Math.round((new Date(t.end_date) - new Date(t.start_date)) / 86400000) + 1
+    : 0;
+  const dayCount = itineraryCount || dateDayCount;
+  let activityTotal = 0;
+  if (Array.isArray(t.itinerary_days)) {
+    for (const day of t.itinerary_days) {
+      if (Array.isArray(day.activities)) {
+        for (const a of day.activities) activityTotal += (a.cost_amount || 0);
+      }
     }
-  } else {
-    trips = getAllTrips();
   }
+  const budgetEstimate = (t.budget_daily || 0) * (t.travelers || 1) * (dayCount || 7);
+  // For multi-city, show "A, B & C" from the wizard state rather than the
+  // stored title (which the AI may have set to "A to B").
+  const displayTitle = ws?.multiCity && ws?.destinations?.length > 0
+    ? formatCityList(ws.destinations.map(d => d.name))
+    : t.title;
+  return {
+    id: t.id,
+    title: displayTitle,
+    emoji: t.emoji || '',
+    flag: dest?.flag || '',
+    status: t.status,
+    shared: Boolean(t.shared),
+    dates: { start: t.start_date, end: t.end_date },
+    dayCount,
+    budget: {
+      currencySymbol: dest?.currencySymbol || t.budget_currency_symbol || '$',
+      currencyCode: dest?.currencyCode || t.budget_currency || 'USD',
+      total: activityTotal > 0 ? activityTotal : budgetEstimate,
+      spent: 0
+    },
+    coverImage: t.cover_image || dest?.image || ''
+  };
+}
 
-  let content;
-  if (loggedIn || probablyLoggedIn) {
-    content = renderAuthDashboard(trips);
-  } else if (trips.length === 0) {
-    content = renderEmpty();
-  } else {
-    content = `
-      <div class="dashboard-header">
-        <h1 class="dashboard-greeting">Where to next?</h1>
-        <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">
-          + Plan a Trip
-        </button>
-      </div>
-      ${renderTripsSection(trips)}
-    `;
+// { trips, loadError, stale }. A failed fetch is reported as an error, never
+// as "no trips". `stale` means fetchAllTrips served the copy saved on this device.
+async function loadTrips() {
+  try {
+    const { fetchAllTrips } = await import('../data/trip-repository.js');
+    const { data, error, stale } = await fetchAllTrips();
+    if (error) {
+      logger.warn('data', 'Dashboard trips failed to load', { error });
+      return { trips: [], loadError: true, stale: false };
+    }
+    return { trips: (data || []).map(toCardTrip), loadError: false, stale: Boolean(stale) };
+  } catch (err) {
+    logger.error('data', 'Dashboard trips failed to load', { error: err?.message });
+    return { trips: [], loadError: true, stale: false };
   }
+}
 
-  app.innerHTML = `<div class="dashboard container">${content}</div>`;
-  }
+// ---- Stored session that isn't confirmed yet ----
+// The token refresh can fail on a weak connection while the stored session
+// stays, so isAuthenticated() is false. Show the skeleton briefly, re-render
+// when the session arrives, and offer Retry / Sign in instead of waiting forever.
+const SESSION_WAIT_MS = 8000;
+let _sessionWait = null;
 
-  _dashboardTrips = trips;
+function stopWaitingForSession() {
+  if (!_sessionWait) return;
+  _sessionWait.unsubscribe();
+  clearTimeout(_sessionWait.timer);
+  _sessionWait = null;
+}
 
-  if (!_clickHandlerBound) {
+function waitForSession() {
+  stopWaitingForSession();
+  const wait = { unsubscribe: () => {}, timer: 0 };
+  _sessionWait = wait;
+  wait.timer = setTimeout(() => {
+    const app = document.getElementById('app');
+    if (_sessionWait !== wait || !isDashboardRoute() || !app?.querySelector('.skel-card')) return;
+    app.innerHTML = renderReconnect();
+  }, SESSION_WAIT_MS);
+  getAuth().then((auth) => {
+    if (_sessionWait !== wait) return;
+    wait.unsubscribe = auth.onAuthChange((event) => {
+      if (!['SIGNED_IN', 'TOKEN_REFRESHED', 'SIGNED_OUT'].includes(event)) return;
+      // The app shell usually rebuilds the route on these events; only render
+      // here if nothing else has started a dashboard render in the meantime.
+      setTimeout(() => {
+        if (_sessionWait !== wait) return;
+        stopWaitingForSession();
+        if (isDashboardRoute()) renderDashboard();
+      }, 50);
+    });
+  }).catch(() => {});
+}
+
+// The #app listeners are bound once, before any early return in renderDashboard,
+// so the reconnect card's buttons work even when the dashboard never fully rendered.
+// Every handler reads what it needs from the DOM (or _dashboardTrips).
+function bindDashboardHandlers(app) {
+  if (_clickHandlerBound) return;
   _clickHandlerBound = true;
   // Keyboard activation for the destination circles (divs with role="button").
   // Forward Enter/Space to the click handler below; preventDefault stops Space
@@ -540,15 +608,45 @@ export async function renderDashboard() {
       if (!auth.isAuthenticated()) { const { showAuthGate } = await import('../auth/auth-ui.js'); showAuthGate(); return; }
       const dest = DESTINATIONS.find(d => d.name === destCard.dataset.city);
       if (dest) {
-        import('../wizard/wizard.js').then(m => m.clearAndStart(dest));
-        history.replaceState(null, '', '#/wizard/2');
+        // Preselect the city in the wizard state, then navigate normally so the
+        // route applies its sign-in and profile checks and Back returns here.
+        const { clearWizardState, loadWizardState, saveWizardState } = await import('../wizard/wizard-state.js');
+        clearWizardState();
+        saveWizardState({ ...loadWizardState(), destination: dest, currentStep: 2, furthestStep: 2 });
+        navigate('/wizard/2');
         return;
       }
     }
-    if (e.target.closest('[data-action="import-trip"]')) {
+    const importBtn = e.target.closest('[data-action="import-trip"]');
+    if (importBtn) {
       const auth = await getAuth();
       if (!auth.isAuthenticated()) { const { showAuthGate } = await import('../auth/auth-ui.js'); showAuthGate(); return; }
-      pickImportFile();
+      const { showImportModal } = await import('./trip-import-modal.js');
+      showImportModal({ returnFocus: importBtn, onChange: () => renderDashboard() });
+      return;
+    }
+    if (e.target.closest('[data-action="retry-trips"]')) {
+      renderDashboard();
+      return;
+    }
+    const retrySession = e.target.closest('[data-action="retry-session"]');
+    if (retrySession) {
+      retrySession.disabled = true;
+      retrySession.textContent = 'Trying again';
+      // getSession() refreshes an expired token; the route then shows the
+      // dashboard, or the saved-trips view if there is still no connection.
+      try {
+        const { supabase } = await import('../lib/supabase.js');
+        await supabase?.auth.getSession();
+      } catch (err) {
+        logger.warn('auth', 'Session retry failed', { error: err?.message });
+      }
+      if (isDashboardRoute()) reloadCurrentRoute();
+      return;
+    }
+    if (e.target.closest('[data-action="sign-in"]')) {
+      const { signInWithGoogle } = await getAuth();
+      signInWithGoogle();
       return;
     }
     const newTrip = e.target.closest('[data-action="new-trip"]');
@@ -593,7 +691,14 @@ export async function renderDashboard() {
       const tripId = deleteBtn.dataset.deleteTrip;
       if (!confirm('Delete this trip? This cannot be undone.')) return;
       const { deleteTrip } = await import('../data/trip-repository.js');
-      await deleteTrip(tripId);
+      const { error } = await deleteTrip(tripId);
+      const { showToast } = await import('./toast.js');
+      if (error) {
+        logger.error('data', 'Trip delete failed', { tripId, error });
+        showToast("We couldn't delete this trip. Check your connection and try again.", 'error');
+        return;
+      }
+      showToast('Trip deleted.', 'success');
       renderDashboard();
       return;
     }
@@ -603,13 +708,86 @@ export async function renderDashboard() {
       navigate(`/trip/${nowBtn.dataset.nowTrip}?today=1`);
       return;
     }
+    // The card link handles its own navigation (and Enter); other clicks on a
+    // ready card open it too.
+    if (e.target.closest('.trip-card-link')) return;
     const card = e.target.closest('[data-trip-id]');
     if (card) {
       if (card.classList.contains('trip-card--generating') || card.classList.contains('trip-card--failed')) return;
       navigate(`/trip/${card.dataset.tripId}`);
     }
   });
+  // A cover width larger than the original image can be refused: fall back to
+  // the original thumbnail. Image errors don't bubble, so listen in capture.
+  app.addEventListener('error', (e) => {
+    const img = e.target;
+    if (!(img instanceof HTMLImageElement) || !img.dataset.fallback) return;
+    const fallback = img.dataset.fallback;
+    delete img.dataset.fallback;
+    img.removeAttribute('srcset');
+    if (img.src !== fallback) img.src = fallback;
+  }, true);
+}
+
+let _renderToken = 0;
+
+export async function renderDashboard() {
+  const app = document.getElementById('app');
+  if (!app || !isDashboardRoute()) return;
+  // A newer render, or leaving the dashboard, makes this one stale: it must not
+  // write into #app after any await.
+  const token = ++_renderToken;
+  const isCurrent = () => token === _renderToken && isDashboardRoute();
+  bindDashboardHandlers(app);
+  let trips = [];
+  let skipRender = false;
+
+  const preRendered = app.querySelector('[data-prerendered]');
+  if (preRendered && !hasLocalSession()) {
+    preRendered.removeAttribute('data-prerendered');
+    const skel = app.querySelector('.app-skel');
+    if (skel) skel.remove();
+    skipRender = true;
   }
+
+  if (!skipRender) {
+    let loggedIn = false;
+    const hasSession = hasLocalSession();
+    if (hasSession) {
+      try { loggedIn = (await getAuth()).isAuthenticated(); } catch { /* treated as not confirmed */ }
+      if (!isCurrent()) return;
+    }
+    if (!loggedIn && hasSession) {
+      app.innerHTML = renderSkeleton();
+      waitForSession();
+      return;
+    }
+    stopWaitingForSession();
+
+    let content;
+    if (loggedIn) {
+      if (!app.querySelector('.dashboard-merged')) app.innerHTML = renderSkeleton();
+      const loaded = await loadTrips();
+      if (!isCurrent()) return;
+      trips = loaded.trips;
+      content = renderAuthDashboard(trips, loaded);
+    } else {
+      trips = getAllTrips();
+      content = trips.length === 0 ? renderEmpty() : `
+        <div class="dashboard-header">
+          <h1 class="dashboard-greeting">Where to next?</h1>
+          <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">
+            + Plan a Trip
+          </button>
+        </div>
+        ${renderTripsSection(trips)}
+      `;
+    }
+
+    app.innerHTML = `<div class="dashboard container">${content}</div>`;
+  }
+
+  _dashboardTrips = trips;
 
   if (trips.some(t => t.status === 'generating')) {
     import('../services/generation-manager.js').then(({ onGenerationUpdate, resumeStaleGenerations }) => {
@@ -622,6 +800,10 @@ export async function renderDashboard() {
         if (genStatus.status === 'done') {
           el.classList.remove('trip-card--generating');
           el.classList.add('trip-card--just-generated');
+          if (!el.querySelector('.trip-card-link')) {
+            const title = el.querySelector('.trip-card-title')?.textContent || 'trip';
+            el.insertAdjacentHTML('afterbegin', tripLink({ id: tripId, title }));
+          }
           el.querySelector('.trip-card-gen-shimmer')?.remove();
           const statusEl = el.querySelector('.trip-card-gen-status');
           if (statusEl) statusEl.innerHTML = '<span class="trip-card-gen-ready">Your trip is ready!</span>';
@@ -646,7 +828,7 @@ export async function renderDashboard() {
           const label = el.querySelector('.trip-card-gen-label');
           if (label) label.textContent = 'Still working on it';
           const eta = el.querySelector('.trip-card-gen-eta');
-          if (eta) eta.innerHTML = 'Taking longer than usual &mdash; hang tight <span class="trip-card-gen-elapsed" data-gen-elapsed></span>';
+          if (eta) eta.innerHTML = 'Taking longer than usual, hang tight <span class="trip-card-gen-elapsed" data-gen-elapsed></span>';
         }
       });
     });
@@ -744,6 +926,7 @@ export async function renderDashboard() {
         if (reduceMotion) return; // leave the static headline, no auto-cycling
         clearInterval(cycleTimer);
         cycleTimer = setInterval(() => {
+          if (!citySpan.isConnected) { clearInterval(cycleTimer); return; } // left the page
           if (hovered) return;
           flipTo(cycleNames[cycleIdx]);
           cycleIdx = (cycleIdx + 1) % cycleNames.length;
@@ -756,66 +939,5 @@ export async function renderDashboard() {
         card.addEventListener('mouseleave', () => { hovered = false; flipTo('next'); startCycle(); });
       });
     });
-  }
-}
-
-// ===== Trip import =====
-// Opens a file picker for a Trippy import file (docs/trip-import-format.md),
-// validates it client-side, saves it as the signed-in user, then opens it.
-function pickImportFile() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'application/json,.json';
-  input.addEventListener('change', () => {
-    const file = input.files?.[0];
-    if (file) importTripFile(file).catch(() => {});
-  });
-  input.click();
-}
-
-async function importTripFile(file) {
-  const { showToast } = await import('./toast.js');
-  try {
-    const { parseTripImport, TripImportError, IMPORT_LIMITS } = await import('../services/trip-import.js');
-    if (file.size > IMPORT_LIMITS.maxBytes) { showToast('That file is too large to import (max 1 MB).', 'error'); return; }
-    let parsed;
-    try {
-      parsed = parseTripImport(await file.text());
-    } catch (err) {
-      showToast(err instanceof TripImportError ? err.message : 'Could not read that file.', 'error');
-      return;
-    }
-    // A curated destination has a cover photo; borrow it if the file had none.
-    const dest = parsed.wizardState.destination;
-    const known = DESTINATIONS.find(d => d.name.toLowerCase() === dest.name.toLowerCase());
-    if (known?.image && !dest.image) dest.image = known.image;
-    showToast('Importing trip…');
-    const { saveTripWithItinerary } = await import('../data/trip-repository.js');
-    const { data, error } = await saveTripWithItinerary(parsed.wizardState, parsed.itinerary);
-    if (error || !data) { showToast(`Import failed: ${error || 'unknown error'}`, 'error'); return; }
-    showToast(`Imported “${data.title}”`, 'success');
-    navigate(`/trip/${data.id}`);
-    findPhotosForImportedTrip(data.id, showToast);
-  } catch (err) {
-    logger.error('data', 'Trip import failed', { error: err?.message });
-    showToast('Import failed. Check your connection and try again.', 'error');
-  }
-}
-
-// Real photos for an imported trip (verified web photos, else labelled street
-// view). Runs in the background; re-renders the trip if the user is still on it.
-async function findPhotosForImportedTrip(tripId, showToast) {
-  showToast('Finding photos for your trip…');
-  const { resolveTripPhotos } = await import('../services/trip-photos.js');
-  const result = await resolveTripPhotos(tripId);
-  if (!result.ok) {
-    logger.error('data', 'Photo resolution failed', { tripId, error: result.error });
-    showToast('Could not add photos right now. The trip is saved.', 'error');
-    return;
-  }
-  showToast(result.photos > 0 ? `Added ${result.photos} photos` : 'No photos found for these places', result.photos > 0 ? 'success' : 'info');
-  if (location.hash.includes(tripId)) {
-    const { reloadCurrentRoute } = await import('../router.js');
-    reloadCurrentRoute();
   }
 }

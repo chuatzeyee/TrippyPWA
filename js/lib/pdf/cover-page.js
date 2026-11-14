@@ -9,7 +9,7 @@ export function renderCover(doc, trip, photos, homeCurrency) {
   const code = dest?.currencyCode || 'USD';
   const days = trip.itinerary_days || [];
   const tripTitle = ws?.multiCity && ws?.destinations?.length > 0
-    ? ws.destinations.map(d => d.name).join(' → ')
+    ? ws.destinations.map(d => d.name).join(' to ')
     : dest?.name || trip.title || 'My Trip';
 
   if (photos.cover) {

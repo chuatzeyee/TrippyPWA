@@ -1,5 +1,15 @@
 import { supabase, getUser } from '../lib/supabase.js';
 import { logger } from '../lib/logger.js';
+import { sortDayActivities } from './trip-repository.js';
+
+const NOT_FOUND = 'Share link not found or expired';
+const SHARE_COLUMNS = 'id, trip_id, share_token, created_by, visibility, created_at';
+const LOAD_FAILED = 'We could not load this shared trip. Please try again.';
+// Share tokens are 32 hex chars today; accept a slightly wider safe alphabet.
+const TOKEN_RE = /^[A-Za-z0-9_-]{16,128}$/;
+// PostgREST "function not in schema cache" / Postgres undefined_function:
+// migration 020 (get_shared_trip) is not applied yet, so use the table reads.
+const RPC_MISSING = new Set(['PGRST202', '42883']);
 
 export async function createShareLink(tripId) {
   const user = getUser();
@@ -11,7 +21,7 @@ export async function createShareLink(tripId) {
   const { data, error } = await supabase
     .from('trip_shares')
     .insert({ trip_id: tripId, created_by: user.id })
-    .select()
+    .select(SHARE_COLUMNS)
     .single();
 
   if (error) logger.error('share', 'Share link creation failed', { tripId, error: error.message });
@@ -24,9 +34,13 @@ export async function getShareForTrip(tripId) {
 
   const { data, error } = await supabase
     .from('trip_shares')
-    .select('*')
+    .select(SHARE_COLUMNS)
     .eq('trip_id', tripId)
     .eq('created_by', user.id)
+    // Older trips can have more than one link: return the newest, so "Stop
+    // sharing" can remove them one at a time.
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   return { data, error: error?.message || null };
@@ -42,52 +56,158 @@ export async function deleteShareLink(shareId) {
   return { error: error?.message || null };
 }
 
+// Public read of a shared trip. Returns the allow-listed shape from
+// toSharedView(): never flights, booking refs, manage links, booking URLs,
+// the booking checklist or wizard_state.
 export async function fetchSharedTrip(shareToken) {
+  if (typeof shareToken !== 'string' || !TOKEN_RE.test(shareToken)) {
+    return { data: null, error: NOT_FOUND };
+  }
+
+  const { data, error } = await supabase.rpc('get_shared_trip', { p_token: shareToken });
+  if (!error) {
+    if (!data) {
+      logger.warn('share', 'Share link not found');
+      return { data: null, error: NOT_FOUND };
+    }
+    return { data: toSharedView(data), error: null };
+  }
+  if (!RPC_MISSING.has(error.code)) {
+    logger.error('share', 'Shared trip fetch failed', { error: error.message, code: error.code });
+    return { data: null, error: LOAD_FAILED };
+  }
+  return fetchSharedTripLegacy(shareToken);
+}
+
+// Pre-migration path: the old public table reads, narrowed to the columns the
+// shared view needs. extras->accommodation still carries the stay's booking
+// fields over the wire here; toSharedView() drops them before rendering, and
+// the RPC above removes them from the response entirely once 020 is applied.
+async function fetchSharedTripLegacy(shareToken) {
   const { data: share, error: shareError } = await supabase
     .from('trip_shares')
     .select('trip_id')
     .eq('share_token', shareToken)
-    .single();
+    .maybeSingle();
 
   if (shareError || !share) {
-    logger.warn('share', 'Share link not found', { shareToken });
-    return { data: null, error: 'Share link not found or expired' };
+    logger.warn('share', 'Share link not found');
+    return { data: null, error: NOT_FOUND };
   }
 
   const { data: trip, error: tripError } = await supabase
     .from('trips')
     .select(`
-      *,
+      title, emoji, start_date, end_date, travelers, user_id, budget_currency,
+      dest_currency:wizard_state->destination->>currencyCode,
+      accommodation:extras->accommodation,
       itinerary_days (
-        *,
-        activities (*)
+        day_number, date, title, theme, weather,
+        activities (
+          start_time, sort_order, title, venue_name, description, category,
+          duration_minutes, cost_amount, cost_currency, tips, transport_options
+        )
       )
     `)
     .eq('id', share.trip_id)
     .single();
 
-  if (tripError) {
-    logger.error('share', 'Shared trip fetch failed', { shareToken, error: tripError.message });
-    return { data: null, error: tripError.message };
-  }
-
-  if (trip?.itinerary_days) {
-    trip.itinerary_days.sort((a, b) => a.day_number - b.day_number);
-    for (const day of trip.itinerary_days) {
-      if (day.activities) {
-        day.activities.sort((a, b) => {
-          if (a.start_time && b.start_time) return a.start_time.localeCompare(b.start_time);
-          return a.sort_order - b.sort_order;
-        });
-      }
-    }
+  if (tripError || !trip) {
+    logger.error('share', 'Shared trip fetch failed', { error: tripError?.message });
+    return { data: null, error: LOAD_FAILED };
   }
 
   const { data: owner } = await supabase
     .from('profiles')
-    .select('display_name, avatar_url')
+    .select('display_name')
     .eq('id', trip.user_id)
-    .single();
+    .maybeSingle();
 
-  return { data: { ...trip, owner }, error: null };
+  return {
+    data: toSharedView({
+      ...trip,
+      currency: trip.dest_currency || trip.budget_currency,
+      extras: { accommodation: trip.accommodation },
+      owner,
+    }),
+    error: null,
+  };
+}
+
+const text = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
+// Only real numbers and numeric strings count: Number(null), Number('') and
+// Number(false) are all 0, which would turn a missing temperature into "0°C".
+const num = (v) => {
+  if (typeof v !== 'number' && (typeof v !== 'string' || !v.trim())) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+function pickWeather(w) {
+  if (!w || typeof w !== 'object') return null;
+  return { condition: text(w.condition), highC: num(w.highC), lowC: num(w.lowC) };
+}
+
+function pickStay(a) {
+  const h = a.highlights;
+  return {
+    name: text(a.name),
+    area: text(a.area),
+    priceRange: text(a.priceRange),
+    badge: text(a.badge),
+    highlights: typeof h === 'string' ? h : Array.isArray(h) ? h.filter(x => typeof x === 'string').join(', ') : '',
+  };
+}
+
+function pickActivity(a) {
+  const first = Array.isArray(a.transport_options) ? a.transport_options[0] : null;
+  return {
+    start_time: text(a.start_time),
+    sort_order: num(a.sort_order) ?? 0,
+    title: text(a.title),
+    venue_name: text(a.venue_name),
+    description: text(a.description),
+    category: text(a.category),
+    duration_minutes: num(a.duration_minutes),
+    cost_amount: num(a.cost_amount),
+    cost_currency: text(a.cost_currency),
+    tips: text(a.tips),
+    transport_label: text(a.transport_label ?? (first?.label || first?.mode)),
+  };
+}
+
+/**
+ * Allow-listed, read-only view of a trip for the shared / reader layout. Works
+ * on the get_shared_trip RPC result, the legacy table read and a full trip row
+ * (owner reader view), so nothing outside this list can reach the renderer.
+ */
+export function toSharedView(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const ws = raw.wizard_state && typeof raw.wizard_state === 'object' ? raw.wizard_state : {};
+  const stays = Array.isArray(raw.extras?.accommodation) ? raw.extras.accommodation : [];
+  const days = Array.isArray(raw.itinerary_days) ? raw.itinerary_days : [];
+  return {
+    title: text(raw.title),
+    emoji: text(raw.emoji),
+    start_date: raw.start_date || null,
+    end_date: raw.end_date || null,
+    travelers: num(raw.travelers) || 1,
+    currency: text(raw.currency || ws.destination?.currencyCode || raw.budget_currency),
+    owner: { display_name: text(raw.owner?.display_name) },
+    extras: { accommodation: stays.filter(a => a && typeof a === 'object').map(pickStay) },
+    itinerary_days: days
+      .filter(d => d && typeof d === 'object')
+      .map(d => ({
+        day_number: num(d.day_number) ?? 0,
+        date: d.date || null,
+        title: text(d.title),
+        theme: text(d.theme),
+        weather: pickWeather(d.weather),
+        // Same order as the owner's trip view.
+        activities: sortDayActivities((Array.isArray(d.activities) ? d.activities : [])
+          .filter(a => a && typeof a === 'object')
+          .map(pickActivity)),
+      }))
+      .sort((a, b) => a.day_number - b.day_number),
+  };
 }

@@ -194,3 +194,72 @@
     align-items: center;
   }
 }
+
+/* ===== Guided trip import (trip-import-modal.js) =====
+ * Reuses the sheet above: bottom sheet on phones, centred card from 769px. */
+.ti-modal [hidden] { display: none !important; }
+.ti-modal .trip-edit-footer { justify-content: space-between; }
+.ti-modal .trip-edit-footer .btn--primary:only-child { margin-left: auto; }
+.ti-progress { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-5) 0; flex-shrink: 0; }
+.ti-step-title { font: var(--text-h3); color: var(--ink); margin: 0 0 var(--sp-2); }
+/* Headings get focus on each step change for screen readers; they aren't controls, so no ring. */
+.ti-step-title:focus,
+.ti-step-title:focus-visible { outline: none; }
+/* Scoped so the light theme's grey segment rule (wizard.css) doesn't hide progress. */
+.ti-progress .wizard-progress-seg--done { background: var(--sage); }
+.ti-progress .wizard-progress-seg--active { background: var(--terracotta); }
+.ti-intro { font: var(--text-small); font-weight: 400; color: var(--ink-secondary); margin: 0 0 var(--sp-5); }
+.ti-list { list-style: none; margin: 0 0 var(--sp-5); padding: 0; display: grid; gap: var(--sp-3); }
+.ti-list li { display: grid; grid-template-columns: 20px 1fr; gap: var(--sp-2); font: var(--text-small); color: var(--ink); }
+.ti-list li strong { font-weight: 600; }
+.ti-list li span { color: var(--ink-secondary); font-weight: 400; }
+.ti-list svg { color: var(--teal); margin-top: 2px; }
+.ti-chips { list-style: none; margin: 0 0 var(--sp-5); padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+/* Read-only chips: no pointer or hover change (base .chip is interactive). */
+.ti-chips .chip,
+.ti-chips .chip:hover { cursor: default; background: rgba(229, 225, 216, 0.06); color: var(--ink-secondary); }
+[data-theme="light"] .ti-chips .chip,
+[data-theme="light"] .ti-chips .chip:hover { background: rgba(44, 42, 37, 0.06); }
+.ti-prompt { font: 400 0.75rem/1.5 var(--font-mono); max-height: 200px; }
+.ti-drop { position: relative; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); padding: var(--sp-1); transition: var(--transition-interactive); }
+.ti-drop:focus-within { border-style: solid; border-color: var(--terracotta); }
+.ti-drop--active { border-color: var(--terracotta); background: var(--terracotta-light); }
+.ti-drop-hint { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; border-radius: var(--r-lg); font: var(--text-small); font-weight: 600; color: var(--terracotta); background: var(--terracotta-light); pointer-events: none; }
+.ti-drop--active .ti-drop-hint { display: flex; }
+.ti-paste { font: 400 0.8rem/1.5 var(--font-mono); min-height: 180px; border: none; }
+.ti-paste:focus { border: none; }
+.ti-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-3) 0; }
+.ti-caption { font: var(--text-caption); color: var(--ink-ghost); margin: 0 0 var(--sp-2); }
+.ti-status { font: var(--text-caption); color: var(--ink-secondary); min-height: 1.4em; margin: 0; }
+.ti-status--error { color: var(--error); font-weight: 600; }
+.ti-link { display: inline-block; background: none; border: none; padding: 0; margin: 0 0 var(--sp-3); font: var(--text-small); color: var(--teal); text-decoration: underline; cursor: pointer; }
+.ti-issues { background: rgba(200, 82, 82, 0.12); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin-top: var(--sp-3); }
+.ti-issues h3 { font: var(--text-small); font-weight: 600; color: var(--error); margin: 0; }
+.ti-issue-group { font: var(--text-caption); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-secondary); margin: var(--sp-2) 0 0; }
+.ti-issue-list { list-style: none; margin: var(--sp-1) 0 0; padding: 0; display: grid; gap: var(--sp-1); font: var(--text-small); font-weight: 400; color: var(--ink); }
+.ti-more { font: var(--text-caption); color: var(--ink-secondary); margin: var(--sp-2) 0 0; }
+.ti-fix-hint { font: var(--text-caption); color: var(--ink-secondary); margin: var(--sp-3) 0 var(--sp-2); }
+.ti-fix-text { margin-top: var(--sp-2); font: 400 0.75rem/1.5 var(--font-mono); }
+.ti-warnings { background: var(--amber-light); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin-top: var(--sp-3); }
+.ti-warnings h3 { font: var(--text-small); font-weight: 600; color: var(--amber); margin: 0; }
+.ti-preview { background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--sp-4); display: grid; gap: var(--sp-3); }
+.ti-preview p { margin: 0; }
+.ti-preview-title { font: var(--text-h3); color: var(--ink); }
+.ti-preview-line { font: var(--text-small); font-weight: 400; color: var(--ink-secondary); }
+.ti-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.ti-stat { background: var(--surface-inset); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font: var(--text-caption); color: var(--ink-secondary); }
+.ti-stat strong { display: block; font: 600 1.1rem/1.2 var(--font-mono); color: var(--ink); }
+.ti-rows { display: grid; gap: var(--sp-2); margin: 0; }
+.ti-row { display: grid; grid-template-columns: 7rem 1fr; gap: var(--sp-2); font: var(--text-small); }
+.ti-row dt { color: var(--ink-secondary); font-weight: 600; }
+.ti-row dd { margin: 0; color: var(--ink); font-weight: 400; overflow-wrap: anywhere; }
+.ti-overdue { color: var(--error); font-weight: 600; }
+.ti-days { list-style: none; margin: 0; padding: var(--sp-3) 0 0; border-top: 1px solid var(--border); display: grid; gap: var(--sp-1); font: var(--text-small); font-weight: 400; color: var(--ink); }
+.ti-state { display: grid; justify-items: center; gap: var(--sp-3); padding: var(--sp-8) 0; text-align: center; font: var(--text-small); font-weight: 400; color: var(--ink-secondary); }
+.ti-state p { margin: 0; max-width: 420px; }
+.ti-state strong { color: var(--ink); }
+.ti-state .ti-step-title { margin: 0; }
+@media (max-width: 480px) {
+  .ti-row { grid-template-columns: 1fr; gap: 0; }
+}
+[data-square-mode="on"] .ti-modal { max-height: 100dvh; border-radius: 0; }

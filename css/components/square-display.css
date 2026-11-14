@@ -300,7 +300,9 @@
   margin-bottom: var(--sp-2);
 }
 [data-square-mode="on"] .dashboard-greeting { font-size: 1.15rem; flex: 0 0 auto; }
-[data-square-mode="on"] .dashboard-new-trip-btn { height: 38px; font-size: 0.8rem; padding: 0 var(--sp-3); white-space: nowrap; flex: 0 0 auto; }
+[data-square-mode="on"] .dashboard-header-actions { width: auto; flex-direction: row; gap: var(--sp-2); }
+[data-square-mode="on"] .dashboard-new-trip-btn,
+[data-square-mode="on"] .dashboard-header-actions .dashboard-import-btn { width: auto; height: 38px; font-size: 0.8rem; padding: 0 var(--sp-3); white-space: nowrap; flex: 0 0 auto; }
 /* Tighten the deck slide padding on the dashboard so the trip card centers
  * with breathing room rather than overflowing on a short square screen. */
 [data-square-mode="on"] .dashboard .square-only .card-deck-slide { padding: var(--sp-2) var(--sp-4); }

@@ -1,3 +1,5 @@
+import { escapeHtml } from '../data/day-builder.js';
+
 const MAX_TOASTS = 3;
 const DURATIONS = { error: 6000, warn: 4000, info: 3000, success: 3000 };
 
@@ -30,7 +32,7 @@ export function showToast(message, level = 'info') {
   toast.setAttribute('role', level === 'error' || level === 'warn' ? 'alert' : 'status');
   toast.innerHTML = `
     <span class="toast-icon" aria-hidden="true">${TOAST_ICONS[level] || TOAST_ICONS.info}</span>
-    <span class="toast-msg">${esc(message)}</span>
+    <span class="toast-msg">${escapeHtml(message)}</span>
     <button class="toast-close" aria-label="Dismiss">&times;</button>
   `;
 
@@ -49,10 +51,4 @@ export function showToast(message, level = 'info') {
   }
 
   setTimeout(dismiss, DURATIONS[level] || 4000);
-}
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
 }

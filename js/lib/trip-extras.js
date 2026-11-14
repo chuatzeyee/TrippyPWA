@@ -5,13 +5,20 @@ const DAY_MS = 86400000;
 const SOON_DAYS = 14;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-// Only http(s) links may reach an href. Normalising through URL also
-// percent-encodes quotes, so a value can never break out of an attribute.
+// URL.href keeps ' ( ) and backslashes in the path (and backslashes in the
+// query), which can end a CSS url('...') string or escape its closing quote.
+const CSS_UNSAFE = /['"()\\\s]/g;
+
+// Only http(s) links may reach an href or a CSS url(). The result never
+// contains quotes, parentheses, backslashes or whitespace (they are
+// percent-encoded), so it cannot break out of a quoted HTML attribute or a
+// url('...') value. Still HTML-escape it at the call site (for &).
 export function safeUrl(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return '';
   try {
     const u = new URL(raw.trim());
-    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : '';
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
+    return u.href.replace(CSS_UNSAFE, c => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`);
   } catch {
     return '';
   }
@@ -48,7 +55,7 @@ export function stayInfo(checkIn, checkOut) {
   const b = isoToUtc(checkOut);
   if (a === null || b === null || b <= a) return null;
   const nights = Math.round((b - a) / DAY_MS);
-  return { nights, label: `${shortDate(a)} → ${shortDate(b)} · ${nights} night${nights === 1 ? '' : 's'}` };
+  return { nights, label: `${shortDate(a)} to ${shortDate(b)} (${nights} night${nights === 1 ? '' : 's'})` };
 }
 
 // Earliest deadline first; undated items keep their order at the end.
@@ -68,9 +75,9 @@ export function isBookedLeg(leg) {
   return Boolean(leg && (leg.booked || leg.bookingRef));
 }
 
-// "Photo: creator · licence · source" for a stored photo credit (extras.photoCredits).
+// "Photo: creator, licence, source" for a stored photo credit (extras.photoCredits).
 export function photoCreditText(credit) {
   if (!credit || typeof credit !== 'object') return '';
   const parts = [credit.creator, credit.license, credit.via].map(v => String(v || '').trim()).filter(Boolean);
-  return parts.length ? `Photo: ${parts.join(' · ')}` : '';
+  return parts.length ? `Photo: ${parts.join(', ')}` : '';
 }

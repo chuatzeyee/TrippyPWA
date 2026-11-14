@@ -156,8 +156,8 @@ const stripHtml = (s) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g
 // ---------------------------------------------------------------- SSRF guard
 // Venue websites, og:image URLs and OSM image tags are user/third-party
 // controlled. Before fetching any of them: http(s) on default ports only, no
-// internal/private/link-local/metadata targets, redirects re-checked per hop,
-// and bodies read with a hard byte cap.
+// internal/private/link-local/metadata targets (DNS checked, failing closed),
+// redirects re-checked per hop, and bodies read with a hard byte cap.
 
 function ipv4Blocked(a, b) {
   return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31)
@@ -165,10 +165,42 @@ function ipv4Blocked(a, b) {
     || a >= 224;
 }
 
+// IPv6 text -> 8 hextets, or null if it does not parse.
+function ipv6Groups(ip) {
+  let s = String(ip).toLowerCase().split("%")[0];
+  const tail = /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s);
+  if (tail) {
+    const [a, b, c, d] = tail.slice(1).map(Number);
+    s = `${s.slice(0, -tail[0].length)}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
+  }
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  const rest = halves.length === 2 ? (halves[1] ? halves[1].split(":") : []) : [];
+  const fill = halves.length === 2 ? 8 - head.length - rest.length : 0;
+  if (fill < 0) return null;
+  const groups = [...head, ...Array(fill).fill("0"), ...rest];
+  if (groups.length !== 8 || !groups.every((g) => /^[0-9a-f]{1,4}$/.test(g))) return null;
+  return groups.map((g) => parseInt(g, 16));
+}
+
+// DNS answers only (IPv6 URL literals are refused outright by blockedUrlReason).
+// Allows global unicast 2000::/3 except 6to4, Teredo and documentation ranges;
+// refuses loopback, unspecified, IPv4-mapped/compatible, NAT64, ULA,
+// link-local, site-local, multicast and anything unparseable.
+function ipv6Blocked(ip) {
+  const g = ipv6Groups(ip);
+  if (!g) return true;
+  if ((g[0] & 0xe000) !== 0x2000) return true;
+  if (g[0] === 0x2002) return true;
+  if (g[0] === 0x2001 && (g[1] === 0 || g[1] === 0x0db8)) return true;
+  return false;
+}
+
 function ipBlocked(ip) {
   const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (v4) return ipv4Blocked(Number(v4[1]), Number(v4[2]));
-  return ip.includes(":"); // any IPv6 address: not needed for venue sites, simplest to refuse
+  return String(ip).includes(":") ? ipv6Blocked(ip) : true;
 }
 
 /** Why `url` must not be fetched server-side, or null if it is a plain public http(s) URL. */
@@ -186,16 +218,26 @@ export function blockedUrlReason(url) {
   return null;
 }
 
-async function resolvesToBlockedIp(host) {
-  const resolveDns = globalThis.Deno?.resolveDns;
-  if (!resolveDns || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return false;
+/** True when this runtime can resolve DNS, i.e. safeFetch can check hosts. */
+export function canCheckDns(resolveDns = globalThis.Deno?.resolveDns) {
+  return typeof resolveDns === "function";
+}
+
+/**
+ * Fails CLOSED: true (blocked) when no resolver is available, when neither an
+ * A nor an AAAA lookup returns anything, or when any answer is internal.
+ * Remaining gap: fetch() resolves the name again, so a rebinding DNS server
+ * can still swap the address between this check and the connection.
+ */
+export async function resolvesToBlockedIp(host, resolveDns = globalThis.Deno?.resolveDns) {
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return ipBlocked(host);
+  if (!canCheckDns(resolveDns)) return true;
   try {
-    const recs = [
-      ...(await resolveDns(host, "A").catch(() => [])),
-      ...(await resolveDns(host, "AAAA").catch(() => [])),
-    ];
+    const answers = await Promise.allSettled([resolveDns(host, "A"), resolveDns(host, "AAAA")]);
+    const recs = answers.flatMap((r) => (r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []));
+    if (recs.length === 0) return true;
     return recs.some((ip) => ipBlocked(String(ip)));
-  } catch { return false; }
+  } catch { return true; }
 }
 
 /** Read a response body, giving up (null) once it exceeds maxBytes. */

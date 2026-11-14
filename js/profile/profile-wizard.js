@@ -6,15 +6,11 @@ import { setHomeCurrency } from '../data/user-prefs.js';
 import { setLocaleFromFlag } from '../lib/locale.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from '../components/toast.js';
-
-function esc(str) {
-  const el = document.createElement('span');
-  el.textContent = str || '';
-  return el.innerHTML;
-}
+import { escapeHtml as esc } from '../data/day-builder.js';
 
 function flagImg(code, size = 24) {
-  if (!code) return '';
+  // Country codes only: the value comes from the stored profile.
+  if (typeof code !== 'string' || !/^[a-z]{2}$/.test(code)) return '';
   const w = size <= 20 ? 40 : 80;
   return `<img src="https://flagcdn.com/w${w}/${code}.png" width="${size}" height="${Math.round(size * 0.75)}" alt="" style="border-radius:3px; object-fit:cover;">`;
 }
@@ -197,7 +193,7 @@ function renderForm(app) {
               <input class="input" type="text" id="pf-nationality" placeholder="Search your passport country..." autocomplete="off">
               <div class="profile-city-dropdown" id="pf-nat-dropdown"></div>
             </div>
-            <p class="profile-nomad-note">Optional — lets Trippy remind you about visas and entry requirements.</p>
+            <p class="profile-nomad-note">Optional. Lets Trippy remind you about visas and entry requirements.</p>
           `}
         </div>
 

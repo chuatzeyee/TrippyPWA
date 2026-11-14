@@ -2065,6 +2065,14 @@
   background: rgba(44, 42, 37, 0.12);
 }
 
+[data-theme="light"] .wizard-progress-seg--done {
+  background: var(--sage);
+}
+
+[data-theme="light"] .wizard-progress-seg--active {
+  background: var(--terracotta);
+}
+
 [data-theme="light"] .wizard-cta-bar {
   background: rgba(245, 241, 234, 0.92);
   border-top-color: rgba(44, 42, 37, 0.06);

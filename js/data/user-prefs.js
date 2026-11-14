@@ -34,6 +34,14 @@ function saveUserPrefs(prefs) {
   localStorage.setItem(PREFS_KEY, JSON.stringify({ ...current, ...prefs }));
 }
 
+// Set one preference (e.g. setUserPref('importGuideSeen', true)). Storage can be
+// full or blocked (private mode); a preference is never worth an error.
+export function setUserPref(key, value) {
+  try {
+    saveUserPrefs({ [key]: value });
+  } catch { /* storage unavailable: the preference just isn't remembered */ }
+}
+
 export function getHomeCurrency() {
   const prefs = getUserPrefs();
   return prefs.homeCurrency ? { code: prefs.homeCurrency, symbol: prefs.homeSymbol } : null;

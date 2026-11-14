@@ -51,6 +51,14 @@ describe('canAdvance', () => {
     expect(canAdvance(baseState({ currentStep: 2, dates: { duration: 7, season: null } }))).toBeFalsy();
   });
 
+  it('step 2 caps fixed dates at 60 days, like the generator', async () => {
+    const { canAdvance, fixedDayCount, MAX_TRIP_DAYS } = await load();
+    expect(MAX_TRIP_DAYS).toBe(60);
+    expect(fixedDayCount({ start: '2026-01-01', end: '2026-03-01' })).toBe(60);
+    expect(canAdvance(baseState({ currentStep: 2, dates: { start: '2026-01-01', end: '2026-03-01' } }))).toBeTruthy();
+    expect(canAdvance(baseState({ currentStep: 2, dates: { start: '2026-01-01', end: '2026-03-02' } }))).toBeFalsy();
+  });
+
   it('step 3 requires a positive daily budget', async () => {
     const { canAdvance } = await load();
     expect(canAdvance(baseState({ currentStep: 3, budget: { dailyAmount: 0 } }))).toBe(false);

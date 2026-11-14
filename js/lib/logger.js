@@ -17,6 +17,12 @@ function scheduleFlush() {
 
 async function flush() {
   if (!queue.length || !supabase) return;
+  // The database only accepts rows for the signed-in user (or none). Entries
+  // queued under another account (switched without a reload) would make the
+  // whole batch fail, so drop them.
+  const userId = getUser()?.id || null;
+  queue = queue.filter(e => !e.user_id || e.user_id === userId);
+  if (!queue.length) return;
   const batch = queue.splice(0, FLUSH_SIZE * 3);
   try {
     await supabase.from('app_logs').insert(batch);

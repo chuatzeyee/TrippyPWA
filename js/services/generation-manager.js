@@ -97,7 +97,15 @@ async function enqueueAndWatch(tripId, wizardState) {
     })
     .select('id')
     .single();
-  if (jobErr || !job) throw new Error(jobErr?.message || 'Could not queue generation');
+  if (jobErr || !job) {
+    logger.warn('generation', 'Generation job insert refused', { tripId, error: jobErr?.message, code: jobErr?.code });
+    // 42501: row-level security refused the job. With migration 020 that is the
+    // daily generation quota (or a trip this user can't edit). Never show the
+    // raw database message.
+    throw new Error(jobErr?.code === '42501'
+      ? 'You have started a lot of generations today. Please try again tomorrow.'
+      : 'Could not queue generation');
+  }
 
   // Subscribe and WAIT for the channel to be live before invoking the worker, so
   // a fast completion cannot fire its UPDATE before we are listening.
@@ -109,7 +117,8 @@ async function enqueueAndWatch(tripId, wizardState) {
   if (invokeErr) {
     // The worker accepts and returns 202 quickly; a transport error here means it
     // never started, so fail fast rather than waiting on a watchdog.
-    throw new Error(invokeErr.message || 'Could not start generation');
+    logger.warn('generation', 'Generation worker invoke failed', { tripId, error: invokeErr.message });
+    throw new Error('Could not start generation');
   }
 
   // The worker may have already finished between subscribe and invoke; reconcile
@@ -279,17 +288,20 @@ async function showCompletionNotification(tripId) {
     if (data?.title) destName = data.title;
   } catch {}
 
+  // Under the app's base path (/TrippyPWA/ on GitHub Pages). The service worker
+  // resolves data.url against its scope and opens that trip.
+  const icon = `${import.meta.env.BASE_URL}icons/icon-192.png`;
   try {
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then(reg => {
         reg.showNotification('Trippy', {
           body: `Your ${destName} itinerary is ready!`,
-          icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
-          tag: 'gen-complete', renotify: true, data: { url: '/' },
+          icon, badge: icon,
+          tag: 'gen-complete', renotify: true, data: { url: `#/trip/${tripId}` },
         });
       });
     } else {
-      new Notification('Trippy', { body: `Your ${destName} itinerary is ready!`, icon: '/icons/icon-192.png', tag: 'gen-complete' });
+      new Notification('Trippy', { body: `Your ${destName} itinerary is ready!`, icon, tag: 'gen-complete' });
     }
   } catch (e) { logger.warn('system', 'Notification display failed', { error: e?.message }); }
 }

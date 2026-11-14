@@ -16,6 +16,7 @@ import {
   toDbDays, buildExtras, planChunks, tripDayCount, dateForDay, sanitizeDbDays,
 } from "../_shared/generation.ts";
 import { computeTownGroups } from "../_shared/towns.ts";
+import { CORS_MAX_AGE, isServiceRoleRequest } from "../_shared/http.ts";
 
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
@@ -29,7 +30,65 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Max-Age": CORS_MAX_AGE,
 };
+
+// Hard limits. Job rows are client-inserted, so never trust their sizes:
+// a huge trip, tiny chunks or a long provider list would multiply model calls.
+const MAX_TRIP_DAYS = 60;            // same ceiling as trip import
+const MIN_CHUNK_SIZE = 2;
+const MAX_CHUNK_SIZE = 6;
+const DEFAULT_CHUNK_SIZE = 4;
+const KNOWN_PROVIDERS = ["gemini", "mistral"];
+const MAX_JOB_FAILURES = 24;         // provider failures across the whole job
+const LEASE_MS = 160_000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function clampInt(v: unknown, min: number, max: number, fallback: number): number {
+  const n = Math.trunc(Number(v));
+  return Number.isFinite(n) && n > 0 ? Math.min(max, Math.max(min, n)) : fallback;
+}
+
+function providerList(order: unknown): string[] {
+  const list = Array.isArray(order) ? order.filter((p) => KNOWN_PROVIDERS.includes(p)) : [];
+  return list.length ? [...new Set(list as string[])] : KNOWN_PROVIDERS;
+}
+
+// The job row is client-inserted. Before the service-role worker writes to
+// job.trip_id, confirm job.user_id may edit that trip: owner, admin, or an
+// editor collaborator (mirrors is_trip_editor: claimed user id or invited email).
+async function jobMayWriteTrip(job: any): Promise<boolean> {
+  const { data: trip } = await admin.from("trips").select("user_id").eq("id", job.trip_id).maybeSingle();
+  if (!trip) return false;
+  if (trip.user_id === job.user_id) return true;
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", job.user_id).maybeSingle();
+  if (profile?.role === "admin") return true;
+  const { data: editors } = await admin.from("trip_collaborators")
+    .select("user_id, invited_email").eq("trip_id", job.trip_id).eq("role", "editor");
+  if (!editors?.length) return false;
+  if (editors.some((c: any) => c.user_id === job.user_id)) return true;
+  const { data: u } = await admin.auth.admin.getUserById(job.user_id);
+  const email = String(u?.user?.email || "").toLowerCase();
+  return !!email && editors.some((c: any) => String(c.invited_email || "").toLowerCase() === email);
+}
+
+// Outside callers (the app) may only START a job: claim it atomically while it
+// is queued or its lease has expired, so repeated or parallel POSTs of the same
+// jobId cannot run parallel chains. Continuations (selfInvoke) carry the
+// service-role key and skip the claim.
+async function claimJob(jobId: string): Promise<any | null> {
+  const now = new Date();
+  const claim = { status: "processing", lease_until: new Date(now.getTime() + LEASE_MS).toISOString() };
+  const claimWhere = () => admin.from("generation_jobs").update(claim)
+    .eq("id", jobId).in("status", ["queued", "processing"]);
+  // Two single-condition updates, not one .or(): PostgREST re-applies or()
+  // filters to the RETURNED rows (PostgREST#3707), and lease_until has just
+  // moved into the future, so a successful claim would come back empty.
+  const unleased = await claimWhere().is("lease_until", null).select("*");
+  if (unleased.data?.[0]) return unleased.data[0];
+  const expired = await claimWhere().lt("lease_until", now.toISOString()).select("*");
+  return expired.data?.[0] || null;
+}
 
 function logDb(level: string, message: string, metadata: Record<string, unknown> = {}) {
   admin.from("app_logs").insert({
@@ -64,14 +123,41 @@ async function selfInvoke(jobId: string, tripId: string) {
 // case where both providers hiccupped in the same minute.
 const MAX_PROVIDER_ROUNDS = 2;
 
-async function runChunk(jobId: string) {
-  const { data: job } = await admin.from("generation_jobs").select("*").eq("id", jobId).single();
-  if (!job) { logDb("error", "Job not found", { jobId }); return; }
+async function runChunk(jobId: string, continuation: boolean) {
+  let job: any = null;
+  if (continuation) {
+    ({ data: job } = await admin.from("generation_jobs").select("*").eq("id", jobId).maybeSingle());
+    if (!job) { logDb("error", "Job not found", { jobId }); return; }
+  } else {
+    job = await claimJob(jobId);
+    if (!job) { logDb("info", "Job not claimable (running, finished or unknown); ignoring start", { jobId }); return; }
+  }
   if (job.status === "succeeded" || job.status === "failed") return; // already terminal
 
+  if (!(await jobMayWriteTrip(job))) {
+    // Fail the JOB only: the trip belongs to someone else, never touch it.
+    await admin.from("generation_jobs").update({ status: "failed", error: "Not allowed", lease_until: null }).eq("id", jobId);
+    logDb("warn", "Rejected generation job for a trip the requester cannot edit",
+      { jobId, tripId: job.trip_id, userId: job.user_id });
+    return;
+  }
+
   const wizardState = job.wizard_state || {};
-  const totalDays = job.total_days || tripDayCount(wizardState);
-  const chunkSize = job.chunk_size || 4;
+  const totalDays = Number(job.total_days) > 0 ? Math.trunc(Number(job.total_days)) : tripDayCount(wizardState);
+  if (!Number.isFinite(totalDays) || totalDays < 1 || totalDays > MAX_TRIP_DAYS) {
+    // User-safe wording: the app may show generation_jobs.error for this case.
+    const reason = totalDays > MAX_TRIP_DAYS
+      ? `Trips can be up to ${MAX_TRIP_DAYS} days long. Please shorten the dates.`
+      : "This trip's dates are not valid. Please pick the dates again.";
+    await failJob(jobId, job.trip_id, reason, { jobId, tripId: job.trip_id, userId: job.user_id, totalDays });
+    return;
+  }
+  if ((Number(job.attempt) || 0) >= MAX_JOB_FAILURES) {
+    await failJob(jobId, job.trip_id, `Generation failed: too many provider failures (${job.attempt})`,
+      { jobId, tripId: job.trip_id, userId: job.user_id });
+    return;
+  }
+  const chunkSize = clampInt(job.chunk_size, MIN_CHUNK_SIZE, MAX_CHUNK_SIZE, DEFAULT_CHUNK_SIZE);
   const chunks = planChunks(totalDays, chunkSize);
 
   // Day-cursor chunking: the next chunk always starts after the last day we
@@ -81,8 +167,8 @@ async function runChunk(jobId: string) {
   const daysDone: number = Array.isArray(job.result_days) ? job.result_days.length : 0;
   const chunkIdx = Math.min(Math.floor(daysDone / chunkSize), chunks.length - 1);
 
-  const providers: string[] = job.provider_order || ["gemini", "mistral"];
-  const providerIdx: number = job.provider_idx || 0;
+  const providers: string[] = providerList(job.provider_order);
+  const providerIdx: number = clampInt(job.provider_idx, 0, providers.length * MAX_PROVIDER_ROUNDS, 0);
 
   // All days generated: save the accumulated itinerary atomically.
   if (daysDone >= totalDays) {
@@ -141,7 +227,7 @@ async function runChunk(jobId: string) {
 
   await admin.from("generation_jobs").update({
     status: "processing", last_provider: provider,
-    lease_until: new Date(Date.now() + 160_000).toISOString(),
+    lease_until: new Date(Date.now() + LEASE_MS).toISOString(),
   }).eq("id", jobId);
 
   const { prompt, systemPrompt, jsonSchema, geminiSchema, expectedDays, currency } =
@@ -217,7 +303,7 @@ async function runChunk(jobId: string) {
       // cannot requeue an in-flight job and double-run a chunk (which would
       // duplicate days in result_days). The next invocation re-leases.
       status: "processing",
-      lease_until: new Date(Date.now() + 160_000).toISOString(),
+      lease_until: new Date(Date.now() + LEASE_MS).toISOString(),
       error: "",
     };
     if (isFirstChunk) {
@@ -225,7 +311,7 @@ async function runChunk(jobId: string) {
       update.result_title = result.data.tripTitle || "";
     }
     await admin.from("generation_jobs").update(update).eq("id", jobId);
-    const partial = newDays.length < (to - from + 1) ? ` (partial — ${to - (from + newDays.length - 1)} day(s) regenerate next pass)` : "";
+    const partial = newDays.length < (to - from + 1) ? ` (partial, ${to - (from + newDays.length - 1)} day(s) regenerate next pass)` : "";
     logDb("info", `Days ${from}-${from + newDays.length - 1}/${totalDays} done via ${provider}${partial}`,
       { jobId, tripId: job.trip_id, userId: job.user_id, provider });
     await selfInvoke(jobId, job.trip_id);
@@ -241,7 +327,7 @@ async function runChunk(jobId: string) {
     // Stay 'processing' with a fresh lease while a fallback is pending (same
     // anti-double-run reasoning as the chunk-advance path).
     status: exhausted ? "failed" : "processing",
-    lease_until: exhausted ? null : new Date(Date.now() + 160_000).toISOString(),
+    lease_until: exhausted ? null : new Date(Date.now() + LEASE_MS).toISOString(),
   }).eq("id", jobId);
 
   logDb("warn", `${provider} failed on chunk ${chunkIdx + 1}, ${!exhausted ? (nextProvider >= providers.length ? "starting second provider round" : "falling back") : "no more providers"}`,
@@ -258,11 +344,15 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { jobId } = await req.json();
-    if (!jobId) {
+    const { jobId } = await req.json().catch(() => ({}));
+    if (typeof jobId !== "string" || !UUID_RE.test(jobId)) {
       return new Response(JSON.stringify({ error: "jobId required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // Deployed with --no-verify-jwt (self-invocation uses the service key), so
+    // the gateway checks nothing: only an exact service-key match continues a
+    // running chain; anyone else can at most start a queued job (claimJob).
+    const continuation = await isServiceRoleRequest(req);
 
     // Respond immediately; do the slow work in the background so the caller (and
     // the platform's request timer) is not held open for the provider latency.
@@ -270,13 +360,13 @@ serve(async (req: Request) => {
     const bg = (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil);
     if (bg) {
       // @ts-ignore
-      EdgeRuntime.waitUntil(runChunk(jobId));
+      EdgeRuntime.waitUntil(runChunk(jobId, continuation));
       return new Response(JSON.stringify({ accepted: true, jobId }),
         { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Fallback (local dev / older runtime): run inline so the job never stalls.
-    await runChunk(jobId);
+    await runChunk(jobId, continuation);
     return new Response(JSON.stringify({ accepted: true, jobId, inline: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
