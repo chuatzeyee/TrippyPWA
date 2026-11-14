@@ -1,13 +1,17 @@
-// Chat drawer for itinerary edits: message -> itinerary-chat edge fn -> patch
-// preview (diff chips) -> Apply writes via existing repositories -> the view
-// refreshes in place (the drawer and its conversation survive the refresh).
+// Trippy Concierge, the chat panel for itinerary edits: message ->
+// itinerary-chat edge fn -> patch preview (diff chips) -> Apply writes via
+// existing repositories -> the view refreshes in place (the panel and its
+// conversation survive the refresh).
 import { supabase } from '../lib/supabase.js';
 import { updateActivityById, deleteActivityById, addActivityToDay } from '../data/trip-repository.js';
 import { withLocalWrite } from '../data/collab-repository.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { convert, canConvert } from '../data/currencies.js';
 import { showToast } from './toast.js';
-import { chatExamples, chatEmptyHtml } from './itinerary-chat-ui.js';
+import {
+  CONCIERGE_NAME, CONCIERGE_MARK, chatExamples, chatEmptyHtml, conciergeAvatar,
+  typingHtml, chatErrorStatus, chatError,
+} from './itinerary-chat-ui.js';
 import { logger } from '../lib/logger.js';
 
 function timeSlotFor(startTime) {
@@ -95,13 +99,55 @@ function editChip(e) {
   return `<div class="td-chat-edit td-chat-edit--${op}"><span>${label}</span><span class="td-chat-edit-reason">${escapeHtml(e.reason || '')}</span></div>`;
 }
 
+// One request to the itinerary-chat edge function: its answer, or the HTTP
+// status it failed with (null when no answer came back at all).
+async function askConcierge(trip, message) {
+  const ws = trip.wizard_state;
+  const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
+  const code = tripCurrency(trip);
+  try {
+    const res = await supabase.functions.invoke('itinerary-chat', {
+      body: {
+        message,
+        days: daysForChat(trip, code),
+        destination: dest?.name || trip.title || '',
+        currency: code,
+      },
+    });
+    if (!res.error && res.data && typeof res.data === 'object') return { data: res.data, status: null };
+    return { data: null, status: chatErrorStatus(res) };
+  } catch (err) {
+    return { data: null, status: chatErrorStatus({ error: err }) };
+  }
+}
+
+const RETRY_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>';
+const RETRY_ROW = `<div class="td-chat-apply-row"><button type="button" class="btn btn--sm btn--pill td-chat-retry">${RETRY_ICON}Retry</button></div>`;
+
 let drawerSeq = 0;
 
-const CHAT_ICON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>';
 const CLOSE_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
 
+// The open button rings its bell once, the first time it appears in a
+// session, so the concierge is noticed without nagging on every trip.
+const HELLO_KEY = 'trippy-concierge-hello';
+function sayHelloOnce(fab) {
+  try {
+    if (sessionStorage.getItem(HELLO_KEY)) return;
+    sessionStorage.setItem(HELLO_KEY, '1');
+  } catch { return; }
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  fab.classList.add('td-chat-fab--hello');
+  // The ring is the last of the hello animations to finish.
+  fab.addEventListener('animationend', function done(e) {
+    if (e.animationName !== 'td-concierge-ring') return;
+    fab.classList.remove('td-chat-fab--hello');
+    fab.removeEventListener('animationend', done);
+  });
+}
+
 /**
- * Mount the chat panel: a docked side panel on desktop, a bottom sheet on
+ * Mount Trippy Concierge: a docked side panel on desktop, a bottom sheet on
  * smaller screens (layout lives in trip-detail.css). `onApplied` refreshes the
  * trip view after edits are written. Returns a controller so a refreshed view
  * can keep the same panel: { attach(container), setTrip(trip), destroy() }.
@@ -112,10 +158,11 @@ export function mountItineraryChat(container, trip, onApplied) {
   const fab = document.createElement('button');
   fab.type = 'button';
   fab.className = 'td-chat-fab';
-  fab.title = 'Edit with chat';
-  fab.setAttribute('aria-label', 'Edit with chat');
+  fab.title = CONCIERGE_NAME;
+  fab.setAttribute('aria-label', CONCIERGE_NAME);
   fab.setAttribute('aria-expanded', 'false');
-  fab.innerHTML = CHAT_ICON;
+  fab.innerHTML = CONCIERGE_MARK;
+  sayHelloOnce(fab);
 
   // Non-modal panel: the trip stays usable beside it, so no focus trap, but it
   // is labelled, closes on Escape and hands focus back to the button.
@@ -126,8 +173,14 @@ export function mountItineraryChat(container, trip, onApplied) {
   drawer.setAttribute('aria-labelledby', titleId);
   drawer.innerHTML = `
     <div class="td-chat-head">
-      <h2 class="td-chat-title" id="${titleId}">Edit with chat</h2>
-      <button type="button" class="td-chat-close" aria-label="Close chat">${CLOSE_ICON}</button>
+      <div class="td-chat-ident">
+        ${conciergeAvatar('head')}
+        <div class="td-chat-titles">
+          <h2 class="td-chat-title" id="${titleId}">${CONCIERGE_NAME}</h2>
+          <p class="td-chat-subtitle">At your service</p>
+        </div>
+      </div>
+      <button type="button" class="td-chat-close" aria-label="Close ${CONCIERGE_NAME}">${CLOSE_ICON}</button>
     </div>
     <div class="td-chat-scroll">
       <div class="td-chat-empty"></div>
@@ -201,19 +254,36 @@ export function mountItineraryChat(container, trip, onApplied) {
     rememberScroll();
   };
 
+  // A message in the log. The concierge's sit beside its avatar. Returns the
+  // bubble, whose contents later steps replace (typing, answer, error).
   const addMsg = (cls, html) => {
     const el = document.createElement('div');
     el.className = `td-chat-msg td-chat-msg--${cls}`;
     el.innerHTML = html;
-    log.appendChild(el);
+    let item = el;
+    if (cls === 'bot') {
+      item = document.createElement('div');
+      item.className = 'td-chat-row';
+      item.innerHTML = conciergeAvatar('msg');
+      item.appendChild(el);
+    }
+    log.appendChild(item);
     empty.hidden = true;
-    reveal(el);
+    reveal(item);
     return el;
+  };
+
+  const setBubble = (bubble, html, state = '') => {
+    bubble.classList.toggle('td-chat-msg--typing', state === 'typing');
+    bubble.classList.toggle('td-chat-msg--error', state === 'error');
+    bubble.innerHTML = html;
+    reveal(bubble);
   };
 
   const isOpen = () => drawer.classList.contains('td-chat-drawer--open');
   const setOpen = (open) => {
     drawer.classList.toggle('td-chat-drawer--open', open);
+    fab.classList.remove('td-chat-fab--hello');
     fab.setAttribute('aria-expanded', String(open));
     if (open) input.focus({ preventScroll: true });
     else if (drawer.contains(document.activeElement) || document.activeElement === document.body) fab.focus({ preventScroll: true });
@@ -224,76 +294,70 @@ export function mountItineraryChat(container, trip, onApplied) {
     if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); }
   });
 
-  form.addEventListener('submit', async (ev) => {
+  // The suggested edits as diff chips, with Apply and Discard.
+  const offerEdits = (bubble, reply, edits) => {
+    setBubble(bubble, `
+      ${escapeHtml(reply || '')}
+      <div class="td-chat-edits">${edits.map(editChip).join('')}</div>
+      <div class="td-chat-apply-row">
+        <button type="button" class="btn btn--primary btn--sm btn--pill td-chat-apply">Apply ${edits.length} change${edits.length > 1 ? 's' : ''}</button>
+        <button type="button" class="btn btn--ghost btn--sm btn--pill td-chat-discard">Discard</button>
+      </div>`);
+
+    bubble.querySelector('.td-chat-discard').addEventListener('click', () => {
+      bubble.querySelector('.td-chat-apply-row').remove();
+      addMsg('bot', 'Discarded.');
+    });
+    bubble.querySelector('.td-chat-apply').addEventListener('click', async (e) => {
+      const applyBtn = e.currentTarget;
+      applyBtn.disabled = true;
+      applyBtn.textContent = 'Applying…';
+      bubble.querySelector('.td-chat-discard').disabled = true;
+      const n = await applyEdits(currentTrip, edits);
+      bubble.querySelector('.td-chat-apply-row')?.remove();
+      const failed = edits.length - n;
+      addMsg('bot', failed > 0
+        ? escapeHtml(`Applied ${n} of ${edits.length} changes. Some couldn't be saved.`)
+        : escapeHtml(`Applied ${n} change${n === 1 ? '' : 's'}.`));
+      showToast(`${n} change${n === 1 ? '' : 's'} applied`, failed > 0 ? 'warn' : 'success');
+      if (n > 0) onApplied?.();
+    });
+  };
+
+  // Ask the concierge and answer in `bubble`, which shows the typing dots
+  // meanwhile. A failure a retry could fix offers one, asking again in place.
+  const ask = async (message, bubble) => {
+    setBubble(bubble, typingHtml(), 'typing');
+    const trip = currentTrip;
+    const { data, status } = await askConcierge(trip, message);
+    if (!data) {
+      const { text, retry } = chatError(status);
+      setBubble(bubble, escapeHtml(text) + (retry ? RETRY_ROW : ''), 'error');
+      bubble.querySelector('.td-chat-retry')?.addEventListener('click', (e) => {
+        // The button is about to go; keep keyboard focus in the panel.
+        if (e.currentTarget.matches(':focus-visible')) input.focus({ preventScroll: true });
+        askIn(message, bubble);
+      }, { once: true });
+      logger.warn('data', 'itinerary-chat failed', { tripId: trip.id, status });
+      return;
+    }
+    const edits = Array.isArray(data.edits) ? data.edits : [];
+    if (!edits.length) {
+      setBubble(bubble, escapeHtml(data.reply || 'No changes needed.'));
+      return;
+    }
+    offerEdits(bubble, data.reply, edits);
+  };
+  const askIn = (message, bubble) => ask(message, bubble)
+    .catch((err) => logger.warn('data', 'itinerary-chat ask failed', { error: err?.message }));
+
+  form.addEventListener('submit', (ev) => {
     ev.preventDefault();
     const message = input.value.trim();
     if (!message) return;
     input.value = '';
     addMsg('user', escapeHtml(message));
-    const pending = addMsg('bot', 'Thinking…');
-
-    const trip = currentTrip;
-    const ws = trip.wizard_state;
-    const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
-    let data = null;
-    let notice = '';
-    try {
-      const res = await supabase.functions.invoke('itinerary-chat', {
-        body: {
-          message,
-          days: daysForChat(trip, tripCurrency(trip)),
-          destination: dest?.name || trip.title || '',
-          currency: tripCurrency(trip),
-        },
-      });
-      data = res.error ? null : res.data;
-      // Past the daily limit the edge function answers 429 with a readable message.
-      if (res.error?.context?.status === 429) {
-        const body = await res.error.context.json().catch(() => null);
-        if (typeof body?.error === 'string') notice = body.error;
-      }
-    } catch { /* handled below */ }
-
-    if (!data) {
-      pending.innerHTML = escapeHtml(notice || 'Sorry, that didn\'t work. Try again.');
-      reveal(pending);
-      logger.warn('data', 'itinerary-chat failed', { tripId: trip.id });
-      return;
-    }
-
-    if (!data.edits?.length) {
-      pending.innerHTML = escapeHtml(data.reply || 'No changes needed.');
-      reveal(pending);
-      return;
-    }
-
-    pending.innerHTML = `
-      ${escapeHtml(data.reply || '')}
-      <div class="td-chat-edits">${data.edits.map(editChip).join('')}</div>
-      <div class="td-chat-apply-row">
-        <button type="button" class="btn btn--primary btn--sm btn--pill td-chat-apply">Apply ${data.edits.length} change${data.edits.length > 1 ? 's' : ''}</button>
-        <button type="button" class="btn btn--ghost btn--sm btn--pill td-chat-discard">Discard</button>
-      </div>`;
-    reveal(pending);
-
-    pending.querySelector('.td-chat-discard').addEventListener('click', () => {
-      pending.querySelector('.td-chat-apply-row').remove();
-      addMsg('bot', 'Discarded.');
-    });
-    pending.querySelector('.td-chat-apply').addEventListener('click', async (e2) => {
-      const applyBtn = e2.currentTarget;
-      applyBtn.disabled = true;
-      applyBtn.textContent = 'Applying…';
-      pending.querySelector('.td-chat-discard').disabled = true;
-      const n = await applyEdits(currentTrip, data.edits);
-      pending.querySelector('.td-chat-apply-row')?.remove();
-      const failed = data.edits.length - n;
-      addMsg('bot', failed > 0
-        ? escapeHtml(`Applied ${n} of ${data.edits.length} changes. Some couldn't be saved.`)
-        : escapeHtml(`Applied ${n} change${n === 1 ? '' : 's'}.`));
-      showToast(`${n} change${n === 1 ? '' : 's'} applied`, failed > 0 ? 'warn' : 'success');
-      if (n > 0) onApplied?.();
-    });
+    askIn(message, addMsg('bot', ''));
   });
 
   return {
