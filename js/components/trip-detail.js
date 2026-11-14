@@ -312,6 +312,22 @@ const ACCOM_LABELS = {
   resort: '🏖️ Resort', villa: '🏡 Villa', boutique: '🏨 Boutique'
 };
 
+// From 768px the trip footer is pinned to the bottom edge. Publish its height
+// as --td-footer-h on the root so fixed buttons (chat, back to top) sit above it.
+function publishFooterHeight(app) {
+  const footer = app.querySelector(':scope > .td-footer');
+  if (!footer || typeof ResizeObserver !== 'function') return null;
+  const root = document.documentElement;
+  const observer = new ResizeObserver(() => {
+    root.style.setProperty('--td-footer-h', `${footer.offsetHeight}px`);
+  });
+  observer.observe(footer);
+  return () => {
+    observer.disconnect();
+    root.style.removeProperty('--td-footer-h');
+  };
+}
+
 function renderTripFooter(trip) {
   const ws = trip.wizard_state;
   if (!ws) return '';
@@ -2594,6 +2610,8 @@ function renderDayPicker(app, trip, opts = {}) {
   const wrap = app.querySelector('.td-wrap');
   view.wrap = wrap;
   bindAirlineLogos(wrap, signal);
+  const unpublishFooter = publishFooterHeight(app);
+  if (unpublishFooter) view.cleanups.push(unpublishFooter);
 
   app.querySelectorAll('[data-action="back"]').forEach(el => el.addEventListener('click', () => navigate('/')));
 
