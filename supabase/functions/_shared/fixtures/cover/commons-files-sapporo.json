@@ -1,0 +1,316 @@
+{
+ "batchcomplete": true,
+ "query": {
+  "normalized": [
+   {
+    "fromencoded": false,
+    "from": "File:Skyline_Sapporo_Hokkaido_Japan.jpg",
+    "to": "File:Skyline Sapporo Hokkaido Japan.jpg"
+   },
+   {
+    "fromencoded": false,
+    "from": "File:Former_Hokkaido_Government_Office_Building_20090112-03.jpg",
+    "to": "File:Former Hokkaido Government Office Building 20090112-03.jpg"
+   },
+   {
+    "fromencoded": false,
+    "from": "File:SapporoCity_Skylines2020.jpg",
+    "to": "File:SapporoCity Skylines2020.jpg"
+   }
+  ],
+  "pages": [
+   {
+    "pageid": 22595762,
+    "ns": 6,
+    "title": "File:Skyline Sapporo Hokkaido Japan.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 189080,
+      "width": 640,
+      "height": 413,
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Skyline_Sapporo_Hokkaido_Japan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "thumbwidth": 1920,
+      "thumbheight": 1239,
+      "thumbattribs": {
+       "src": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Skyline_Sapporo_Hokkaido_Japan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1239
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Skyline_Sapporo_Hokkaido_Japan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Skyline_Sapporo_Hokkaido_Japan.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=22595762",
+      "extmetadata": {
+       "Categories": {
+        "value": "Views from JR Tower|Chuo-ku, Sapporo|Flickr images reviewed by trusted users|Files from Wikivoyage wts|Flickr images missing SDC creator|Flickr images missing SDC source of file|Files from Flickr uploaded by Wikivoyage users|Cityscapes of Sapporo",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Sapporo Skyline (HOKKAIDO/JAPAN), This was the view from our hotel room!!\nTo approximate what I saw, I would ask you to view this in large. Location: Sapporo",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2008-03-23",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "Flickr user: Chi ing  <a rel=\"nofollow\" class=\"external free\" href=\"https://www.flickr.com/people/davelau/\">https://www.flickr.com/people/davelau/</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY 2.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by/2.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ]
+   },
+   {
+    "pageid": 27199832,
+    "ns": 6,
+    "title": "File:Sapporo banner Susukino district.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 229966,
+      "width": 2800,
+      "height": 400,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Sapporo_banner_Susukino_district.jpg/1920px-Sapporo_banner_Susukino_district.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 274,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/8/85/Sapporo_banner_Susukino_district.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Sapporo_banner_Susukino_district.jpg/1920px-Sapporo_banner_Susukino_district.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 274,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/8/85/Sapporo_banner_Susukino_district.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/85/Sapporo_banner_Susukino_district.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Sapporo_banner_Susukino_district.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=27199832",
+      "extmetadata": {
+       "Categories": {
+        "value": "CC-Zero|Wikivoyage banners of Hokkaidō",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Wikivoyage banner for Sapporo. Cropped from this PD-licensed picture:<a class=\"external free\" data-mw-original-href=\"http://commons.wikimedia.org/wiki/File:Spectaculars_of_Susukino-Sapporo.jpg\" href=\"https://commons.wikimedia.org/wiki/File:Spectaculars_of_Susukino-Sapporo.jpg\">http://commons.wikimedia.org/wiki/File:Spectaculars_of_Susukino-Sapporo.jpg</a>",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2013-07-11 20:12:02",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "Chatama",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ]
+   },
+   {
+    "pageid": 45660629,
+    "ns": 6,
+    "title": "File:Former Hokkaido Government Office Building 20090112-03.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 2918531,
+      "width": 2430,
+      "height": 1620,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Former_Hokkaido_Government_Office_Building_20090112-03.jpg/1920px-Former_Hokkaido_Government_Office_Building_20090112-03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1280,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/6/69/Former_Hokkaido_Government_Office_Building_20090112-03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Former_Hokkaido_Government_Office_Building_20090112-03.jpg/1920px-Former_Hokkaido_Government_Office_Building_20090112-03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1280,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/6/69/Former_Hokkaido_Government_Office_Building_20090112-03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/69/Former_Hokkaido_Government_Office_Building_20090112-03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Former_Hokkaido_Government_Office_Building_20090112-03.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=45660629",
+      "extmetadata": {
+       "Categories": {
+        "value": "Taken with Canon EOS 300D|Flickr images reviewed by FlickreviewR|Files with coordinates missing SDC location of creation|Files from MiNe Flickr stream|Former Hokkaidō Government Office in snow",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "北海道庁旧本庁舎",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2009-01-12",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/photos/sfmine79/\">MiNe</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY 2.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by/2.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ]
+   },
+   {
+    "pageid": 55031428,
+    "ns": 6,
+    "title": "File:札幌タワー電波塔展望台から札幌駅方面 - panoramio.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 12715195,
+      "width": 5184,
+      "height": 3456,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg/1920px-%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1280,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg/3840px-%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg/1920px-%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1280,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg/3840px-%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a6/%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:%E6%9C%AD%E5%B9%8C%E3%82%BF%E3%83%AF%E3%83%BC%E9%9B%BB%E6%B3%A2%E5%A1%94%E5%B1%95%E6%9C%9B%E5%8F%B0%E3%81%8B%E3%82%89%E6%9C%AD%E5%B9%8C%E9%A7%85%E6%96%B9%E9%9D%A2_-_panoramio.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=55031428",
+      "extmetadata": {
+       "Categories": {
+        "value": "Views from Sapporo TV Tower|Panoramio files uploaded by Panoramio upload bot|Panoramio images reviewed by trusted users|Photos from Panoramio|Files with coordinates missing SDC location of creation|Japan photographs taken on 2012-06-12",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "札幌タワー電波塔展望台から札幌駅方面",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "Taken on 12 June 2012",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a rel=\"nofollow\" class=\"external text\" href=\"https://web.archive.org/web/20161024191504/http://www.panoramio.com/user/6714535?with_photo_id=80107913\">Hideki Uchida (セラ)</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 3.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "Attribution": {
+        "value": "Hideki Uchida (セラ)",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/3.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ]
+   },
+   {
+    "pageid": 97282097,
+    "ns": 6,
+    "title": "File:SapporoCity Skylines2020.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 154234,
+      "width": 921,
+      "height": 613,
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/5/54/SapporoCity_Skylines2020.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "thumbwidth": 1920,
+      "thumbheight": 1278,
+      "thumbattribs": {
+       "src": "https://upload.wikimedia.org/wikipedia/commons/5/54/SapporoCity_Skylines2020.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1278
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/54/SapporoCity_Skylines2020.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:SapporoCity_Skylines2020.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=97282097",
+      "extmetadata": {
+       "Categories": {
+        "value": "Asahiyama Memorial Park|Self-published work|Cityscapes of Sapporo",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "SapporoCity Skylines2020",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2020-08-29",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Nryate&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Nryate (page does not exist)\">Nryate</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ]
+   }
+  ]
+ }
+}

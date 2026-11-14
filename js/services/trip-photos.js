@@ -224,22 +224,25 @@ export function isPhotoOnlyChange(activity, row) {
 }
 
 /**
- * One read of a trip's stored photos: every activity's photo columns plus the
- * photo credits in trips.extras.photoCredits. Used once when resolution ends.
- * @returns {Promise<{ data: { credits: object, activities: object[] } | null, error: string | null }>}
+ * One read of a trip's stored photos: every activity's photo columns, the
+ * photo credits in trips.extras.photoCredits, and the cover (cover_image plus
+ * extras.cover). Used once when resolution ends.
+ * @returns {Promise<{ data: { credits: object, activities: object[], coverImage: string | null,
+ *   cover: object | null } | null, error: string | null }>}
  */
 export async function fetchTripPhotos(tripId, { client } = {}) {
   try {
     const sb = client || (await import('../lib/supabase.js')).supabase;
     const { data, error } = await sb
       .from('trips')
-      .select('photoCredits:extras->photoCredits, itinerary_days(activities(id, photo_url, photo_source, latitude, longitude))')
+      .select('photoCredits:extras->photoCredits, cover_image, cover:extras->cover, itinerary_days(activities(id, photo_url, photo_source, latitude, longitude))')
       .eq('id', tripId)
       .single();
     if (error || !data) return { data: null, error: error?.message || 'No data' };
     const activities = (data.itinerary_days || []).flatMap(d => d.activities || []);
     const credits = data.photoCredits && typeof data.photoCredits === 'object' ? data.photoCredits : {};
-    return { data: { credits, activities }, error: null };
+    const cover = data.cover && typeof data.cover === 'object' ? data.cover : null;
+    return { data: { credits, activities, coverImage: data.cover_image ?? null, cover }, error: null };
   } catch (err) {
     return { data: null, error: err?.message || 'Photo refresh failed' };
   }

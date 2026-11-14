@@ -1,0 +1,1091 @@
+{
+ "entities": {
+  "Q37951": {
+   "type": "item",
+   "id": "Q37951",
+   "labels": {
+    "ja": {
+     "language": "ja",
+     "value": "札幌市"
+    },
+    "en": {
+     "language": "en",
+     "value": "Sapporo"
+    }
+   },
+   "aliases": {
+    "ja": [
+     {
+      "language": "ja",
+      "value": "札幌区"
+     },
+     {
+      "language": "ja",
+      "value": "道都"
+     },
+     {
+      "language": "ja",
+      "value": "サツホロ"
+     },
+     {
+      "language": "ja",
+      "value": "シヤツホロ"
+     },
+     {
+      "language": "ja",
+      "value": "札幌"
+     },
+     {
+      "language": "ja",
+      "value": "サッ・ポロ・ペッ"
+     }
+    ],
+    "en": [
+     {
+      "language": "en",
+      "value": "sat poro pet"
+     }
+    ]
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P31",
+       "hash": "4a845649c74fd51350027b01da333693ae669c2f",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1749269,
+         "id": "Q1749269"
+        },
+        "type": "wikibase-entityid"
+       },
+       "datatype": "wikibase-item"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P580": [
+        {
+         "snaktype": "value",
+         "property": "P580",
+         "hash": "c7b642c87f7b8641ed9a94559ad2675c22a7c1aa",
+         "datavalue": {
+          "value": {
+           "time": "+1972-04-01T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 11,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P580"
+      ],
+      "id": "q37951$77f08c9f-49e0-ebbe-d24f-9bc833a63aba",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P31",
+       "hash": "ed6d7328d592ed4995ea0071fee734728321bb9b",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 65589340,
+         "id": "Q65589340"
+        },
+        "type": "wikibase-entityid"
+       },
+       "datatype": "wikibase-item"
+      },
+      "type": "statement",
+      "id": "Q37951$c684f08f-4eca-ea9b-b9fb-dba7b5703bef",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P31",
+       "hash": "1af62c39c83b583e317a43f838058583f06f38aa",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 1549591,
+         "id": "Q1549591"
+        },
+        "type": "wikibase-entityid"
+       },
+       "datatype": "wikibase-item"
+      },
+      "type": "statement",
+      "id": "Q37951$49d0c7b8-4b8e-8f24-df7b-9250904a64ca",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P31",
+       "hash": "99dcedcebb0c12b2ef3cdba67c0ce85f31625d1e",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 11422368,
+         "id": "Q11422368"
+        },
+        "type": "wikibase-entityid"
+       },
+       "datatype": "wikibase-item"
+      },
+      "type": "statement",
+      "id": "Q37951$78de0a04-4eae-f865-2b8b-5f301a4b2168",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P31",
+       "hash": "89a3f7e678dd1e0004fb9dde7ad52c0a1d2dbbc2",
+       "datavalue": {
+        "value": {
+         "entity-type": "item",
+         "numeric-id": 494721,
+         "id": "Q494721"
+        },
+        "type": "wikibase-entityid"
+       },
+       "datatype": "wikibase-item"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P580": [
+        {
+         "snaktype": "value",
+         "property": "P580",
+         "hash": "f9941dbac03ff4df7ff591c148e75342d73ea24c",
+         "datavalue": {
+          "value": {
+           "time": "+1922-00-00T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P580"
+      ],
+      "id": "Q37951$c4bea52e-4d56-7875-e1fb-7e7493a97dc0",
+      "rank": "normal"
+     }
+    ],
+    "P625": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P625",
+       "hash": "4dbf886a16ebbf8ab310394ffd9d7783bfe626c4",
+       "datavalue": {
+        "value": {
+         "latitude": 43.06194444444444,
+         "longitude": 141.35444444444445,
+         "altitude": null,
+         "precision": 0.0002777777777777778,
+         "globe": "http://www.wikidata.org/entity/Q2"
+        },
+        "type": "globecoordinate"
+       },
+       "datatype": "globe-coordinate"
+      },
+      "type": "statement",
+      "id": "q37951$E4E2D79F-A280-4BDE-9BA1-0EA2EB5425FA",
+      "rank": "normal",
+      "references": [
+       {
+        "hash": "fa278ebfc458360e5aed63d5058cca83c46134f1",
+        "snaks": {
+         "P143": [
+          {
+           "snaktype": "value",
+           "property": "P143",
+           "hash": "e4f6d9441d0600513c4533c672b5ab472dc73694",
+           "datavalue": {
+            "value": {
+             "entity-type": "item",
+             "numeric-id": 328,
+             "id": "Q328"
+            },
+            "type": "wikibase-entityid"
+           },
+           "datatype": "wikibase-item"
+          }
+         ]
+        },
+        "snaks-order": [
+         "P143"
+        ]
+       }
+      ]
+     }
+    ],
+    "P948": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P948",
+       "hash": "43cf20403625876d94afc6881fde83adcc88755a",
+       "datavalue": {
+        "value": "Sapporo banner Susukino district.jpg",
+        "type": "string"
+       },
+       "datatype": "commonsMedia"
+      },
+      "type": "statement",
+      "id": "Q37951$14F38BEB-0EFD-4850-903B-73E458507475",
+      "rank": "normal"
+     }
+    ],
+    "P18": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P18",
+       "hash": "36f8a8ef421ef13bcba5fab93128a89cd1d6d965",
+       "datavalue": {
+        "value": "札幌タワー電波塔展望台から札幌駅方面 - panoramio.jpg",
+        "type": "string"
+       },
+       "datatype": "commonsMedia"
+      },
+      "type": "statement",
+      "id": "Q37951$ACDEC4C2-99D8-4F8C-A70A-BC72A427B2CD",
+      "rank": "normal"
+     }
+    ],
+    "P1082": [
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "bb06f014ff488452722bf18d335c69ea4c641217",
+       "datavalue": {
+        "value": {
+         "amount": "+1959313",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "7c6da18586bcef654c28f338f249a87a6473c03b",
+         "datavalue": {
+          "value": {
+           "time": "+2020-01-01T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 11,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ],
+       "P459": [
+        {
+         "snaktype": "value",
+         "property": "P459",
+         "hash": "16308db9d9aafd097d094d3d62bcdb64f88f8ce8",
+         "datavalue": {
+          "value": {
+           "entity-type": "item",
+           "numeric-id": 11381946,
+           "id": "Q11381946"
+          },
+          "type": "wikibase-entityid"
+         },
+         "datatype": "wikibase-item"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585",
+       "P459"
+      ],
+      "id": "q37951$38db5893-f7db-4f6e-92d6-787f5e1d30e6",
+      "rank": "preferred",
+      "references": [
+       {
+        "hash": "d0fd31c85849ee92c615c244944f153c88f52b31",
+        "snaks": {
+         "P143": [
+          {
+           "snaktype": "value",
+           "property": "P143",
+           "hash": "c6f1777471211df31724ac60175786f3872c83e9",
+           "datavalue": {
+            "value": {
+             "entity-type": "item",
+             "numeric-id": 177837,
+             "id": "Q177837"
+            },
+            "type": "wikibase-entityid"
+           },
+           "datatype": "wikibase-item"
+          }
+         ],
+         "P854": [
+          {
+           "snaktype": "value",
+           "property": "P854",
+           "hash": "a62c80ab13fcdc0587bc84f31d6278e626b41045",
+           "datavalue": {
+            "value": "http://www.pref.hokkaido.lg.jp/ss/tuk/900brr/index2.htm",
+            "type": "string"
+           },
+           "datatype": "url"
+          }
+         ],
+         "P1476": [
+          {
+           "snaktype": "value",
+           "property": "P1476",
+           "hash": "14d17f9cf26cafb0883a962767bb2617da19d67b",
+           "datavalue": {
+            "value": {
+             "text": "住民基本台帳人口・世帯数 ｜ 総合政策部計画局統計課",
+             "language": "ja"
+            },
+            "type": "monolingualtext"
+           },
+           "datatype": "monolingualtext"
+          }
+         ]
+        },
+        "snaks-order": [
+         "P143",
+         "P854",
+         "P1476"
+        ]
+       }
+      ]
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "7b968fe3b8e4454b284f72f42097c4a6d7090756",
+       "datavalue": {
+        "value": {
+         "amount": "+1913545",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "f685a3b38f035c344da64e6c1dc211dd86558ae5",
+         "datavalue": {
+          "value": {
+           "time": "+2010-01-01T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ],
+       "P459": [
+        {
+         "snaktype": "value",
+         "property": "P459",
+         "hash": "f34609d440cf44ebaa8a3e704c9369413240618c",
+         "datavalue": {
+          "value": {
+           "entity-type": "item",
+           "numeric-id": 39825,
+           "id": "Q39825"
+          },
+          "type": "wikibase-entityid"
+         },
+         "datatype": "wikibase-item"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585",
+       "P459"
+      ],
+      "id": "Q37951$067c2cdd-452b-088a-2e49-b93385054e2e",
+      "rank": "normal",
+      "references": [
+       {
+        "hash": "1c91474a34013414ca5431739dfa7df3d0463ff4",
+        "snaks": {
+         "P248": [
+          {
+           "snaktype": "value",
+           "property": "P248",
+           "hash": "f9fcee938c4936ce46dd0ad93d3379872036d2ab",
+           "datavalue": {
+            "value": {
+             "entity-type": "item",
+             "numeric-id": 15727301,
+             "id": "Q15727301"
+            },
+            "type": "wikibase-entityid"
+           },
+           "datatype": "wikibase-item"
+          }
+         ]
+        },
+        "snaks-order": [
+         "P248"
+        ]
+       },
+       {
+        "hash": "e7818b31d25d772f28fc4b1dada12bf97ad9cb9d",
+        "snaks": {
+         "P854": [
+          {
+           "snaktype": "value",
+           "property": "P854",
+           "hash": "6a0d5ac2288f76a837b81dd21076c6abd3a3358e",
+           "datavalue": {
+            "value": "https://www.e-stat.go.jp/en/regional-statistics/ssdsview/municipality",
+            "type": "string"
+           },
+           "datatype": "url"
+          }
+         ],
+         "P1476": [
+          {
+           "snaktype": "value",
+           "property": "P1476",
+           "hash": "607f3e70e6064f7c634a13b917bc80d9bda0b7a3",
+           "datavalue": {
+            "value": {
+             "text": "System of Social and Demographic Statistics of Japan - Total population (Both sexes)",
+             "language": "en"
+            },
+            "type": "monolingualtext"
+           },
+           "datatype": "monolingualtext"
+          }
+         ],
+         "P813": [
+          {
+           "snaktype": "value",
+           "property": "P813",
+           "hash": "75774f5d0970af261eb45824bb6f594654a1af39",
+           "datavalue": {
+            "value": {
+             "time": "+2019-03-17T00:00:00Z",
+             "timezone": 0,
+             "before": 0,
+             "after": 0,
+             "precision": 11,
+             "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+            },
+            "type": "time"
+           },
+           "datatype": "time"
+          }
+         ],
+         "P123": [
+          {
+           "snaktype": "value",
+           "property": "P123",
+           "hash": "24c0916b3bc63deeaa1e279130b2d8791a7d3f5f",
+           "datavalue": {
+            "value": {
+             "entity-type": "item",
+             "numeric-id": 11606829,
+             "id": "Q11606829"
+            },
+            "type": "wikibase-entityid"
+           },
+           "datatype": "wikibase-item"
+          }
+         ]
+        },
+        "snaks-order": [
+         "P854",
+         "P1476",
+         "P813",
+         "P123"
+        ]
+       }
+      ]
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "315fbe641e7fe71757cb768f49a03b80f18923ca",
+       "datavalue": {
+        "value": {
+         "amount": "+1880863",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "b2d590169589c914a9cc979977d42279a385a31f",
+         "datavalue": {
+          "value": {
+           "time": "+2005-01-01T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ],
+       "P459": [
+        {
+         "snaktype": "value",
+         "property": "P459",
+         "hash": "f34609d440cf44ebaa8a3e704c9369413240618c",
+         "datavalue": {
+          "value": {
+           "entity-type": "item",
+           "numeric-id": 39825,
+           "id": "Q39825"
+          },
+          "type": "wikibase-entityid"
+         },
+         "datatype": "wikibase-item"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585",
+       "P459"
+      ],
+      "id": "Q37951$e6e56db0-4f4f-fe0d-f72e-e598642405af",
+      "rank": "normal",
+      "references": [
+       {
+        "hash": "b21feb782246c35d94da77b65b89cfd35a13f152",
+        "snaks": {
+         "P248": [
+          {
+           "snaktype": "value",
+           "property": "P248",
+           "hash": "bf03103e42d2d9cbebee663a7b2abb1323bdeb60",
+           "datavalue": {
+            "value": {
+             "entity-type": "item",
+             "numeric-id": 4350771,
+             "id": "Q4350771"
+            },
+            "type": "wikibase-entityid"
+           },
+           "datatype": "wikibase-item"
+          }
+         ]
+        },
+        "snaks-order": [
+         "P248"
+        ]
+       }
+      ]
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "33ec898ea50deefee66e6e893c468cd3bb43afdc",
+       "datavalue": {
+        "value": {
+         "amount": "+1952356",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "2950e362c4c56cd20638f07c73f72a37011c8d76",
+         "datavalue": {
+          "value": {
+           "time": "+2015-01-01T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ],
+       "P459": [
+        {
+         "snaktype": "value",
+         "property": "P459",
+         "hash": "6cc3effd71135f55a40d9643ef1b805e1aeebae2",
+         "datavalue": {
+          "value": {
+           "entity-type": "item",
+           "numeric-id": 986756,
+           "id": "Q986756"
+          },
+          "type": "wikibase-entityid"
+         },
+         "datatype": "wikibase-item"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585",
+       "P459"
+      ],
+      "id": "Q37951$07E8EE4A-2BDF-4159-BF7B-4F622A8BE367",
+      "rank": "normal",
+      "references": [
+       {
+        "hash": "e7818b31d25d772f28fc4b1dada12bf97ad9cb9d",
+        "snaks": {
+         "P854": [
+          {
+           "snaktype": "value",
+           "property": "P854",
+           "hash": "6a0d5ac2288f76a837b81dd21076c6abd3a3358e",
+           "datavalue": {
+            "value": "https://www.e-stat.go.jp/en/regional-statistics/ssdsview/municipality",
+            "type": "string"
+           },
+           "datatype": "url"
+          }
+         ],
+         "P1476": [
+          {
+           "snaktype": "value",
+           "property": "P1476",
+           "hash": "607f3e70e6064f7c634a13b917bc80d9bda0b7a3",
+           "datavalue": {
+            "value": {
+             "text": "System of Social and Demographic Statistics of Japan - Total population (Both sexes)",
+             "language": "en"
+            },
+            "type": "monolingualtext"
+           },
+           "datatype": "monolingualtext"
+          }
+         ],
+         "P813": [
+          {
+           "snaktype": "value",
+           "property": "P813",
+           "hash": "75774f5d0970af261eb45824bb6f594654a1af39",
+           "datavalue": {
+            "value": {
+             "time": "+2019-03-17T00:00:00Z",
+             "timezone": 0,
+             "before": 0,
+             "after": 0,
+             "precision": 11,
+             "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+            },
+            "type": "time"
+           },
+           "datatype": "time"
+          }
+         ],
+         "P123": [
+          {
+           "snaktype": "value",
+           "property": "P123",
+           "hash": "24c0916b3bc63deeaa1e279130b2d8791a7d3f5f",
+           "datavalue": {
+            "value": {
+             "entity-type": "item",
+             "numeric-id": 11606829,
+             "id": "Q11606829"
+            },
+            "type": "wikibase-entityid"
+           },
+           "datatype": "wikibase-item"
+          }
+         ]
+        },
+        "snaks-order": [
+         "P854",
+         "P1476",
+         "P813",
+         "P123"
+        ]
+       }
+      ]
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "62a0072ce53f9baa05b764558a37b40c1cc2eb0e",
+       "datavalue": {
+        "value": {
+         "amount": "+1785",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "c95a96c87d81860a4dcaf1416a309de9fe9729f6",
+         "datavalue": {
+          "value": {
+           "time": "+1785-00-00T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585"
+      ],
+      "id": "Q37951$af4e3e53-4aa4-3535-4dbc-9d889a1dad16",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "7a2323fcfae7efa1a70204101739f10bb900418b",
+       "datavalue": {
+        "value": {
+         "amount": "+105182",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "547cb884a63c391385160e69bd69a5883e00fff0",
+         "datavalue": {
+          "value": {
+           "time": "+1920-00-00T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585"
+      ],
+      "id": "Q37951$69e8fa51-43d2-bed1-6144-bd5e38ed485e",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "2cbd0a3301c6f05e0bbd275049ca49fe9756c56e",
+       "datavalue": {
+        "value": {
+         "amount": "+174179",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "c4304befb0f033b3051b437061b703e949602acd",
+         "datavalue": {
+          "value": {
+           "time": "+1930-00-00T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585"
+      ],
+      "id": "Q37951$8ff4f4d3-4f4e-abc8-106e-9ef3c3efce4b",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "52d92e5d304cdf69ab6f00948a6efd3c3c460939",
+       "datavalue": {
+        "value": {
+         "amount": "+206103",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "b1fa27446f3e58e32d69091c195e4c4fc5edf4c6",
+         "datavalue": {
+          "value": {
+           "time": "+1940-00-00T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585"
+      ],
+      "id": "Q37951$c2f4bb50-42a0-abc1-b4ea-b50689080191",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "d9a37cd8609c878b107a0c623523228c044dd685",
+       "datavalue": {
+        "value": {
+         "amount": "+523839",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "831d07fc500078e550cf9e28e4d8d9795ecd1013",
+         "datavalue": {
+          "value": {
+           "time": "+1960-00-00T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585"
+      ],
+      "id": "Q37951$4ddd45c4-4d70-7799-5e53-6f532dd0183c",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "ac2ac211939b9400f8b848c3f132351b8942b509",
+       "datavalue": {
+        "value": {
+         "amount": "+794908",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "1f0aba630e6875311dde9e6abe1d4f2a7044baaf",
+         "datavalue": {
+          "value": {
+           "time": "+1970-00-00T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585"
+      ],
+      "id": "Q37951$41926524-4a8d-e45b-a862-78cd0ccb2973",
+      "rank": "normal"
+     },
+     {
+      "mainsnak": {
+       "snaktype": "value",
+       "property": "P1082",
+       "hash": "78f28de6d24ba1c502f818c7d41a8b2cc8f4532c",
+       "datavalue": {
+        "value": {
+         "amount": "+1240613",
+         "unit": "1"
+        },
+        "type": "quantity"
+       },
+       "datatype": "quantity"
+      },
+      "type": "statement",
+      "qualifiers": {
+       "P585": [
+        {
+         "snaktype": "value",
+         "property": "P585",
+         "hash": "9643cd75daf109f2125771d1eee67f2935e0e6e0",
+         "datavalue": {
+          "value": {
+           "time": "+1980-00-00T00:00:00Z",
+           "timezone": 0,
+           "before": 0,
+           "after": 0,
+           "precision": 9,
+           "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+          },
+          "type": "time"
+         },
+         "datatype": "time"
+        }
+       ]
+      },
+      "qualifiers-order": [
+       "P585"
+      ],
+      "id": "Q37951$f9782868-4492-a42f-5f15-dd2120e24803",
+      "rank": "normal"
+     }
+    ]
+   },
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "Sapporo",
+     "badges": []
+    },
+    "enwikivoyage": {
+     "site": "enwikivoyage",
+     "title": "Sapporo",
+     "badges": [
+      "Q17559452"
+     ]
+    },
+    "jawikivoyage": {
+     "site": "jawikivoyage",
+     "title": "札幌市",
+     "badges": [
+      "Q17437796"
+     ]
+    }
+   }
+  }
+ },
+ "success": 1
+}

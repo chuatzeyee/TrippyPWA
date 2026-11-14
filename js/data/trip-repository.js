@@ -323,6 +323,11 @@ const TRIP_LIST_SELECT = [
   'ws_destination:wizard_state->destination',
   'ws_destinations:wizard_state->destinations',
   'import_pending:extras->importPending',
+  // The v2 cover's copies ({ url, w, h }); cards use the 1280px one, cropped
+  // at the picked height (focusY, %).
+  'cover_small:extras->cover->small',
+  'cover_large:extras->cover->large',
+  'cover_focus:extras->cover->focusY',
   'itinerary_days(day_number,activities(cost_amount))',
 ].join(',');
 

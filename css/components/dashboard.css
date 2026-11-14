@@ -1229,7 +1229,9 @@
   position: relative;
   z-index: 3;
 }
-/* Covers are <img> so the browser picks a width and lazy-loads off-screen cards. */
+/* Covers are <img> so the browser picks a width and lazy-loads off-screen cards.
+   A v2 cover sets --cover-focus-y (the height picked for it, as on the trip
+   page): the wide "Next trip" card would otherwise crop the middle band. */
 .trip-card-cover,
 .trip-hero-cover {
   position: absolute;
@@ -1237,6 +1239,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% var(--cover-focus-y, 50%);
 }
 .trip-card-shared {
   font: var(--text-caption);

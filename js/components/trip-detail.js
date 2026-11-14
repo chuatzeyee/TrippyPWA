@@ -7,7 +7,7 @@ import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { shortenTransitName } from '../data/transit-lines.js';
 import { hotelSearchLinks, flightSearchLink, trackBookingClick, BOOKING_DISCLOSURE } from '../services/booking-links.js';
-import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg } from '../lib/trip-extras.js';
+import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, flightTimeLine } from '../lib/trip-extras.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
 import { isSquareMode } from '../lib/square-mode.js';
@@ -18,6 +18,9 @@ import {
   resolveTripPhotos, isResolvingPhotos, getPhotoProgress, isPhotoOnlyChange, fetchTripPhotos, PHOTO_FIELDS,
   wantsActivityPhoto, isPendingPhoto,
 } from '../services/trip-photos.js';
+import { heroCover, coverNeedsPick } from '../lib/trip-cover.js';
+import { requestTripCover } from '../services/trip-cover.js';
+import { heroHtml, swapHeroCover } from './trip-hero.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -668,12 +671,9 @@ function tripHeader(trip) {
   const flag = ws?.multiCity
     ? ws?.destinations?.[0]?.flag
     : ws?.destination?.flag;
-  const rawHeroImage = trip.cover_image || (ws?.multiCity
-    ? ws?.destinations?.[0]?.image
-    : ws?.destination?.image);
-  // Destination images are 250px Wikipedia thumbnails; the hero is full-width, so
-  // request a larger render to avoid the upscaled/pixelated look.
-  const heroImage = rawHeroImage ? rawHeroImage.replace(/\/\d+px-/, '/1280px-') : rawHeroImage;
+  // The stored cover (a v2 pick has a 1280px and a large copy), else the
+  // wizard's destination thumbnail; null when the picker found nothing good.
+  const hero = heroCover(trip);
 
   // Ranges read "1 to 5 Jun" (copy rule: no en dash), whatever the formatter emits.
   const dateRange = plainDashes(formatDateRange(trip.start_date, trip.end_date));
@@ -682,7 +682,7 @@ function tripHeader(trip) {
     ? Math.round((new Date(trip.end_date + 'T00:00:00') - new Date(trip.start_date + 'T00:00:00')) / 86400000) + 1
     : 0);
 
-  return { days, dayCount, sym, tripCode, shortTitle, totalCost, totalActivities, excludedCosts, flag, heroImage, dateRange };
+  return { days, dayCount, sym, tripCode, shortTitle, totalCost, totalActivities, excludedCosts, flag, hero, dateRange };
 }
 
 // Copy rule for text this view doesn't own (shared formatters, visa data
@@ -1089,6 +1089,8 @@ function flightPriceHtml(priceRange) {
   return `${esc(text.slice(0, m.index))}<span class="td-flight-price-amount">${esc(m[0])}</span>${esc(text.slice(end))}`;
 }
 
+const FLIGHT_CLOCK_ICON = '<svg class="td-flight-duration-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
 function renderFlightContent(extras, trip) {
   const flights = extras?.flights;
   if (!flights) return '';
@@ -1127,25 +1129,24 @@ function renderFlightContent(extras, trip) {
         <span class="td-flight-route-dash"></span>
       </div>`;
 
+    // The stop's ring marker is drawn by CSS above the code, out of flow, so
+    // the stopover's flag sits at the same height as the endpoints' flags.
     const renderStopover = (code) => `
       <div class="td-flight-stopover">
-        <div class="td-flight-stopover-dot"></div>
         <div class="td-flight-stopover-code">${esc(code)}</div>
         <div class="td-flight-stopover-flag">${airportFlag(code)}</div>
       </div>`;
 
     let routeHtml;
     if (isConnecting) {
+      // Two or more stops get a tighter route so every code fits the leg.
+      const multiStopClass = viaStops.length > 1 ? ' td-flight-route--multistop' : '';
       routeHtml = `
-        <div class="td-flight-route td-flight-route--connecting">
+        <div class="td-flight-route td-flight-route--connecting${multiStopClass}">
           ${renderEndpoint(from)}
           ${viaStops.map(s => `${renderSegmentLine()}${renderStopover(s)}`).join('')}
           ${renderSegmentLine()}
           ${renderEndpoint(to)}
-        </div>
-        <div class="td-flight-connection-label">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          ${viaStops.length === 1 ? '1 stop' : `${viaStops.length} stops`} via ${viaStops.map(s => esc(s)).join(', ')}
         </div>`;
     } else {
       routeHtml = `
@@ -1156,6 +1157,8 @@ function renderFlightContent(extras, trip) {
         </div>`;
     }
 
+    // One line under the route: the time, with any layover folded in.
+    const timeLine = flightTimeLine(leg.duration, viaStops);
     const booked = isBookedLeg(leg);
     const manageUrl = safeUrl(leg.manageUrl);
     const priceHtml = flightPriceHtml(leg.priceRange);
@@ -1195,7 +1198,7 @@ function renderFlightContent(extras, trip) {
         ${booked ? bookingRowHtml(leg.bookingRef, 'td-flight-booking') : ''}
         <div class="td-flight-journey">
           ${routeHtml}
-          ${leg.duration ? `<div class="td-flight-duration">${esc(leg.duration)}</div>` : ''}
+          ${timeLine ? `<div class="td-flight-duration">${FLIGHT_CLOCK_ICON}<span class="td-flight-duration-text">${esc(timeLine)}</span></div>` : ''}
         </div>
         ${flightDetailsHtml(leg)}
         ${bottomHtml}
@@ -2463,8 +2466,13 @@ function renderDayPicker(app, trip, opts = {}) {
   const animate = !restore;
 
   _photoCredits = trip.extras?.photoCredits || {};
-  const { days, dayCount, sym, tripCode, shortTitle, totalCost, totalActivities, excludedCosts, flag, heroImage, dateRange } = tripHeader(trip);
+  const { days, dayCount, sym, tripCode, shortTitle, totalCost, totalActivities, excludedCosts, flag, hero, dateRange } = tripHeader(trip);
   const heroFlag = flagImg(flag, 32);
+  const countdownHtml = tripCountdownHtml(trip);
+  view.heroParts = {
+    title: shortTitle, flagHtml: heroFlag, countdownHtml,
+    datesHtml: dateRange ? `<div class="td-hero-dates">${mdIcon(MD.calendarToday, 13)} ${esc(dateRange)}</div>` : '',
+  };
 
   app.innerHTML = `
     <div class="td-wrap${animate ? ' td-fade-in' : ''}" data-trip-id="${esc(trip.id)}">
@@ -2495,34 +2503,9 @@ function renderDayPicker(app, trip, opts = {}) {
         </div>
       </div>
 
-      ${(() => {
-        let countdownHtml = '';
-        if (trip.start_date) {
-          const now = new Date();
-          const start = new Date(trip.start_date + 'T00:00:00');
-          const diff = Math.ceil((start - now) / 86400000);
-          if (diff >= 0) {
-            const label = diff === 0 ? 'Today!' : diff === 1 ? '1 day' : `${diff} days`;
-            const mode = trip.extras?.transport ? getTransportMode(trip.extras) : null;
-            const countdownIcon = mode && TRANSPORT_MODE_MD[mode] ? mdIcon(TRANSPORT_MODE_MD[mode], 14) : mdIcon(MD.flightTakeoff, 14);
-            countdownHtml = `<div class="td-countdown">${countdownIcon} ${label}</div>`;
-          }
-        }
-        return heroImage ? `
-        <div class="td-hero" id="td-hero">
-          <img class="td-hero-img" src="${esc(heroImage)}" alt="${esc(shortTitle)}" loading="eager">
-          <div class="td-hero-overlay"></div>
-          ${countdownHtml ? `<div class="td-hero-countdown">${countdownHtml}</div>` : ''}
-          ${dateRange ? `<div class="td-hero-dates">${mdIcon(MD.calendarToday, 13)} ${esc(dateRange)}</div>` : ''}
-          <div class="td-hero-caption">
-            ${heroFlag ? `<span class="td-hero-flag">${heroFlag}</span>` : ''}
-            <h1 class="td-hero-title">${esc(shortTitle)}</h1>
-          </div>
-        </div>
-      ` : countdownHtml;
-      })()}
+      ${hero ? heroHtml(hero, view.heroParts) : countdownHtml}
 
-      ${!heroImage ? `<header class="td-header"><span class="td-emoji">${heroFlag || (trip.emoji ? esc(trip.emoji) : mdIcon(MD.place, 28))}</span><h1 class="td-title">${esc(shortTitle)}</h1></header>` : ''}
+      ${!hero ? `<header class="td-header"><span class="td-emoji">${heroFlag || (trip.emoji ? esc(trip.emoji) : mdIcon(MD.place, 28))}</span><h1 class="td-title">${esc(shortTitle)}</h1></header>` : ''}
 
       <div class="td-stickybar" id="td-stickybar" aria-hidden="true">
         ${heroFlag ? `<span class="td-stickybar-flag">${heroFlag}</span>` : ''}
@@ -2783,17 +2766,9 @@ function renderDayPicker(app, trip, opts = {}) {
   const spyCleanup = setupDayScrollSpy(app);
   if (spyCleanup) view.cleanups.push(spyCleanup);
 
-  // Collapse the tall hero into a slim sticky strip once it scrolls away, so
-  // the itinerary owns the viewport (feedback: header ate too much space).
-  const heroEl = app.querySelector('#td-hero');
-  const stickyBar = app.querySelector('#td-stickybar');
-  if (heroEl && stickyBar) {
-    const heroObserver = new IntersectionObserver(([e]) => {
-      stickyBar.classList.toggle('td-stickybar--visible', !e.isIntersecting);
-    }, { threshold: 0 });
-    heroObserver.observe(heroEl);
-    trackObserver(heroObserver);
-  }
+  observeHeroStrip(app.querySelector('#td-hero'));
+  bindCoverUpdates(view);
+  if (!restore) maybeRequestCover(trip, { stale });
 
   // Square mode: render the no-scroll, one-stop-per-card itinerary into its
   // host. Built lazily so the scroll view stays the default on normal screens.
@@ -3109,6 +3084,10 @@ function bindPhotoStatus(view) {
     const { data } = await fetchTripPhotos(view.tripId);
     if (_view !== view) return;
     if (data) applyPhotoSnapshot(view, data);
+    // The run's last pass may have picked the cover. If it ended without a
+    // verdict (a failed batch, the call limit), ask for the cover on its own.
+    if (data?.cover) applyCover(view, { coverImage: data.coverImage, cover: data.cover });
+    else if (data && d.ok) maybeRequestCover(view.trip);
     // Even when the final read fails, nothing is left shimmering (unless a new
     // run started meanwhile).
     if (!isResolvingPhotos(view.tripId)) collapsePendingPhotos(view.wrap);
@@ -3122,6 +3101,73 @@ function bindPhotoStatus(view) {
   window.addEventListener('trippy:photos', onPhotos);
   view.cleanups.push(() => { window.removeEventListener('trippy:photos', onPhotos); clearTimeout(hideTimer); });
   if (isResolvingPhotos(view.tripId)) show(photoProgressText(getPhotoProgress(view.tripId) || {}));
+}
+
+// ===== Header photo (cover) =====
+
+// "12 days" pill for the hero (or under the top bar when there is no photo).
+function tripCountdownHtml(trip) {
+  if (!trip.start_date) return '';
+  const start = new Date(trip.start_date + 'T00:00:00');
+  const diff = Math.ceil((start - new Date()) / 86400000);
+  if (diff < 0) return '';
+  const label = diff === 0 ? 'Today!' : diff === 1 ? '1 day' : `${diff} days`;
+  const mode = trip.extras?.transport ? getTransportMode(trip.extras) : null;
+  const icon = mode && TRANSPORT_MODE_MD[mode] ? mdIcon(TRANSPORT_MODE_MD[mode], 14) : mdIcon(MD.flightTakeoff, 14);
+  return `<div class="td-countdown">${icon} ${label}</div>`;
+}
+
+// Collapse the tall hero into a slim sticky strip once it scrolls away, so
+// the itinerary owns the viewport (feedback: header ate too much space).
+function observeHeroStrip(heroEl) {
+  const stickyBar = heroEl?.closest('.td-wrap')?.querySelector('#td-stickybar');
+  if (!heroEl || !stickyBar) return;
+  const heroObserver = new IntersectionObserver(([e]) => {
+    stickyBar.classList.toggle('td-stickybar--visible', !e.isIntersecting);
+  }, { threshold: 0 });
+  heroObserver.observe(heroEl);
+  trackObserver(heroObserver);
+}
+
+// A new v2 cover for the open trip: swap the header photo in place.
+async function applyCover(view, { coverImage, cover }) {
+  if (_view !== view || !cover || Number(cover.v) < 2 || cover.none || typeof coverImage !== 'string' || !coverImage) return;
+  const trip = view.trip;
+  if (trip.cover_image === coverImage && trip.extras?.cover?.pickedAt === cover.pickedAt) return;
+  trip.cover_image = coverImage;
+  trip.extras = { ...(trip.extras || {}), cover };
+  const hero = heroCover(trip);
+  if (!hero?.v2) return;
+  try {
+    const inserted = await swapHeroCover(view.wrap, hero, view.heroParts);
+    if (inserted && _view === view) observeHeroStrip(inserted);
+  } catch (err) {
+    logger.warn('ui', 'Cover swap failed', { tripId: view.tripId, error: err?.message });
+  }
+}
+
+// Covers picked while this trip is open arrive as 'trippy:cover' events.
+function bindCoverUpdates(view) {
+  const onCover = (e) => {
+    const d = e.detail || {};
+    if (d.tripId === view.tripId && d.ok) applyCover(view, { coverImage: d.coverImage, cover: d.cover });
+  };
+  window.addEventListener('trippy:cover', onCover);
+  view.cleanups.push(() => window.removeEventListener('trippy:cover', onCover));
+}
+
+// The owner opens a trip whose cover is empty or the old automatic pick: ask
+// the server once (per trip per session) for a sharp one. Never for someone
+// else's trip, an offline copy, or while the photo run is going (its last
+// pass picks the cover, and its final read updates the header).
+function maybeRequestCover(trip, { stale = false } = {}) {
+  if (stale || !trip?.id || trip.status === 'generating') return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  if (!trip.user_id || trip.user_id !== getUser()?.id) return;
+  if (!coverNeedsPick(trip) || isResolvingPhotos(trip.id)) return;
+  requestTripCover(trip.id).then((result) => {
+    if (result && !result.ok) logger.warn('data', 'Cover request failed', { tripId: trip.id, error: result.error });
+  });
 }
 
 // Imported trips get real photos from the server worker, driven by the client.

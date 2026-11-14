@@ -1,0 +1,15 @@
+{
+ "batchcomplete": true,
+ "query": {
+  "pages": [
+   {
+    "pageid": 31585,
+    "ns": 0,
+    "title": "Sapporo",
+    "pageprops": {
+     "page_image_free": "Skyline_Sapporo_Hokkaido_Japan.jpg"
+    }
+   }
+  ]
+ }
+}

@@ -9,6 +9,7 @@ import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
 import { isSquareMode, onSquareModeChange } from '../lib/square-mode.js';
 import { buildDeckHtml, mountCardDeck } from '../lib/card-deck.js';
+import { listCoverCopies } from '../lib/trip-cover.js';
 
 // Human label for each trip stage. Maps the internal status to friendly copy
 // (the dashboard mockup uses "Live" for an in-progress trip).
@@ -92,16 +93,23 @@ const COVER_GRADIENT = 'background: linear-gradient(135deg, var(--terracotta-lig
 // Wikimedia's standard thumbnail widths; other widths may be refused.
 const COVER_WIDTHS = [500, 960, 1280];
 
-// Trip covers are usually ~250px Wikipedia thumbnails (".../250px-Name.jpg").
-// Offer a few widths and let the browser pick one for the card size and pixel
-// density. If a width larger than the original is refused, the error handler
-// in renderDashboard falls back to the original URL (data-fallback).
-function coverImg(url, { cls, sizes, lazy }) {
+// A v2 cover (picked by the server) has a 1280px copy and a large one: cards
+// load the small copy and only big, dense screens the large one. Older covers
+// are usually ~250px Wikipedia thumbnails (".../250px-Name.jpg"): offer a few
+// widths and let the browser pick one for the card size and pixel density. If
+// a width larger than the original is refused, the error handler in
+// renderDashboard falls back to the original URL (data-fallback).
+function coverImg(url, { cls, sizes, lazy, copies = null }) {
   if (!url) return '';
-  const sized = /\/\d+px-/.test(url);
+  const sized = !copies && /\/\d+px-/.test(url);
   const at = (w) => url.replace(/\/\d+px-/, `/${w}px-`);
-  const srcset = sized ? COVER_WIDTHS.map(w => `${at(w)} ${w}w`).join(', ') : '';
-  return `<img class="${cls}" src="${escapeHtml(sized ? at(COVER_WIDTHS[0]) : url)}"
+  const srcset = copies
+    ? `${copies.small.url} ${copies.small.w}w, ${copies.large.url} ${copies.large.w}w`
+    : sized ? COVER_WIDTHS.map(w => `${at(w)} ${w}w`).join(', ') : '';
+  const src = copies ? copies.small.url : sized ? at(COVER_WIDTHS[0]) : url;
+  // A v2 cover is cropped at its picked height (older covers stay centred).
+  const focus = copies && Number.isFinite(copies.focusY) ? ` style="--cover-focus-y: ${copies.focusY}%"` : '';
+  return `<img class="${cls}" src="${escapeHtml(src)}"${focus}
     ${srcset ? `srcset="${escapeHtml(srcset)}" sizes="${sizes}"` : ''}
     data-fallback="${escapeHtml(url)}" alt="" ${lazy ? 'loading="lazy"' : ''} decoding="async">`;
 }
@@ -127,7 +135,7 @@ function renderTripCard(trip, index) {
     <article class="trip-card ${isGenerating ? 'trip-card--generating' : ''} ${isFailed ? 'trip-card--failed' : ''} animate-in" style="animation-delay: ${index * 60}ms" data-trip-id="${escapeHtml(trip.id)}">
       ${isGenerating || isFailed ? '' : tripLink(trip)}
       <div class="trip-card-hero" style="${COVER_GRADIENT}">
-        ${coverImg(trip.coverImage, { cls: 'trip-card-cover', sizes: '(max-width: 640px) 100vw, 420px', lazy: true })}
+        ${coverImg(trip.coverImage, { cls: 'trip-card-cover', sizes: '(max-width: 640px) 100vw, 420px', lazy: true, copies: trip.coverCopies })}
         <span class="trip-card-emoji">${tripEmojiHtml(trip)}</span>
         ${isGenerating ? '<div class="trip-card-gen-shimmer"></div>' : ''}
         <span class="trip-card-stage trip-card-stage--${status}">
@@ -194,7 +202,7 @@ function renderFeaturedHero(trip) {
     : '';
   return `
     <article class="trip-hero animate-in" data-trip-id="${escapeHtml(trip.id)}" style="${COVER_GRADIENT}">
-      ${coverImg(trip.coverImage, { cls: 'trip-hero-cover', sizes: '(max-width: 1024px) 100vw, 80vw', lazy: false })}
+      ${coverImg(trip.coverImage, { cls: 'trip-hero-cover', sizes: '(max-width: 1024px) 100vw, 80vw', lazy: false, copies: trip.coverCopies })}
       <div class="trip-hero-scrim"></div>
       ${tripLink(trip)}
       <div class="trip-hero-top">
@@ -526,7 +534,8 @@ function toCardTrip(t) {
       total: activityTotal > 0 ? activityTotal : budgetEstimate,
       spent: 0
     },
-    coverImage: t.cover_image || dest?.image || ''
+    coverImage: t.cover_image || dest?.image || '',
+    coverCopies: listCoverCopies(t),
   };
 }
 

@@ -266,9 +266,20 @@ describe('fetchTripPhotos', () => {
     const out = await fetchTripPhotos('t1', { client });
     expect(client.eq).toHaveBeenCalledWith('id', 't1');
     expect(out).toEqual({
-      data: { credits: { a1: { creator: 'Jane', license: 'CC BY 4.0' } }, activities: [{ id: 'a1', photo_url: 'u1' }, { id: 'a2', photo_url: '' }] },
+      data: {
+        credits: { a1: { creator: 'Jane', license: 'CC BY 4.0' } }, activities: [{ id: 'a1', photo_url: 'u1' }, { id: 'a2', photo_url: '' }],
+        coverImage: null, cover: null,
+      },
       error: null,
     });
+  });
+
+  it('returns the cover so a finished run can update the header', async () => {
+    const cover = { v: 2, large: { url: 'https://s/cover-v2-2400w.jpg', w: 2400, h: 1600 } };
+    const client = fakeClient({ data: { photoCredits: null, cover_image: cover.large.url, cover, itinerary_days: [] }, error: null });
+    const out = await fetchTripPhotos('t1', { client });
+    expect(client.select.mock.calls[0][0]).toContain('cover:extras->cover');
+    expect(out.data).toMatchObject({ coverImage: cover.large.url, cover });
   });
 
   it('reports a failed read', async () => {
