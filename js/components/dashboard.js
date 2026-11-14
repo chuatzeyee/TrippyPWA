@@ -1,4 +1,5 @@
 import { navigate } from '../router.js';
+import { logger } from '../lib/logger.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { getAllTrips } from '../data/registry.js';
 import { DESTINATIONS } from '../wizard/destinations.js';
@@ -229,7 +230,10 @@ function renderAuthDashboard(trips) {
       <div class="dashboard-merged-body">
         <div class="dashboard-header">
           <h1 class="dashboard-greeting">Where to next?</h1>
-          <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">+ Plan a Trip</button>
+          <div class="dashboard-header-actions">
+            <button class="btn btn--ghost btn--lg btn--pill dashboard-import-btn" data-action="import-trip" title="Import a trip from a Trippy JSON file">Import trip</button>
+            <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">+ Plan a Trip</button>
+          </div>
         </div>
         ${trips.length > 0 ? renderTripsSection(trips) : `
           <div class="dashboard-no-trips">
@@ -237,6 +241,7 @@ function renderAuthDashboard(trips) {
             <h2 class="dashboard-no-trips-title">Your next adventure starts here</h2>
             <p class="dashboard-no-trips-text">Tell us where and how you like to travel — we'll craft a day-by-day plan in minutes.</p>
             <button class="btn btn--primary btn--lg btn--pill" data-action="new-trip">+ Plan your first trip</button>
+            <button class="btn btn--ghost btn--lg btn--pill dashboard-import-btn" data-action="import-trip" title="Import a trip from a Trippy JSON file">Import trip</button>
           </div>
         `}
         <section class="dashboard-dest-picks">
@@ -540,6 +545,12 @@ export async function renderDashboard() {
         return;
       }
     }
+    if (e.target.closest('[data-action="import-trip"]')) {
+      const auth = await getAuth();
+      if (!auth.isAuthenticated()) { const { showAuthGate } = await import('../auth/auth-ui.js'); showAuthGate(); return; }
+      pickImportFile();
+      return;
+    }
     const newTrip = e.target.closest('[data-action="new-trip"]');
     if (newTrip) {
       const auth = await getAuth();
@@ -745,5 +756,43 @@ export async function renderDashboard() {
         card.addEventListener('mouseleave', () => { hovered = false; flipTo('next'); startCycle(); });
       });
     });
+  }
+}
+
+// ===== Trip import =====
+// Opens a file picker for a Trippy import file (docs/trip-import-format.md),
+// validates it client-side, saves it as the signed-in user, then opens it.
+function pickImportFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+  input.addEventListener('change', () => {
+    const file = input.files?.[0];
+    if (file) importTripFile(file).catch(() => {});
+  });
+  input.click();
+}
+
+async function importTripFile(file) {
+  const { showToast } = await import('./toast.js');
+  try {
+    const { parseTripImport, TripImportError, IMPORT_LIMITS } = await import('../services/trip-import.js');
+    if (file.size > IMPORT_LIMITS.maxBytes) { showToast('That file is too large to import (max 1 MB).', 'error'); return; }
+    let parsed;
+    try {
+      parsed = parseTripImport(await file.text());
+    } catch (err) {
+      showToast(err instanceof TripImportError ? err.message : 'Could not read that file.', 'error');
+      return;
+    }
+    showToast('Importing trip…');
+    const { saveTripWithItinerary } = await import('../data/trip-repository.js');
+    const { data, error } = await saveTripWithItinerary(parsed.wizardState, parsed.itinerary);
+    if (error || !data) { showToast(`Import failed: ${error || 'unknown error'}`, 'error'); return; }
+    showToast(`Imported “${data.title}”`, 'success');
+    navigate(`/trip/${data.id}`);
+  } catch (err) {
+    logger.error('data', 'Trip import failed', { error: err?.message });
+    showToast('Import failed. Check your connection and try again.', 'error');
   }
 }
