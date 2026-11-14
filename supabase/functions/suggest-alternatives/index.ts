@@ -91,7 +91,7 @@ Suggest exactly 3 REAL alternative venues/activities ${near} for the same time s
     const { data, error } = await callGemini(
       prompt,
       "You are a precise local travel guide. Only real venues. Respond in the given JSON schema.",
-      SCHEMA, GEMINI_API_KEY, GEMINI_MODEL, 4_000,
+      SCHEMA, GEMINI_API_KEY, GEMINI_MODEL, 4_000, false,
     );
     if (error || !data?.alternatives?.length) {
       return json({ error: error || "No alternatives found" }, 502, corsHeaders);
