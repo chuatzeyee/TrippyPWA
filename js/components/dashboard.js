@@ -785,14 +785,37 @@ async function importTripFile(file) {
       showToast(err instanceof TripImportError ? err.message : 'Could not read that file.', 'error');
       return;
     }
+    // A curated destination has a cover photo; borrow it if the file had none.
+    const dest = parsed.wizardState.destination;
+    const known = DESTINATIONS.find(d => d.name.toLowerCase() === dest.name.toLowerCase());
+    if (known?.image && !dest.image) dest.image = known.image;
     showToast('Importing trip…');
     const { saveTripWithItinerary } = await import('../data/trip-repository.js');
     const { data, error } = await saveTripWithItinerary(parsed.wizardState, parsed.itinerary);
     if (error || !data) { showToast(`Import failed: ${error || 'unknown error'}`, 'error'); return; }
     showToast(`Imported “${data.title}”`, 'success');
     navigate(`/trip/${data.id}`);
+    findPhotosForImportedTrip(data.id, showToast);
   } catch (err) {
     logger.error('data', 'Trip import failed', { error: err?.message });
     showToast('Import failed. Check your connection and try again.', 'error');
+  }
+}
+
+// Real photos for an imported trip (verified web photos, else labelled street
+// view). Runs in the background; re-renders the trip if the user is still on it.
+async function findPhotosForImportedTrip(tripId, showToast) {
+  showToast('Finding photos for your trip…');
+  const { resolveTripPhotos } = await import('../services/trip-photos.js');
+  const result = await resolveTripPhotos(tripId);
+  if (!result.ok) {
+    logger.error('data', 'Photo resolution failed', { tripId, error: result.error });
+    showToast('Could not add photos right now. The trip is saved.', 'error');
+    return;
+  }
+  showToast(result.photos > 0 ? `Added ${result.photos} photos` : 'No photos found for these places', result.photos > 0 ? 'success' : 'info');
+  if (location.hash.includes(tripId)) {
+    const { reloadCurrentRoute } = await import('../router.js');
+    reloadCurrentRoute();
   }
 }

@@ -45,8 +45,15 @@ export async function claimInvitations() {
  */
 export function onRemoteActivityChanges(dayIds, onChange) {
   if (!dayIds?.length) return () => {};
+  const name = `trip-activities-${dayIds[0]}`;
+  // Re-rendering the same trip (collaborator edit, chat edit, photos arriving)
+  // would get the already-subscribed channel back from supabase.channel(), and
+  // adding .on() after subscribe() throws. Drop any previous one first.
+  for (const ch of supabase.getChannels()) {
+    if (ch.topic === `realtime:${name}`) supabase.removeChannel(ch);
+  }
   const channel = supabase
-    .channel(`trip-activities-${dayIds[0]}`)
+    .channel(name)
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'activities', filter: `day_id=in.(${dayIds.join(',')})` },
       onChange)

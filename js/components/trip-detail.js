@@ -6,7 +6,7 @@ import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { shortenTransitName } from '../data/transit-lines.js';
 import { hotelSearchLinks, flightSearchLink, trackBookingClick, BOOKING_DISCLOSURE } from '../services/booking-links.js';
-import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg } from '../lib/trip-extras.js';
+import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, photoCreditText } from '../lib/trip-extras.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
 import { isSquareMode } from '../lib/square-mode.js';
@@ -273,11 +273,12 @@ function renderTripFooter(trip) {
   if (trip.travelers > 1) {
     pills.push(`<span class="td-footer-pill">${mdIcon(MD.walk, 12)} ${trip.travelers}</span>`);
   }
-  // Photo-source attribution. The free providers we use require (Mapillary,
-  // CC-BY-SA) or appreciate (Wikimedia, Pexels) a visible credit.
+  // Photo-source attribution. Per-photo credits (creator + licence) are shown on
+  // each photo; this line credits the free providers overall.
   const credit = `<div class="td-footer-credit">Photos via
-    <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia</a>,
-    <a href="https://www.mapillary.com" target="_blank" rel="noopener">Mapillary</a> (CC BY-SA) &amp;
+    <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>,
+    <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a> (Creative Commons),
+    <a href="https://www.mapillary.com" target="_blank" rel="noopener">Mapillary</a>, venue websites &amp;
     <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a></div>`;
   if (pills.length === 0) return `<div class="td-footer">${credit}</div>`;
   return `<div class="td-footer"><div class="td-footer-pills">${pills.join('')}</div>${credit}</div>`;
@@ -529,6 +530,9 @@ function localityHaversineKm(lat1, lng1, lat2, lng2) {
 
 const NO_COST_CATEGORIES = new Set(['departure', 'arrival', 'flight', 'check-in', 'landing', 'transfer']);
 
+// Photo credits for the trip being rendered (extras.photoCredits[activityId]).
+let _photoCredits = {};
+
 function renderActivity(activity, currencySymbol, isFirst) {
   const icon = catIcon(activity.category);
   const cat = (activity.category || '').toLowerCase();
@@ -558,7 +562,7 @@ function renderActivity(activity, currencySymbol, isFirst) {
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
-        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
+        ${activity.venue_name ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${photoCreditText(_photoCredits[activity.id]) ? `data-photo-credit="${esc(photoCreditText(_photoCredits[activity.id]))}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
         ${activity.id ? `<button class="td-alt-btn" data-alt-for="${activity.id}" title="Suggest alternatives">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
       </div>
     </div>
@@ -586,9 +590,9 @@ function tripHeader(trip) {
   const flag = ws?.multiCity
     ? ws?.destinations?.[0]?.flag
     : ws?.destination?.flag;
-  const rawHeroImage = ws?.multiCity
+  const rawHeroImage = trip.cover_image || (ws?.multiCity
     ? ws?.destinations?.[0]?.image
-    : ws?.destination?.image;
+    : ws?.destination?.image);
   // Destination images are 250px Wikipedia thumbnails; the hero is full-width, so
   // request a larger render to avoid the upscaled/pixelated look.
   const heroImage = rawHeroImage ? rawHeroImage.replace(/\/\d+px-/, '/1280px-') : rawHeroImage;
@@ -1717,6 +1721,7 @@ async function showShareModal(trip) {
 }
 
 function renderDayPicker(app, trip, jumpToToday = false) {
+  _photoCredits = trip.extras?.photoCredits || {};
   if (scrollSpyCleanup) { scrollSpyCleanup(); scrollSpyCleanup = null; }
   const { days, dayCount, sym, shortTitle, totalCost, totalActivities, flag, heroImage, dateRange } = tripHeader(trip);
   const heroFlag = flagImg(flag, 32);
@@ -2194,10 +2199,11 @@ function renderDayPicker(app, trip, jumpToToday = false) {
   }
 }
 
-function attachActivityImg(el, url, venue, source) {
+function attachActivityImg(el, url, venue, source, credit = '') {
   const img = document.createElement('img');
   img.src = url;
   img.alt = venue;
+  if (credit) img.title = credit;
   img.className = 'td-activity-photo-img';
   img.loading = 'lazy';
   img.onload = () => el.classList.add('td-activity-photo--loaded');
@@ -2211,6 +2217,13 @@ function attachActivityImg(el, url, venue, source) {
     badge.textContent = 'Street view';
     el.appendChild(badge);
   }
+  // Creative Commons photos need visible attribution.
+  if (credit) {
+    const c = document.createElement('span');
+    c.className = 'td-activity-photo-credit';
+    c.textContent = credit;
+    el.appendChild(c);
+  }
 }
 
 function loadActivityPhotos(container) {
@@ -2222,8 +2235,10 @@ function loadActivityPhotos(container) {
   // Legacy trips (no stored URL) fall back to a lazy live resolve as before.
   const legacy = [];
   for (const el of photoEls) {
-    if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue, el.dataset.photoSource);
-    else legacy.push(el);
+    if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue, el.dataset.photoSource, el.dataset.photoCredit);
+    // 'none' = the photo resolver checked and found no trustworthy photo: keep the
+    // gradient rather than live-resolving a generic stock image.
+    else if (el.dataset.photoSource !== 'none') legacy.push(el);
   }
   if (!legacy.length) return null;
 

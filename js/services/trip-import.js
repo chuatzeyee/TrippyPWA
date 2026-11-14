@@ -53,6 +53,7 @@ function parseDestination(raw, emoji) {
     timezone: str(d.timezone, 64) || null,
     lat: coord(d.lat, 90),
     lng: coord(d.lng, 180),
+    image: safeUrl(d.image),
   };
 }
 
