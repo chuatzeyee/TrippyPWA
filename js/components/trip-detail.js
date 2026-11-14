@@ -2740,8 +2740,8 @@ function renderDayPicker(app, trip, opts = {}) {
   bindCollapsibleSections(app);
   bindSidebar(app);
 
-  // Chat drawer: carried over from the previous render on a refresh, so an
-  // open conversation survives; otherwise mounted fresh.
+  // Trippy Concierge (the chat panel): carried over from the previous render
+  // on a refresh, so an open conversation survives; otherwise mounted fresh.
   if (chat) {
     chat.attach(wrap);
     chat.setTrip(trip);
