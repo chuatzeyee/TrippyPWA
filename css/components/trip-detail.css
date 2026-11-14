@@ -3707,3 +3707,45 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
 .td-timeline > .td-locality-waypoint:first-child {
   margin-top: 0;
 }
+
+/* ===== Booked flights & stays, booking deadlines (trip import) ===== */
+.td-booked-badge {
+  display: inline-block;
+  margin-left: var(--sp-2);
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: var(--success);
+  vertical-align: middle;
+}
+.td-accom-head .td-booked-badge { margin-left: 0; }
+.td-booked-meta {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-ghost);
+}
+.td-accom-stay {
+  margin-top: var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--teal);
+}
+.td-check-deadline {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.td-check-deadline--later { color: var(--ink-ghost); }
+.td-check-deadline--soon { color: var(--warning); }
+.td-check-deadline--overdue { color: var(--error); }
+.td-check-item--done .td-check-deadline { opacity: 0.4; }
