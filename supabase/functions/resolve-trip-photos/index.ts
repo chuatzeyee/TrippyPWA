@@ -1,33 +1,56 @@
 // Resolve + persist a trip's photos ONCE, off the generation critical path.
 //
-// For each activity (and each Discover town, and the trip cover) we resolve a
-// REAL photo via the shared multi-source resolver (exact ids -> verified web
-// photos -> labelled street view), download the bytes, upload them to the public
-// `trip-photos` Storage bucket, and write the Storage URL back onto the row
-// (activities.photo_url / extras.towns[].photo / trips.cover_image). Credits go
-// to trips.extras.photoCredits[activityId]. Venues where nothing trustworthy was
+// For each activity (and each Discover town) we resolve a REAL photo via the
+// shared multi-source resolver (exact ids -> verified web photos -> labelled
+// street view), download the bytes, upload them to the public `trip-photos`
+// Storage bucket, and write the Storage URL back onto the row
+// (activities.photo_url / extras.towns[].photo). Credits go to
+// trips.extras.photoCredits[activityId]. Venues where nothing trustworthy was
 // found are marked photo_source = 'none' so the client never falls back to a
 // generic stock image for them.
+//
+// The trip COVER (final pass, or alone with { coverOnly: true }) comes from the
+// cover picker (_shared/cover-resolver.mjs): Pexels gated on the city name,
+// Commons Featured/Quality/Valued images, Wikidata-linked images, an optional
+// Gemini vision check. A large copy (up to 2400px for Pexels, Wikimedia
+// standard widths, max 3 MB) and a 1280px copy are stored at
+// <tripId>/cover-v2-<w>w-<tag>.jpg; trips.cover_image = the large copy and
+// trips.extras.cover = { v: 2, large, small, focusY, credit, ... }. Only an
+// empty cover, the old automatic pick or a v2 copy whose record was lost is
+// ever replaced. The tag is new for every pick, so two pickers on one trip
+// never overwrite each other's files.
+//
+// Every write to trips.extras is a compare-and-swap on trips.updated_at
+// (bumped by a trigger on each write): a write that raced another one is
+// recomputed from a fresh read, so concurrent runs never drop each other's
+// keys (photoCredits, towns, cover, photoResolve).
 //
 // Callers:
 //   - process-generation (service role), fire-and-forget after a trip saves
 //   - scripts/backfill-photos.mjs (service role), inline per trip
 //   - the app after a trip import (the trip OWNER's JWT), inline, looping while
 //     `remaining` > 0
+//   - the app when the owner opens a trip without a v2 cover: { coverOnly: true }
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   resolvePhotoCandidates, geocodeVenue, isOfficialSite, imageDims, looksLikePhoto, safeFetch, readCapped, MAX_IMAGE_BYTES,
-  canCheckDns,
+  canCheckDns, coverNeedsPick, coverSizes, coverRecord, noCoverRecord, mergeCoverExtras, coverLandmarks, isCoverHost, coverCopyPath,
+  COVER_MAX_BYTES, COVER_MIN_BPP, COVER_RELAXED_MIN_WIDTH,
 } from "../_shared/photo-resolver.mjs";
+import { findCoverCandidates } from "../_shared/cover-resolver.mjs";
+import { updateRowVersioned } from "../_shared/trip-row.mjs";
 import { CORS_MAX_AGE, bearerToken, isServiceRoleRequest } from "../_shared/http.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const MAPILLARY_TOKEN = Deno.env.get("MAPILLARY_TOKEN") || "";
+const PEXELS_API_KEY = Deno.env.get("PEXELS_API_KEY") || "";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
 const BUCKET = "trip-photos";
 const ACT_WIDTH = 960;   // Wikimedia standard thumbnail width
-const COVER_WIDTH = 1280;
+const COVER_TRIES = 4;   // ranked cover candidates to try downloading
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -102,23 +125,174 @@ const OWNER_MAX_VENUES = 150;
 const NO_PHOTO_CATEGORIES = new Set(["transport", "flight", "arrival", "departure"]);
 
 type Credit = { creator?: string; license?: string; via?: string; link?: string };
+type TripRow = Record<string, any>;
+
+// Every trips.extras write goes through this compare-and-swap (see
+// _shared/trip-row.mjs), so concurrent runs never drop each other's keys.
+function updateTripRow(tripId: string, columns: string, change: (fresh: TripRow) => TripRow | null) {
+  return updateRowVersioned(admin, {
+    table: "trips", id: tripId, columns, change,
+    log: (msg: string, detail?: string) => console.error(`resolve-trip-photos: ${msg}`, detail ?? ""),
+  });
+}
 
 async function ownerBudgetExceeded(tripId: string): Promise<boolean> {
-  const { data } = await admin.from("trips").select("extras").eq("id", tripId).single();
-  const extras = { ...(data?.extras || {}) };
   const today = new Date().toISOString().slice(0, 10);
-  const prev = extras.photoResolve?.day === today ? Number(extras.photoResolve.calls) || 0 : 0;
-  if (prev >= OWNER_CALLS_PER_DAY) return true;
-  extras.photoResolve = { day: today, calls: prev + 1 };
-  await admin.from("trips").update({ extras }).eq("id", tripId);
-  return false;
+  let exceeded = false;
+  await updateTripRow(tripId, "extras", (fresh) => {
+    const extras = fresh.extras || {};
+    const prev = extras.photoResolve?.day === today ? Number(extras.photoResolve.calls) || 0 : 0;
+    exceeded = prev >= OWNER_CALLS_PER_DAY;
+    return exceeded ? null : { extras: { ...extras, photoResolve: { day: today, calls: prev + 1 } } };
+  });
+  return exceeded;
 }
+
+// ---------------------------------------------------------------- trip cover
+
+type Sized = { url: string; w: number; h: number };
+type StoredCopy = Sized & { path: string };
+type CoverCopy = { bytes: Uint8Array; contentType: string; width: number; height: number };
+type CoverOutcome = { picked: boolean; record: Record<string, unknown>; image: string };
+
+// The first stop of the trip (multi-city: the first city).
+function tripDestination(ws: any): any {
+  return ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
+}
+
+// One cover copy from the Pexels or Wikimedia image CDN, checked to be a real
+// photo of at most COVER_MAX_BYTES.
+async function fetchCoverCopy(url: string): Promise<CoverCopy | null> {
+  if (!isCoverHost(url)) return null;
+  try {
+    const res = await safeFetch(url, {}, 20_000);
+    if (!res?.ok) { res?.body?.cancel(); return null; }
+    const contentType = (res.headers.get("content-type") || "").split(";")[0].trim();
+    if (!/^image\/(jpeg|webp)$/.test(contentType)) { res.body?.cancel(); return null; }
+    const bytes = await readCapped(res, COVER_MAX_BYTES);
+    if (!bytes) return null;
+    const dims = imageDims(bytes);
+    if (!dims || !looksLikePhoto(dims, bytes.byteLength, contentType, COVER_MIN_BPP)) return null;
+    return { bytes, contentType, width: dims.width, height: dims.height };
+  } catch {
+    return null;
+  }
+}
+
+async function uploadCoverCopy(tripId: string, img: CoverCopy, tag: string): Promise<StoredCopy | null> {
+  const path = coverCopyPath(tripId, img, tag);
+  if (!path) return null;
+  const { error } = await admin.storage.from(BUCKET).upload(path, img.bytes, {
+    contentType: img.contentType, upsert: true, cacheControl: "604800",
+  });
+  if (error) return null;
+  return { url: admin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl, w: img.width, h: img.height, path };
+}
+
+// Store the large copy (the first size option that downloads cleanly) and,
+// when it is smaller, the 1280px copy, all under this pick's tag. Null when
+// no large copy could be stored.
+async function storeCover(tripId: string, cand: any, tag: string): Promise<{ large: StoredCopy; small: StoredCopy | null } | null> {
+  const sizes = coverSizes(cand);
+  let large: StoredCopy | null = null;
+  for (const option of sizes.large) {
+    const img = await fetchCoverCopy(option.url);
+    if (!img || img.width < COVER_RELAXED_MIN_WIDTH) continue;
+    large = await uploadCoverCopy(tripId, img, tag);
+    if (large) break;
+  }
+  if (!large) return null;
+  let small: StoredCopy | null = null;
+  if (sizes.small && sizes.small.w < large.w) {
+    const img = await fetchCoverCopy(sizes.small.url);
+    if (img && img.width < large.w) small = await uploadCoverCopy(tripId, img, tag);
+  }
+  return { large, small };
+}
+
+// extras.cover keeps { url, w, h } per copy, not the Storage path.
+const sizedOnly = ({ url, w, h }: StoredCopy): Sized => ({ url, w, h });
+
+// A tag shared by one pick's copies; new for every pick (see coverCopyPath).
+function newPickTag(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+}
+
+// Copies of a pick that lost the race to another picker: never referenced by
+// any row (their names are unique to this pick), so safe to delete.
+async function removeCopies(paths: string[]) {
+  if (!paths.length) return;
+  const { error } = await admin.storage.from(BUCKET).remove(paths);
+  if (error) console.error("resolve-trip-photos: could not remove unused cover copies", error.message);
+}
+
+// Whether the trip still wants a cover (another run may have saved one while
+// this one searched). Re-read right before downloading and uploading.
+async function stillNeedsPick(tripId: string): Promise<boolean> {
+  const { data, error } = await admin.from("trips").select("cover_image, extras").eq("id", tripId).single();
+  return !error && Boolean(data) && coverNeedsPick(data, tripId);
+}
+
+// Write the cover onto a FRESH read of the row (compare-and-swap, see
+// updateTripRow): extras merged so concurrent photo writes survive, and
+// nothing written if a cover was chosen or picked meanwhile.
+async function saveCover(tripId: string, record: Record<string, unknown>, image: string): Promise<boolean> {
+  const { written } = await updateTripRow(tripId, "cover_image, extras", (fresh) =>
+    coverNeedsPick(fresh, tripId) ? { cover_image: image, extras: mergeCoverExtras(fresh.extras, record) } : null);
+  return written;
+}
+
+// Pick, store and save a cover. Null when nothing was written (a source or a
+// download failed: tried again next time; or another run saved one first).
+async function pickCover(tripId: string, row: any, dest: any, activities: any[]): Promise<CoverOutcome | null> {
+  const found = await findCoverCandidates(
+    { dest, startDate: row?.start_date, endDate: row?.end_date, landmarks: coverLandmarks(activities, dest) },
+    { pexelsKey: PEXELS_API_KEY, geminiKey: GEMINI_API_KEY, geminiModel: GEMINI_MODEL },
+  );
+  const tag = newPickTag();
+  for (const cand of found.ranked.slice(0, COVER_TRIES)) {
+    if (!(await stillNeedsPick(tripId))) return null;
+    const stored = await storeCover(tripId, cand, tag);
+    if (!stored) continue;
+    const { large, small } = stored;
+    const record = coverRecord(cand, { large: sizedOnly(large), small: small ? sizedOnly(small) : null, ctx: found.ctx });
+    if (await saveCover(tripId, record, large.url)) return { picked: true, record, image: large.url };
+    await removeCopies([large.path, small?.path].filter((p): p is string => Boolean(p)));
+    return null;
+  }
+  // Only a complete search that found nothing usable is recorded as "none"
+  // (the client then shows the plain header; the backfill retries in 30 days).
+  if (found.ranked.length || !found.complete) return null;
+  const record = noCoverRecord();
+  return (await saveCover(tripId, record, "")) ? { picked: false, record, image: "" } : null;
+}
+
+// { coverOnly: true }: only the cover pass. Reports the trip's cover as it now
+// stands, so the app can update the header without reloading the trip.
+async function resolveCoverOnly(tripId: string) {
+  const { data: row } = await admin.from("trips")
+    .select("wizard_state, extras, cover_image, start_date, end_date").eq("id", tripId).single();
+  const dest = tripDestination(row?.wizard_state);
+  let outcome: CoverOutcome | null = null;
+  if (row && dest?.name && coverNeedsPick(row, tripId)) {
+    const { data: days } = await admin.from("itinerary_days")
+      .select("activities(venue_name, venue_address, category, latitude, longitude)").eq("trip_id", tripId);
+    outcome = await pickCover(tripId, row, dest, (days || []).flatMap((d: any) => d.activities || []));
+  }
+  if (outcome) return { cover: outcome.picked, coverImage: outcome.image, coverRecord: outcome.record };
+  // Nothing written by this call: report the row as it is now (another run
+  // may have picked the cover meanwhile).
+  const { data: now } = await admin.from("trips").select("cover_image, extras").eq("id", tripId).single();
+  return { cover: false, coverImage: now?.cover_image ?? null, coverRecord: now?.extras?.cover ?? null };
+}
+
+// ---------------------------------------------------------------- whole trip
 
 async function resolveTrip(tripId: string, ownerCall = false) {
   const { data: tripRow } = await admin.from("trips")
-    .select("wizard_state, extras, cover_image").eq("id", tripId).single();
+    .select("wizard_state, extras, cover_image, start_date, end_date").eq("id", tripId).single();
   const ws: any = tripRow?.wizard_state || {};
-  const dest = ws.multiCity ? ws.destinations?.[0] : ws.destination;
+  const dest = tripDestination(ws);
   const bias = dest && Number.isFinite(Number(dest.lat)) && Number.isFinite(Number(dest.lng))
     ? { lat: Number(dest.lat), lng: Number(dest.lng) } : undefined;
 
@@ -189,24 +363,21 @@ async function resolveTrip(tripId: string, ownerCall = false) {
       if (hit) { town.photo = hit.stored; town.photoSource = hit.cand.source; townDone++; }
     });
 
-    if (!tripRow?.cover_image && dest?.name) {
-      const cands = await resolvePhotoCandidates({ query: dest.name, kind: "area", lat: bias?.lat, lng: bias?.lng, maxWidth: COVER_WIDTH },
-        { mapillaryToken: MAPILLARY_TOKEN });
-      const hit = await storeFirst(cands.filter((c) => c.source !== "street"), `${tripId}/cover`);
-      if (hit) {
-        await admin.from("trips").update({ cover_image: hit.stored }).eq("id", tripId);
-        coverDone = true;
-      }
+    if (dest?.name && tripRow && coverNeedsPick(tripRow, tripId)) {
+      const activities = (days || []).flatMap((d: any) => d.activities || []);
+      coverDone = Boolean((await pickCover(tripId, tripRow, dest, activities))?.picked);
     }
   }
 
   if (townDone > 0 || Object.keys(credits).length > 0) {
-    // Re-read extras right before writing so a concurrent edit isn't clobbered.
-    const { data: fresh } = await admin.from("trips").select("extras").eq("id", tripId).single();
-    const merged = { ...(fresh?.extras || {}) };
-    if (townDone > 0) merged.towns = extras.towns;
-    merged.photoCredits = { ...(merged.photoCredits || {}), ...credits };
-    await admin.from("trips").update({ extras: merged }).eq("id", tripId);
+    // Merged into a fresh read (compare-and-swap) so a concurrent cover pick
+    // or credit write is never clobbered.
+    await updateTripRow(tripId, "extras", (fresh) => {
+      const merged = { ...(fresh.extras || {}) };
+      if (townDone > 0) merged.towns = extras.towns;
+      merged.photoCredits = { ...(merged.photoCredits || {}), ...credits };
+      return { extras: merged };
+    });
   }
 
   return { activities: actDone, attempted: acts.length, towns: townDone, cover: coverDone, remaining };
@@ -225,7 +396,7 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const token = bearerToken(req);
-    const { tripId, inline } = await req.json().catch(() => ({}));
+    const { tripId, inline, coverOnly } = await req.json().catch(() => ({}));
     if (!tripId || typeof tripId !== "string" || !/^[0-9a-f-]{36}$/i.test(tripId)) return json({ error: "tripId required" }, 400);
 
     // Service callers (process-generation, backfill script) send the exact
@@ -243,12 +414,13 @@ serve(async (req: Request) => {
     // inline in batches so the app can show progress and re-render when done.
     // @ts-ignore EdgeRuntime is provided by the Supabase Deno runtime.
     const bg = (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil);
+    const run = coverOnly === true ? () => resolveCoverOnly(tripId) : () => resolveTrip(tripId, !service);
     if (service && bg && !inline) {
       // @ts-ignore
-      EdgeRuntime.waitUntil(resolveTrip(tripId));
+      EdgeRuntime.waitUntil(run());
       return json({ accepted: true, tripId }, 202);
     }
-    const result = await resolveTrip(tripId, !service);
+    const result = await run();
     return json({ ok: true, tripId, ...result }, 200);
   } catch (err: any) {
     console.error("resolve-trip-photos failed", err?.message);

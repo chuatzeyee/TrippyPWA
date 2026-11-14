@@ -11,6 +11,13 @@
 //   SUPABASE_ACCESS_TOKEN=$(cat ~/.supabase/access-token) \
 //   SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
 //   node scripts/backfill-photos.mjs [limit]
+//
+//   ... node scripts/backfill-photos.mjs --covers [limit]
+//   Covers only ({ coverOnly: true }): trips whose cover is empty or the old
+//   automatic pick, a v2 copy whose extras.cover was lost, and "nothing found"
+//   verdicts older than 30 days. The edge
+//   function re-checks the same rule before writing, so a cover a user chose
+//   is never replaced.
 
 const PROJECT = 'hrbhwnscjeokaovoivmn';
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
@@ -30,7 +37,13 @@ async function sql(query) {
   return res.json();
 }
 
-const limit = parseInt(process.argv[2] || '100', 10);
+const coversOnly = process.argv.includes('--covers');
+const limit = parseInt(process.argv.filter(a => a !== '--covers')[2] || '100', 10);
+
+if (coversOnly) {
+  await backfillCovers();
+  process.exit(0);
+}
 
 // Trips with at least one venue activity still missing a photo.
 const trips = await sql(`
@@ -70,3 +83,39 @@ for (const { id } of trips) {
 }
 
 console.log(`Done: ${ok} ok, ${failed} failed`);
+
+// One coverOnly call per trip. Same rule as coverNeedsPick() in
+// supabase/functions/_shared/cover-rank.mjs.
+async function backfillCovers() {
+  const rows = await sql(`
+    select id from trips
+    where status is distinct from 'generating' and (
+      (extras->'cover' is null
+        and (coalesce(cover_image, '') = '' or position('/trip-photos/' || id::text || '/cover.' in cover_image) > 0))
+      -- one of our v2 copies whose record was lost (Regenerate Itinerary replaces extras)
+      or (position('/trip-photos/' || id::text || '/cover-v2-' in coalesce(cover_image, '')) > 0
+        and cover_image is distinct from extras->'cover'->'large'->>'url')
+      or (extras->'cover'->>'none' = 'true' and coalesce(cover_image, '') = ''
+        and (extras->'cover'->>'triedAt')::timestamptz < now() - interval '30 days'))
+    order by created_at desc
+    limit ${limit}`);
+  console.log(`Picking covers for ${rows.length} trip(s)`);
+  let picked = 0, none = 0, failed = 0;
+  for (const { id } of rows) {
+    try {
+      const res = await fetch(FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SERVICE_KEY}` },
+        body: JSON.stringify({ tripId: id, coverOnly: true, inline: true }),
+        signal: AbortSignal.timeout(120_000),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) { failed++; console.log(`- ${id}: HTTP ${res.status} ${JSON.stringify(body).slice(0, 100)}`); continue; }
+      if (body.cover) { picked++; console.log(`- ${id}: ${body.coverRecord?.source} ${body.coverRecord?.sourceId}`); }
+      else { none++; console.log(`- ${id}: ${body.coverRecord?.none ? 'nothing usable' : 'not picked (try again later)'}`); }
+    } catch (e) {
+      failed++; console.log(`- ${id}: ${e.message}`);
+    }
+  }
+  console.log(`Covers: ${picked} picked, ${none} without, ${failed} failed`);
+}

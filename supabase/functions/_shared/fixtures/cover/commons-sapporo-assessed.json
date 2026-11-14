@@ -1,0 +1,472 @@
+{
+ "batchcomplete": true,
+ "continue": {
+  "gsroffset": 30,
+  "continue": "gsroffset||"
+ },
+ "query": {
+  "pages": [
+   {
+    "pageid": 31903390,
+    "ns": 6,
+    "title": "File:Cities partners Rathaus Munich.jpg",
+    "index": 23,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 11546955,
+      "width": 3107,
+      "height": 3520,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Cities_partners_Rathaus_Munich.jpg/1920px-Cities_partners_Rathaus_Munich.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 2175,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/5/54/Cities_partners_Rathaus_Munich.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Cities_partners_Rathaus_Munich.jpg/1920px-Cities_partners_Rathaus_Munich.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 2175,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/5/54/Cities_partners_Rathaus_Munich.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/54/Cities_partners_Rathaus_Munich.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Cities_partners_Rathaus_Munich.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=31903390",
+      "extmetadata": {
+       "Categories": {
+        "value": "Memorials dedicated to town twinning in Germany|Germany photographs taken on 2013-10-21|Taken with Sony DSLR-A550|CC-Zero|Cincinnati, Ohio|Coats of arms of Kyiv|Twin town signs|Self-published work|Coats of arms of cities|Reliefs of coats of arms in Munich|Coats of arms of Munich|Reliefs of British coats of arms in foreign countries|Coats of arms of Bordeaux|Interior of Neues Rathaus (München)|File",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "CoAs of Partner cities, entrance of the City hall, Munich, Bavaria, Germany.",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2013-10-21",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Jebulon\" title=\"User:Jebulon\">Jebulon</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ],
+    "coordinates": [
+     {
+      "lat": 48.137462,
+      "lon": 11.575528,
+      "primary": true,
+      "globe": "earth"
+     }
+    ]
+   },
+   {
+    "pageid": 89020949,
+    "ns": 6,
+    "title": "File:Sapporo Concert Hall Kitara-20091013-RM-122400.jpg",
+    "index": 1,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 6318273,
+      "width": 4000,
+      "height": 3000,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg/1920px-Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1440,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg/3840px-Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg/1920px-Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1440,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg/3840px-Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/10/Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Sapporo_Concert_Hall_Kitara-20091013-RM-122400.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=89020949",
+      "extmetadata": {
+       "Categories": {
+        "value": "Taken with Panasonic Lumix DMC-G1|Sapporo Concert Hall Kitara|Self-published work|Featured pictures by Ermell|Uploaded with LrMediaWiki|Featured pictures of building interiors|Photographs by Ermell|Taken with Lumix G Vario 14-45 mm F3.5-5.6 Asph Mega OIS|Japan photographs taken on 2009-10-13|October 2009 in Sapporo|Featured pictures of stairs|Interiors of concert halls in Japan|Featured pictures o",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Foyer of the Sapporo Concert Hall Kitara",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2009-10-13",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Ermell</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "Attribution": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Reinhold Möller</a>",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Featured pictures on Wikimedia Commons"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ]
+   },
+   {
+    "pageid": 89020952,
+    "ns": 6,
+    "title": "File:Sapporo TV tower-20091013-RM-162316.jpg",
+    "index": 13,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 5086448,
+      "width": 2034,
+      "height": 3817,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Sapporo_TV_tower-20091013-RM-162316.jpg/1920px-Sapporo_TV_tower-20091013-RM-162316.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 3603,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Sapporo_TV_tower-20091013-RM-162316.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Sapporo_TV_tower-20091013-RM-162316.jpg/1920px-Sapporo_TV_tower-20091013-RM-162316.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 3603,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Sapporo_TV_tower-20091013-RM-162316.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Sapporo_TV_tower-20091013-RM-162316.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Sapporo_TV_tower-20091013-RM-162316.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=89020952",
+      "extmetadata": {
+       "Categories": {
+        "value": "Taken with Panasonic Lumix DMC-G1|Sapporo TV Tower|Self-published work|Uploaded with LrMediaWiki|Photographs by Ermell|Taken with Lumix G Vario 14-45 mm F3.5-5.6 Asph Mega OIS|Japan photographs taken on 2009-10-13|October 2009 in Sapporo|Images by User:Ermell taken in 2009",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "The television tower of Sapporo",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2009-10-13",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Ermell</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "Attribution": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Reinhold Möller</a>",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ]
+   },
+   {
+    "pageid": 89021172,
+    "ns": 6,
+    "title": "File:Nymphaea caerulea-20091014-RM-115245.jpg",
+    "index": 2,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 6552499,
+      "width": 4000,
+      "height": 3000,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Nymphaea_caerulea-20091014-RM-115245.jpg/1920px-Nymphaea_caerulea-20091014-RM-115245.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1440,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Nymphaea_caerulea-20091014-RM-115245.jpg/3840px-Nymphaea_caerulea-20091014-RM-115245.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Nymphaea_caerulea-20091014-RM-115245.jpg/1920px-Nymphaea_caerulea-20091014-RM-115245.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1440,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Nymphaea_caerulea-20091014-RM-115245.jpg/3840px-Nymphaea_caerulea-20091014-RM-115245.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/80/Nymphaea_caerulea-20091014-RM-115245.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Nymphaea_caerulea-20091014-RM-115245.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=89021172",
+      "extmetadata": {
+       "Categories": {
+        "value": "Nymphaea nouchali var. caerulea|Taken with Panasonic Lumix DMC-G1|Featured pictures of Japan|Self-published work|Featured pictures of flowers|October 2009 in Hokkaido|Featured pictures by Ermell|Uploaded with LrMediaWiki|Photographs by Ermell|Files with coordinates missing SDC location of creation|Japan photographs taken on 2009-10-14|Taken with Panasonic Lumix G Vario 45-200mm F4.0-5.6 O.I.S.|Fea",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Blue Lotus (Nymphaea caerulea) in the Botanical Garden of Hokkaido University in Sapporo",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2009-10-14",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Ermell</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "Attribution": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Reinhold Möller</a>",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Featured pictures on Wikimedia Commons"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ],
+    "coordinates": [
+     {
+      "lat": 43.06273889,
+      "lon": 141.34481389,
+      "primary": true,
+      "globe": "earth"
+     }
+    ]
+   },
+   {
+    "pageid": 89067739,
+    "ns": 6,
+    "title": "File:Sapporo Mt.Moiwa view-20091012-RM-123338.jpg",
+    "index": 15,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 11603932,
+      "width": 4000,
+      "height": 2022,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg/1920px-Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 971,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg/3840px-Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg/1920px-Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 971,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg/3840px-Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Sapporo_Mt.Moiwa_view-20091012-RM-123338.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=89067739",
+      "extmetadata": {
+       "Categories": {
+        "value": "Views from Mount Moiwa (Sapporo)|Taken with Panasonic Lumix DMC-G1|Self-published work|October 2009 in Hokkaido|Uploaded with LrMediaWiki|Photographs by Ermell|Files with coordinates missing SDC location of creation|Taken with Lumix G Vario 14-45 mm F3.5-5.6 Asph Mega OIS|Japan photographs taken on 2009-10-12|Images by User:Ermell taken in 2009",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "View from Mount Moiwa auf Sapporo",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2009-10-12",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Ermell</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "Attribution": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Reinhold Möller</a>",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ],
+    "coordinates": [
+     {
+      "lat": 43.02221578,
+      "lon": 141.32263036,
+      "primary": true,
+      "globe": "earth"
+     }
+    ]
+   },
+   {
+    "pageid": 114451534,
+    "ns": 6,
+    "title": "File:Sapporo Botanic Garden bridge-20091014-RM-105840.jpg",
+    "index": 5,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 15073538,
+      "width": 4000,
+      "height": 3000,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg/1920px-Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1440,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg/3840px-Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg/1920px-Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1440,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg/3840px-Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Sapporo_Botanic_Garden_bridge-20091014-RM-105840.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=114451534",
+      "extmetadata": {
+       "Categories": {
+        "value": "Taken with Panasonic Lumix DMC-G1|Botanic Garden, Hokkaido University|Self-published work|Uploaded with LrMediaWiki|Photographs by Ermell|Files with coordinates missing SDC location of creation|Taken with Lumix G Vario 14-45 mm F3.5-5.6 Asph Mega OIS|Japan photographs taken on 2009-10-14|October 2009 in Sapporo|Images by User:Ermell taken in 2009",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Bridge in the Botanical Garden of Hokkaido University in Sapporo",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2009-10-14",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Ermell</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "Attribution": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Ermell\" title=\"User:Ermell\">Reinhold Möller</a>",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ],
+    "coordinates": [
+     {
+      "lat": 43.06414444,
+      "lon": 141.34168056,
+      "primary": true,
+      "globe": "earth"
+     }
+    ]
+   }
+  ]
+ }
+}

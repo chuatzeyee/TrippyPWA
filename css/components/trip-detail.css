@@ -228,7 +228,44 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* The strip is far wider than the photo: keep the band chosen per cover
+     (extras.cover.focusY, set on .td-hero) rather than the middle. */
+  object-position: 50% var(--hero-focus-y, 38%);
   display: block;
+}
+
+/* Photographer credit, bottom right, under the gradient. */
+.td-hero-credit {
+  position: absolute;
+  right: var(--sp-3);
+  bottom: 5px;
+  z-index: 1;
+  max-width: 45%;
+  font-size: 10.5px;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+a.td-hero-credit:hover,
+a.td-hero-credit:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* Phones: a Commons credit ("Photo: name, CC BY-SA 4.0, Wikimedia Commons")
+   does not fit beside the title in 45%, so it gets its own line under the
+   title, across the full width (the licence must stay readable). */
+@media (max-width: 640px) {
+  .td-hero--credit .td-hero-caption {
+    bottom: calc(var(--sp-4) + 8px);
+  }
+  .td-hero-credit {
+    max-width: calc(100% - 2 * var(--sp-3));
+  }
 }
 
 .td-hero-overlay {
@@ -378,6 +415,9 @@
 }
 
 .td-day-card {
+  /* Horizontal inset shared by the open card's sticky header and its body, so
+     the header card and the content under it share left and right edges. */
+  --td-card-inset: var(--sp-4);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -548,7 +588,7 @@
 /* ===== Day Card Body (hidden by default) ===== */
 .td-day-card-body {
   display: none;
-  padding: 0 var(--sp-4) var(--sp-4);
+  padding: 0 var(--td-card-inset) var(--sp-4);
 }
 
 .td-day-card--section .td-day-card-body {
@@ -597,9 +637,9 @@
   border-radius: var(--r-xl);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35),
               0 1px 3px rgba(0, 0, 0, 0.15);
-  /* Horizontal inset must match the body content padding (--sp-4) so the sticky
-     header lines up with the cards below it. */
-  margin: var(--sp-3) var(--sp-4) var(--sp-2);
+  /* Same horizontal inset as the body, so the sticky header lines up with the
+     cards below it at every width. */
+  margin: var(--sp-3) var(--td-card-inset) var(--sp-2);
   border: 1px solid var(--border);
 }
 
@@ -1664,16 +1704,54 @@
   opacity: 0.6;
 }
 
-/* Connecting flights */
-.td-flight-route--connecting {
-  gap: var(--sp-2);
-  padding: var(--sp-4) var(--sp-3);
-  flex-wrap: nowrap;
+/* ===== Flight route row (flights card) =====
+   SIN ---plane--- TPE ---plane--- CTS. Each stop is a column: its code on a
+   row as tall as an endpoint code (--td-route-code), its flag under that row.
+   The segments between stops are as tall as the code row and draw their line
+   through its middle, so every code sits centred on the line and every flag
+   on a leg, the stopover's included, starts at the same height. Ferry, bus
+   and train cards (no .td-flight-journey) keep the base route rules.
+   The journey is a size container: a narrow leg card (two-up in the desktop
+   side panel, small phones) gets smaller codes and planes instead of
+   segments squeezed to nothing. */
+.td-flight-journey {
+  container-type: inline-size;
 }
 
-.td-flight-route--connecting .td-flight-route-line {
-  min-width: 36px;
-  flex: 1;
+.td-flight-journey .td-flight-route {
+  --td-route-code: 1.8rem;
+  --td-route-gap: var(--sp-4);
+  --td-route-plane: 20px;
+  --td-route-plane-gap: var(--sp-2);
+  align-items: flex-start;
+  gap: var(--td-route-gap);
+}
+
+.td-flight-journey .td-flight-route--connecting {
+  --td-route-code: 1.4rem;
+  --td-route-gap: var(--sp-3);
+}
+
+.td-flight-journey .td-flight-endpoint,
+.td-flight-journey .td-flight-stopover {
+  flex-shrink: 0;
+  gap: var(--sp-2);
+}
+
+.td-flight-journey .td-flight-code {
+  font-size: var(--td-route-code);
+  line-height: 1;
+}
+
+.td-flight-journey .td-flight-route-line {
+  height: var(--td-route-code);
+  min-width: var(--sp-8);
+  gap: var(--td-route-plane-gap);
+}
+
+.td-flight-journey .td-flight-route-plane svg {
+  width: var(--td-route-plane);
+  height: var(--td-route-plane);
 }
 
 .td-flight-route--connecting .td-flight-route-dash {
@@ -1686,73 +1764,122 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
 }
 
-.td-flight-stopover-dot {
+/* The stop's code is set small, centred on a row as tall as the endpoint
+   codes. */
+.td-flight-stopover-code {
+  position: relative;
+  height: var(--td-route-code);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: var(--td-route-code);
+  color: var(--amber);
+  letter-spacing: 0.03em;
+}
+
+/* Ring marking the stop, just above its code and out of flow, so it moves
+   neither the code off the line nor the flag off the endpoints' flags. */
+.td-flight-stopover-code::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(50% + 0.5em + 2px);
   width: 10px;
   height: 10px;
+  margin-left: -5px;
   border-radius: 50%;
   border: 2px solid var(--amber);
   background: var(--surface-solid);
 }
 
-.td-flight-stopover-code {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--amber);
-  letter-spacing: 0.03em;
-}
-
 .td-flight-stopover-flag {
   display: flex;
   align-items: center;
-  min-height: 10px;
+  min-height: 12px;
 }
 
-.td-flight-connection-label {
+/* One small line under the route: a clock, then the time with any layover
+   ("9h 50m, 1h 15m in Taipei"). Ferry, bus and train cards keep the base
+   .td-flight-duration rule. */
+.td-flight-journey .td-flight-duration {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 5px;
+  margin: 0;
+  padding: 0 var(--sp-4);
   font-size: 0.72rem;
   font-weight: 500;
   color: var(--amber);
-  padding: 0 var(--sp-4) var(--sp-3);
-  margin-top: calc(var(--sp-2) * -1);
 }
 
-.td-flight-leg--connecting .td-flight-endpoint .td-flight-code {
-  font-size: 1.4rem;
+/* Centred on the first line, so a time that wraps (two layovers) keeps its
+   clock beside the start of the text. */
+.td-flight-duration-icon {
+  flex-shrink: 0;
+  margin-top: calc((1lh - 12px) / 2);
 }
 
 @media (max-width: 640px) {
-  .td-flight-route--connecting {
-    gap: var(--sp-1);
-    padding: var(--sp-3) var(--sp-2);
+  .td-flight-journey .td-flight-route {
+    --td-route-code: 1.4rem;
   }
 
-  .td-flight-route--connecting .td-flight-route-line {
-    min-width: 24px;
-  }
-
-  .td-flight-leg--connecting .td-flight-endpoint .td-flight-code {
-    font-size: 1.1rem;
+  .td-flight-journey .td-flight-route--connecting {
+    --td-route-code: 1.2rem;
   }
 
   .td-flight-stopover-code {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
+  }
+}
+
+/* Narrow leg card: about 250px wide two-up beside the desktop side panel,
+   260px on a 320px phone. */
+@container (max-width: 295px) {
+  .td-flight-journey .td-flight-route {
+    --td-route-code: 1.4rem;
+    --td-route-gap: var(--sp-3);
+  }
+
+  .td-flight-journey .td-flight-route--connecting {
+    --td-route-code: 1.1rem;
+    --td-route-gap: var(--sp-2);
+    --td-route-plane: 16px;
+    --td-route-plane-gap: var(--sp-1);
+  }
+}
+
+/* Two or more stops: four codes and three segments in one leg card. Smaller
+   codes, planes and gaps, and shorter minimum segments, so the first and last
+   codes stay inside the leg's side padding at every width. Placed after the
+   rules above so it wins at every breakpoint. */
+.td-flight-journey .td-flight-route--multistop {
+  --td-route-code: 1.1rem;
+  --td-route-gap: var(--sp-2);
+  --td-route-plane: 14px;
+  --td-route-plane-gap: 2px;
+}
+
+.td-flight-journey .td-flight-route--multistop .td-flight-route-line {
+  min-width: var(--sp-4);
+}
+
+@container (max-width: 295px) {
+  .td-flight-journey .td-flight-route--multistop {
+    --td-route-code: 1rem;
+    --td-route-gap: var(--sp-1);
   }
 }
 
 /* ===== Flight leg card layout =====
-   Slots, top to bottom: header, booking row, journey (route, stop label,
-   duration), details, price row, tip. Every slot after the header carries its
-   own top spacing, so a slot a leg doesn't have takes no room. The header has
-   room for the 28px logo, so a leg showing the airline name instead (no logo,
-   or one that failed to load) keeps the same height. */
+   Slots, top to bottom: header, booking row, journey (route, time line),
+   details, price row, tip. Every slot after the header carries its own top
+   spacing, so a slot a leg doesn't have takes no room. The header has room
+   for the 28px logo, so a leg showing the airline name instead (no logo, or
+   one that failed to load) keeps the same height. */
 .td-flight-legs--flights .td-flight-leg-header {
   min-height: 52px;
 }
@@ -1762,32 +1889,34 @@
   padding: 0 var(--sp-4);
 }
 
+/* "Booked" stays left; the reference sits against the right edge, in line
+   with the flight number in the header above. */
+.td-flight-booking .td-booking-ref {
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Room above and below the route so it does not crowd the booking row or
+   the details. */
 .td-flight-journey {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
-  margin-top: var(--sp-4);
+  gap: var(--sp-5);
+  margin-top: var(--sp-6);
 }
 
-/* Same side padding as the header and details, so the codes line up with them. */
+/* Same side padding as the header and details, so the codes line up with
+   them; the top padding leaves room for the stopover ring. */
 .td-flight-journey .td-flight-route {
-  padding: var(--sp-1) var(--sp-4) 0;
+  padding: var(--sp-2) var(--sp-4) 0;
 }
 
-.td-flight-journey .td-flight-connection-label,
-.td-flight-journey .td-flight-duration {
-  margin: 0;
-  padding: 0 var(--sp-4);
-}
-
-/* Depart / Arrive / Seats / Baggage: caption labels in a column, values in
-   the body font, each pair on its own row. */
 .td-flight-details {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   align-items: baseline;
   gap: var(--sp-3) var(--sp-4);
-  margin: var(--sp-5) 0 0;
+  margin: var(--sp-6) 0 0;
   padding: 0 var(--sp-4);
 }
 
@@ -1852,7 +1981,7 @@
 
 /* Light theme: amber and teal text on white or the beige strip fall to about
    2.5:1. Mixing in ink brings them to about 4.8:1 and 5:1 (WCAG AA). */
-[data-theme="light"] .td-flight-connection-label,
+[data-theme="light"] .td-flight-journey .td-flight-duration,
 [data-theme="light"] .td-flight-stopover-code {
   color: color-mix(in srgb, var(--amber) 60%, var(--ink));
 }
@@ -2176,6 +2305,7 @@
   .td-spending-acts { display: none; }
 
   .td-day-card {
+    --td-card-inset: var(--sp-2);
     margin-top: -42px;
     padding-bottom: 42px;
   }
@@ -2200,7 +2330,7 @@
   .td-day-card-title { font-size: 0.95rem; }
 
   .td-day-card-body {
-    padding: 0 var(--sp-2) var(--sp-3);
+    padding: 0 var(--td-card-inset) var(--sp-3);
   }
 
   .td-day-grid--has-open .td-day-card {
@@ -2255,6 +2385,7 @@
   .td-title { font-size: 2rem; }
 
   .td-day-card {
+    --td-card-inset: var(--sp-5);
     padding-bottom: 52px;
     margin-top: -52px;
   }
@@ -2268,7 +2399,7 @@
   }
 
   .td-day-card-body {
-    padding: 0 var(--sp-5) var(--sp-5);
+    padding: 0 var(--td-card-inset) var(--sp-5);
   }
 
   .td-day-grid--has-open .td-day-card {
@@ -2964,6 +3095,12 @@
     max-width: 80%;
   }
 
+  /* At 80% of a wide screen a 150px strip crops a photo to about 10:1; let it
+     grow with the width (about 7:1). */
+  .td-hero {
+    height: clamp(150px, 14vw, 280px);
+  }
+
   .td-body {
     display: grid;
     grid-template-columns: 420px 1fr;
@@ -2987,9 +3124,9 @@
 
   .td-day-card--open .td-day-card-header {
     top: calc(var(--nav-h) + var(--sp-4));
-    /* Match the body content's --sp-4 horizontal padding so the sticky header
-       aligns with the cards below it on desktop. */
-    margin: 0 var(--sp-4);
+    /* Same horizontal inset as the body (see .td-day-card), so the sticky
+       header aligns with the cards below it on desktop. */
+    margin: 0 var(--td-card-inset);
   }
 
   .td-day-card--open .td-day-card-body {

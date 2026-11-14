@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, photoCreditText } from './trip-extras.js';
+import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, photoCreditText, flightTimeLine } from './trip-extras.js';
 import { formatDateRange, setLocaleFromFlag } from './locale.js';
 
 const FORBIDDEN_GLYPHS = /[\u2014\u2013\u00B7\u2022\u2192]/;
@@ -100,6 +100,37 @@ describe('isBookedLeg', () => {
     expect(isBookedLeg({ bookingRef: 'E68JGI' })).toBe(true);
     expect(isBookedLeg({ airline: 'Scoot' })).toBe(false);
     expect(isBookedLeg(null)).toBe(false);
+  });
+});
+
+describe('flightTimeLine', () => {
+  it('folds the layover into the trip time with a comma', () => {
+    expect(flightTimeLine('9h 50m incl. 1h 15m in Taipei', ['TPE'])).toBe('9h 50m, 1h 15m in Taipei');
+    expect(flightTimeLine('10h 45m incl 1h 15m in Taipei', ['TPE'])).toBe('10h 45m, 1h 15m in Taipei');
+    expect(flightTimeLine('9h 50m including 1h 15m layover', ['TPE'])).toBe('9h 50m, 1h 15m layover');
+    expect(flightTimeLine('9h 50m Incl. 1h 15m in Taipei', ['TPE'])).toBe('9h 50m, 1h 15m in Taipei');
+  });
+  it('does not double a comma or keep brackets around the layover', () => {
+    expect(flightTimeLine('9h 50m, incl. 1h 15m in Taipei', ['TPE'])).toBe('9h 50m, 1h 15m in Taipei');
+    expect(flightTimeLine('9h 50m (incl. 1h 15m in Taipei)', ['TPE'])).toBe('9h 50m, 1h 15m in Taipei');
+  });
+  it('keeps a non-stop time as it is', () => {
+    expect(flightTimeLine('6h 25m', [])).toBe('6h 25m');
+    expect(flightTimeLine('  6h   25m ')).toBe('6h 25m');
+  });
+  it('says where a connecting leg stops when it has no time', () => {
+    expect(flightTimeLine('', ['TPE'])).toBe('1 stop via TPE');
+    expect(flightTimeLine(undefined, ['TPE', 'HKG'])).toBe('2 stops via TPE, HKG');
+    expect(flightTimeLine({ bad: true }, ['TPE'])).toBe('1 stop via TPE');
+  });
+  it('is empty for a non-stop leg with no time', () => {
+    expect(flightTimeLine('', [])).toBe('');
+    expect(flightTimeLine(null)).toBe('');
+  });
+  it('uses no dashes, middle dots or arrows', () => {
+    for (const [d, via] of [['9h 50m incl. 1h 15m in Taipei', ['TPE']], ['', ['TPE', 'HKG']], ['6h 25m', []]]) {
+      expect(flightTimeLine(d, via)).not.toMatch(FORBIDDEN_GLYPHS);
+    }
   });
 });
 

@@ -75,6 +75,23 @@ export function isBookedLeg(leg) {
   return Boolean(leg && (leg.booked || leg.bookingRef));
 }
 
+// The one time line under a flight's route. A stored layover note folds in
+// after a comma ("9h 50m incl. 1h 15m in Taipei" reads "9h 50m, 1h 15m in
+// Taipei"); a connecting leg with no stored time says where it stops instead.
+export function flightTimeLine(duration, viaStops = []) {
+  const text = typeof duration === 'string' || typeof duration === 'number'
+    ? String(duration).replace(/\s+/g, ' ').trim()
+    : '';
+  if (text) {
+    return text
+      .replace(/\s*\(\s*(?:including|incl\.?)\s+([^)]*?)\s*\)/gi, ', $1')
+      .replace(/\s*,?\s*\b(?:including|incl\.?)\s+/gi, ', ');
+  }
+  const stops = (Array.isArray(viaStops) ? viaStops : []).filter(Boolean);
+  if (!stops.length) return '';
+  return `${stops.length === 1 ? '1 stop' : `${stops.length} stops`} via ${stops.join(', ')}`;
+}
+
 // "Photo: creator, licence, source" for a stored photo credit (extras.photoCredits).
 export function photoCreditText(credit) {
   if (!credit || typeof credit !== 'object') return '';

@@ -1,0 +1,577 @@
+{
+ "batchcomplete": true,
+ "continue": {
+  "gsroffset": 30,
+  "continue": "gsroffset||"
+ },
+ "query": {
+  "pages": [
+   {
+    "pageid": 37247271,
+    "ns": 6,
+    "title": "File:Hanoi Vietnam The-omnipresent-plastic-chairs-01.jpg",
+    "index": 17,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 6001537,
+      "width": 3636,
+      "height": 2597,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/Hanoi_Vietnam_The-omnipresent-plastic-chairs-01.jpg/1920px-Hanoi_Vietnam_The-omnipresent-plastic-chairs-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1371,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Hanoi_Vietnam_The-omnipresent-plastic-chairs-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/Hanoi_Vietnam_The-omnipresent-plastic-chairs-01.jpg/1920px-Hanoi_Vietnam_The-omnipresent-plastic-chairs-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1371,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Hanoi_Vietnam_The-omnipresent-plastic-chairs-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Hanoi_Vietnam_The-omnipresent-plastic-chairs-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Hanoi_Vietnam_The-omnipresent-plastic-chairs-01.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=37247271",
+      "extmetadata": {
+       "Categories": {
+        "value": "HDPE|Self-published work|Blue and red|Furniture in Vietnam|Chairs in Vietnam|Images by Cccefalon|Files with coordinates missing SDC location of creation|Vietnam photographs taken on 2011-05-10|Plastic products in red|Plastic products|Images of Vietnam by User:Cccefalon|Stacks of plastic stools|Hoàng Thanh Tùng Street, Hanoi",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Hanoi, Vietnam: Asia's omnipresent style of plastic stools, stacked in front of a restaurant.",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2011-05-10",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Cccefalon\" title=\"User:Cccefalon\">CEphoto, Uwe Aranas</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 3.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "Attribution": {
+        "value": "Photo by CEphoto, Uwe Aranas <b>or alternatively</b> © CEphoto, Uwe Aranas",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/3.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ]
+   },
+   {
+    "pageid": 40695701,
+    "ns": 6,
+    "title": "File:Sunset over Hanoi After the Rain.jpg",
+    "index": 2,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 25266957,
+      "width": 13087,
+      "height": 4455,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Sunset_over_Hanoi_After_the_Rain.jpg/1920px-Sunset_over_Hanoi_After_the_Rain.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 654,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Sunset_over_Hanoi_After_the_Rain.jpg/3840px-Sunset_over_Hanoi_After_the_Rain.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Sunset_over_Hanoi_After_the_Rain.jpg/1920px-Sunset_over_Hanoi_After_the_Rain.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 654,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Sunset_over_Hanoi_After_the_Rain.jpg/3840px-Sunset_over_Hanoi_After_the_Rain.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/20/Sunset_over_Hanoi_After_the_Rain.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Sunset_over_Hanoi_After_the_Rain.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=40695701",
+      "extmetadata": {
+       "Categories": {
+        "value": "Taken with Fujifilm X100S|Đội Cấn Street, Hanoi|Self-published work|Featured pictures of Vietnam|Featured pictures on Wikipedia, Vietnamese|Featured pictures of cityscapes|Panoramics in Hanoi|Orange sunsets of Vietnam|2015 in Hanoi|Featured pictures by Christopher Crouzet|Files with coordinates missing SDC location of creation",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Sunset over Hanoi, Vietnam, after a short but strong storm.",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2015-06-03 18:31:59",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Christopher_Crouzet\" title=\"User:Christopher Crouzet\">Christopher Crouzet</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Featured pictures on Wikimedia Commons"
+     }
+    ],
+    "coordinates": [
+     {
+      "lat": 21.03505833,
+      "lon": 105.83070833,
+      "primary": true,
+      "globe": "earth"
+     }
+    ]
+   },
+   {
+    "pageid": 42275232,
+    "ns": 6,
+    "title": "File:Noibai T2 gates.jpg",
+    "index": 7,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 1160330,
+      "width": 2592,
+      "height": 1728,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/Noibai_T2_gates.jpg/1920px-Noibai_T2_gates.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1280,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Noibai_T2_gates.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/Noibai_T2_gates.jpg/1920px-Noibai_T2_gates.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1280,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Noibai_T2_gates.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Noibai_T2_gates.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Noibai_T2_gates.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=42275232",
+      "extmetadata": {
+       "Categories": {
+        "value": "Taken with Canon EOS-1D X|Noi Bai International Airport|Self-published work|QI by Shansov.net|Taken by Shansov.net|Airport terminals in Vietnam|2015 in aviation in Vietnam|Files with coordinates missing SDC location of creation|Taken with Canon EF 16–35mm F4L IS USM",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "New terminal of <a href=\"https://en.wikipedia.org/wiki/Noi_Bai_International_Airport\" class=\"extiw\" title=\"w:Noi Bai International Airport\">Noibai International Airport</a>, Hanoi, Vietnam",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2015-06-10",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Shansov.net\" title=\"User:Shansov.net\"><b>[Tycho]</b></a>  <sup><a href=\"//commons.wikimedia.org/wiki/User_talk:Shansov.net\" title=\"User talk:Shansov.net\">talk</a> </sup>, <a rel=\"nofollow\" class=\"external free\" href=\"http://shansov.net\">http://shansov.net</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 3.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/3.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ],
+    "coordinates": [
+     {
+      "lat": 21.21804082,
+      "lon": 105.79513863,
+      "primary": true,
+      "globe": "earth"
+     }
+    ]
+   },
+   {
+    "pageid": 49606754,
+    "ns": 6,
+    "title": "File:Hanoi Vietnam Shrine-at-Hoàn-Kiếm-Lake-01.jpg",
+    "index": 20,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 6160794,
+      "width": 2563,
+      "height": 3844,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/70/Hanoi_Vietnam_Shrine-at-Ho%C3%A0n-Ki%E1%BA%BFm-Lake-01.jpg/1920px-Hanoi_Vietnam_Shrine-at-Ho%C3%A0n-Ki%E1%BA%BFm-Lake-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 2880,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/7/70/Hanoi_Vietnam_Shrine-at-Ho%C3%A0n-Ki%E1%BA%BFm-Lake-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/70/Hanoi_Vietnam_Shrine-at-Ho%C3%A0n-Ki%E1%BA%BFm-Lake-01.jpg/1920px-Hanoi_Vietnam_Shrine-at-Ho%C3%A0n-Ki%E1%BA%BFm-Lake-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 2880,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/7/70/Hanoi_Vietnam_Shrine-at-Ho%C3%A0n-Ki%E1%BA%BFm-Lake-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Hanoi_Vietnam_Shrine-at-Ho%C3%A0n-Ki%E1%BA%BFm-Lake-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Hanoi_Vietnam_Shrine-at-Ho%C3%A0n-Ki%E1%BA%BFm-Lake-01.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=49606754",
+      "extmetadata": {
+       "Categories": {
+        "value": "Personality rights warning|Self-published work|Shrines in Vietnam|Chinese inscriptions in Vietnam|Images by Cccefalon|Files with coordinates missing SDC location of creation|Praying women|Vietnam photographs taken on 2011-05-09|Images of Vietnam by User:Cccefalon|Images with portrait aspect ratio by User:Cccefalon|Brush Tower and Writing Pad",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Hanoi, Vietnam: Vietnamese woman bringing offerings to a Vietnamese folk religion shrine at Hoàn Kiếm Lake",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2011-05-09",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Cccefalon\" title=\"User:Cccefalon\">CEphoto, Uwe Aranas</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 3.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "Attribution": {
+        "value": "Photo by CEphoto, Uwe Aranas <b>or alternatively</b> © CEphoto, Uwe Aranas",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/3.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ]
+   },
+   {
+    "pageid": 68002309,
+    "ns": 6,
+    "title": "File:Macroglossum ungues MHNT CUT 2010 0 217 Hanoi Airport (Noi Bai) Vietnam male dorsal.jpg",
+    "index": 4,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 9659248,
+      "width": 6137,
+      "height": 4934,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg/1920px-Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1544,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg/3840px-Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg/1920px-Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1544,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg/3840px-Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4b/Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_%28Noi_Bai%29_Vietnam_male_dorsal.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Macroglossum_ungues_MHNT_CUT_2010_0_217_Hanoi_Airport_(Noi_Bai)_Vietnam_male_dorsal.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=68002309",
+      "extmetadata": {
+       "Categories": {
+        "value": "Supported by Wikimedia France|Macroglossum ungues|Self-published work|Taxon without category|Supported by Projet Phoebus|Media supported by Wikimedia France|Muséum de Toulouse collection of Lepidoptera|Files with coordinates missing SDC location of creation|Sphingidae of Vietnam|Photographs taken on 2018-03-14|Files with Assessments template missing SDC Commons valued image assessment|Assessment t",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "Artist": {
+        "value": "<div class=\"fn value\">\n<a href=\"//commons.wikimedia.org/wiki/User:Archaeodontosaurus\" title=\"User:Archaeodontosaurus\">Didier Descouens</a></div>",
+        "source": "commons-desc-page"
+       },
+       "ImageDescription": {
+        "value": "<a href=\"https://en.wikipedia.org/wiki/Macroglossum_ungues\" class=\"extiw\" title=\"w:Macroglossum ungues\">Macroglossum ungues</a><i> - Dorsal side</i>\n<dd>Collection of the Mathematician <a href=\"https://en.wikipedia.org/wiki/Laurent_Schwartz\" class=\"extiw\" title=\"w:Laurent Schwartz\">Laurent Schwartz</a></dd>",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "Taken on 14 March 2018",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ],
+    "coordinates": [
+     {
+      "lat": 43.59389717,
+      "lon": 1.44922972,
+      "primary": true,
+      "globe": "earth"
+     }
+    ]
+   },
+   {
+    "pageid": 87350379,
+    "ns": 6,
+    "title": "File:Hanoi panoramic view from Lotte 3.jpg",
+    "index": 8,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 3839715,
+      "width": 7120,
+      "height": 2640,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Hanoi_panoramic_view_from_Lotte_3.jpg/1920px-Hanoi_panoramic_view_from_Lotte_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 712,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Hanoi_panoramic_view_from_Lotte_3.jpg/3840px-Hanoi_panoramic_view_from_Lotte_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Hanoi_panoramic_view_from_Lotte_3.jpg/1920px-Hanoi_panoramic_view_from_Lotte_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 712,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Hanoi_panoramic_view_from_Lotte_3.jpg/3840px-Hanoi_panoramic_view_from_Lotte_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Hanoi_panoramic_view_from_Lotte_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Hanoi_panoramic_view_from_Lotte_3.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=87350379",
+      "extmetadata": {
+       "Categories": {
+        "value": "Taken with Fujifilm X-T30|Lotte Center Hanoi|Self-published work|Panoramics in Hanoi",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "Panoramic view from Lotte Center, Hanoi.",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2020-01-06 12:25",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Kallerna\" title=\"User:Kallerna\">kallerna</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ]
+   },
+   {
+    "pageid": 89396561,
+    "ns": 6,
+    "title": "File:The Mahasattva of Truc Lam leaves the Mountain 竹林大士出山圖.jpg",
+    "index": 1,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 28210825,
+      "width": 21956,
+      "height": 2000,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg/1920px-The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 175,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg/3840px-The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg/1920px-The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 175,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg/3840px-The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1e/The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:The_Mahasattva_of_Truc_Lam_leaves_the_Mountain_%E7%AB%B9%E6%9E%97%E5%A4%A7%E5%A3%AB%E5%87%BA%E5%B1%B1%E5%9C%96.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=89396561",
+      "extmetadata": {
+       "Categories": {
+        "value": "PD-user|The Mahasattva of Truc Lam leaves the Mountain|Images with annotations|Featured pictures on Wikipedia, English|PD-Art (PD-old-100)|Artworks with Wikidata item|Featured pictures on Wikipedia, Vietnamese|CC-PD-Mark|Featured pictures of paintings from China|Featured pictures of paintings from Vietnam|Artworks with Wikidata item missing genre|Featured pictures in the public domain|Featured pic",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "Artist": {
+        "value": "<div class=\"fn value\">\nUnknown (previously thought to be Chen Jian Ru/Trần Giám Như 陳鑑如)</div>",
+        "source": "commons-desc-page"
+       },
+       "ImageDescription": {
+        "value": "<div class=\"description\">\n<p>The painting depicts the retired emperor <a href=\"https://en.wikipedia.org/wiki/Tr%E1%BA%A7n_Nh%C3%A2n_T%C3%B4ng\" class=\"extiw\" title=\"en:Trần Nhân Tông\">Trần Nhân Tông</a> who has now become a monk and returned to Hanoi from his hermitage in Vũ Lâm.\n</p><p>The painting showed a total of 82 characters, including people who accompanied the <a href=\"https://en.wikipedia.",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "1363<div style=\"display: none;\">date QS:P571,+1363-00-00T00:00:00Z/9</div>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "Public domain",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Featured pictures on Wikimedia Commons"
+     }
+    ]
+   },
+   {
+    "pageid": 144715351,
+    "ns": 6,
+    "title": "File:MAERSK HANOI Container Ship (Port Koper SIKOP, 2023).jpg",
+    "index": 30,
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "size": 20692084,
+      "width": 5280,
+      "height": 3956,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg/1920px-MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1439,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg/3840px-MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg/1920px-MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1439,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg/3840px-MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c8/MAERSK_HANOI_Container_Ship_%28Port_Koper_SIKOP%2C_2023%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:MAERSK_HANOI_Container_Ship_(Port_Koper_SIKOP,_2023).jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=144715351",
+      "extmetadata": {
+       "Categories": {
+        "value": "Self-published work|Featured pictures on Wikipedia, Slovenian|Files with coordinates missing SDC location of creation|Aerial photographs by PetarM|Cyan, red, white ships|Taken with Hasselblad L2D-20c|Maersk Hanoi (ship, 2018)|Ships in the Port of Koper|Container ships in Koper|Aerial photographs of Koper",
+        "source": "commons-categories",
+        "hidden": ""
+       },
+       "ImageDescription": {
+        "value": "IMO: 9784295\n<p>Name: MAERSK HANOI\nGeneral vessel type: Cargo - Hazard A (Major) <br>\nDetailed vessel type: Container Ship <br>\nNavigational Status: Active <br>\nMMSI: 563039700 <br>\nCall sign: 9V5601 <br>\nFlag: Singapore [SG] <br>\nGross Tonnage: 153744 <br>\nSummer DWT: 178257 t <br>\nLength Overall x Breadth Extreme: 353.02 x 53.5 m <br>\n</p>\nYear built: 2018",
+        "source": "commons-desc-page"
+       },
+       "DateTimeOriginal": {
+        "value": "2024-01-26 11:36:18",
+        "source": "commons-desc-page"
+       },
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:PetarM\" title=\"User:PetarM\">Petar Milošević</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       },
+       "LicenseUrl": {
+        "value": "https://creativecommons.org/licenses/by-sa/4.0",
+        "source": "commons-desc-page"
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Quality images"
+     }
+    ],
+    "coordinates": [
+     {
+      "lat": 45.552036,
+      "lon": 13.734505,
+      "primary": true,
+      "globe": "earth"
+     }
+    ]
+   }
+  ]
+ }
+}

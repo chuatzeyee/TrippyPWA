@@ -2,11 +2,16 @@
 // (Deno). Pure `fetch`, no runtime-specific APIs; pure helpers are unit-tested
 // in photo-resolver.test.mjs.
 //
-// HARD RULE: never a generic stock photo, never a confident WRONG match. We
-// return either (a) a real photo of the actual venue/area, verified by a trusted
-// id, by coordinates, or by the venue's name in the photo's title, or (b) an
+// HARD RULE for venues and areas: never a confident WRONG match. We return
+// either (a) a real photo of the actual venue/area, verified by a trusted id,
+// by coordinates, or by the venue's name in the photo's title, or (b) an
 // HONEST street-level view of the exact location (labelled "Street view").
 // Otherwise null -> gradient. All sources are free.
+//
+// The trip COVER is picked differently (cover-rank.mjs, cover-resolver.mjs):
+// it may be a Pexels stock photo, but only one whose caption or page slug names
+// the destination, or a curated Wikimedia image (Featured/Quality/Valued, or one
+// linked to the city's Wikidata item). No geosearch, Mapillary or Openverse.
 //
 //   VENUE, phase 1 (exact ids, in parallel):
 //     OSM Overpass name(+name:en) within 160m -> image / wikimedia_commons / wikidata tag
@@ -17,30 +22,29 @@
 //     Wikimedia Commons search: within 300m, or name in title (and near if geotagged)
 //     Openverse (Creative Commons, e.g. Flickr): name in title, open licence only
 //   VENUE fallback: Mapillary street-level at the coords, 1024px, source "street"
-//   AREA: Wikipedia exact -> search -> Commons geosearch -> street
+//   AREA (Discover towns): Wikipedia exact -> search -> Commons geosearch -> street
 //
 // Every result is { url, source, credit? } where credit = { creator, license, via, link }.
 
-const UA = "TrippyPWA/2.0 (photo resolver; github.com/chuatzeyee/TrippyPWA)";
+import { normalizeName, CJK, isOpenLicense, haversineKm, NOT_A_PHOTO } from "./photo-common.mjs";
+
+export { normalizeName, isOpenLicense };
+// Cover picking (pure): gates, scoring, season, relevance, response parsing,
+// size choice and the vision-check helpers. Re-exported so callers and tests
+// have one import path; the network side is cover-resolver.mjs.
+export * from "./cover-rank.mjs";
+export * from "./cover-judge.mjs";
+
+// Wikimedia asks for a descriptive User-Agent with a way to reach the operator.
+export const USER_AGENT = "TrippyPWA/2.0 (photo resolver; https://github.com/chuatzeyee/TrippyPWA; chuatzeyee@users.noreply.github.com)";
+const UA = USER_AGENT;
 const TIMEOUT_MS = 6000;
 const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
 const COMMONS_FILEPATH = "https://commons.wikimedia.org/wiki/Special:FilePath/";
 const MIN_PHOTO_WIDTH = 1000;
-const NOT_A_PHOTO = /\b(map|logo|diagram|plan|coat[_ ]of[_ ]arms|flag|icon|seal|emblem|chart|graph)\b/i;
 const NON_VENUE_HOSTS = /(^|\.)(booking|agoda|expedia|hotels|trip|klook|kkday|tripadvisor|tabelog|gurunavi|hotpepper|jalan|ikyu|rakuten|airbnb|google|goo\.gl|facebook|instagram|x|twitter|tiktok|youtube|wikipedia|wikimedia|flyscoot|singaporeair|cathaypacific|japan-guide|timeout|retty|omakase|tablecheck|autoreserve|jpneazy)\./i;
 
 // ---------------------------------------------------------------- pure helpers
-
-export function normalizeName(s) {
-  return String(s ?? "")
-    .normalize("NFKC")
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim();
-}
-
-const CJK = /[぀-ヿ㐀-鿿가-힯]/;
 
 // True when one of the (trustworthy-length) name variants appears in the title.
 export function nameMatches(title, names) {
@@ -51,14 +55,6 @@ export function nameMatches(title, names) {
     if (!longEnough) return false;
     return CJK.test(v) ? t.includes(v) : t.includes(` ${v} `) || t.includes(` ${v}`);
   });
-}
-
-// Licences usable in an app with affiliate links: no NC (non-commercial), no ND.
-export function isOpenLicense(license) {
-  const l = String(license ?? "").toLowerCase().replace(/^cc[\s-]+/, "").trim();
-  if (!l) return false;
-  if (/\bnc\b|\bnd\b|-nc|-nd/.test(l)) return false;
-  return /^(cc0|pdm|public domain|by(-sa)?)(\s|$|\d)/.test(l) || l === "cc0" || l === "pdm";
 }
 
 export function extractOgImage(html, baseUrl) {
@@ -136,11 +132,12 @@ export function splitVenueName(name) {
 
 // A real photograph rather than a logo/banner/flag/tiny thumbnail. Calibrated
 // on resolver output: photos run 0.15-0.45 bytes/pixel as JPEG; flat graphics
-// compress far smaller (a festival banner PNG was 0.10, a flag 0.006).
-export function looksLikePhoto(dims, byteLength, contentType = "") {
+// compress far smaller (a festival banner PNG was 0.10, a flag 0.006). Covers
+// pass a lower JPEG floor (COVER_MIN_BPP): dusk and night skylines sit near 0.12.
+export function looksLikePhoto(dims, byteLength, contentType = "", minJpegBpp = 0.12) {
   if (!dims || dims.width < 800 || byteLength < 40 * 1024) return false;
   const bpp = byteLength / (dims.width * dims.height);
-  return /png/i.test(contentType) ? bpp >= 0.35 : bpp >= 0.12;
+  return /png/i.test(contentType) ? bpp >= 0.35 : bpp >= minJpegBpp;
 }
 
 // Safe to match on name alone (no coordinates): multi-word or 3+ CJK chars.
@@ -289,7 +286,7 @@ export const MAX_IMAGE_BYTES = 1_500_000;
 
 // ---------------------------------------------------------------- network
 
-// Wikimedia (Wikipedia/Commons/Wikidata) and Openverse rate-limit anonymous
+// Wikimedia (Wikipedia/Wikivoyage/Commons/Wikidata) and Openverse rate-limit anonymous
 // clients hard (HTTP 429). All their requests go through a small gate: a few in
 // flight, spaced out, and a 429 is retried after the server's Retry-After.
 function makeGate(maxInFlight, minGapMs) {
@@ -307,11 +304,21 @@ function makeGate(maxInFlight, minGapMs) {
   return (fn) => new Promise((resolve, reject) => { queue.push({ fn, resolve, reject }); pump(); });
 }
 const GATES = [
-  { test: /(^|\.)(wikipedia|wikimedia|wikidata)\.org$/, run: makeGate(1, 300) },
+  { test: /(^|\.)(wikipedia|wikivoyage|wikimedia|wikidata)\.org$/, run: makeGate(1, 300) },
   { test: /(^|\.)openverse\.org$/, run: makeGate(1, 400) },
 ];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export { timeoutFetch as gatedFetch };
 
+/**
+ * fetch() for trusted API hosts: our User-Agent, a timeout, and for Wikimedia
+ * and Openverse the shared rate gate (one in flight, spaced, 429 Retry-After).
+ * Exported as gatedFetch for the cover picker (cover-resolver.mjs).
+ * @param {string} url
+ * @param {RequestInit} [opts]
+ * @param {number} [ms]
+ * @returns {Promise<Response>}
+ */
 async function timeoutFetch(url, opts = {}, ms = TIMEOUT_MS) {
   const doFetch = () => fetch(url, { ...opts, headers: { "User-Agent": UA, ...(opts.headers || {}) }, signal: AbortSignal.timeout(ms) });
   let host = "";
@@ -324,13 +331,6 @@ async function timeoutFetch(url, opts = {}, ms = TIMEOUT_MS) {
     const retryAfter = Number(res.headers.get("retry-after"));
     await sleep(Math.min(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1500 * (attempt + 1), 6000));
   }
-}
-
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const R = 6371, toRad = (d) => d * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function commonsFileUrl(file, width) {

@@ -391,6 +391,10 @@ describe('fetchAllTrips', () => {
     const columns = op(tripsCall, 'select')[1];
     expect(columns).not.toMatch(/\*/);
     expect(columns).not.toMatch(/(^|,)extras(,|$)/);
+    // Only the v2 cover's copies, not the whole extras.cover record.
+    expect(columns).toContain('cover_small:extras->cover->small');
+    expect(columns).toContain('cover_large:extras->cover->large');
+    expect(columns).toContain('cover_focus:extras->cover->focusY');
     const collabCall = fake.calls.find(c => c.table === 'trip_collaborators');
     expect(op(collabCall, 'eq')).toEqual(['eq', 'invited_email', 'me@example.com']);
   });
