@@ -129,7 +129,7 @@ Produce activity-level edits that fulfil the request:
     const { data, error } = await callGemini(
       prompt,
       "You are a precise travel itinerary editor. Only real venues with real coordinates. Respond in the given JSON schema.",
-      PATCH_SCHEMA, GEMINI_API_KEY, GEMINI_MODEL, 8_000,
+      PATCH_SCHEMA, GEMINI_API_KEY, GEMINI_MODEL, 8_000, false,
     );
     if (error || !data) return json({ error: error || "No response" }, 502, corsHeaders);
 

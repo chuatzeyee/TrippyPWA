@@ -497,9 +497,11 @@ export function dedupeFoodVenues(data: any, priorDays: any[] = []): string[] {
   return issues;
 }
 
+// `requireDays` is for itinerary generation only: chat edits ({reply, edits})
+// and alternatives ({alternatives}) have no `days` and must pass false.
 export async function callGemini(
   prompt: string, systemPrompt: string, geminiSchema: any,
-  apiKey: string, model: string, maxOutputTokens = 32_000
+  apiKey: string, model: string, maxOutputTokens = 32_000, requireDays = true,
 ): Promise<{ data: any; error: string | null }> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const payload = {
@@ -547,7 +549,7 @@ export async function callGemini(
     } catch {
       return { data: null, error: "Gemini returned unparseable JSON (likely truncated)" };
     }
-    if (!parsed.days || !Array.isArray(parsed.days)) return { data: null, error: "Gemini returned incomplete itinerary" };
+    if (requireDays && (!parsed.days || !Array.isArray(parsed.days))) return { data: null, error: "Gemini returned incomplete itinerary" };
 
     return { data: parsed, error: null };
   } catch (err: any) {
