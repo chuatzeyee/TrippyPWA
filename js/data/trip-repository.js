@@ -138,9 +138,16 @@ export async function createTrip(wizardState, status = 'planning') {
   return { data, error: error?.message || null };
 }
 
+const EXTRA_KEYS = ['flights', 'transport', 'accommodation', 'bookingChecklist', 'savingsTips'];
+
+// Persist a complete itinerary in one go (used by trip import). All-or-nothing:
+// if any day or activity insert fails, the trip is deleted (cascade) so the user
+// never sees a half-imported trip.
 export async function saveTripWithItinerary(wizardState, itinerary) {
   const user = getUser();
   if (!user) return { data: null, error: 'Not authenticated' };
+
+  const extras = Object.fromEntries(EXTRA_KEYS.filter(k => itinerary[k]).map(k => [k, itinerary[k]]));
 
   const dest = wizardState.multiCity && wizardState.destinations.length > 0
     ? wizardState.destinations.map(d => d.name).join(' to ')
@@ -160,7 +167,8 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
       budget_daily: wizardState.budget.dailyAmount || 0,
       budget_currency: wizardState.destination?.currencyCode || 'USD',
       budget_currency_symbol: wizardState.destination?.currencySymbol || '$',
-      timezone: wizardState.destination?.timezone || null
+      timezone: wizardState.destination?.timezone || null,
+      extras: Object.keys(extras).length > 0 ? extras : null
     })
     .select()
     .single();
@@ -234,21 +242,10 @@ export async function saveTripWithItinerary(wizardState, itinerary) {
     }
   }
 
-  if (itinerary.flights || itinerary.transport || itinerary.accommodation || itinerary.bookingChecklist || itinerary.savingsTips) {
-    const extras = {};
-    if (itinerary.flights) extras.flights = itinerary.flights;
-    if (itinerary.transport) extras.transport = itinerary.transport;
-    if (itinerary.accommodation) extras.accommodation = itinerary.accommodation;
-    if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;
-    if (itinerary.savingsTips) extras.savingsTips = itinerary.savingsTips;
-    await supabase
-      .from('trips')
-      .update({ extras })
-      .eq('id', trip.id);
-  }
-
   if (dayErrors.length > 0) {
-    return { data: trip, error: `Trip saved but some days failed: ${dayErrors[0]}` };
+    const { error: rollbackError } = await supabase.from('trips').delete().eq('id', trip.id);
+    if (rollbackError) logger.error('data', 'Rollback of partial trip failed', { tripId: trip.id, error: rollbackError.message });
+    return { data: null, error: `Could not save the trip: ${dayErrors[0]}` };
   }
 
   return { data: trip, error: null };

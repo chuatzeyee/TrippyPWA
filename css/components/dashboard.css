@@ -9,6 +9,12 @@
   margin-bottom: var(--sp-8);
 }
 
+.dashboard-header-actions {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+}
+
 .dashboard-greeting {
   font: var(--text-hero);
 }
@@ -1012,6 +1018,8 @@
     gap: var(--sp-4);
   }
   .dashboard-new-trip-btn { width: 100%; }
+  .dashboard-header-actions { width: 100%; flex-direction: column-reverse; }
+  .dashboard-import-btn { width: 100%; }
   .trip-grid { grid-template-columns: 1fr; }
   .landing-headline { font-size: 2.4rem; }
   .landing-features { grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
@@ -1200,3 +1208,5 @@
   background: rgba(255, 255, 255, 0.75);
   border-color: rgba(44, 42, 37, 0.1);
 }
+
+.dashboard-no-trips .dashboard-import-btn { margin-top: var(--sp-3); }
