@@ -110,6 +110,8 @@
   --z-base: 0;
   --z-card: 10;
   --z-sticky: 100;
+  /* Docked panels (the trip chat): above sticky bars, below the nav and modals. */
+  --z-panel: 150;
   --z-nav: 200;
   --z-modal-backdrop: 300;
   --z-modal: 400;

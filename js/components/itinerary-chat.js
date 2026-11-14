@@ -7,6 +7,7 @@ import { withLocalWrite } from '../data/collab-repository.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { convert, canConvert } from '../data/currencies.js';
 import { showToast } from './toast.js';
+import { chatExamples, chatEmptyHtml } from './itinerary-chat-ui.js';
 import { logger } from '../lib/logger.js';
 
 function timeSlotFor(startTime) {
@@ -96,10 +97,14 @@ function editChip(e) {
 
 let drawerSeq = 0;
 
+const CHAT_ICON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>';
+const CLOSE_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+
 /**
- * Mount the chat drawer. `onApplied` refreshes the trip view after edits are
- * written. Returns a controller so a refreshed view can keep the same drawer:
- * { attach(container), setTrip(trip), destroy() }.
+ * Mount the chat panel: a docked side panel on desktop, a bottom sheet on
+ * smaller screens (layout lives in trip-detail.css). `onApplied` refreshes the
+ * trip view after edits are written. Returns a controller so a refreshed view
+ * can keep the same panel: { attach(container), setTrip(trip), destroy() }.
  */
 export function mountItineraryChat(container, trip, onApplied) {
   let currentTrip = trip;
@@ -107,11 +112,12 @@ export function mountItineraryChat(container, trip, onApplied) {
   const fab = document.createElement('button');
   fab.type = 'button';
   fab.className = 'td-chat-fab';
+  fab.title = 'Edit with chat';
   fab.setAttribute('aria-label', 'Edit with chat');
   fab.setAttribute('aria-expanded', 'false');
-  fab.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>';
+  fab.innerHTML = CHAT_ICON;
 
-  // Non-modal drawer: the trip stays usable behind it, so no focus trap, but it
+  // Non-modal panel: the trip stays usable beside it, so no focus trap, but it
   // is labelled, closes on Escape and hands focus back to the button.
   const drawer = document.createElement('div');
   drawer.className = 'td-chat-drawer';
@@ -120,13 +126,16 @@ export function mountItineraryChat(container, trip, onApplied) {
   drawer.setAttribute('aria-labelledby', titleId);
   drawer.innerHTML = `
     <div class="td-chat-head">
-      <span id="${titleId}">Edit with chat</span>
-      <button type="button" class="td-chat-close" aria-label="Close">×</button>
+      <h2 class="td-chat-title" id="${titleId}">Edit with chat</h2>
+      <button type="button" class="td-chat-close" aria-label="Close chat">${CLOSE_ICON}</button>
     </div>
-    <div class="td-chat-log" role="log" aria-live="polite"></div>
+    <div class="td-chat-scroll">
+      <div class="td-chat-empty"></div>
+      <div class="td-chat-log" role="log" aria-live="polite"></div>
+    </div>
     <form class="td-chat-form">
       <input class="td-chat-input" type="text" maxlength="500" aria-label="Describe a change"
-        placeholder="e.g. Make day 2 more relaxed, or swap dinner for vegetarian" autocomplete="off">
+        placeholder="Describe a change" autocomplete="off" enterkeyhint="send">
       <button class="td-chat-send btn btn--primary btn--pill" type="submit">Send</button>
     </form>
   `;
@@ -135,26 +144,81 @@ export function mountItineraryChat(container, trip, onApplied) {
   container.appendChild(fab);
   container.appendChild(drawer);
 
+  const scroller = drawer.querySelector('.td-chat-scroll');
+  const empty = drawer.querySelector('.td-chat-empty');
   const log = drawer.querySelector('.td-chat-log');
   const input = drawer.querySelector('.td-chat-input');
   const form = drawer.querySelector('.td-chat-form');
+
+  // Greeting and example chips until the first message.
+  let examplesKey = '';
+  const renderEmpty = () => {
+    empty.hidden = log.childElementCount > 0;
+    if (empty.hidden) return;
+    const examples = chatExamples(currentTrip?.itinerary_days?.length);
+    const key = examples.join('|');
+    if (key === examplesKey) return;
+    examplesKey = key;
+    empty.innerHTML = chatEmptyHtml(examples);
+  };
+  renderEmpty();
+  empty.addEventListener('click', (e) => {
+    const chip = e.target.closest('.td-chat-example');
+    if (!chip) return;
+    input.value = chip.textContent.trim();
+    input.focus({ preventScroll: true });
+    input.setSelectionRange(input.value.length, input.value.length);
+  });
+
+  // Where the log is scrolled to. A view refresh detaches the panel, which
+  // resets its scroll, so attach() puts it back from here.
+  let atEnd = true;
+  let savedTop = 0;
+  const rememberScroll = () => {
+    if (!drawer.isConnected) return;
+    savedTop = scroller.scrollTop;
+    atEnd = scroller.scrollHeight - scroller.clientHeight - savedTop < 2;
+  };
+  scroller.addEventListener('scroll', rememberScroll, { passive: true });
+  // Stay on the newest message while the panel or its text changes size (the
+  // soft keyboard opening, a re-rendered view settling). The empty state is
+  // left alone so its greeting stays on top.
+  const pin = typeof ResizeObserver === 'function'
+    ? new ResizeObserver(() => {
+      if (atEnd && log.childElementCount && drawer.isConnected) scroller.scrollTop = scroller.scrollHeight;
+    })
+    : null;
+  pin?.observe(scroller);
+  pin?.observe(log);
+
+  // Bring a new or updated message into view. Scrolling to its top lands on
+  // the end of the log when it fits (the browser clamps scrollTop); when it is
+  // taller than the log, its first lines show and the rest is a scroll away.
+  const reveal = (el) => {
+    const pad = parseFloat(getComputedStyle(scroller).paddingTop) || 0;
+    const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    scroller.scrollTop = top - pad;
+    rememberScroll();
+  };
 
   const addMsg = (cls, html) => {
     const el = document.createElement('div');
     el.className = `td-chat-msg td-chat-msg--${cls}`;
     el.innerHTML = html;
     log.appendChild(el);
-    log.scrollTop = log.scrollHeight;
+    empty.hidden = true;
+    reveal(el);
     return el;
   };
 
+  const isOpen = () => drawer.classList.contains('td-chat-drawer--open');
   const setOpen = (open) => {
     drawer.classList.toggle('td-chat-drawer--open', open);
     fab.setAttribute('aria-expanded', String(open));
-    if (open) input.focus();
-    else if (drawer.contains(document.activeElement) || document.activeElement === document.body) fab.focus();
+    if (open) input.focus({ preventScroll: true });
+    else if (drawer.contains(document.activeElement) || document.activeElement === document.body) fab.focus({ preventScroll: true });
   };
-  fab.addEventListener('click', () => setOpen(!drawer.classList.contains('td-chat-drawer--open')));
+  fab.addEventListener('click', () => setOpen(!isOpen()));
   drawer.querySelector('.td-chat-close').addEventListener('click', () => setOpen(false));
   drawer.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); }
@@ -192,12 +256,14 @@ export function mountItineraryChat(container, trip, onApplied) {
 
     if (!data) {
       pending.innerHTML = escapeHtml(notice || 'Sorry, that didn\'t work. Try again.');
+      reveal(pending);
       logger.warn('data', 'itinerary-chat failed', { tripId: trip.id });
       return;
     }
 
     if (!data.edits?.length) {
       pending.innerHTML = escapeHtml(data.reply || 'No changes needed.');
+      reveal(pending);
       return;
     }
 
@@ -208,6 +274,7 @@ export function mountItineraryChat(container, trip, onApplied) {
         <button type="button" class="btn btn--primary btn--sm btn--pill td-chat-apply">Apply ${data.edits.length} change${data.edits.length > 1 ? 's' : ''}</button>
         <button type="button" class="btn btn--ghost btn--sm btn--pill td-chat-discard">Discard</button>
       </div>`;
+    reveal(pending);
 
     pending.querySelector('.td-chat-discard').addEventListener('click', () => {
       pending.querySelector('.td-chat-apply-row').remove();
@@ -230,18 +297,25 @@ export function mountItineraryChat(container, trip, onApplied) {
   });
 
   return {
-    // Move the FAB and drawer into a freshly rendered view root.
+    // Move the button and panel into a freshly rendered view root.
     attach(next) {
       if (!next) return;
       next.appendChild(fab);
       next.appendChild(drawer);
+      // Detaching reset the log's scroll: back to the end, or where the
+      // user had scrolled to.
+      scroller.scrollTop = atEnd && log.childElementCount ? scroller.scrollHeight : savedTop;
       // The refresh detached the drawer and dropped focus; give it back.
       const active = document.activeElement;
-      if (drawer.classList.contains('td-chat-drawer--open') && (!active || active === document.body)) {
+      if (isOpen() && (!active || active === document.body)) {
         input.focus({ preventScroll: true });
       }
     },
-    setTrip(next) { if (next) currentTrip = next; },
-    destroy() { fab.remove(); drawer.remove(); },
+    setTrip(next) {
+      if (!next) return;
+      currentTrip = next;
+      renderEmpty();
+    },
+    destroy() { pin?.disconnect(); fab.remove(); drawer.remove(); },
   };
 }

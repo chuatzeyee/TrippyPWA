@@ -758,13 +758,13 @@ function createController(overlay, { returnFocus, onChange, draft, guideSeen }) 
   window.addEventListener('hashchange', onHashChange);
 
   if (draft || guideSeen) ref('guide-link').hidden = false;
+  // Always open on step 1. A saved draft waits in step 3 ("I already have a
+  // file" jumps straight to it).
   if (draft) {
     paste.value = draft;
-    show(3);
     setStatus('We kept the trip you pasted earlier.');
-  } else {
-    show(guideSeen ? 3 : 1);
   }
+  show(1);
 
   return { focusHeading };
 }
