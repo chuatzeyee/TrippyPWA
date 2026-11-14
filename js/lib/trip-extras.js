@@ -67,3 +67,10 @@ export function sortChecklistItems(items) {
 export function isBookedLeg(leg) {
   return Boolean(leg && (leg.booked || leg.bookingRef));
 }
+
+// "Photo: creator · licence · source" for a stored photo credit (extras.photoCredits).
+export function photoCreditText(credit) {
+  if (!credit || typeof credit !== 'object') return '';
+  const parts = [credit.creator, credit.license, credit.via].map(v => String(v || '').trim()).filter(Boolean);
+  return parts.length ? `Photo: ${parts.join(' · ')}` : '';
+}

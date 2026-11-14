@@ -684,6 +684,7 @@
   z-index: 3;
   transform: translateY(-50%);
   pointer-events: none;
+  z-index: 1;
 }
 
 .td-now-knob::before {
@@ -3749,3 +3750,21 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
 .td-check-deadline--soon { color: var(--warning); }
 .td-check-deadline--overdue { color: var(--error); }
 .td-check-item--done .td-check-deadline { opacity: 0.4; }
+
+/* Photo attribution (Creative Commons photos require visible credit). */
+.td-activity-photo-credit {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  max-width: 58%;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.6rem;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg } from './trip-extras.js';
+import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, photoCreditText } from './trip-extras.js';
 
 describe('safeUrl', () => {
   it('keeps http(s) URLs', () => {
@@ -78,5 +78,13 @@ describe('isBookedLeg', () => {
     expect(isBookedLeg({ bookingRef: 'E68JGI' })).toBe(true);
     expect(isBookedLeg({ airline: 'Scoot' })).toBe(false);
     expect(isBookedLeg(null)).toBe(false);
+  });
+});
+
+describe('photoCreditText', () => {
+  it('formats creator, licence and source', () => {
+    expect(photoCreditText({ creator: 'Higa4', license: 'CC0', via: 'Wikimedia Commons' })).toBe('Photo: Higa4 · CC0 · Wikimedia Commons');
+    expect(photoCreditText({ via: 'morino-uta.com' })).toBe('Photo: morino-uta.com');
+    expect(photoCreditText(null)).toBe('');
   });
 });
