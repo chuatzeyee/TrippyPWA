@@ -6,6 +6,7 @@ import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { shortenTransitName } from '../data/transit-lines.js';
 import { hotelSearchLinks, flightSearchLink, trackBookingClick, BOOKING_DISCLOSURE } from '../services/booking-links.js';
+import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg } from '../lib/trip-extras.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
 import { isSquareMode } from '../lib/square-mode.js';
@@ -199,7 +200,8 @@ function weatherLabel(condition) {
 function esc(str) {
   const el = document.createElement('span');
   el.textContent = str || '';
-  return el.innerHTML;
+  // innerHTML escapes & < > but not quotes; values also land in attributes.
+  return el.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function nowInTz(tz) {
@@ -767,14 +769,21 @@ function renderFlightContent(extras, trip) {
         </div>`;
     }
 
-    return `
-      <div class="td-flight-leg${isConnecting ? ' td-flight-leg--connecting' : ''}">
-        <div class="td-flight-leg-header">
-          <span class="td-flight-leg-label">${esc(label)}</span>
-          <span class="td-flight-leg-airline">${logo}${logo ? '' : esc(leg.airline || '')}${flightNo ? `<span class="td-flight-number">${esc(flightNo)}</span>` : ''}</span>
-        </div>
-        ${routeHtml}
-        <div class="td-flight-duration">${esc(leg.duration)}</div>
+    const booked = isBookedLeg(leg);
+    const manageUrl = safeUrl(leg.manageUrl);
+    const bookedMeta = [
+      leg.depart && `Departs ${leg.depart}`,
+      leg.arrive && `Arrives ${leg.arrive}`,
+      leg.seats && `Seats ${leg.seats}`,
+      leg.baggage,
+    ].filter(Boolean);
+    const bottomHtml = booked
+      ? `
+        <div class="td-flight-bottom">
+          <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
+          ${manageUrl ? `<a class="td-flight-book" href="${esc(manageUrl)}" target="_blank" rel="noopener noreferrer">Manage booking ${ICONS.openInNew}</a>` : ''}
+        </div>`
+      : `
         <div class="td-flight-bottom">
           <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
           <div class="td-flight-book-group">
@@ -787,7 +796,18 @@ function renderFlightContent(extras, trip) {
               Google Flights
             </a>
           </div>
+        </div>`;
+
+    return `
+      <div class="td-flight-leg${isConnecting ? ' td-flight-leg--connecting' : ''}${booked ? ' td-flight-leg--booked' : ''}">
+        <div class="td-flight-leg-header">
+          <span class="td-flight-leg-label">${esc(label)}${booked ? `<span class="td-booked-badge">Booked${leg.bookingRef ? ` · ${esc(leg.bookingRef)}` : ''}</span>` : ''}</span>
+          <span class="td-flight-leg-airline">${logo}${logo ? '' : esc(leg.airline || '')}${flightNo ? `<span class="td-flight-number">${esc(flightNo)}</span>` : ''}</span>
         </div>
+        ${routeHtml}
+        <div class="td-flight-duration">${esc(leg.duration)}</div>
+        ${bookedMeta.length ? `<ul class="td-booked-meta">${bookedMeta.map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+        ${bottomHtml}
         ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(leg.tips)}</div>` : ''}
       </div>
     `;
@@ -877,17 +897,21 @@ function renderTransportContent(extras) {
 const ACCOM_ICON_SEARCH = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 const ACCOM_ICON_EXTERNAL = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
 
-function accomBookingLinks(name, area, trip) {
-  // Pre-fill check-in/out and party size from the trip so the handoff lands on
-  // an availability page, not a blank search (research.md §1 Phase A).
+function accomBookingLinks(a, trip) {
+  // Pre-fill check-in/out and party size so the handoff lands on an
+  // availability page (research.md §1 Phase A). A stay's own dates win over
+  // the whole trip's, so multi-stay trips don't search 12 nights per hotel.
+  const stay = stayInfo(a.checkIn, a.checkOut);
   const links = hotelSearchLinks({
-    query: `${name} ${area || ''}`.trim(),
-    checkIn: trip?.start_date || null,
-    checkOut: trip?.end_date || null,
+    query: `${a.name} ${a.area || ''}`.trim(),
+    checkIn: stay ? a.checkIn : trip?.start_date || null,
+    checkOut: stay ? a.checkOut : trip?.end_date || null,
     adults: trip?.wizard_state?.travelers || 2,
   });
+  const official = safeUrl(a.url);
   return links.map(l => ({
     ...l,
+    url: l.label === 'Direct' && official ? official : l.url,
     icon: l.label === 'Direct' ? ACCOM_ICON_EXTERNAL : ACCOM_ICON_SEARCH,
   }));
 }
@@ -913,12 +937,15 @@ function renderAccommodationContent(extras, trip) {
 
   const renderOption = (a) => {
     const features = parseFeatures(a.highlights);
+    const stay = stayInfo(a.checkIn, a.checkOut);
     return `
       <div class="td-accom-option">
         <div class="td-accom-head">
           ${a.badge ? `<span class="td-accom-badge" style="background: ${BADGE_COLORS[a.badge] || 'var(--terracotta)'}">${esc(a.badge)}</span>` : ''}
+          ${a.booked ? '<span class="td-booked-badge">Booked</span>' : ''}
           <div class="td-accom-name">${esc(a.name)}</div>
           <div class="td-accom-area">${esc(a.area)} · ${esc(a.type)}</div>
+          ${stay ? `<div class="td-accom-stay">${esc(stay.label)}</div>` : ''}
         </div>
         <div class="td-accom-price">${esc(a.priceRange)}</div>
         ${features.length > 0 ? `
@@ -927,7 +954,7 @@ function renderAccommodationContent(extras, trip) {
           </ul>
         ` : ''}
         <div class="td-accom-links">
-          ${accomBookingLinks(a.name, a.area, trip).map(l => `
+          ${accomBookingLinks(a, trip).map(l => `
             <a class="td-accom-link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-booking-click="${esc(l.label.toLowerCase())}" data-booking-kind="hotel">${l.icon} ${l.label}</a>
           `).join('')}
         </div>
@@ -969,16 +996,20 @@ function renderBookingChecklist(extras, tripId) {
         <div class="td-checklist-group">
           <div class="td-checklist-group-label">${esc(g.group)}</div>
           <div class="td-checklist-items">
-            ${(g.items || []).map(it => {
+            ${sortChecklistItems(g.items).map(it => {
               const key = (it.label || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+              const due = deadlineInfo(it.by);
+              const url = safeUrl(it.url);
+              const meta = [it.day ? `Day ${it.day}` : '', it.note || ''].filter(Boolean).join(' · ');
               return `
                 <label class="td-check-item ${stored[key] ? 'td-check-item--done' : ''}">
                   <input type="checkbox" data-check-key="${key}" ${stored[key] ? 'checked' : ''}>
                   <span class="td-check-content">
                     <span class="td-check-label">${esc(it.label)}</span>
-                    <span class="td-check-meta">Day ${it.day || '?'} · ${esc(it.note || '')}</span>
+                    ${due ? `<span class="td-check-deadline td-check-deadline--${due.state}">${esc(due.label)}${due.state === 'overdue' ? ' · overdue' : ''}</span>` : ''}
+                    ${meta ? `<span class="td-check-meta">${esc(meta)}</span>` : ''}
                   </span>
-                  ${it.url ? `<a href="${esc(it.url)}" target="_blank" rel="noopener" class="td-check-link">Book ${ICONS.openInNew}</a>` : ''}
+                  ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="td-check-link">Book ${ICONS.openInNew}</a>` : ''}
                 </label>
               `;
             }).join('')}
@@ -1713,9 +1744,9 @@ function renderDayPicker(app, trip, jumpToToday = false) {
           <button class="td-action-btn" data-action="edit" title="Edit activities" aria-label="Edit activities">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
           </button>
-          <button class="td-action-btn" data-action="regenerate" title="Regenerate itinerary" aria-label="Regenerate itinerary">
+          ${trip.wizard_state?.imported ? '' : `<button class="td-action-btn" data-action="regenerate" title="Regenerate itinerary" aria-label="Regenerate itinerary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-          </button>
+          </button>`}
         </div>
       </div>
 
