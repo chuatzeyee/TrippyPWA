@@ -23,13 +23,30 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const tokens = (s) => String(s || "").normalize("NFKC").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3);
+// Words that name a kind of place, not a particular one: sharing "records" or
+// "coffee" does not make "Beat Records" the same shop as "Beatnik Records".
+const GENERIC = new Set(["records", "record", "coffee", "cafe", "café", "restaurant", "store", "shop", "main", "branch",
+  "bar", "bakery", "hotel", "market", "museum", "park", "garden", "shrine", "temple", "station", "house", "kitchen",
+  "ramen", "sushi", "curry", "izakaya", "the", "and", "street", "center", "centre", "city", "tower", "building"]);
+const tokens = (s) => String(s || "").normalize("NFKC").toLowerCase().split(/[^\p{L}\p{N}]+/u)
+  .filter((t) => t.length >= 3 && !GENERIC.has(t));
 
-/** Loose name match: a shared distinctive word, or one name inside the other. */
+// Latin letters and digits only, no spaces: "FreshAir（フレッシュエアー）" -> "freshair".
+const compact = (s) => String(s || "").normalize("NFKC").toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+/**
+ * Loose name match: a shared distinctive word, one name inside the other, or
+ * the same letters once spaces go ("Fresh Air Records" / "FreshAir", "Robata
+ * Oosuke" / "Osuke").
+ */
 export function looseNameMatch(a, b) {
   if (nameMatches(String(a || ""), [String(b || "")]) || nameMatches(String(b || ""), [String(a || "")])) return true;
   const tb = new Set(tokens(b));
-  return tokens(a).some((t) => t.length >= 4 && tb.has(t));
+  if (tokens(a).some((t) => t.length >= 4 && tb.has(t))) return true;
+  const ca = compact(a), cb = compact(b);
+  const shorter = ca.length <= cb.length ? ca : cb;
+  const longer = ca.length <= cb.length ? cb : ca;
+  return shorter.length >= 5 && longer.includes(shorter.slice(0, Math.min(shorter.length, 8)));
 }
 
 /** A Google user-content thumbnail at a usable size (960 x 720). */
@@ -46,8 +63,10 @@ export function upsizeGoogleThumb(url) {
 export function pickSerperPlace(places, { names, lat, lng }) {
   const scored = (places || [])
     .filter((p) => p && p.thumbnailUrl && Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
-    .map((p) => ({ p, km: haversineKm(lat, lng, p.latitude, p.longitude), named: names.some((n) => looseNameMatch(p.title, n)) }))
-    .filter(({ km, named }) => km <= 0.08 || (named && km <= 2))
+    .map((p, rank) => ({ p, rank, km: haversineKm(lat, lng, p.latitude, p.longitude), named: names.some((n) => looseNameMatch(p.title, n)) }))
+    // Google's best match for the name, right at the venue, is the venue even
+    // when it is written differently (Japanese-only titles, other spellings).
+    .filter(({ km, named, rank }) => km <= 0.08 || (rank === 0 && km <= 0.15) || (named && km <= 2))
     .sort((a, b) => (b.named - a.named) || (a.km - b.km));
   return scored[0]?.p || null;
 }
