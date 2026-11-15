@@ -1,4 +1,23 @@
-# Trippy
+<p align="center">
+  <img src="public/icons/icon-192.png" alt="Trippy logo" width="96" height="96">
+</p>
+
+<h1 align="center">Trippy</h1>
+
+![Trip page on desktop](docs/screenshots/overview.png)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/day.png" alt="A day in the itinerary, with times, photos and costs"></td>
+    <td width="50%"><img src="docs/screenshots/flight.png" alt="Booked flight card with route, times, seats and baggage"></td>
+  </tr>
+  <tr>
+    <td align="center">A day in the plan</td>
+    <td align="center">Booked flight card</td>
+  </tr>
+</table>
+
+<sub>Screenshots use a made up demo trip, not real bookings.</sub>
 
 Travel planner PWA. You go through a short wizard (where, when, budget, how you like to travel), and Gemini 2.5 Flash plans the whole trip day by day: real venues, how to get between them, flights or ferry, hotels, what to book early. If Gemini fails or times out, Mistral takes over.
 
