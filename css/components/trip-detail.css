@@ -666,10 +666,17 @@ a.td-hero-credit:focus-visible {
 /* ===== Activity Row ===== */
 .td-activity {
   display: grid;
-  grid-template-columns: 44px 16px 1fr;
+  grid-template-columns: 58px 16px 1fr;
   gap: 0;
   align-items: start;
   min-height: 48px;
+}
+
+.td-activity-meridiem {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
 }
 
 .td-activity-time {
@@ -865,7 +872,7 @@ a.td-hero-credit:focus-visible {
 /* ===== Getting There (transport between venues) ===== */
 .td-getting-there {
   display: grid;
-  grid-template-columns: 44px 16px 1fr;
+  grid-template-columns: 58px 16px 1fr;
   gap: 0;
   align-items: stretch;
 }
@@ -2356,11 +2363,11 @@ a.td-hero-credit:focus-visible {
   }
 
   .td-activity {
-    grid-template-columns: 40px 14px 1fr;
+    grid-template-columns: 54px 14px 1fr;
   }
 
   .td-getting-there {
-    grid-template-columns: 40px 14px 1fr;
+    grid-template-columns: 54px 14px 1fr;
   }
 
   .td-activity-time { font-size: 0.8rem; padding-right: 10px; }

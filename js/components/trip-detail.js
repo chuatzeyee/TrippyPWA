@@ -1,7 +1,7 @@
 import { navigate, onRouteLeave } from '../router.js';
 import { fetchTripById, deleteTrip } from '../data/trip-repository.js';
 import { getUser } from '../lib/supabase.js';
-import { formatNumber, formatDateRange, formatWeekdayDate, getLocale, formatCityList } from '../lib/locale.js';
+import { formatNumber, formatDateRange, formatWeekdayDate, getLocale, formatCityList, to12h } from '../lib/locale.js';
 import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
@@ -630,6 +630,15 @@ function creditText(credit) {
   return parts.length ? `Photo: ${parts.join(', ')}` : '';
 }
 
+// "10:30 AM" stacks as "10:30" over a small "AM" so it fits the narrow time
+// column. A non-clock value ("Morning") shows as typed.
+function activityTimeHtml(time) {
+  const [clock, meridiem] = to12h(time).split(' ');
+  return meridiem && /^[AP]M$/.test(meridiem)
+    ? `${esc(clock)}<span class="td-activity-meridiem">${meridiem}</span>`
+    : esc(to12h(time));
+}
+
 function renderActivity(activity, currencySymbol, isFirst, tripCode = '') {
   const icon = catIcon(activity.category);
   const cat = (activity.category || '').toLowerCase();
@@ -646,7 +655,7 @@ function renderActivity(activity, currencySymbol, isFirst, tripCode = '') {
   return `
     ${!isFirst ? renderGettingThere(activity) : ''}
     <div class="td-activity">
-      ${time ? `<div class="td-activity-time">${esc(time)}</div>` : '<div class="td-activity-time"></div>'}
+      ${time ? `<div class="td-activity-time">${activityTimeHtml(time)}</div>` : '<div class="td-activity-time"></div>'}
       <div class="td-activity-dot" data-time="${esc(time)}"></div>
       <div class="td-activity-card" data-activity-id="${esc(activity.id || '')}">
         <div class="td-activity-card-top">
@@ -658,8 +667,8 @@ function renderActivity(activity, currencySymbol, isFirst, tripCode = '') {
         </div>
         <div class="td-activity-title">${esc(activity.title)}</div>
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
-        ${activity.description ? `<div class="td-activity-desc">${esc(activity.description)}</div>` : ''}
-        ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(activity.tips)}</div>` : ''}
+        ${activity.description ? `<div class="td-activity-desc">${esc(to12h(activity.description))}</div>` : ''}
+        ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(to12h(activity.tips))}</div>` : ''}
         ${wantsActivityPhoto(activity) ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${credit ? `data-photo-credit="${esc(credit)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
         ${activity.id ? `<button type="button" class="td-alt-btn" data-alt-for="${esc(activity.id)}" title="Suggest alternatives" aria-expanded="false">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
       </div>
@@ -1086,7 +1095,7 @@ function flightDetailValueHtml(key, value) {
 
 function flightDetailsHtml(leg) {
   const rows = FLIGHT_DETAILS
-    .map(([key, label, lead, icon]) => [key, label, icon, plainText(leg[key]).replace(lead, '').trim()])
+    .map(([key, label, lead, icon]) => [key, label, icon, to12h(plainText(leg[key]).replace(lead, '').trim())])
     .filter(([, , , value]) => value);
   if (!rows.length) return '';
   return `
@@ -1222,7 +1231,7 @@ function renderFlightContent(extras, trip) {
         </div>
         ${flightDetailsHtml(leg)}
         ${bottomHtml}
-        ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(leg.tips)}</div>` : ''}
+        ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(to12h(leg.tips))}</div>` : ''}
       </div>
     `;
   };
@@ -1290,12 +1299,12 @@ function renderTransportContent(extras) {
             <div class="td-flight-code">${esc(to)}</div>
           </div>
         </div>
-        <div class="td-flight-duration">${esc([leg.duration, leg.frequency].filter(Boolean).join(', '))}</div>
+        <div class="td-flight-duration">${esc(to12h([leg.duration, leg.frequency].filter(Boolean).join(', ')))}</div>
         <div class="td-flight-bottom">
           <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
           ${transportBookingLink(leg.mode, from, to)}
         </div>
-        ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(leg.tips)}</div>` : ''}
+        ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(to12h(leg.tips))}</div>` : ''}
       </div>
     `;
   };
@@ -1380,7 +1389,7 @@ function renderAccommodationContent(extras, trip) {
         <div class="td-accom-price">${esc(a.priceRange)}</div>
         ${features.length > 0 ? `
           <ul class="td-accom-features">
-            ${features.map(f => `<li>${esc(f)}</li>`).join('')}
+            ${features.map(f => `<li>${esc(to12h(f))}</li>`).join('')}
           </ul>
         ` : ''}
         <div class="td-accom-links">

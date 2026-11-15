@@ -1,5 +1,5 @@
 import { fetchSharedTrip, toSharedView } from '../data/share-repository.js';
-import { formatNumber, formatWeekdayDate } from '../lib/locale.js';
+import { formatNumber, formatWeekdayDate, to12h } from '../lib/locale.js';
 import { canConvert, convert } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
 import { escapeHtml as esc } from '../data/day-builder.js';
@@ -106,7 +106,7 @@ function renderReadView(app, trip, { mode, tripId }) {
 
       activitiesHtml += `
         <div class="shared-activity">
-          <div class="shared-activity-time">${esc(a.start_time)}</div>
+          <div class="shared-activity-time">${esc(to12h(a.start_time))}</div>
           <div class="shared-activity-body">
             <div class="shared-activity-title">${catEmoji} ${esc(a.title)}</div>
             ${a.venue_name ? `<div class="shared-activity-venue">${esc(a.venue_name)}</div>` : ''}

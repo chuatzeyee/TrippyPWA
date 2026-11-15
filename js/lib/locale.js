@@ -78,3 +78,18 @@ export function formatWeekdayDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return new Intl.DateTimeFormat(getLocale(), { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
 }
+
+// Every 24h clock time in a string ("06:10", "19:30:00") as 12h with AM/PM
+// ("6:10 AM", "7:30 PM"). Times already marked am/pm, and anything that is
+// not a valid clock time, are left alone. Stored values stay 24h; this is
+// display only.
+const CLOCK_24H = /(?<![\d:])(\d{1,2}):([0-5]\d)(?::[0-5]\d)?(?![\d:])(?!\s?[ap]\.?m\b)/gi;
+
+export function to12h(text) {
+  if (text == null) return '';
+  return String(text).replace(CLOCK_24H, (match, h, m) => {
+    const hour = Number(h);
+    if (hour > 23) return match;
+    return `${hour % 12 || 12}:${m} ${hour < 12 ? 'AM' : 'PM'}`;
+  });
+}
