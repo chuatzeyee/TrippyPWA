@@ -337,6 +337,7 @@ CRITICAL REQUIREMENTS:
 8. Write rich descriptions (2-3 sentences) explaining what makes each place special and what to expect.
 9. Add practical tips for each activity (booking advice, best times, what to order, etc).
 10. The timeSlot field should still categorize as morning/afternoon/evening for grouping.
+10b. Each day's "title" is a SHORT headline: 2 to 4 words and at most 28 characters, like "Arrival and ryokan night", "Old Sapporo and vinyl" or "Otaru canal day". Never list everything that happens that day in the title. Put a one-sentence description of the day in "theme".
 11. For EVERY day, include a "weather" object with the expected weather conditions for that day based on the destination, season, and travel dates. Include condition (e.g. "sunny", "partly cloudy", "rainy"), highC and lowC temperatures in Celsius.
 ${!includeExtras ? `12. Output ONLY the "days" array for days ${dayFrom}..${dayTo}. Do NOT include flights, transport, accommodation, bookingChecklist, or savingsTips — those are generated separately.` : `${isNearbyTrip
   ? `12. ${transportInstruction(transportMode ? (transportLabel[transportMode] || transportMode) : "the most common ground or sea option for this route (bus, train, ferry, car or taxi)")}`
@@ -373,8 +374,8 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
     days: [{
       dayNumber: "integer",
       date: "string (ISO 8601: YYYY-MM-DD)",
-      title: "string",
-      theme: "string",
+      title: "string (2 to 4 words, at most 28 characters)",
+      theme: "string (one sentence)",
       weather: { condition: "string", highC: "integer", lowC: "integer" },
       activities: [{
         startTime: "string (24h: 09:00)",
@@ -422,8 +423,8 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
           properties: {
             dayNumber: { type: "integer" },
             date: { type: "string", description: "ISO 8601 date: YYYY-MM-DD" },
-            title: { type: "string" },
-            theme: { type: "string" },
+            title: { type: "string", description: "Short headline, 2 to 4 words, at most 28 characters" },
+            theme: { type: "string", description: "One sentence describing the day" },
             weather: {
               type: "object",
               properties: { condition: { type: "string" }, highC: { type: "integer" }, lowC: { type: "integer" } },
@@ -760,6 +761,24 @@ function normSlot(raw: any): string {
   return "morning";
 }
 
+// Safety net for day titles the model wrote too long ("Historic Architecture,
+// Hidden Vinyl Crate Digging & Jazz"): keep the leading part(s) that fit.
+// The card never truncates, so this is about a readable headline.
+export const DAY_TITLE_MAX = 30;
+export function shortDayTitle(raw: unknown): string {
+  const t = String(raw || "").replace(/\s+/g, " ").trim();
+  if (t.length <= DAY_TITLE_MAX) return t;
+  const parts = t.split(/\s*(?:,|&|\band\b|\bwith\b|:|;)\s*/i).map((p) => p.trim()).filter(Boolean);
+  if (!parts.length) return t;
+  const two = parts.length > 1 ? `${parts[0]} & ${parts[1]}` : "";
+  if (two && two.length <= DAY_TITLE_MAX) return two;
+  if (parts[0].length <= DAY_TITLE_MAX) return parts[0];
+  const words = parts[0].split(" ");
+  let out = "";
+  for (const w of words) { if ((out ? `${out} ${w}` : w).length > DAY_TITLE_MAX) break; out = out ? `${out} ${w}` : w; }
+  return out || parts[0];
+}
+
 // Maps an AI itinerary (camelCase) into the snake_case p_days shape consumed by
 // the replace_itinerary RPC. Currency falls back to the destination code, never
 // blindly to USD when the activity itself specifies one.
@@ -772,11 +791,14 @@ export function toDbDays(itinerary: any, fallbackCurrency: string): any[] {
       if (!isNaN(parsed.getTime())) safeDate = parsed.toISOString().slice(0, 10);
     }
     const activities = Array.isArray(d.activities) ? d.activities : [];
+    const fullTitle = d.title || `Day ${d.dayNumber ?? (i + 1)}`;
+    const title = shortDayTitle(fullTitle);
     return {
       day_number: d.dayNumber ?? d.day_number ?? (i + 1),
       date: safeDate,
-      title: d.title || `Day ${d.dayNumber ?? (i + 1)}`,
-      theme: d.theme || "",
+      title,
+      // A long title that had to be shortened survives as the theme.
+      theme: d.theme || (title !== fullTitle ? fullTitle : ""),
       weather: d.weather || {},
       activities: activities.map((a: any, j: number) => dbSafeActivity({
         time_slot: normSlot(a.timeSlot ?? a.time_slot),

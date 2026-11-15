@@ -179,3 +179,14 @@ describe('wrapped replies', () => {
     expect(r.data.days).toHaveLength(1);
   });
 });
+
+import { shortDayTitle } from './generation.ts';
+describe('shortDayTitle', () => {
+  it('keeps short titles and trims long ones to their leading parts', () => {
+    expect(shortDayTitle('Otaru canal day')).toBe('Otaru canal day');
+    expect(shortDayTitle('Arrival in Snowy Sapporo & Evening Ryokan Relaxation')).toBe('Arrival in Snowy Sapporo');
+    expect(shortDayTitle('Winter Art, Coffee & Jazz Bars Tonight')).toBe('Winter Art & Coffee');
+    expect(shortDayTitle('Subterranean Tunnels Underneath The Whole City Centre')).toBe('Subterranean Tunnels');
+    expect(shortDayTitle('Subterranean Tunnels Underneath The Whole City Centre').length).toBeLessThanOrEqual(30);
+  });
+});
