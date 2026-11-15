@@ -370,7 +370,7 @@ function renderTripFooter(trip) {
   const credit = `<div class="td-footer-credit">Photos via
     <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>,
     <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a> (Creative Commons),
-    <a href="https://www.mapillary.com" target="_blank" rel="noopener">Mapillary</a>, venue websites &amp;
+    venue websites &amp;
     <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a></div>`;
   if (pills.length === 0) return `<div class="td-footer">${credit}</div>`;
   return `<div class="td-footer"><div class="td-footer-pills">${pills.join('')}</div>${credit}</div>`;
@@ -2899,7 +2899,29 @@ function refreshTotals(wrap, trip) {
   }
 }
 
+// Placeholder colour family by category.
+function placeholderTint(category) {
+  const c = String(category || '').toLowerCase();
+  if (/food|restaurant|cafe|coffee|bar|dining|dessert|breakfast|lunch|dinner|snack|market|nightlife/.test(c)) return 'eat';
+  if (/museum|culture|art|history|temple|shrine|architecture|gallery|heritage/.test(c)) return 'culture';
+  if (/nature|park|garden|beach|hike|outdoor|onsen|spa|wellness|terrain|lake|mountain/.test(c)) return 'nature';
+  if (/shop|mall|store|souvenir|record/.test(c)) return 'shop';
+  return 'other';
+}
+
+// No trustworthy photo (or an old street-level view, which users found ugly):
+// a designed placeholder with the activity's category icon instead.
+function showPhotoPlaceholder(el) {
+  el.querySelectorAll('.td-activity-photo-img, .td-activity-photo-badge, .td-activity-photo-credit').forEach(n => n.remove());
+  el.classList.remove('td-activity-photo--loaded', 'td-activity-photo--failed', 'td-activity-photo--pending');
+  el.classList.add('td-activity-photo--none');
+  if (!el.querySelector('.td-photo-ph')) {
+    el.insertAdjacentHTML('beforeend', `<div class="td-photo-ph td-photo-ph--${placeholderTint(el.dataset.category)}" aria-hidden="true">${catIcon(el.dataset.category || '')}</div>`);
+  }
+}
+
 function attachActivityImg(el, url, venue, source, credit = '') {
+  if (source === 'street') { showPhotoPlaceholder(el); return; }
   // Re-attaching (a realtime patch, then the final credit refresh) must not
   // stack a second image, badge or credit on the card.
   el.querySelectorAll('.td-activity-photo-img, .td-activity-photo-badge, .td-activity-photo-credit').forEach(n => n.remove());
@@ -2911,16 +2933,9 @@ function attachActivityImg(el, url, venue, source, credit = '') {
   img.className = 'td-activity-photo-img';
   img.loading = 'lazy';
   img.onload = () => el.classList.add('td-activity-photo--loaded');
-  img.onerror = () => el.classList.add('td-activity-photo--failed');
+  img.onerror = () => showPhotoPlaceholder(el);
+  el.querySelector('.td-photo-ph')?.remove();
   el.appendChild(img);
-  // A Mapillary street-level fallback is the LOCATION, not the venue — label it
-  // honestly so it never reads as a photo of the place itself.
-  if (source === 'street') {
-    const badge = document.createElement('span');
-    badge.className = 'td-activity-photo-badge';
-    badge.textContent = 'Street view';
-    el.appendChild(badge);
-  }
   // Creative Commons photos need visible attribution.
   if (credit) {
     const c = document.createElement('span');
@@ -2946,7 +2961,7 @@ function applyActivityPhoto(el, activity, credit) {
     if (sameImage && sameCredit) return;
     attachActivityImg(el, url, el.dataset.venue || activity.venue_name || '', source, credit);
   } else if (source === 'none') {
-    el.classList.add('td-activity-photo--none');
+    showPhotoPlaceholder(el);
   }
 }
 
@@ -2998,13 +3013,10 @@ function applyPhotoSnapshot(view, { credits, activities }) {
   }
 }
 
-// Resolution is over: a placeholder still waiting has no photo coming, so it
-// collapses (--none hides the block) instead of staying an empty box.
+// Resolution is over: a slot still waiting has no photo coming, so it gets
+// the designed placeholder instead of staying an empty box.
 function collapsePendingPhotos(root) {
-  root.querySelectorAll('.td-activity-photo--pending').forEach(el => {
-    el.classList.remove('td-activity-photo--pending');
-    el.classList.add('td-activity-photo--none');
-  });
+  root.querySelectorAll('.td-activity-photo--pending').forEach(showPhotoPlaceholder);
 }
 
 function photoProgressText({ done = 0, total = 0 } = {}) {
@@ -3029,6 +3041,7 @@ function bindPhotoStatus(view) {
       // open up and shimmer while it runs.
       view.wrap.querySelectorAll('.td-activity-photo--none:not([data-photo]):not([data-photo-source])').forEach(ph => {
         ph.classList.replace('td-activity-photo--none', 'td-activity-photo--pending');
+        ph.querySelector('.td-photo-ph')?.remove();
       });
       return;
     }
@@ -3169,11 +3182,12 @@ function loadActivityPhotos(container, trip) {
     if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue, el.dataset.photoSource, el.dataset.photoCredit);
     // 'none' = the photo resolver checked and found no trustworthy photo: the
     // block collapses rather than live-resolving a generic stock image.
-    else if (el.dataset.photoSource === 'none') el.classList.add('td-activity-photo--none');
+    else if (el.dataset.photoSource === 'none') showPhotoPlaceholder(el);
     // Imported trips (and any trip whose photos are being resolved right now)
     // wait for the server worker instead of live stock lookups: shimmer while
     // it runs, collapsed otherwise (it opens again if a run starts).
-    else if (imported || resolving) el.classList.add(resolving ? 'td-activity-photo--pending' : 'td-activity-photo--none');
+    else if (resolving) el.classList.add('td-activity-photo--pending');
+    else if (imported) showPhotoPlaceholder(el);
     else legacy.push(el);
   }
   if (!legacy.length) return null;
