@@ -4539,7 +4539,25 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
 /* Photo placeholders: --pending shimmers (the base ::before) while the server
    finds photos. --none (nothing found, or no lookup running) collapses the
    block entirely: an empty box reads as a broken image. */
-.td-activity-photo--none { display: none; }
+/* No trustworthy photo: a quiet placeholder with the category icon, shorter
+   than a photo so it doesn't pretend to be one. */
+.td-activity-photo--none { height: 96px; }
+.td-photo-ph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--ph) 22%, transparent), transparent 60%),
+    linear-gradient(135deg, color-mix(in srgb, var(--ph) 10%, var(--surface-inset)), var(--surface-inset));
+  color: color-mix(in srgb, var(--ph) 70%, var(--ink-secondary));
+}
+.td-photo-ph svg { width: 36px; height: 36px; opacity: 0.85; }
+.td-photo-ph { --ph: var(--teal); }
+.td-photo-ph--eat { --ph: var(--terracotta); }
+.td-photo-ph--culture { --ph: var(--plum); }
+.td-photo-ph--nature { --ph: var(--sage); }
+.td-photo-ph--shop { --ph: var(--amber); }
 
 .td-spending-note {
   margin: var(--sp-2) 0 0;

@@ -3,10 +3,11 @@
 // in photo-resolver.test.mjs.
 //
 // HARD RULE for venues and areas: never a confident WRONG match. We return
-// either (a) a real photo of the actual venue/area, verified by a trusted id,
-// by coordinates, or by the venue's name in the photo's title, or (b) an
-// HONEST street-level view of the exact location (labelled "Street view").
-// Otherwise null -> gradient. All sources are free.
+// a real photo of the actual venue/area, verified by a trusted id, by
+// coordinates, or by the venue's name in the photo's title. Otherwise nothing:
+// the app shows a designed category placeholder. Street-level imagery
+// (Mapillary) was dropped on 2026-11-15: it filled 41% of cards and users found
+// it ugly. All sources are free.
 //
 // The trip COVER is picked differently (cover-rank.mjs, cover-resolver.mjs):
 // it may be a Pexels stock photo, but only one whose caption or page slug names
@@ -21,8 +22,7 @@
 //     Official website preview image (og:image), hero-shaped, not a logo
 //     Wikimedia Commons search: within 300m, or name in title (and near if geotagged)
 //     Openverse (Creative Commons, e.g. Flickr): name in title, open licence only
-//   VENUE fallback: Mapillary street-level at the coords, 1024px, source "street"
-//   AREA (Discover towns): Wikipedia exact -> search -> Commons geosearch -> street
+//   AREA (Discover towns): Wikipedia exact -> search -> Commons geosearch
 //
 // Every result is { url, source, credit? } where credit = { creator, license, via, link }.
 
@@ -556,23 +556,6 @@ async function wikimediaGeo(lat, lng, radiusM, maxWidth) {
   } catch { return null; }
 }
 
-// --- Mapillary street-level (honest location view), always the sharp 1024px rendition ---
-
-async function mapillaryQuery(lat, lng, radiusM, token) {
-  const dLat = radiusM / 111320, dLon = radiusM / (111320 * Math.cos(lat * Math.PI / 180));
-  const bbox = `${lng - dLon},${lat - dLat},${lng + dLon},${lat + dLat}`;
-  const url = `https://graph.mapillary.com/images?access_token=${encodeURIComponent(token)}&fields=thumb_1024_url&bbox=${bbox}&limit=1`;
-  const res = await timeoutFetch(url, { headers: { accept: "application/json" } });
-  if (!res.ok) return null;
-  return (await res.json()).data?.[0]?.thumb_1024_url || null;
-}
-
-async function mapillaryStreet(lat, lng, token) {
-  if (!token || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  try {
-    return (await mapillaryQuery(lat, lng, 150, token)) || (await mapillaryQuery(lat, lng, 400, token));
-  } catch { return null; }
-}
 
 /**
  * Geocode a venue to lat/lng via Photon (keyless). `address` (e.g. "Hakodate")
@@ -608,16 +591,15 @@ export async function geocodeVenue(name, { address = "", bias, maxKm } = {}) {
  * All trustworthy photo candidates for a place, best first. The caller stores
  * the first one that downloads cleanly and passes looksLikePhoto().
  * @param {object} place { query, names?, city?, website?, kind?, category?, lat?, lng?, maxWidth? }
- * @param {object} [opts] { mapillaryToken }
+ * @param {object} [opts] reserved
  * @returns {Promise<Array<{ url: string, source: string, credit?: { creator?: string, license?: string, via?: string, link?: string } }>>}
- *   source: osm | wikidata | wikimedia | wikipedia | official | commons | openverse | street
+ *   source: osm | wikidata | wikimedia | wikipedia | official | commons | openverse
  */
 export async function resolvePhotoCandidates(place, opts = {}) {
   const { kind = "venue", lat, lng, maxWidth = 960, city = "" } = place;
   if (!place.query) return null;
   const { primary: query, variants } = kind === "venue" ? splitVenueName(place.query) : { primary: place.query, variants: [place.query] };
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0);
-  const token = opts.mapillaryToken || "";
 
   if (kind === "area") {
     const [exact, search, geo] = await Promise.all([
@@ -629,19 +611,14 @@ export async function resolvePhotoCandidates(place, opts = {}) {
     if (exact) out.push({ url: exact, source: "wikipedia", credit: { via: "Wikipedia" } });
     if (search && search !== exact) out.push({ url: search, source: "wikipedia", credit: { via: "Wikipedia" } });
     if (geo) out.push({ url: geo, source: "wikimedia", credit: { via: "Wikimedia Commons" } });
-    if (!out.length && hasCoords) {
-      const street = await mapillaryStreet(lat, lng, token);
-      if (street) out.push({ url: street, source: "street", credit: { via: "Mapillary" } });
-    }
     return out;
   }
 
-  // Phase 1: exact-id sources + the street fallback, all in parallel.
-  const [osm, wd, wiki, street] = await Promise.all([
+  // Phase 1: exact-id sources, in parallel.
+  const [osm, wd, wiki] = await Promise.all([
     hasCoords ? osmVenue(query, lat, lng, maxWidth).catch(() => null) : Promise.resolve(null),
     hasCoords ? wikidataByName(query, lat, lng, maxWidth).catch(() => null) : Promise.resolve(null),
     wikipediaExact(query, maxWidth, { lat, lng }).catch(() => null),
-    hasCoords ? mapillaryStreet(lat, lng, token).catch(() => null) : Promise.resolve(null),
   ]);
 
   // Phase 2: verified web photos. Name variants include OSM's local-language name.
@@ -660,7 +637,6 @@ export async function resolvePhotoCandidates(place, opts = {}) {
     wd && { url: wd, source: "wikidata", credit: { via: "Wikimedia Commons" } },
     wiki && { url: wiki, source: "wikipedia", credit: { via: "Wikipedia" } },
     official, commons, commonsLocal, openverse,
-    street && { url: street, source: "street", credit: { via: "Mapillary" } },
   ].filter(Boolean);
   const seen = new Set();
   return ordered.filter((c) => !seen.has(c.url) && seen.add(c.url));

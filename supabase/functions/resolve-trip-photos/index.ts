@@ -45,7 +45,6 @@ import { CORS_MAX_AGE, bearerToken, isServiceRoleRequest } from "../_shared/http
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const MAPILLARY_TOKEN = Deno.env.get("MAPILLARY_TOKEN") || "";
 const PEXELS_API_KEY = Deno.env.get("PEXELS_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 // Cover judge: a quick vision check, so the fast Flash-Lite model.
@@ -330,7 +329,7 @@ async function resolveTrip(tripId: string, ownerCall = false) {
       query: a.venue_name, kind: "venue", category: a.category, city,
       website: isOfficialSite(a.booking_url) ? a.booking_url : "",
       lat, lng, maxWidth: ACT_WIDTH,
-    }, { mapillaryToken: MAPILLARY_TOKEN });
+    });
     const hit = await storeFirst(cands, `${tripId}/act-${a.id}`);
     if (!hit) {
       // Tried and found nothing trustworthy: remember, so neither this worker
@@ -359,7 +358,7 @@ async function resolveTrip(tripId: string, ownerCall = false) {
       const cands = await resolvePhotoCandidates({
         query: `${town.name} ${city}`.trim(), kind: "area",
         lat: cell ? Number(cell[0]) : undefined, lng: cell ? Number(cell[1]) : undefined, maxWidth: ACT_WIDTH,
-      }, { mapillaryToken: MAPILLARY_TOKEN });
+      });
       const safe = String(town.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
       const hit = await storeFirst(cands, `${tripId}/town-${safe}`);
       if (hit) { town.photo = hit.stored; town.photoSource = hit.cand.source; townDone++; }
