@@ -169,3 +169,13 @@ describe('save-safe activity values', () => {
     expect((await callGemini('p', 's', {}, 'k', 'm')).error).toMatch(/\[rate-limited\]$/);
   });
 });
+
+describe('wrapped replies', () => {
+  it('accepts an itinerary wrapped one level deep', async () => {
+    vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ choices: [{ message: { content: '{"itinerary":{"days":[{"dayNumber":1,"activities":[{"title":"x"}]}]}}' }, finish_reason: 'stop' }] }), { status: 200 }));
+    const { callMistral } = await import('./generation.ts');
+    const r = await callMistral('p', 's', {}, 'k');
+    expect(r.error).toBeNull();
+    expect(r.data.days).toHaveLength(1);
+  });
+});
