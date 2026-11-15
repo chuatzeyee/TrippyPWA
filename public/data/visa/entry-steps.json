@@ -1,0 +1,3740 @@
+{
+ "_comment": "Entry paperwork per country (arrival cards, ETAs, eVisas, levies). Researched from official sources and adversarially verified on 2026-11-15. Advisory only; always link official portals. Built from the entry-requirements-research workflow.",
+ "verifiedOn": "2026-11-15",
+ "countries": {
+  "SG": {
+   "items": [
+    {
+     "id": "sg-arrival-card",
+     "kind": "arrival-card",
+     "name": "SG Arrival Card (SGAC) with electronic health declaration",
+     "required": true,
+     "who": "Everyone entering Singapore, including Singapore citizens, PRs and long-term pass holders arriving by air or sea; residents are exempt only at the Woodlands and Tuas land checkpoints.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 2,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://eservices.ica.gov.sg/sgarrivalcard/",
+     "validity": "One submission can cover up to 3 trips within the 3-day window",
+     "steps": [
+      "Within 3 days of arrival (arrival day counts), open the SGAC e-Service or the MyICA app.",
+      "Pick the resident option (health declaration only) or the foreign visitor option (trip details plus health declaration).",
+      "Submit and keep the acknowledgement email. Foreign visitors get their e-Pass by email.",
+      "At immigration, show only your passport."
+     ],
+     "sources": [
+      "https://www.ica.gov.sg/enter-transit-depart/entering-singapore/sg-arrival-card",
+      "https://eservices.ica.gov.sg/arrivalcard/sgac"
+     ],
+     "confidence": "high",
+     "note": "ICA example: arriving 30 June, you can submit from 28 June. Long-term pass holders means Student's Pass, Dependant's Pass, LTVP and Work Pass holders. Not a visa. ICA never charges a fee, so avoid paid look-alike sites. If your health changes after submitting, use Update SGAC. Page last updated 28 Oct 2026."
+    }
+   ],
+   "transit": "No SGAC is needed if you transfer airside at Changi without clearing immigration (ICA). If you must clear immigration to collect bags or a new boarding pass, which is common on low-cost carriers and separate tickets, you are entering Singapore and need the SGAC and any visa.",
+   "landSea": "From Johor by road (Causeway into Woodlands, Second Link into Tuas): foreign visitors must file the SGAC; Singapore citizens, PRs and long-term pass holders are exempt at these two checkpoints only. By sea (ferries from Batam, Bintan or Desaru, or cruises): everyone files the SGAC, and residents file the health declaration part. Malaysia-registered cars and motorcycles need an LTA Vehicle Entry Permit and Autopass Card. The RTS Link (Woodlands North to Bukit Chagar) will have co-located checks, so you clear both countries at the departure station; LTA still says end 2026, but news reports in October 2026 say the operator now expects February 2027.",
+   "source": "research"
+  },
+  "MY": {
+   "items": [
+    {
+     "id": "my-mdac",
+     "kind": "arrival-card",
+     "name": "Malaysia Digital Arrival Card (MDAC)",
+     "required": true,
+     "who": "All foreign visitors except Singapore citizens, Malaysian PRs and long-term pass holders, diplomatic and official passport holders, and holders of certain Brunei, Thai and Indonesian border passes.",
+     "exemptNationalities": [
+      "SG",
+      "MY"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 2,
+     "fee": "Free",
+     "url": "https://imigresen-online.imi.gov.my/mdac/main",
+     "validity": "One trip; file again for each entry",
+     "steps": [
+      "Within 3 days before arrival, open the MDAC portal or the MyNIISe app.",
+      "Enter passport, travel and accommodation details for each traveller.",
+      "Submit and keep the confirmation sent to your email.",
+      "Show your passport at the counter or e-gate."
+     ],
+     "sources": [
+      "https://www.kln.gov.my/web/sgp_singapore/requirement_foreigner",
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/malaysia/",
+      "https://www.imi.gov.my/index.php/en/pengumuman/mdac-can-now-be-filled-directly-through-the-myniise-app/"
+     ],
+     "confidence": "high",
+     "note": "Mandatory since 1 Jan 2024. The exemption follows the passport: Singapore PRs and work pass holders on a foreign passport must file it. Singapore citizens are exempt at all entry points, but Singapore MFA says to file it 3 days ahead if you want to enrol fingerprints for Malaysian e-gates on later trips. Whether the 3 days include arrival day is not stated officially."
+    },
+    {
+     "id": "my-vep",
+     "kind": "registration",
+     "name": "Vehicle Entry Permit (VEP) RFID tag for Singapore-registered vehicles",
+     "required": true,
+     "who": "Anyone driving a Singapore-registered car into Malaysia through the Causeway or the Second Link.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "land"
+     ],
+     "windowDays": null,
+     "leadDays": 30,
+     "fee": "RM10 tag processing fee, plus RM29.50 if a collection agent handles the tag. A Road Charge (reported as RM20 per entry for cars) is deducted from your Touch 'n Go eWallet.",
+     "url": "https://vep.jpj.gov.my",
+     "validity": "Tag valid 5 years; tied to one vehicle",
+     "steps": [
+      "Register the vehicle on vep.jpj.gov.my, linked to a Touch 'n Go eWallet.",
+      "Pay and choose courier or collection on vepams.jpj.gov.my.",
+      "Fit the RFID tag and upload a fitment photo to activate it.",
+      "Keep the eWallet topped up for Road Charge and tolls."
+     ],
+     "sources": [
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/malaysia/",
+      "https://www.jpj.gov.my/accordions/soalan-lazim-lesen-memandu-2-2-2-2-3-2-2/"
+     ],
+     "confidence": "medium",
+     "note": "Required since 1 July 2025. Without a VEP you can be fined RM300 and must pay and register before the car may leave Malaysia. A Touch 'n Go tag cannot replace the VEP tag. Not needed if you ride a bus or taxi. The RM20 Road Charge figure comes from news reports, not a JPJ page we could read.",
+     "vehicles": [
+      "car"
+     ]
+    },
+    {
+     "id": "my-evisa-india",
+     "kind": "evisa",
+     "name": "Malaysia eVISA (Indian passports, if the visa exemption is not extended)",
+     "required": true,
+     "who": "Indian passport holders arriving on or after 1 January 2027, unless Malaysia extends the visa exemption that ends on 31 December 2026.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "IN"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 21,
+     "fee": "Set on the portal; not confirmed",
+     "url": "https://malaysiavisa.imi.gov.my",
+     "effectiveFrom": "2027-01-01",
+     "steps": [
+      "Check imi.gov.my in late December 2026 for any extension.",
+      "If no extension, apply on malaysiavisa.imi.gov.my before booking.",
+      "Print or save the approved eVISA and carry it with your passport.",
+      "File the MDAC within 3 days before arrival as well."
+     ],
+     "sources": [
+      "https://www.imi.gov.my/index.php/en/main-services/visa/visa-requirement-by-country/",
+      "https://www.kln.gov.my/web/sgp_singapore/requirement_foreigner"
+     ],
+     "confidence": "medium",
+     "note": "Malaysian Immigration states: India citizen visa exempt until 31 December 2026. No extension was announced as of 15 Nov 2026; the last extension came only 11 days before expiry. Chinese passports are covered by a separate mutual visa exemption and are not affected."
+    },
+    {
+     "id": "my-myniise",
+     "kind": "registration",
+     "name": "MyNIISe app (QR code immigration clearance)",
+     "required": false,
+     "who": "Optional for travellers, including Singapore citizens, who want QR code clearance at the Johor land checkpoints and selected airports.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land"
+     ],
+     "windowDays": null,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://www.imi.gov.my/index.php/en/pengumuman/mdac-can-now-be-filled-directly-through-the-myniise-app/",
+     "steps": [
+      "Download MyNIISe only from the official App Store or Google Play listing.",
+      "Register your passport details in the app.",
+      "Use the QR lane at the checkpoint and keep your physical passport with you.",
+      "Check that your entry and exit were recorded before leaving the checkpoint."
+     ],
+     "sources": [
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/malaysia/",
+      "https://www.imi.gov.my/index.php/en/pengumuman/mdac-can-now-be-filled-directly-through-the-myniise-app/"
+     ],
+     "confidence": "medium",
+     "note": "NIISe began phased national rollout on 31 March 2026. The passport remains mandatory. Non-exempt foreigners can file the MDAC inside the app. Not every gate supports QR yet; news reports say nationwide QR checks are targeted for January 2027."
+    }
+   ],
+   "transit": "The MDAC is for travellers who pass Malaysian immigration. No official page we found addresses airside transit at KLIA. If you clear immigration, for example to re-check bags on separate tickets, file the MDAC unless exempt.",
+   "landSea": "From Singapore by bus, taxi or car: clear Singapore exit at Woodlands (Causeway) or Tuas (Second Link), then Malaysian entry at Bangunan Sultan Iskandar (JB) or Kompleks Sultan Abu Bakar. Non-exempt foreigners need the MDAC; Singapore citizens do not. Singapore-registered cars need an active VEP tag. Optional MyNIISe QR lanes run at both Johor checkpoints. The RTS Link (Woodlands North to Bukit Chagar) will clear both countries at the departure station and is expected to open in early 2027. Ferry arrivals also need the MDAC. Sabah and Sarawak run their own immigration checks even on domestic flights from Peninsular Malaysia, so carry your passport.",
+   "source": "research"
+  },
+  "ID": {
+   "items": [
+    {
+     "id": "id-all-indonesia",
+     "kind": "arrival-card",
+     "name": "All Indonesia arrival declaration (immigration, customs, health and quarantine)",
+     "required": true,
+     "who": "Every passenger arriving from abroad, Indonesian citizens and foreigners alike, at all airports, seaports and land border posts.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 2,
+     "fee": "Free",
+     "url": "https://allindonesia.imigrasi.go.id",
+     "validity": "One arrival",
+     "steps": [
+      "From 3 days before arrival, open allindonesia.imigrasi.go.id or the All Indonesia app.",
+      "Choose Foreign Visitor (or Indonesian Citizen), your transport mode (air or sea) and arrival port.",
+      "Fill in passport, trip, customs and health details for each traveller.",
+      "Save the QR code and show it on arrival."
+     ],
+     "sources": [
+      "https://www.imigrasi.go.id/siaran_pers/mulai-1-oktober-deklarasi-kedatangan-penumpang-wajib-dilakukan-di-aplikasi-all-indonesia",
+      "https://allindonesia.imigrasi.go.id/"
+     ],
+     "confidence": "high",
+     "note": "Mandatory everywhere since 1 Oct 2025. Replaces paper cards and the old e-CD customs form. Not a visa. Without it you go to a counter for manual checks and wait longer. It can also be done on arrival."
+    },
+    {
+     "id": "id-evoa",
+     "kind": "voa-online",
+     "name": "Indonesia Electronic Visa on Arrival (e-VOA, visa B1)",
+     "required": true,
+     "who": "Passport holders on Indonesia's visa-on-arrival list who are not visa-free, such as India, China, Japan, Korea, Australia, the UK and the US.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "ZA",
+      "AL",
+      "US",
+      "AD",
+      "SA",
+      "AR",
+      "AM",
+      "AU",
+      "AT",
+      "AZ",
+      "BH",
+      "NL",
+      "BE",
+      "BA",
+      "BG",
+      "CZ",
+      "CL",
+      "DK",
+      "EC",
+      "EE",
+      "FI",
+      "GT",
+      "HU",
+      "IN",
+      "GB",
+      "IE",
+      "IT",
+      "IS",
+      "JP",
+      "DE",
+      "CA",
+      "KE",
+      "KR",
+      "HR",
+      "KW",
+      "LV",
+      "LI",
+      "LT",
+      "LU",
+      "MV",
+      "MT",
+      "MA",
+      "MU",
+      "MX",
+      "EG",
+      "MC",
+      "MN",
+      "MZ",
+      "NO",
+      "OM",
+      "PS",
+      "PG",
+      "FR",
+      "PL",
+      "PT",
+      "QA",
+      "RO",
+      "RU",
+      "RW",
+      "SM",
+      "NZ",
+      "RS",
+      "SC",
+      "CY",
+      "SK",
+      "SI",
+      "ES",
+      "SE",
+      "CH",
+      "TW",
+      "TZ",
+      "CN",
+      "TN",
+      "AE",
+      "UZ",
+      "UA",
+      "VA",
+      "VE",
+      "JO",
+      "GR"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 90,
+     "leadDays": 7,
+     "fee": "IDR 500,000",
+     "url": "https://evisa.imigrasi.go.id",
+     "validity": "Use within 90 days of issue; single entry; 30-day stay, extendable once by 30 days",
+     "steps": [
+      "Apply on evisa.imigrasi.go.id with your passport bio page, a photo and a return or onward ticket.",
+      "Pay IDR 500,000 by card.",
+      "Receive the e-VOA by email within about 24 hours.",
+      "Enter through an airport, seaport or land post on the e-VOA entry list."
+     ],
+     "sources": [
+      "https://imigrasi.go.id/wna/daftar-visa-indonesia/B1",
+      "https://evisa.imigrasi.go.id/front/faq/59e5c2c3-525d-485b-928b-ed25079d0fd1",
+      "https://www.imigrasi.go.id/wna/daftar-negara-voa-bvk-calling-visa/daftar-%20negara-subjek-visa-on-arrival?golden_visa=0",
+      "https://www.imigrasi.go.id/siaran_pers/silmy-karim-tarik-wisatawan-asing-imigrasi-berikan-bebas-visa-kunjungan-ke-batam-bintan-dan-karimun-bagi-pemegang-pr-singapur"
+     ],
+     "confidence": "high",
+     "note": "Visa-free for 30 days instead: all ASEAN passports (incl. SG, MY, PH), Timor-Leste, Hong Kong, Macau, Brazil, Colombia, Peru, Suriname, Turkiye, Kazakhstan, Belarus. Foreign Singapore PRs with a blue NRIC get a free 4-day stay (not extendable) in Batam, Bintan and Karimun at listed ferry ports, so they need no e-VOA for short trips there. Only official channels: evisa.imigrasi.go.id and indonesiavoa.vfsevisa.id. A rise to IDR 750,000 was proposed in August 2026 but has no effective date."
+    },
+    {
+     "id": "id-bali-levy",
+     "kind": "levy",
+     "name": "Bali Foreign Tourist Levy (Love Bali)",
+     "required": true,
+     "who": "Every foreign tourist visiting Bali, including those arriving from elsewhere in Indonesia.",
+     "exemptNationalities": [
+      "ID"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "IDR 150,000 per person, once per trip",
+     "url": "https://lovebali.baliprov.go.id",
+     "validity": "Once per visit to Bali, until you leave Indonesia",
+     "steps": [
+      "Pay on lovebali.baliprov.go.id or the Love Bali app before you travel.",
+      "Pay by card, bank transfer, virtual account, UnionPay or QRIS.",
+      "Save the QR levy voucher sent to your email.",
+      "Show it if asked at the airport, port or attractions."
+     ],
+     "sources": [
+      "https://lovebali.baliprov.go.id/faq",
+      "https://lovebali.baliprov.go.id/terms"
+     ],
+     "confidence": "high",
+     "note": "Only needed if your trip includes Bali. Non-refundable. Exempt: diplomatic and official visas, crew, KITAS or KITAP holders, family unification and student visa holders. Golden visa and other non-tourist visa holders must apply for exemption at least 5 days before arrival. Can also be paid at counters on arrival.",
+     "places": [
+      "bali",
+      "denpasar",
+      "ubud",
+      "seminyak",
+      "kuta",
+      "canggu",
+      "nusa dua",
+      "sanur",
+      "uluwatu",
+      "jimbaran",
+      "amed",
+      "lovina"
+     ]
+    }
+   ],
+   "transit": "All Indonesia is for passengers who enter Indonesia. No official page we found covers airside transit; if you must clear immigration to change flights, file it and hold the right visa.",
+   "landSea": "Ferries from Singapore (HarbourFront and Tanah Merah) go to Batam (Batam Centre, Harbour Bay, Sekupang, Nongsa), Bintan (Bandar Bentan Telani at Lagoi, Sri Bintan Pura at Tanjung Pinang) and Tanjung Balai Karimun. Everyone files All Indonesia, choosing SEA and the arrival port. Singapore citizens and other ASEAN passports are visa-free for 30 days. India and China passports need an e-VOA, which these ports accept. Foreign Singapore PRs with a blue NRIC can instead enter visa-free for 4 days at Nongsa Terminal Bahari, Marina Teluk Senimba, Batam Centre, Harbour Bay (Citra Tri Tunas), Sekupang, Sri Bintan Pura, Bandar Bentan Telani or Tanjung Balai Karimun; they use the counter, not the autogate, and must stay in Batam, Bintan or Karimun. Returning to Singapore by ferry, everyone including citizens must file the SG Arrival Card.",
+   "source": "research"
+  },
+  "TH": {
+   "items": [
+    {
+     "id": "th-tdac",
+     "kind": "arrival-card",
+     "name": "Thailand Digital Arrival Card (TDAC)",
+     "required": true,
+     "who": "All non-Thai nationals entering by air, land or sea, including children; exempt are airside transit passengers, Border Pass holders and operating crew.",
+     "exemptNationalities": [
+      "TH"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 2,
+     "fee": "Free",
+     "url": "https://tdac.immigration.go.th",
+     "validity": "One entry only; file a new card for each trip",
+     "steps": [
+      "Within 3 days before arrival, open tdac.immigration.go.th and choose Arrival Card.",
+      "Submit alone or as a group of up to 10 people.",
+      "Enter passport, flight or vehicle, accommodation and health details in English.",
+      "Save the QR code or PDF from the email and show it at immigration."
+     ],
+     "sources": [
+      "https://tdac.immigration.go.th/manual/en/faq.html",
+      "https://hongkong.thaiembassy.org/en/page/entry-regulation?menu=5d84804a15e39c03c800281b",
+      "https://www.tatnews.org/2026/09/thailand-introduces-new-30-day-and-15-day-visa-exemption-rules-from-15-september/"
+     ],
+     "confidence": "high",
+     "note": "Official example: arriving 5 May, you can submit from 2 May. Name, passport number, nationality and date of birth cannot be edited after submitting. Not a visa. Since 15 Sep 2026 visa-free stays are 30 days (SG, MY, ID, PH, IN on the list; China uses a separate bilateral exemption). The planned tourist entry fee and an ETA are not in force as of Nov 2026."
+    }
+   ],
+   "transit": "No TDAC is needed if you transfer airside without passing immigration (TDAC FAQ). If you leave the airport, you need one.",
+   "landSea": "By road or rail from Malaysia (e.g. Bukit Kayu Hitam to Sadao, Padang Besar), and by sea, the TDAC is still required. From 15 Sep 2026, visa-exempt entries at land checkpoints are capped at 2 per calendar year, but the cap does not apply to Malaysian, Bruneian, Indonesian or Singaporean nationals. Land crossings between Thailand and Cambodia are closed (Australian travel advice, 22 Sep 2026).",
+   "source": "research"
+  },
+  "VN": {
+   "items": [
+    {
+     "id": "vn-pre-arrival",
+     "kind": "arrival-card",
+     "name": "Vietnam Pre-Arrival Information (PAI) declaration",
+     "required": false,
+     "who": "All international air passengers who do not hold a Vietnamese passport.",
+     "exemptNationalities": [
+      "VN"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": 3,
+     "leadDays": 2,
+     "fee": "Free",
+     "url": "https://prearrival.immigration.gov.vn",
+     "validity": "One arrival",
+     "steps": [
+      "Within 3 days before arrival, open prearrival.immigration.gov.vn.",
+      "Enter passport, flight and accommodation details.",
+      "Save or print the confirmation QR code.",
+      "Show the QR code at immigration."
+     ],
+     "sources": [
+      "https://hanoi.mfa.gov.sg/mission-updates/pre-arrival-declaration-for-foreign-travellers-entering-vietnam/",
+      "https://vn.usembassy.gov/notice-implementation-of-pre-arrival-declaration-for-international-visitors-arriving-at-airports-in-vietnam/"
+     ],
+     "confidence": "medium",
+     "note": "Started 15 Apr 2026 at Tan Son Nhat; by late June 2026 also at Noi Bai, Da Nang, Cam Ranh and Phu Quoc. Singapore's Embassy in Hanoi says travellers are encouraged and strongly advised to do it; the US Embassy calls it mandatory at all airports. Guidance differs, so do it in advance to avoid queues. It can also be done on arrival by QR code or paper form. Not a visa."
+    },
+    {
+     "id": "vn-evisa",
+     "kind": "evisa",
+     "name": "Vietnam e-Visa (Immigration Department portal)",
+     "required": true,
+     "who": "Anyone whose passport is not visa-exempt, plus exempt travellers who will stay longer than their visa-free period.",
+     "exemptNationalities": [
+      "SG",
+      "MY",
+      "ID",
+      "TH",
+      "PH",
+      "KH",
+      "LA",
+      "BN",
+      "MM",
+      "JP",
+      "KR",
+      "GB",
+      "FR",
+      "DE",
+      "IT",
+      "ES",
+      "DK",
+      "FI",
+      "NO",
+      "SE",
+      "RU",
+      "BE",
+      "BG",
+      "HR",
+      "CZ",
+      "HU",
+      "LU",
+      "NL",
+      "PL",
+      "RO",
+      "SK",
+      "SI",
+      "CH",
+      "BY",
+      "CL",
+      "PA",
+      "KG"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 14,
+     "fee": "USD 25 single entry, USD 50 multiple entry (non-refundable)",
+     "url": "https://evisa.gov.vn",
+     "validity": "Up to 90 days, single or multiple entry",
+     "steps": [
+      "Apply on evisa.gov.vn with a passport bio page scan and a portrait photo.",
+      "Pay the fee online.",
+      "Check the result with your dossier code after about 3 working days.",
+      "Print the e-Visa and enter through a designated e-Visa border gate."
+     ],
+     "sources": [
+      "https://immigration.gov.vn/trang-chu-ttdt",
+      "https://e-services.mps.gov.vn/bocongan/bothutuc/tthc?matt=26277",
+      "https://vietnamtourism.gov.vn/en/post/21219",
+      "https://hef.gov.vn/official-guidance-on-entry-and-visa-requirements-for-viet-nam.html"
+     ],
+     "confidence": "high",
+     "note": "India and China passports need it. ASEAN passports are visa-free for 14 to 30 days depending on nationality (Singapore 30 days). 45-day waivers: Denmark, Finland, France, Germany, Italy, Japan, Korea, Norway, Russia, Spain, Sweden, UK until 14 Mar 2028; Belgium, Bulgaria, Croatia, Czechia, Hungary, Luxembourg, Netherlands, Poland, Romania, Slovakia, Slovenia, Switzerland until 14 Aug 2028 (tourism only). Since 11 Nov 2024 the official portals are evisa.gov.vn and thithucdientu.gov.vn."
+    }
+   ],
+   "transit": "PAI and the e-Visa apply to travellers entering Vietnam. No official page we found covers airside transit; check with your airline if you change planes.",
+   "landSea": "E-Visa holders must use a border gate on the official e-Visa port list; check evisa.gov.vn before crossing by land (e.g. from Cambodia at Bavet to Moc Bai). The PAI declaration is airport only so far.",
+   "source": "research"
+  },
+  "PH": {
+   "items": [
+    {
+     "id": "ph-etravel",
+     "kind": "arrival-card",
+     "name": "Philippines eTravel",
+     "required": true,
+     "who": "All arriving passengers and crew, Filipino and foreign, plus departing Filipinos; exempt are diplomats and their dependants, 9(e) visa holders and diplomatic or official passport holders.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://etravel.gov.ph",
+     "validity": "One arrival",
+     "steps": [
+      "Within 72 hours before arrival, register at etravel.gov.ph or in the eGovPH app.",
+      "Enter passport, flight and health details.",
+      "Screenshot or download the QR code; airlines may ask for it before boarding.",
+      "Green QR: go to immigration. Red QR: see Quarantine first."
+     ],
+     "sources": [
+      "https://etravel.gov.ph/frequently-asked-questions",
+      "https://immigration.gov.ph/advisory-etravel-registration/"
+     ],
+     "confidence": "high",
+     "note": "Free; fake sites have charged PHP 3,000 to 5,000. The eTravel FAQ says register within 72 hours before arrival, while an October 2026 Immigration advisory says at least 72 hours before travel, so register as soon as the portal allows, about 3 days ahead. The eTravel home page has a separate cruise registration."
+    },
+    {
+     "id": "ph-evisa-china",
+     "kind": "evisa",
+     "name": "Philippine e-Visa (Chinese passports outside the visa-free scheme)",
+     "required": true,
+     "who": "Chinese passport holders staying more than 14 days, or arriving anywhere other than Manila NAIA or Mactan-Cebu airports.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "CN"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 30,
+     "fee": "Set by the Philippine Embassy; non-refundable",
+     "url": "https://evisa.gov.ph",
+     "steps": [
+      "Create an account on evisa.gov.ph (live for Singapore residents since 23 June 2025).",
+      "Fill in the form and upload your documents.",
+      "Pay by bank transfer.",
+      "Wait 7 to 12 working days for a single-entry e-Visa, then travel."
+     ],
+     "sources": [
+      "https://www.philippine-embassy.org.sg/consular/visa/faqs-travel-to-the-philippines-of-foreign-nationals/",
+      "https://www.philippine-embassy.org.sg/evisa-guidelines/",
+      "https://guangzhoupcg.dfa.gov.ph/en/consular-services/visa-services/visa-general-information/9a-visa-requirements",
+      "https://evisa.gov.ph/frequently-ask-questions"
+     ],
+     "confidence": "medium",
+     "note": "Since 16 Jan 2026 Chinese nationals get 14 days visa-free (tourism or business, non-extendable) via NAIA and Mactan-Cebu only, with hotel booking, proof of funds and onward ticket. The scheme runs for one year and will be reviewed, so recheck from January 2027. Indian nationals get 14 days visa-free, or 30 days with a valid visa or PR from Australia, Japan, the US, Canada, Schengen, Singapore or the UK."
+    }
+   ],
+   "transit": "Chinese and Indian nationals transiting the Philippines to a third country must get a Philippine transit visa before entry. eTravel covers arriving passengers; the official FAQ does not address airside transit.",
+   "landSea": "No land borders. Sea and cruise arrivals also register on eTravel; the eTravel home page has a separate cruise registration QR code.",
+   "source": "research"
+  },
+  "KH": {
+   "items": [
+    {
+     "id": "kh-e-arrival",
+     "kind": "arrival-card",
+     "name": "Cambodia e-Arrival Card (CeA)",
+     "required": true,
+     "who": "All travellers arriving by air at Techo (Phnom Penh), Siem Reap-Angkor and Sihanoukville international airports.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": 7,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://arrival.gov.kh",
+     "validity": "One arrival",
+     "steps": [
+      "Within 7 days before arrival, open arrival.gov.kh or the Cambodia e-Arrival app.",
+      "Fill in immigration, health and customs details.",
+      "Save the QR code; it works offline.",
+      "Show it to immigration, and to airline staff if asked at check-in."
+     ],
+     "sources": [
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/cambodia/",
+      "https://recberlin.mfaic.gov.kh/en-us/faqs",
+      "https://www.vps.akp.gov.kh/post/detail/329102"
+     ],
+     "confidence": "high",
+     "note": "In force since 1 Sep 2024. Replaces paper immigration, health and customs forms. Still needed if you already have a visa. Only arrival.gov.kh and the Cambodia e-Arrival app are official; there is no service fee. Land arrivals may still get paper forms."
+    },
+    {
+     "id": "kh-evisa",
+     "kind": "evisa",
+     "name": "Cambodia e-Visa (Ministry of Foreign Affairs)",
+     "required": true,
+     "who": "Passport holders who are not visa-exempt, such as India and China; ASEAN passports do not need it.",
+     "exemptNationalities": [
+      "SG",
+      "MY",
+      "ID",
+      "TH",
+      "PH",
+      "VN",
+      "LA",
+      "BN",
+      "MM"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land"
+     ],
+     "windowDays": 90,
+     "leadDays": 10,
+     "fee": "USD 30 (tourist e-Visa T)",
+     "url": "https://www.evisa.gov.kh",
+     "validity": "Use within 3 months; single entry; 1-month stay",
+     "steps": [
+      "Apply on evisa.gov.kh with your passport and a photo.",
+      "Pay by card, UnionPay, Alipay or WeChat.",
+      "Download the e-Visa within about 3 business days.",
+      "Bring it, and still file the e-Arrival Card if flying in."
+     ],
+     "sources": [
+      "https://www.evisa.gov.kh/",
+      "https://www.smartraveller.gov.au/destinations/asia/cambodia"
+     ],
+     "confidence": "medium",
+     "note": "Singapore passports are visa-free for 30 days. A tourist visa on arrival is also available. e-Visa entry ports: the three international airports, Bavet (Vietnam border) and Tropaeng Kreal (Laos border). Poipet and Cham Yeam are on the e-Visa list but Thai border crossings are closed. The e-Visa site still names the old Phnom Penh airport."
+    }
+   ],
+   "transit": "",
+   "landSea": "All land crossings with Thailand (incl. Poipet and Cham Yeam) are closed and Australia advises against travel within 50 km of that border (22 Sep 2026). From Vietnam, Bavet accepts the e-Visa. From Laos, Tropaeng Kreal (Stung Treng) accepts it. The e-Arrival Card is confirmed for airports only.",
+   "source": "research"
+  },
+  "LA": {
+   "items": [
+    {
+     "id": "la-ldif",
+     "kind": "arrival-card",
+     "name": "Lao Digital Immigration Form (LDIF)",
+     "required": true,
+     "who": "All foreign nationals entering or leaving Laos through Wattay (Vientiane), Luang Prabang or Pakse airports or Lao-Thai Friendship Bridge I.",
+     "exemptNationalities": [
+      "LA"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land"
+     ],
+     "windowDays": 3,
+     "leadDays": 2,
+     "fee": "No fee mentioned by official sources",
+     "url": "https://www.immigration.gov.la",
+     "validity": "One entry; a separate departure form is needed",
+     "steps": [
+      "Within 3 days before arrival, fill in the arrival form on immigration.gov.la.",
+      "Save the QR code you receive.",
+      "Show it at immigration on arrival.",
+      "Within 3 days before leaving, file the departure form too."
+     ],
+     "sources": [
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/lao-peoples-democratic-republic/",
+      "https://www.indianembassylaos.gov.in/page/lao-digital-immigration-form-ldif-to-streamline-border-procedure/"
+     ],
+     "confidence": "medium",
+     "note": "In force since 1 Sep 2025. Laos said it would extend LDIF to all international checkpoints from early 2026, but we could not confirm this has happened; other crossings may still use paper cards. Not a visa."
+    },
+    {
+     "id": "la-evisa",
+     "kind": "evisa",
+     "name": "Lao eVisa (Tourist T-B3)",
+     "required": true,
+     "who": "Passport holders who are not visa-exempt, such as India and China; ASEAN passports do not need it.",
+     "exemptNationalities": [
+      "SG",
+      "MY",
+      "ID",
+      "TH",
+      "PH",
+      "VN",
+      "KH",
+      "BN",
+      "MM"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land"
+     ],
+     "windowDays": 60,
+     "leadDays": 14,
+     "fee": "Calculated by passport on the portal (about USD 50 for many passports); non-refundable",
+     "url": "https://laoevisa.gov.la",
+     "validity": "Approval letter valid 60 days; single entry; 30-day stay",
+     "steps": [
+      "Apply on laoevisa.gov.la at least 5 days before arrival with a 4x6 cm photo and passport bio page.",
+      "Pay the fee online.",
+      "Download and print the approval letter, usually within 3 working days.",
+      "Use the eVisa lane at one of the 9 eVisa ports."
+     ],
+     "sources": [
+      "https://laoevisa.gov.la/info/",
+      "https://www.gov.uk/foreign-travel-advice/laos/entry-requirements"
+     ],
+     "confidence": "medium",
+     "note": "Singapore passports are visa-free for 30 days. eVisa ports: Wattay, Luang Prabang and Pakse airports; Friendship Bridges I, II and IV; Boten checkpoint; Boten and Khamsavath (Vientiane) railway stations. At any other port you must buy a visa on arrival and the eVisa fee is not refunded."
+    }
+   ],
+   "transit": "",
+   "landSea": "Lao-China Railway passengers can use the eVisa at Boten and Khamsavath stations. From Thailand, Friendship Bridge I (Nong Khai to Vientiane) uses LDIF. At crossings not on the eVisa list, such as Friendship Bridge III, get a visa on arrival instead.",
+   "source": "research"
+  },
+  "BN": {
+   "items": [
+    {
+     "id": "bn-e-arrival",
+     "kind": "arrival-card",
+     "name": "Brunei E-Arrival Card",
+     "required": true,
+     "who": "All foreign nationals arriving in or departing from Brunei by air, land or sea.",
+     "exemptNationalities": [
+      "BN"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://www.imm.gov.bn",
+     "steps": [
+      "Create an account on the Brunei INRS portal (imm.gov.bn) and activate it with the OTP.",
+      "Enter passport, travel and accommodation details for each traveller.",
+      "Save the reference number.",
+      "Show your passport, and visa if needed, at immigration."
+     ],
+     "sources": [
+      "https://www.immigration.gov.bn/Borang%20PDF/FAQS%20E-ARRIVAL%20CARD.pdf",
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/brunei/",
+      "https://brunei.mfa.gov.sg/consular-services/"
+     ],
+     "confidence": "medium",
+     "note": "Mandatory since 9 Feb 2023; replaces paper Form 19. Singapore MFA says submit at least 3 days before arrival, but Brunei's FAQ gives no fixed window and allows registering on your phone at the checkpoint. Each traveller files their own. Australian advice also says tourists staying over 2 weeks need medical insurance of at least BND 10,000; not confirmed on a Brunei page."
+    },
+    {
+     "id": "bn-bruhealth",
+     "kind": "registration",
+     "name": "BruHealth Arrival Declaration (health)",
+     "required": true,
+     "who": "Everyone arriving in Brunei by air, land or sea.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 2,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://www.healthinfo.gov.bn/travel",
+     "steps": [
+      "Within 3 days before arrival (arrival day counts), open the BruHealth app or healthinfo.gov.bn/travel.",
+      "Fill in the Arrival Declaration Form.",
+      "Save a screenshot of the completed declaration.",
+      "Show it if asked at the checkpoint."
+     ],
+     "sources": [
+      "https://brunei.mfa.gov.sg/consular-services/",
+      "https://www.healthinfo.gov.bn/travel",
+      "https://www.smartraveller.gov.au/destinations/asia/brunei-darussalam"
+     ],
+     "confidence": "medium",
+     "note": "Mandatory since 7 Sep 2024 because of mpox. Separate from the E-Arrival Card. Still listed as required by Singapore's High Commission (Jan 2026) and Australia (Sep 2026)."
+    }
+   ],
+   "transit": "No E-Arrival Card is needed if you transit without passing immigration (Brunei Immigration FAQ).",
+   "landSea": "By road from Sarawak (e.g. Miri or Limbang) or by ferry from Labuan, the E-Arrival Card and BruHealth declaration still apply. Coming back into Malaysia, non-exempt foreigners need the MDAC.",
+   "source": "research"
+  },
+  "MM": {
+   "items": [
+    {
+     "id": "mm-evisa",
+     "kind": "evisa",
+     "name": "Myanmar eVisa (Tourist)",
+     "required": true,
+     "who": "Most foreign passports, including Malaysia, India and China; Singapore, Vietnam and several ASEAN passports are visa-exempt.",
+     "exemptNationalities": [
+      "SG",
+      "VN",
+      "BN",
+      "KH",
+      "ID",
+      "LA",
+      "PH",
+      "TH"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land"
+     ],
+     "windowDays": 90,
+     "leadDays": 14,
+     "fee": "USD 50 (USD 56 express); non-refundable",
+     "url": "https://evisa.moip.gov.mm",
+     "validity": "Approval letter valid 90 days; single entry; 28-day stay",
+     "steps": [
+      "Apply on evisa.moip.gov.mm with a recent photo, passport bio page, hotel booking and return ticket.",
+      "Pay by card.",
+      "Get the approval letter in up to 3 working days (24 hours for express).",
+      "Show the letter on arrival to get the visa stamp."
+     ],
+     "sources": [
+      "https://www.tourism.gov.mm/electronic-visa.html",
+      "http://myanmarembassy.sg/downloads/visa/eVisa_information.pdf",
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/myanmar/"
+     ],
+     "confidence": "medium",
+     "note": "Singapore MFA strongly advises Singaporeans to defer all travel to Myanmar (June 2026). Visa-free: Singapore 30 days via Yangon, Mandalay or Nay Pyi Taw; Vietnam 30 days; Brunei, Cambodia, Indonesia, Laos, Philippines and Thailand 14 days via those three airports. eVisa entry: the three airports; official pages differ on which land checkpoints are open. The eVisa cannot be used at seaports."
+    }
+   ],
+   "transit": "",
+   "landSea": "Official pages list Kawthaung, and on some embassy pages also Tachileik and Myawaddy, as eVisa land checkpoints from Thailand, but conflict affects many border areas. Cruise passengers cannot use the eVisa and need a pre-arranged visa.",
+   "source": "research"
+  },
+  "EU-SCHENGEN": {
+   "items": [
+    {
+     "id": "eu-etias",
+     "kind": "eta",
+     "name": "ETIAS travel authorisation (European Travel Information and Authorisation System)",
+     "required": false,
+     "who": "Visa-exempt non-EU travellers, including Singapore and Malaysian citizens, will need it for short stays once ETIAS starts. It is not open yet.",
+     "exemptNationalities": [
+      "AT",
+      "BE",
+      "BG",
+      "HR",
+      "CY",
+      "CZ",
+      "DK",
+      "EE",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "HU",
+      "IE",
+      "IT",
+      "LV",
+      "LT",
+      "LU",
+      "MT",
+      "NL",
+      "PL",
+      "PT",
+      "RO",
+      "SK",
+      "SI",
+      "ES",
+      "SE",
+      "IS",
+      "LI",
+      "NO",
+      "CH",
+      "AD",
+      "MC",
+      "SM",
+      "VA"
+     ],
+     "onlyNationalities": [
+      "AE",
+      "AG",
+      "AI",
+      "AL",
+      "AR",
+      "AU",
+      "BA",
+      "BB",
+      "BM",
+      "BN",
+      "BR",
+      "BS",
+      "CA",
+      "CL",
+      "CO",
+      "CR",
+      "DM",
+      "FK",
+      "FM",
+      "GB",
+      "GD",
+      "GE",
+      "GI",
+      "GS",
+      "GT",
+      "HK",
+      "HN",
+      "IL",
+      "IO",
+      "JP",
+      "KI",
+      "KN",
+      "KR",
+      "KY",
+      "LC",
+      "MD",
+      "ME",
+      "MH",
+      "MK",
+      "MO",
+      "MS",
+      "MU",
+      "MX",
+      "NI",
+      "NZ",
+      "PA",
+      "PE",
+      "PN",
+      "PW",
+      "PY",
+      "RS",
+      "SB",
+      "SC",
+      "SG",
+      "SH",
+      "SV",
+      "TC",
+      "TL",
+      "TO",
+      "TT",
+      "TV",
+      "TW",
+      "UA",
+      "US",
+      "UY",
+      "VC",
+      "VE",
+      "VG",
+      "WS",
+      "XK"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": null,
+     "effectiveFrom": null,
+     "effectiveUntil": null,
+     "fee": "EUR 20 once it launches. Free for applicants under 18 or over 70, and for family members of EU citizens who qualify.",
+     "url": "https://travel-europe.europa.eu/etias_en",
+     "validity": "Up to 3 years or until the passport expires, whichever comes first. Allows stays of up to 90 days in any 180-day period.",
+     "steps": [
+      "Do not apply now. ETIAS is not open, and any site selling it today is not official.",
+      "Check travel-europe.europa.eu for the official start date before you book.",
+      "Once it opens, apply only on the official ETIAS website or app with the passport you will travel on, ideally before you buy tickets.",
+      "Pay the EUR 20 fee and keep your ETIAS application number."
+     ],
+     "note": "As of 15 Nov 2026, the official EU site says ETIAS is not in operation and no applications are collected. The EU says it will announce the start date several months ahead, and no date has been announced. The EU earlier pointed to the last quarter of 2026, but that date was removed from its site in mid-2026. After launch there is a transitional period of at least 6 months when travellers should apply but are not refused entry without ETIAS. A grace period of at least 6 months follows, when only travellers entering for the first time since the transitional period ended can enter without one. Based on these official rules, ETIAS is unlikely to be mandatory for trips before the second half of 2027. This is an inference, not an announced date. Once open, most applications are decided within minutes and at most within 96 hours, but some can take up to 30 more days. ETIAS will cover 30 countries: the 29 Schengen states plus Cyprus. Indonesian, Indian, Chinese and Philippine passports need a Schengen visa instead and do not use ETIAS. Holders of a Schengen visa, a national long-stay visa or a residence permit from an ETIAS country are exempt. A Cypriot permit only covers travel to Cyprus, and an Irish permit does not exempt you. ETIAS is not needed if you stay in an airport's international transit area. Taiwan passports qualify only if they show the ID card number. Hong Kong and Macao qualify only with SAR passports. Vanuatu passports lost visa-free access in 2025 and need a Schengen visa.",
+     "sources": [
+      "https://travel-europe.europa.eu/etias_en",
+      "https://travel-europe.europa.eu/etias/ltr/about-etias/who-should-apply",
+      "https://travel-europe.europa.eu/etias/how-to-apply/what-you-need-to-apply",
+      "https://travel-europe.europa.eu/etias/ltr/about-etias/news-corner/etias-timeline-explained",
+      "https://travel-europe.europa.eu/en/etias/faq",
+      "https://home-affairs.ec.europa.eu/policies/schengen/smart-borders/european-travel-information-authorisation-system_en",
+      "https://commonslibrary.parliament.uk/research-briefings/cbp-10676/",
+      "https://eur-lex.europa.eu/eli/reg/2025/11/oj/eng"
+     ],
+     "confidence": "medium"
+    },
+    {
+     "id": "eu-ees",
+     "kind": "registration",
+     "name": "Entry/Exit System (EES) border registration, with optional Travel to Europe app",
+     "required": false,
+     "who": "All non-EU visitors on a short stay are registered with fingerprints and a face photo at the Schengen external border. You do not file anything before you travel.",
+     "exemptNationalities": [
+      "AT",
+      "BE",
+      "BG",
+      "HR",
+      "CY",
+      "CZ",
+      "DK",
+      "EE",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "HU",
+      "IE",
+      "IT",
+      "LV",
+      "LT",
+      "LU",
+      "MT",
+      "NL",
+      "PL",
+      "PT",
+      "RO",
+      "SK",
+      "SI",
+      "ES",
+      "SE",
+      "IS",
+      "LI",
+      "NO",
+      "CH",
+      "AD",
+      "MC",
+      "SM",
+      "VA"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 1,
+     "effectiveFrom": null,
+     "effectiveUntil": null,
+     "fee": "Free",
+     "url": "https://travel-europe.europa.eu/ees_en",
+     "validity": "Your EES record is reused on later trips. GOV.UK says it is valid for 3 years.",
+     "steps": [
+      "Allow extra time at passport control on your first entry. You do not need to file anything before you fly.",
+      "At the border, scan your passport and give your fingerprints and a face photo.",
+      "Optional: if you enter or leave via Sweden or Portugal, pre-register in the Travel to Europe app within 72 hours before the crossing.",
+      "Keep within 90 days in any 180 days across all Schengen countries."
+     ],
+     "note": "EES has been fully operational at all external Schengen borders since 10 April 2026 and replaces passport stamps. It runs in 29 countries: the EU states except Cyprus and Ireland, plus Iceland, Liechtenstein, Norway and Switzerland. Cyprus and Ireland still stamp passports. The Travel to Europe app is optional and works only with biometric passports. Sweden supports passport data, a face image and the entry questionnaire. Portugal supports the questionnaire only. Other countries may add the app later. Holders of a long-stay visa or residence permit from an EES country are not registered. Permits from Cyprus or Ireland do not give this exemption. Non-EU family members of EU citizens who hold a residence card are also not registered.",
+     "sources": [
+      "https://home-affairs.ec.europa.eu/news/entry-exit-system-fully-operational-10-april-2026-who-exempt-2026-07-27_en",
+      "https://home-affairs.ec.europa.eu/news/entryexit-system-ees-fully-operational-2026-04-10_en",
+      "https://travel-europe.europa.eu/ees/Travel-to-Europe-mobile-app",
+      "https://travel-europe.europa.eu/ees/ltr/how-does-the-ees-work",
+      "https://www.gov.uk/guidance/eu-entryexit-system"
+     ],
+     "confidence": "high"
+    },
+    {
+     "id": "it-venice-access-fee",
+     "kind": "levy",
+     "name": "Venice Access Fee (Contributo di Accesso)",
+     "required": true,
+     "who": "Day visitors to the historic centre of Venice, Italy, on charging days between 26 March and 15 August 2027. The 2027 exemption rules are not published yet.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 5,
+     "effectiveFrom": "2027-03-26",
+     "effectiveUntil": "2027-08-15",
+     "fee": "2027 prices are not published yet. In 2026 it was EUR 5 per person per day if paid by the fourth day before the visit, and EUR 10 if paid later.",
+     "url": "https://cda.ve.it/en/",
+     "validity": "One day. The official 2027 calendar shows charging hours of 08:30 to 16:30.",
+     "steps": [
+      "Check on cda.ve.it whether your Venice day is a 2027 charging day.",
+      "Pay or register on cda.ve.it before your visit, once booking opens. Paying early was cheaper in 2026.",
+      "Keep the QR code on your phone for spot checks.",
+      "If you are staying overnight in Venice, check cda.ve.it for the 2027 exemption rules and register for your exemption if required."
+     ],
+     "note": "No fee applies for the rest of 2026. The official site lists 72 charging days in 2027: Mar 26-29; Apr 2-4, 9-11, 16-18, 23-30; May 1-2, 7-9, 14-16, 21-23, 28-31; Jun 1-6, 11-13, 18-20, 25-27; Jul 2-4, 9-11, 16-18, 23-25, 30-31; Aug 1, 6-8, 13-15. The city says it will announce booking, price and exemption arrangements by 31 December 2026. In 2026, children under 14, Venice residents and Veneto residents were exempt, and overnight guests in the city could claim an exemption. These may change for 2027. In 2026 the minor lagoon islands were not charged. The fee applies only in Venice, not elsewhere in Italy.",
+     "sources": [
+      "https://cda.ve.it/en/",
+      "https://cda.veneziaunica.it/en/access-fee",
+      "https://www1.finanze.gov.it/finanze2/dipartimentopolitichefiscali/fiscalitalocale/nuova_at/download_lib.php?key=0900f23080ad6717&nome=393643_DIMUNIC-20ve26l736d.pdf"
+     ],
+     "confidence": "medium",
+     "places": [
+      "venice",
+      "venezia"
+     ]
+    }
+   ],
+   "transit": "Most passports, including Singapore, Malaysia, Indonesia and China, need no Schengen visa to stay airside at one Schengen airport. ETIAS, once it starts, is also not needed if you stay in the international transit area. Nationals on the common EU airport transit visa list, such as Bangladesh, Pakistan and Sri Lanka, need an airport transit visa. Some states add their own lists. The EU Annex 7B list, updated in mid-2026, shows Indian citizens need one at airports in Czechia and Romania, and Philippine citizens need one at airports in France. Exemptions apply, for example a valid Schengen visa or residence permit, or some US, Canadian or Japanese visas. If you fly in from outside Schengen and connect to another Schengen flight (for example Singapore to Frankfurt to Vienna), you clear border control and EES at the first Schengen airport. You need a Schengen visa there if your passport requires one. Collecting bags or changing airports also counts as entering.",
+   "landSea": "EES registration also happens at land and sea external borders, including road crossings and ferry ports. If you leave the UK by Eurostar at St Pancras, Eurotunnel at Folkestone or ferry at Dover, the Schengen and EES checks are done in the UK before departure. Once ETIAS starts, bus, coach and ferry operators will check it before boarding. There are normally no checks between Schengen countries. But as of mid-November 2026, Germany, France, Austria, Denmark, Sweden, Norway, Poland and Italy have notified temporary internal border checks. Italy's notice runs to 18 December 2026 and the others run into March to May 2027. Carry your passport on trains, buses and ferries between Schengen countries.",
+   "source": "verify"
+  },
+  "GB": {
+   "items": [
+    {
+     "id": "gb-eta",
+     "kind": "eta",
+     "name": "UK Electronic Travel Authorisation (ETA)",
+     "required": true,
+     "who": "Visitors who do not need a UK visa, including Singapore, Malaysian and EU citizens, for stays of up to 6 months or for transit that passes through UK border control.",
+     "exemptNationalities": [
+      "GB",
+      "IE"
+     ],
+     "onlyNationalities": [
+      "QA",
+      "BH",
+      "KW",
+      "OM",
+      "AE",
+      "SA",
+      "AG",
+      "AR",
+      "AU",
+      "BB",
+      "BZ",
+      "BR",
+      "BN",
+      "CA",
+      "CL",
+      "CR",
+      "GD",
+      "GT",
+      "GY",
+      "HK",
+      "IL",
+      "JP",
+      "KI",
+      "MO",
+      "MY",
+      "MV",
+      "MH",
+      "MU",
+      "MX",
+      "FM",
+      "NZ",
+      "PW",
+      "PA",
+      "PG",
+      "PY",
+      "PE",
+      "KN",
+      "VC",
+      "WS",
+      "SC",
+      "SG",
+      "SB",
+      "KR",
+      "TW",
+      "BS",
+      "TO",
+      "TV",
+      "US",
+      "UY",
+      "AD",
+      "AT",
+      "BE",
+      "BG",
+      "HR",
+      "CY",
+      "CZ",
+      "DK",
+      "EE",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "HU",
+      "IS",
+      "IT",
+      "LV",
+      "LI",
+      "LT",
+      "LU",
+      "MT",
+      "MC",
+      "NL",
+      "NO",
+      "PL",
+      "PT",
+      "RO",
+      "SM",
+      "SK",
+      "SI",
+      "ES",
+      "SE",
+      "CH",
+      "VA"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "effectiveFrom": null,
+     "effectiveUntil": null,
+     "fee": "GBP 20 per person, up from GBP 16 on 8 April 2026. Babies and children need their own ETA. No refunds.",
+     "url": "https://www.gov.uk/eta/apply",
+     "validity": "2 years or until the passport expires, whichever is sooner. Multiple visits of up to 6 months each.",
+     "steps": [
+      "Apply in the official UK ETA app or on GOV.UK.",
+      "Scan or upload your passport and a photo of your face.",
+      "Pay GBP 20 and wait for the email with your 16 digit ETA reference. It usually takes a day but can take up to 3 working days.",
+      "Travel on the same passport you applied with."
+     ],
+     "note": "The UK has enforced ETAs since 25 February 2026. Airlines and other carriers refuse boarding without one. The ETA also covers Jersey, Guernsey and the Isle of Man. You do not need an ETA if you hold a UK visa or UK residence permission, or if you stay airside in transit. The airside exemption is temporary and under review. Legal residents of Ireland travelling from Ireland, Guernsey, Jersey or the Isle of Man are exempt. Holders of British National (Overseas) or British Overseas Territories citizen passports do not need one. Indonesian, Indian, Chinese and Philippine citizens need a UK visa, not an ETA. Taiwan passports qualify only if they show the ID card number. Hong Kong qualifies only with an SAR passport. St Lucia and Nicaragua were moved to the visa list in March 2026. Dual British or Irish citizens cannot get an ETA and must use their British or Irish passport.",
+     "sources": [
+      "https://www.gov.uk/eta",
+      "https://www.gov.uk/eta/apply",
+      "https://www.gov.uk/eta/when-not-need-eta",
+      "https://www.gov.uk/guidance/immigration-rules/immigration-rules-appendix-eta-national-list",
+      "https://www.gov.uk/government/publications/visa-regulations-revised-table/home-office-immigration-and-nationality-fees-8-april-2026",
+      "https://www.gov.uk/government/publications/visa-regulations-revised-table/home-office-immigration-and-nationality-fees-8-october-2026",
+      "https://www.gov.uk/government/news/uk-enforces-digital-permission-to-travel",
+      "https://www.gov.uk/guidance/immigration-rules/immigration-rules-appendix-visitor-visa-national-list"
+     ],
+     "confidence": "high"
+    }
+   ],
+   "transit": "If you stay airside and do not pass UK border control, Singapore, Malaysian and EU citizens need no ETA. The Home Office says this exemption is temporary and under review. Only Heathrow and Manchester offer airside transfers. If you pass through UK border control (to collect bags, change airports or on separate tickets), you need an ETA. Chinese and Indian citizens need a Direct Airside Transit Visa (GBP 41.50) even airside. The exception is if they hold a document such as a valid visa for Australia, Canada, New Zealand or the USA, or an EEA or Swiss residence permit. Indonesian and Philippine citizens can transit airside without a visa if the onward flight leaves the same day from the same airport and they hold the documents for their destination. Landside transit needs a UK visa unless an exemption applies. You cannot transit airside onward to Ireland.",
+   "landSea": "An ETA or UK visa is needed for every mode, including Eurostar, ferries and coaches, and carriers check before boarding. If you leave the UK by Eurostar at St Pancras, Eurotunnel at Folkestone or ferry at Dover, you do the Schengen and EES checks in the UK before departure. There are no immigration controls on the Ireland to Northern Ireland land border. You still need an ETA or UK visa to cross it, unless you are a legal resident of Ireland travelling from Ireland.",
+   "source": "verify"
+  },
+  "IE": {
+   "items": [],
+   "transit": "At Dublin you can stay airside only if both flights use Terminal 2 between 04:00 and 20:00 on the same day. Otherwise you pass border control and must meet Irish entry rules. That means an Irish visa for Indian, Indonesian, Chinese and Philippine citizens, unless the UK visa waiver below applies. Singapore, Malaysia, Indonesia, India, China and the Philippines are not on Ireland's transit visa list. Irish airports close at night, so an overnight connection means entering Ireland.",
+   "landSea": "Ireland is not in Schengen and does not use EES or ETIAS. It has no ETA and no arrival card, and passports are still stamped. The Irish government says it is reviewing an electronic travel authorisation, but there is no date. There are no immigration controls on the land border with Northern Ireland, but you must still meet Irish entry rules. Under the Short-Stay Visa Waiver Programme, Indian, Indonesian, Chinese and Philippine citizens who have first entered the UK on a UK short-stay visit visa can visit Ireland without an Irish visa. The programme was extended to 31 December 2026 and may be changed. For trips in 2027, check irishimmigration.ie, and plan on needing an Irish visa unless an extension is announced. A UK ETA does not count. Chinese and Indian citizens can also use a British-Irish Visa Scheme visa. Ferries from France arrive from outside Schengen, so EES records your exit when you leave France.",
+   "source": "verify"
+  },
+  "TR": {
+   "items": [
+    {
+     "id": "tr-evisa-conditional",
+     "kind": "evisa",
+     "name": "Türkiye e-Visa (conditional, for Indian and Philippine passports)",
+     "required": true,
+     "who": "Indian and Philippine ordinary passport holders who hold a valid visa or residence permit from a Schengen country, the US, the UK or Ireland.",
+     "exemptNationalities": [
+      "SG",
+      "MY",
+      "ID",
+      "CN"
+     ],
+     "onlyNationalities": [
+      "IN",
+      "PH"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "effectiveFrom": null,
+     "effectiveUntil": null,
+     "fee": "Set by nationality and shown on evisa.gov.tr before you pay. The current amount for Indian and Philippine passports could not be confirmed from an official page.",
+     "url": "https://www.evisa.gov.tr/en/",
+     "validity": "Single entry. Indian passports: valid for one month. Philippine passports: 30-day single-entry e-Visa. For tourism or business only.",
+     "steps": [
+      "Check that your Schengen, US, UK or Irish visa or residence permit will still be valid when you enter Türkiye.",
+      "Apply and pay only on evisa.gov.tr, and read the conditions shown there before paying.",
+      "Print the e-Visa and carry it with the supporting visa or permit.",
+      "If you have no qualifying visa or permit, apply for a visa at a Turkish mission instead."
+     ],
+     "note": "The Türkiye Ministry of Foreign Affairs says Singapore and Malaysian citizens are visa-free for up to 90 days. Indonesian citizens are visa-free for up to 30 days per entry, within 90 days in any 180 days. Chinese ordinary passport holders have been visa-free for up to 90 days in any 180 days since 2 January 2026. Most EU citizens are visa-free for 90 days, but Cyprus passport holders need a visa or e-Visa. The ministry says the e-Visa for Indian and Philippine passports applies 'provided that they meet certain conditions' but does not list them. Check them on evisa.gov.tr. By law your passport must be valid at least 60 days beyond the end of your permitted stay, and the ministry advises 6 months of validity from arrival. Avoid third-party e-Visa sites.",
+     "sources": [
+      "https://www.mfa.gov.tr/visa-information-for-foreigners.en.mfa",
+      "https://www.evisa.gov.tr/en/"
+     ],
+     "confidence": "medium"
+    }
+   ],
+   "transit": "You need no visa if you stay in the international transit area of one Turkish airport and do not pass immigration. Leaving the airport, collecting bags, separate tickets, or moving between Istanbul Airport (IST) and Sabiha Gokcen (SAW) all count as entering Türkiye. Indian passport holders transiting Istanbul Airport to Mexico, Panama, Colombia or Venezuela need a free electronic airport transit visa (e-ATV) from evisa.gov.tr. Carry a printout, because it is checked at departure and in the Istanbul transit area.",
+   "landSea": "Visa-free stays apply whether you arrive by air, land or sea. Your passport must be valid at least 60 days beyond the end of your permitted stay. For example, a 90-day visa-free stay needs 150 days of passport validity from arrival. Taking a ferry from the Greek islands or crossing by land from Greece or Bulgaria means leaving Schengen, so EES records your exit.",
+   "source": "verify"
+  },
+  "JP": {
+   "items": [
+    {
+     "id": "jp-visit-japan-web",
+     "kind": "arrival-card",
+     "name": "Visit Japan Web (immigration and customs declaration)",
+     "required": false,
+     "who": "All foreign visitors must give an arrival (disembarkation) card and a customs declaration on entry. Visit Japan Web lets you do both online instead of on paper.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": null,
+     "leadDays": 3,
+     "fee": "Free. The Digital Agency never charges a fee. Sites that ask for payment are not official.",
+     "url": "https://www.vjw.digital.go.jp/",
+     "validity": "One trip. Register a new entry plan for each arrival in Japan.",
+     "steps": [
+      "Create a Visit Japan Web account with your email address.",
+      "Register your passport details, and add any family members travelling with you.",
+      "Add your trip (arrival date, flight number, address in Japan) and fill in the Immigration clearance and Customs declaration section.",
+      "On arrival, show the one QR code at the immigration counter, then at the customs terminal or desk."
+     ],
+     "sources": [
+      "https://services.digital.go.jp/en/visit-japan-web/",
+      "https://services.digital.go.jp/en/visit-japan-web/guide/",
+      "https://services.digital.go.jp/en/visit-japan-web/news/20250605-01/",
+      "https://www.customs.go.jp/english/passenger/declaration/declaration_app.html",
+      "https://www.customs.go.jp/english/passenger/egate.htm",
+      "https://www.moj.go.jp/isa/01_00643.html"
+     ],
+     "confidence": "high",
+     "note": "Optional but recommended. Paper forms are still accepted, so do one or the other. Japan Customs requires a customs declaration from every passenger and recommends doing it through Visit Japan Web. Since 25 Jan 2024 one QR code covers immigration and customs. New Chitose (Sapporo) is one of 7 airports with customs e-Gates (with Narita, Haneda, Chubu, Kansai, Fukuoka, Naha). You need an IC passport to use the e-Gate. Fill it in before you fly, because you need internet to show the code. JESTA, Japan's planned pre-travel authorisation, has no start date yet. Under Act No. 32 of 2026, a Cabinet Order will set the date, no later than 31 Mar 2029. When it starts, visa-exempt visitors will need approval for each entry. It does not apply to trips in 2026 or 2027 unless a date is announced."
+    },
+    {
+     "id": "jp-evisa-singapore-residents",
+     "kind": "evisa",
+     "name": "JAPAN eVISA (single-entry tourist visa)",
+     "required": true,
+     "who": "Travellers whose passport needs a visa for Japan (for example Chinese, Indian and Filipino nationals) and who are long-term residents of Singapore travelling for tourism.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "CN",
+      "IN",
+      "PH"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": 90,
+     "leadDays": 21,
+     "fee": "Visa fee depends on nationality (see the Embassy of Japan fee list). Applications through the Japan Visa Application Centre (JVAC) carry an extra SGD 22 handling fee.",
+     "url": "https://www.sg.emb-japan.go.jp/itpr_en/visit.html",
+     "validity": "Single entry for tourism, stay up to 90 days.",
+     "steps": [
+      "Check you are a long-term resident of Singapore. Short-term visitors must apply in their home country.",
+      "Apply for a tourist eVISA through the JVAC eVISA system linked from the Embassy of Japan page, no earlier than 3 months before travel.",
+      "Allow at least 1 week for processing.",
+      "At check-in and on arrival, show the Visa issuance notice online on your phone. PDFs, screenshots and printouts are not accepted."
+     ],
+     "sources": [
+      "https://www.mofa.go.jp/j_info/visit/visa/visaonline.html",
+      "https://www.sg.emb-japan.go.jp/itpr_en/visit.html"
+     ],
+     "confidence": "medium",
+     "note": "MOFA lists Singapore residents of any nationality, except visa-exempt ones, as eligible through an accredited agency. The Embassy in Singapore routes this through the JVAC. The eVISA is valid for arrival by air, or by sea only on scheduled ferries from Busan or Shanghai. Business, family visits, transit and multiple-entry visas still need a paper application at the JVAC. Fee amounts can change, so check the Embassy fee list."
+    },
+    {
+     "id": "jp-indonesia-visa-waiver-registration",
+     "kind": "registration",
+     "name": "Japan Visa Waiver Registration for Indonesian e-passports",
+     "required": true,
+     "who": "Indonesian ordinary passport holders who want to visit Japan visa-free for up to 15 days. Only ICAO e-passport holders can register.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "ID"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 14,
+     "fee": "Not stated on the MOFA page. Check with the Japanese mission.",
+     "url": "https://www.mofa.go.jp/j_info/visit/visa/short/novisa.html",
+     "validity": "3 years or until the passport expires, whichever is first. Each stay up to 15 days.",
+     "steps": [
+      "Check your passport is an ICAO e-passport (chip symbol on the cover).",
+      "Register it with a Japanese mission in Indonesia. If you live in Indonesia, you can register online.",
+      "Carry the Visa Waiver Registration notice. Airlines may ask for it at check-in.",
+      "For stays over 15 days, or without an e-passport, apply for a visa instead."
+     ],
+     "sources": [
+      "https://www.mofa.go.jp/j_info/visit/visa/short/novisa.html",
+      "https://www.sg.emb-japan.go.jp/itpr_en/visit.html"
+     ],
+     "confidence": "medium",
+     "note": "MOFA says registration is with Japan's missions in Indonesia. The Embassy of Japan in Singapore only takes waiver registrations from Qatar nationals. So Indonesians living in Singapore may need to register through Indonesia or apply for a visa (eVISA via the JVAC) instead. Without registration you can be refused boarding or entry."
+    }
+   ],
+   "transit": "Changing planes airside at a Japanese airport needs no visa and no Visit Japan Web, as long as you stay in the international transit area. Japan's International Tourist Tax rose from 1,000 to 3,000 yen per departure on 1 Jul 2026. It is collected in the air fare, and passengers leaving within 24 hours of arrival are not charged.",
+   "landSea": "Sea and cruise arrivals (for example the Busan to Fukuoka ferry): paper disembarkation cards and customs forms are accepted at all ports. Customs e-Gates are only at 7 airports. It is not officially confirmed that the Visit Japan Web QR code is read at seaports, so be ready to fill in paper forms. A JAPAN eVISA is valid by sea only on scheduled ferries from Busan or Shanghai.",
+   "source": "research"
+  },
+  "KR": {
+   "items": [
+    {
+     "id": "kr-k-eta-2026",
+     "kind": "eta",
+     "name": "Korea Electronic Travel Authorization (K-ETA)",
+     "required": true,
+     "who": "Visa-free passport holders aged 18 to 64 whose country is not on Korea's temporary K-ETA exemption list, for example Malaysian, Thai and Bruneian passport holders.",
+     "exemptNationalities": [
+      "JP",
+      "TW",
+      "HK",
+      "SG",
+      "MO",
+      "CA",
+      "US",
+      "GB",
+      "DE",
+      "FR",
+      "IT",
+      "NL",
+      "ES",
+      "PL",
+      "SE",
+      "FI",
+      "NO",
+      "BE",
+      "DK",
+      "AT",
+      "CH",
+      "LI",
+      "AU",
+      "NZ"
+     ],
+     "onlyNationalities": [
+      "GY",
+      "GT",
+      "VA",
+      "GD",
+      "GR",
+      "NR",
+      "ZA",
+      "NL",
+      "NO",
+      "NZ",
+      "NI",
+      "TW",
+      "DK",
+      "DO",
+      "DM",
+      "DE",
+      "LV",
+      "RU",
+      "LS",
+      "RO",
+      "LU",
+      "LT",
+      "LI",
+      "MH",
+      "FM",
+      "MO",
+      "MY",
+      "MX",
+      "MC",
+      "MA",
+      "MU",
+      "ME",
+      "MT",
+      "US",
+      "BH",
+      "BB",
+      "BS",
+      "VE",
+      "BE",
+      "BA",
+      "BW",
+      "BG",
+      "BR",
+      "BN",
+      "WS",
+      "SA",
+      "CY",
+      "SM",
+      "RS",
+      "SC",
+      "LC",
+      "VC",
+      "KN",
+      "SB",
+      "SR",
+      "SE",
+      "CH",
+      "ES",
+      "SK",
+      "SI",
+      "SG",
+      "AE",
+      "AR",
+      "IS",
+      "HT",
+      "IE",
+      "AD",
+      "AL",
+      "AG",
+      "SZ",
+      "EE",
+      "EC",
+      "SV",
+      "GB",
+      "OM",
+      "AT",
+      "HN",
+      "UY",
+      "IL",
+      "IT",
+      "JP",
+      "JM",
+      "CZ",
+      "CL",
+      "KZ",
+      "QA",
+      "CA",
+      "CR",
+      "CO",
+      "KW",
+      "HR",
+      "KI",
+      "TH",
+      "TO",
+      "TV",
+      "TN",
+      "TR",
+      "TT",
+      "PA",
+      "PY",
+      "PW",
+      "PE",
+      "PT",
+      "PL",
+      "FR",
+      "FJ",
+      "FI",
+      "HU",
+      "AU",
+      "HK"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "KRW 10,000 per person (about USD 7 to 8), plus an online payment fee. Not refundable, even if refused.",
+     "url": "https://www.k-eta.go.kr/",
+     "validity": "3 years, or until the passport expires if sooner. Multiple entries. Each stay is limited to your visa-free period.",
+     "effectiveUntil": "2026-12-31",
+     "steps": [
+      "Apply only on k-eta.go.kr or the official K-ETA app. Agent sites charge much more.",
+      "Enter passport details, upload a face photo, add your trip details and pay KRW 10,000.",
+      "Apply at least 72 hours before boarding. The result comes by email.",
+      "If your dates or address change, update them on the site's Update Travel Information page."
+     ],
+     "sources": [
+      "https://www.k-eta.go.kr/portal/board/viewboarddetail.do?bbsSn=299706",
+      "https://www.k-eta.go.kr/portal/guide/viewetaalification.do",
+      "https://www.k-eta.go.kr/portal/guide/viewetaapplication.do",
+      "https://overseas.mofa.go.kr/ch-en/brd/m_23429/view.do?seq=22&page=1",
+      "https://www.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761395"
+     ],
+     "confidence": "high",
+     "note": "The temporary exemption for the listed countries and regions runs until 31 Dec 2026 (KST). Nobody needs a K-ETA if they are 17 or under or 65 or over on the arrival date, hold a Korean visa, or stay airside in transit. With an approved K-ETA you do not submit an arrival card. A new passport needs a new K-ETA. Exempt nationals may still apply voluntarily (fee applies) to skip the arrival card. Indian, Indonesian, Chinese and Filipino passport holders are not K-ETA eligible and need a visa."
+    },
+    {
+     "id": "kr-k-eta-2027",
+     "kind": "eta",
+     "name": "Korea Electronic Travel Authorization (K-ETA) from 2027",
+     "required": true,
+     "who": "From 1 Jan 2027, unless Korea extends the temporary exemption again, all visa-free passport holders aged 18 to 64 need a K-ETA. That includes Singapore citizens.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "GY",
+      "GT",
+      "VA",
+      "GD",
+      "GR",
+      "NR",
+      "ZA",
+      "NL",
+      "NO",
+      "NZ",
+      "NI",
+      "TW",
+      "DK",
+      "DO",
+      "DM",
+      "DE",
+      "LV",
+      "RU",
+      "LS",
+      "RO",
+      "LU",
+      "LT",
+      "LI",
+      "MH",
+      "FM",
+      "MO",
+      "MY",
+      "MX",
+      "MC",
+      "MA",
+      "MU",
+      "ME",
+      "MT",
+      "US",
+      "BH",
+      "BB",
+      "BS",
+      "VE",
+      "BE",
+      "BA",
+      "BW",
+      "BG",
+      "BR",
+      "BN",
+      "WS",
+      "SA",
+      "CY",
+      "SM",
+      "RS",
+      "SC",
+      "LC",
+      "VC",
+      "KN",
+      "SB",
+      "SR",
+      "SE",
+      "CH",
+      "ES",
+      "SK",
+      "SI",
+      "SG",
+      "AE",
+      "AR",
+      "IS",
+      "HT",
+      "IE",
+      "AD",
+      "AL",
+      "AG",
+      "SZ",
+      "EE",
+      "EC",
+      "SV",
+      "GB",
+      "OM",
+      "AT",
+      "HN",
+      "UY",
+      "IL",
+      "IT",
+      "JP",
+      "JM",
+      "CZ",
+      "CL",
+      "KZ",
+      "QA",
+      "CA",
+      "CR",
+      "CO",
+      "KW",
+      "HR",
+      "KI",
+      "TH",
+      "TO",
+      "TV",
+      "TN",
+      "TR",
+      "TT",
+      "PA",
+      "PY",
+      "PW",
+      "PE",
+      "PT",
+      "PL",
+      "FR",
+      "FJ",
+      "FI",
+      "HU",
+      "AU",
+      "HK"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "KRW 10,000 per person, plus an online payment fee. Not refundable.",
+     "url": "https://www.k-eta.go.kr/",
+     "validity": "3 years, or until the passport expires if sooner. Multiple entries.",
+     "effectiveFrom": "2027-01-01",
+     "steps": [
+      "Before booking a 2027 trip, check the K-ETA notice board for any new extension of the exemption.",
+      "If no extension is announced, apply on k-eta.go.kr at least 72 hours before boarding.",
+      "Upload passport details and a face photo, then pay KRW 10,000.",
+      "With an approved K-ETA you can skip the arrival card."
+     ],
+     "sources": [
+      "https://www.k-eta.go.kr/portal/board/viewboarddetail.do?bbsSn=299706",
+      "https://www.k-eta.go.kr/portal/guide/viewetaapplication.do",
+      "https://www.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761475"
+     ],
+     "confidence": "medium",
+     "note": "The official notice only says the exemption ends 31 Dec 2026. As of 15 Nov 2026 no extension has been announced. The last two extensions were announced in mid to late December, so this may change. The age exemptions (17 or under, 65 or over) still apply."
+    },
+    {
+     "id": "kr-e-arrival-card",
+     "kind": "arrival-card",
+     "name": "Korea e-Arrival Card",
+     "required": false,
+     "who": "Foreign visitors without an approved K-ETA. That covers K-ETA exempt nationals (such as Singapore citizens in 2026), visa holders (such as Indian, Indonesian, Chinese and Filipino travellers), and visitors aged 17 or under or 65 or over.",
+     "exemptNationalities": [
+      "KR"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 2,
+     "fee": "Free",
+     "url": "https://www.e-arrivalcard.go.kr/",
+     "validity": "One entry. Expires 72 hours after submission, or once you pass immigration.",
+     "steps": [
+      "Open e-arrivalcard.go.kr within 3 days of arrival (Korea time).",
+      "Enter your passport details, arrival flight number, address in Korea and contact details. One person can file for up to 9 people on a phone.",
+      "Keep the issuance number from the email. You do not need a printout.",
+      "If your plans change, edit the card on the site before immigration."
+     ],
+     "sources": [
+      "https://www.e-arrivalcard.go.kr/portal/guide/eacGuide.do",
+      "https://www.e-arrivalcard.go.kr/portal/guide/eacTargetGuide.do",
+      "https://www.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761395"
+     ],
+     "confidence": "medium",
+     "note": "You need an arrival card in some form. The official guide still lets you choose a paper card. Paper cards may not be handed out on every flight, so filing online is the safest choice. Not needed if you hold an approved K-ETA, unless you enter on a visa. Singapore citizens aged 17 and over can register for automated immigration clearance at Incheon Airport (from 1 Dec 2025)."
+    }
+   ],
+   "transit": "Transit passengers who stay airside at Incheon need no K-ETA and no arrival card. If your nationality needs a K-ETA, you must get one before travel if you plan to leave the transit area, for example to collect checked bags or change your itinerary.",
+   "landSea": "Ferry arrivals (for example Fukuoka to Busan) follow the same rules. Get any K-ETA before boarding the ship, and file the e-Arrival Card within 3 days of arrival. Cruise passengers are exempt from K-ETA.",
+   "source": "research"
+  },
+  "CN": {
+   "items": [
+    {
+     "id": "cn-online-arrival-card",
+     "kind": "arrival-card",
+     "name": "China Online Arrival Card (Foreigner Arrival Card, National Immigration Administration)",
+     "required": false,
+     "who": "All foreign nationals entering mainland China, by air, land or sea. Seven groups are exempt, including 24-hour airside transit passengers, group visa holders and PRC permanent residence card holders.",
+     "exemptNationalities": [
+      "CN",
+      "HK",
+      "MO",
+      "TW"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 2,
+     "fee": "Free. The NIA warns about fake sites that charge a fee.",
+     "url": "https://s.nia.gov.cn/ArrivalCardFillingPC/",
+     "validity": "One entry. File again for each trip.",
+     "steps": [
+      "Before you travel, fill in the card on the NIA website, the NIA 12367 app, or the WeChat or Alipay mini program.",
+      "Enter your passport details, flight, train or ferry number, address in China and purpose of visit.",
+      "Keep the confirmation on your phone in case the officer asks.",
+      "If you did not file in advance, scan the QR code or use the kiosks at the border, or fill in a paper card."
+     ],
+     "sources": [
+      "https://en.nia.gov.cn/n147413/c187308/content.html",
+      "https://my.china-embassy.gov.cn/eng/fwzc/zytz/202512/t20251203_11765712.htm",
+      "https://s.nia.gov.cn/mps/zcjd/202507/t20250750_1010.html"
+     ],
+     "confidence": "high",
+     "note": "Launched 20 Nov 2025. You need an arrival card either way, but filing online saves time at the border. The official notices give no filing window. Some guides say within 3 days of arrival, but the NIA does not confirm this. Visa-free entry: Singapore (since 9 Feb 2024) and Malaysia (since 17 Jul 2025) ordinary passports are covered by mutual visa exemption treaties with no end date. Both allow up to 30 days per entry, and Malaysia also caps stays at 90 days in any 180. China's separate one-way 30-day visa-free list ends 31 Dec 2026 unless extended. It does not cover Indonesia, India or the Philippines, who need a visa."
+    }
+   ],
+   "transit": "Airside transit within 24 hours without leaving the restricted area needs no visa and no arrival card. To leave the airport on a layover you need visa-free entry, a visa, or the 240-hour visa-free transit. The 240-hour transit covers 55 countries, including Indonesia since 12 Jun 2025. It needs a confirmed onward ticket to a third country or region and is only valid at designated ports.",
+   "landSea": "Entering from Hong Kong (Lo Wu, Lok Ma Chau, Shenzhen Bay, Heung Yuen Wai, the Hong Kong-Zhuhai-Macao Bridge, or high-speed rail at West Kowloon, where mainland immigration is inside the station) or from Macao (Gongbei, Hengqin, Qingmao): you clear Hong Kong or Macao exit first, then mainland entry. Foreigners must give the arrival card at the mainland checkpoint, so file online before you cross.",
+   "source": "research"
+  },
+  "TW": {
+   "items": [
+    {
+     "id": "tw-twac",
+     "kind": "arrival-card",
+     "name": "Taiwan Arrival Card (TWAC)",
+     "required": true,
+     "who": "All foreign nationals entering Taiwan visa-free or on a visitor visa. Also Hong Kong and Macao residents and mainland Chinese visitors on multiple-entry permits, and ROC nationals without household registration who do not hold a Resident Certificate.",
+     "exemptNationalities": [
+      "TW"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": 7,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://twac.immigration.gov.tw/",
+     "validity": "One entry.",
+     "steps": [
+      "Open twac.immigration.gov.tw within 7 days before arrival.",
+      "Enter your passport and trip details, or upload a photo of your passport page. One person can file for up to 16 travellers.",
+      "Submit. You do not show anything at immigration, because the officer pulls it up from your passport.",
+      "If you forgot, scan the TWAC QR code at the check-in counter or at the airport or port."
+     ],
+     "sources": [
+      "https://www.immigration.gov.tw/5475/5478/141457/142068/398041/",
+      "https://www.immigration.gov.tw/5382/5385/7229/7238/415735",
+      "https://www.boca.gov.tw/cp-149-4486-7785a-2.html"
+     ],
+     "confidence": "high",
+     "note": "Mandatory. Paper arrival cards ended on 1 Oct 2025, and immigration cannot process you without a TWAC. The filing window grew from 3 to 7 days on 15 Jul 2026. Not needed if you stay airside in transit. Beware of fake TWAC sites that charge fees. Singapore and Malaysia passport holders get 30 days visa-free. Philippine, Thai and Bruneian nationals get 14 days on a trial that ends 31 Jul 2027."
+    },
+    {
+     "id": "tw-travel-authorization-certificate",
+     "kind": "eta",
+     "name": "ROC (Taiwan) Travel Authorization Certificate",
+     "required": true,
+     "who": "Indian, Indonesian, Vietnamese, Cambodian, Lao and Myanmar passport holders who want to visit Taiwan without a visa. You must hold a qualifying foreign visa or residence permit, or have held an ROC visa or resident card in the past 10 years.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "IN",
+      "ID",
+      "VN",
+      "KH",
+      "LA",
+      "MM"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 14,
+     "fee": "Not stated on the official BOCA page.",
+     "url": "https://niaspeedy.immigration.gov.tw/nia_southeast/",
+     "validity": "90 days, multiple entries, up to 30 days per stay.",
+     "steps": [
+      "Check you hold a valid visa or residence card (or one that expired less than 10 years ago) from the US, Canada, UK, a Schengen state, Japan, Korea, Australia or New Zealand.",
+      "Apply online on the National Immigration Agency site with your passport and visa details.",
+      "Print the approved certificate and carry it with the supporting visa or card.",
+      "Still file the TWAC arrival card before each entry."
+     ],
+     "sources": [
+      "https://www.boca.gov.tw/cp-220-1885-b6ae7-2.html",
+      "https://www.boca.gov.tw/cp-149-4486-7785a-2.html"
+     ],
+     "confidence": "medium",
+     "note": "Singapore passes are not on the qualifying list. Indonesians with a valid Japan Visa Waiver Registration also qualify. Work permits and ROC visas marked FL or X do not count. The passport must be valid for at least 6 months. The BOCA page was last updated in 2023 and its nationality lists are inconsistent, so check before applying. Filipinos currently use visa-free entry (trial until 31 Jul 2027) instead. Anyone who does not qualify needs a visa."
+    }
+   ],
+   "transit": "Airside transit at Taoyuan (TPE) needs no visa, no eVisa and no TWAC, as long as you stay in the international transit area. Transfer passengers pass a transfer counter and a security re-check. Liquids over 100 ml, including duty-free bought before your first flight, can be taken away. Scoot TR892 Singapore to Sapporo (CTS) is a through flight that stops at TPE. Published schedules show about 1 hour 45 minutes on the ground, with arrival at CTS around 17:00 to 17:20 Japan time, but check your booking. Follow crew instructions: if asked to leave the aircraft, take your belongings, go through transit screening and re-board at the gate. There is no Taiwan immigration and no TWAC. Your entry paperwork is for Japan (Visit Japan Web).",
+   "landSea": "Ferry and cruise passengers entering Taiwan must also file TWAC within 7 days before arrival. TWAC QR codes are posted at ports.",
+   "source": "research"
+  },
+  "HK": {
+   "items": [
+    {
+     "id": "hk-pre-arrival-registration-india",
+     "kind": "registration",
+     "name": "Pre-arrival Registration for Indian Nationals (PAR)",
+     "required": true,
+     "who": "Indian passport holders visiting Hong Kong, or leaving the airport during a transit.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "IN"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "Free",
+     "url": "https://www.gov.hk/en/apps/immdes2indianparreg.htm",
+     "validity": "6 months, or until the passport expires if sooner. Multiple visits of up to 14 days each.",
+     "steps": [
+      "Apply online on GovHK. The result is instant.",
+      "Print the notification slip on blank A4 white paper and sign it.",
+      "Show the slip with your passport at check-in and at Hong Kong immigration.",
+      "If registration fails, apply to the Immigration Department for a visa (about 4 weeks)."
+     ],
+     "sources": [
+      "https://www.immd.gov.hk/eng/services/visas/pre-arrival_registration_for_indian_nationals.html"
+     ],
+     "confidence": "high",
+     "note": "Not needed for direct air transit without leaving the transit area. Also not needed if you hold a valid Hong Kong visa, an HKSAR Travel Pass, or e-Channel enrolment. A successful registration does not guarantee entry."
+    }
+   ],
+   "transit": "Airside transit at Hong Kong International Airport needs no paperwork. Hong Kong dropped arrival and departure cards for all visitors on 16 Oct 2024. Indian nationals need PAR only if they leave the transit area.",
+   "landSea": "Hong Kong has no arrival card at any land or sea checkpoint. To Macao: take a ferry from Hong Kong, or the shuttle bus over the Hong Kong-Zhuhai-Macao Bridge from the Hong Kong Port to the Macao Port. You clear Hong Kong exit and Macao entry, with no forms. To mainland China (Lo Wu, Lok Ma Chau, Shenzhen Bay, or high-speed rail at West Kowloon): file China's online arrival card before crossing. Singapore citizens aged 11 and over with 2 or more visits in the past 24 months can enrol free for the visitor e-Channel.",
+   "source": "research"
+  },
+  "MO": {
+   "items": [],
+   "transit": "Macao International Airport has no arrival card. Visitors do not get a passport stamp. Instead they receive a printed Slip of Authorization to Stay showing the permitted stay. Keep it until you leave.",
+   "landSea": "Macao checkpoints (ferry terminals, the Hong Kong-Zhuhai-Macao Bridge Macao Port, Border Gate) have no arrival card. Keep the printed stay slip. Going on to Zhuhai (Gongbei, Hengqin or Qingmao): foreigners file China's online arrival card. Cash or cheques worth MOP 120,000 or more must be declared at the customs Red Channel.",
+   "source": "research"
+  },
+  "AE": {
+   "items": [
+    {
+     "id": "ae-preapproved-14day-visa",
+     "kind": "evisa",
+     "name": "UAE 14-day entry visa for holders of approved visas or residence permits (ICP / GDRFA Dubai)",
+     "required": true,
+     "who": "Indian, Indonesian and Filipino passport holders who hold a valid US, UK or EU visa or residence permit, or a residence permit from Singapore, Japan, South Korea, Australia, Canada or New Zealand.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "IN",
+      "ID",
+      "PH"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 30,
+     "leadDays": 7,
+     "fee": "AED 100 issue fee plus AED 100 smart services fee on ICP. GDRFA Dubai lists AED 253 for its Indian-national service.",
+     "url": "https://icp.gov.ae/services-details/?serviceid=68e3532c5ae59b0011738404",
+     "steps": [
+      "Check that your passport and your qualifying visa or residence permit are each valid for at least 6 more months.",
+      "Apply on ICP smart services (or GDRFA Dubai smart services) and upload your passport, photo and the qualifying visa or permit.",
+      "Pay the fee and wait about 2 days for the approval email.",
+      "Enter the UAE within 30 days of issue and keep the approval with your passport."
+     ],
+     "validity": "Use within 30 days of issue. Stay 14 days from entry, extendable once for the same period.",
+     "note": "Indian citizens with a US visa, US green card, or UK or EU residence can also get this visa on arrival, but applying ahead is safer. Without any qualifying document you need a regular UAE tourist visa through ICP, GDRFA Dubai, a UAE airline or your UAE hotel. Singapore, Malaysian and Chinese passport holders get a free visa on arrival and need nothing. Passports showing only a single name are refused entry. The ICP page confirming the Indonesian and Philippine route is in Arabic only.",
+     "sources": [
+      "https://icp.gov.ae/services-details/?serviceid=68e3532c5ae59b0011738404",
+      "https://www.gdrfad.gov.ae/en/services/727c91b1-52eb-11ea-0320-0050569629e8",
+      "https://www.dubai.ae/visit/planning/do-you-need-a-visa",
+      "https://dubaiairports.ae/information/immigration-visas",
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/united-arab-emirates/"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "ae-sg-eregister",
+     "kind": "registration",
+     "name": "MFA eRegister (Singapore Ministry of Foreign Affairs)",
+     "required": false,
+     "who": "Singapore citizens travelling to or through the UAE.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "SG"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://eregister.mfa.gov.sg/",
+     "steps": [
+      "Open MFA eRegister and add your trip.",
+      "Enter your travel dates, places and contact details.",
+      "Update the entry if your plans change."
+     ],
+     "validity": "For the trip registered.",
+     "note": "Since 1 March 2026 Singapore's MFA has advised Singaporeans to defer all travel to the Middle East region and strongly encourages anyone in the region to eRegister. Check with your airline on the day of travel and check that your travel insurance covers the trip.",
+     "sources": [
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/united-arab-emirates/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No visa or form is needed for an airside connection at Dubai (DXB) or Abu Dhabi (AUH) if you stay in the transit area on a through ticket. You must clear immigration, and so need visa-free entry or a UAE visa, if you leave the airport, hold separate tickets that need bags rechecked, or must move between DXB and Dubai World Central (DWC), about 60 km apart. Since March 2026 Singapore's MFA advises deferring travel to the region; confirm your flight with the airline.",
+   "landSea": "No UAE online arrival form exists for land or sea arrivals. If your passport needs a visa, get it before reaching a land border or cruise port. Driving in from Oman means you also follow Oman's exit rules.",
+   "source": "research"
+  },
+  "QA": {
+   "items": [
+    {
+     "id": "qa-hayya-evisa",
+     "kind": "evisa",
+     "name": "Hayya e-visa (A1 Tourist Visa or A3 ETA)",
+     "required": true,
+     "who": "Philippine passport holders and other nationalities not on Qatar's visa-free list.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "PH"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 14,
+     "fee": "QAR 100 visa fee, plus mandatory visitor health insurance (QAR 50 per month) from an insurer approved by the Ministry of Public Health.",
+     "url": "https://www.hayya.qa/",
+     "steps": [
+      "Register on the Hayya website or app.",
+      "Choose A1 Tourist Visa, or A3 ETA if you hold a valid US, UK, Canada, Schengen, Australia or New Zealand visa or residence permit.",
+      "Upload your passport and hotel booking, then pay QAR 100 when asked.",
+      "Buy Qatar visitor health insurance and carry the Hayya approval."
+     ],
+     "validity": "Shown on the approval.",
+     "note": "The Ministry of Public Health says no visa is issued to visa-required visitors until they buy visitor health insurance. Singapore, Indonesian, Indian and Chinese passport holders enter visa-free for 30 days and Malaysians for up to 90 days, so they do not need Hayya. Visa-free visitors need the health insurance only to extend beyond 30 days.",
+     "sources": [
+      "https://visitqatar.com/intl-en/plan-your-trip/visas",
+      "https://portal.moi.gov.qa/qatarvisas/index.html",
+      "https://www.moph.gov.qa/english/departments/ministeroffice/hfid/Pages/Health-Insurance-Scheme.aspx",
+      "https://visitqatar.com/content/dam/guides/hayya-registration.pdf"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "qa-in-discover-qatar-hotel",
+     "kind": "registration",
+     "name": "Discover Qatar hotel booking for visa-free entry",
+     "required": true,
+     "who": "Indian passport holders who want to enter Qatar visa-free.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "IN"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "Hotel cost only. Visa-free entry itself is free.",
+     "url": "https://visitqatar.com/intl-en/plan-your-trip/visas",
+     "steps": [
+      "Book your hotel through the Discover Qatar website before you fly.",
+      "Carry the booking, a return ticket and a passport valid for at least 3 months.",
+      "Or apply for a Hayya A1 visa in advance instead."
+     ],
+     "validity": "For the booked stay, up to 30 days visa-free.",
+     "note": "Qatar's Ministry of Interior requires Indian, Pakistani, Thai and Iranian passport holders to hold a Discover Qatar booking before travelling to use visa-free entry. Discover Qatar is the Qatar Airways destination company named by Visit Qatar.",
+     "sources": [
+      "https://visitqatar.com/intl-en/plan-your-trip/visas",
+      "https://portal.moi.gov.qa/wps/wcm/connect/wcmlib-internet-en/sa-departmentcommittee/generaladministrationofnationalitybordersandexpatriateaffairs/visas/sad"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "qa-sg-eregister",
+     "kind": "registration",
+     "name": "MFA eRegister (Singapore Ministry of Foreign Affairs)",
+     "required": false,
+     "who": "Singapore citizens travelling to or through Qatar.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "SG"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://eregister.mfa.gov.sg/",
+     "steps": [
+      "Open MFA eRegister and add your trip.",
+      "Enter your travel dates, places and contact details.",
+      "Update the entry if your plans change."
+     ],
+     "validity": "For the trip registered.",
+     "note": "Since 1 March 2026 Singapore's MFA has advised Singaporeans to defer all travel to the Middle East region and strongly encourages anyone in the region to eRegister.",
+     "sources": [
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/qatar/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No transit visa is needed at Doha Hamad (DOH) if you do not leave the airport, and visitor health insurance does not apply to transit passengers. To go out you need visa-free entry or a visa. Qatar Airways passengers with 6 hours or more who are not visa-free can ask the Discover Qatar transit desk about a transit visa and tour. Since March 2026 Singapore's MFA advises deferring travel to the region; confirm your flight with the airline.",
+   "landSea": "Drivers entering from Saudi Arabia at Abu Samra must buy vehicle insurance online (Qatar Unified Bureau) and can pre-register on Hayya. Sea arrivals follow the same visa rules.",
+   "source": "research"
+  },
+  "OM": {
+   "items": [
+    {
+     "id": "om-evisa",
+     "kind": "evisa",
+     "name": "Oman eVisa (Royal Oman Police)",
+     "required": true,
+     "who": "Indian passport holders without a qualifying visa or residence, and Filipino passport holders until Oman's visa-free listing is confirmed.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "IN",
+      "PH"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 30,
+     "leadDays": 7,
+     "fee": "OMR 20 for the 30-day tourist visa (Royal Oman Police). Third-party guides also list a 10-day visa at OMR 5 and a 1-year multiple-entry visa at OMR 50.",
+     "url": "https://evisa.rop.gov.om/",
+     "steps": [
+      "Create an account on the ROP eVisa portal and use the visa wizard to pick your visa type.",
+      "Upload your passport (valid at least 6 months) and photo, then pay online.",
+      "Wait for the approval email and print the visa.",
+      "Enter Oman within one month of issue."
+     ],
+     "validity": "Unsponsored visa must be used within one month of issue.",
+     "note": "Indians can skip the visa for 14 days only with a valid visa or residence from the US, Canada, Australia, UK, Japan or a Schengen country, or GCC residence in an approved profession; a Singapore pass does not count. Indians without these need a sponsored tourist visa through a licensed Omani hotel or tour company. Oman's Foreign Ministry says Filipinos became visa-free for 14 days in 2026, but the Royal Oman Police list did not show the Philippines when checked. Singapore, Malaysian, Indonesian and Chinese citizens are visa-free for 14 days with a return ticket, hotel booking, health insurance and enough funds, and need this eVisa only for longer stays.",
+     "sources": [
+      "https://www.rop.gov.om/english/VisaExempt.aspx",
+      "https://www.fm.gov.om/en/visitors/entry-visas/",
+      "https://www.fm.gov.om/en/32199/",
+      "https://evisa.rop.gov.om/en/frequently-asked-questions",
+      "https://www.rop.gov.om/newmobilesite/arabic/dg_pr_visas_tourist.html",
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/oman/"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No official Oman rule for airside transit at Muscat (MCT) was found. Passengers who stay in the transit area normally need no visa; confirm with the airline.",
+   "landSea": "Road travellers who are not visa-free must get the eVisa first, then may enter at any legal border. A free Dubai/Oman joint visa applies when coming directly from Dubai, and a Qatar-Oman joint tourist visa is issued on arrival to listed nationalities including Singapore and Malaysia. Cruise passengers and seafarers still use the traditional process through the ship.",
+   "source": "research"
+  },
+  "JO": {
+   "items": [
+    {
+     "id": "jo-jordan-pass",
+     "kind": "voa-online",
+     "name": "Jordan Pass (includes visa fee waiver)",
+     "required": false,
+     "who": "Tourists from non-restricted nationalities who would otherwise pay the JOD 40 visa on arrival and stay at least 2 nights.",
+     "exemptNationalities": [
+      "MY",
+      "PH"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 90,
+     "leadDays": 7,
+     "fee": "JOD 70 (Wanderer, 1 day at Petra), JOD 75 (Explorer, 2 days), JOD 80 (Expert, 3 days). Includes the single-entry visa fee and over 40 attractions.",
+     "url": "https://www.jordanpass.jo/",
+     "steps": [
+      "Buy the pass on jordanpass.jo before you arrive in Jordan.",
+      "Show it with your passport at immigration to get the visa without paying.",
+      "Stay at least 2 nights (3 days); leave sooner and you pay the visa fee on departure.",
+      "Use it at Petra and other sites within 1 month of the first scan."
+     ],
+     "validity": "Use within 3 months of purchase. Expires 1 month after the first scan at an attraction.",
+     "note": "Jordan Pass says the minimum is 2 nights (3 days); some government pages still say 3 nights, so 3 nights is the safe choice. Not sold to Arab nationals. Malaysians already pay no visa fee. Filipinos are a restricted nationality and must get prior approval; the pass does not replace that. It covers a single entry only and cannot be used to get a visa at King Hussein (Allenby) Bridge.",
+     "sources": [
+      "https://www.jordanpass.jo/Contents/Prices.aspx",
+      "https://www.jordanpass.jo/Contents/FAQs.aspx",
+      "https://www.jordanpass.jo/Contents/How_it_Works.aspx",
+      "https://moi.gov.jo/EN/Pages/Restricted_and_Non_Restricted_Countries_Nationalities",
+      "https://www.gov.uk/foreign-travel-advice/jordan/entry-requirements"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "jo-moi-evisa",
+     "kind": "evisa",
+     "name": "Jordan e-Visa (Ministry of Interior)",
+     "required": true,
+     "who": "Philippine passport holders, who are a restricted nationality needing approval before travel.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "PH"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 30,
+     "fee": "JOD 40 single entry, JOD 60 double entry, JOD 120 multiple entry (Visit Jordan figures).",
+     "url": "https://eservices.moi.gov.jo/MOI_EVISA/",
+     "steps": [
+      "Create an account on the Ministry of Interior e-visa portal or app.",
+      "Submit your passport (valid at least 6 months) and trip details.",
+      "Wait about 2 weeks and print the approval note.",
+      "Pay the visa fee as instructed and show the approval on arrival."
+     ],
+     "validity": "Shown on the approval.",
+     "note": "Approval can be unconditional (visa issued on arrival) or conditional (collect at an embassy). Jordanian embassies no longer issue visas directly. Singapore, Malaysian, Indonesian, Indian and Chinese passport holders can get a visa on arrival and may also use this portal. Anyone entering at King Hussein (Allenby) Bridge must have a visa from this portal in advance.",
+     "sources": [
+      "https://moi.gov.jo/EN/Pages/Restricted_and_Non_Restricted_Countries_Nationalities",
+      "https://mfa.gov.jo/embassy/en/pdf/visa-for-non-restricted1-english.pdf",
+      "https://mfa.gov.jo/en/embassy/Singapore/service/971/visa-for-singapore-travel-document-holders",
+      "https://businessevents.visitjordan.com/en/page/21/planner-guide"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "jo-sg-eregister",
+     "kind": "registration",
+     "name": "MFA eRegister (Singapore Ministry of Foreign Affairs)",
+     "required": false,
+     "who": "Singapore citizens travelling to or through Jordan.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "SG"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://eregister.mfa.gov.sg/",
+     "steps": [
+      "Open MFA eRegister and add your trip.",
+      "Enter your travel dates, places and contact details.",
+      "Update the entry if your plans change."
+     ],
+     "validity": "For the trip registered.",
+     "note": "Since 1 March 2026 Singapore's MFA has advised Singaporeans to defer all travel to the Middle East region and strongly encourages anyone in the region to eRegister.",
+     "sources": [
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/jordan/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No official Jordanian rule for short airside connections at Amman (AMM) was found. Travellers who stay airside normally need no visa; confirm with the airline. Since March 2026 Singapore's MFA advises deferring travel to the region.",
+   "landSea": "Visa on arrival (JOD 40) is available at Amman airport and Sheikh Hussein (North) Bridge. Jordan Pass says Wadi Araba (Eilat to Aqaba) issues it only to eligible Jordan Pass holders. No visa is issued at King Hussein (Allenby) Bridge, so get one in advance from the Ministry of Interior. Non-restricted nationals arriving at Aqaba airport need no visa.",
+   "source": "research"
+  },
+  "SA": {
+   "items": [
+    {
+     "id": "sa-tourist-evisa",
+     "kind": "evisa",
+     "name": "Saudi tourist eVisa",
+     "required": true,
+     "who": "Tourists from eligible countries such as Singapore, Malaysia, China and Brunei, plus other nationalities holding a valid US, UK or Schengen visa or residence permit, or a GCC residence permit.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea",
+      "land"
+     ],
+     "windowDays": 365,
+     "leadDays": 7,
+     "fee": "Shown at payment and includes mandatory medical insurance and VAT. Not refundable. Reported totals range from about SAR 395 to SAR 535.",
+     "url": "https://visa.visitsaudi.com/",
+     "steps": [
+      "Apply on visa.visitsaudi.com with a passport valid at least 6 months.",
+      "Pay the fee, which includes basic medical insurance.",
+      "Receive the eVisa by email and carry a copy on first arrival.",
+      "Give fingerprints and a photo at immigration."
+     ],
+     "validity": "1 year from issue, multiple entry, up to 90 days per stay. Cannot be extended.",
+     "note": "On 13 Oct 2026 Singapore's MFA advised Singaporeans to defer all travel to Saudi Arabia after missile and drone attacks on airports including Riyadh. Singapore citizens may also get a visa on arrival, but MFA recommends the eVisa. Indian, Indonesian and Filipino passport holders without a qualifying US, UK or Schengen visa or GCC residence must apply through an embassy or Tasheer visa centre; a package eVisa through licensed agencies is reported for Indians and Indonesians but not confirmed on an official page.",
+     "sources": [
+      "https://visa.visitsaudi.com/",
+      "https://visa.visitsaudi.com/Home/TermsConditions",
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/saudi-arabia/"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "sa-sg-eregister",
+     "kind": "registration",
+     "name": "MFA eRegister (Singapore Ministry of Foreign Affairs)",
+     "required": false,
+     "who": "Singapore citizens who must travel to or through Saudi Arabia.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "SG"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 3,
+     "fee": "Free",
+     "url": "https://eregister.mfa.gov.sg/",
+     "steps": [
+      "Open MFA eRegister and add your trip.",
+      "Enter your travel dates, places and contact details.",
+      "Update the entry if your plans change."
+     ],
+     "validity": "For the trip registered.",
+     "note": "MFA strongly encourages eRegister for Singaporeans who must travel to Saudi Arabia. It advises avoiding Riyadh's King Khalid International Airport and buying travel insurance.",
+     "sources": [
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/saudi-arabia/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "Singapore's MFA says transit passengers can apply for a stopover visa when booking with Saudia or flynas; it lets you leave the airport. No official Saudi rule for a short airside connection was found; stay airside and confirm with the airline. Since Oct 2026 MFA advises deferring all travel to Saudi Arabia, and airport closures and airspace shutdowns happen at short notice.",
+   "landSea": "The portal terms say the eVisa is valid at all airports and seaports. Land entry, for example the King Fahd Causeway from Bahrain, is reported to be allowed for eVisa holders but was not confirmed on an official page.",
+   "source": "research"
+  },
+  "MA": {
+   "items": [
+    {
+     "id": "ma-evisa",
+     "kind": "evisa",
+     "name": "Morocco eVisa (Acces Maroc)",
+     "required": true,
+     "who": "Indian passport holders, plus other visa-required travellers holding certain residence permits or multiple-entry visas from the EU, US, UK and other listed countries.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "IN"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 180,
+     "leadDays": 10,
+     "fee": "MAD 770 standard (about 3 Moroccan working days) or MAD 1,100 express (1 working day), as reported from the portal price list. Not refundable.",
+     "url": "https://www.acces-maroc.ma/",
+     "steps": [
+      "Check your eligibility on acces-maroc.ma.",
+      "Upload a photo and your passport (valid at least 90 days from applying).",
+      "Pay and wait for the eVisa by email.",
+      "At the border carry the eVisa, a return ticket, proof of funds and hospital and repatriation insurance."
+     ],
+     "validity": "Single entry within 180 days of issue. Stay up to 30 days.",
+     "note": "Indians qualify on their passport alone (Category A). Other visa-required nationals qualify with a residence permit valid 180 days from the EU, US, UK, Canada, Australia, Japan, Norway, New Zealand, UAE or Switzerland, or a multiple-entry visa valid 90 days from Schengen, US, UK, Ireland, Japan, Canada, Norway, Australia or New Zealand. Visa-exempt nationals do not need it. The fee figures were not confirmed on an official page.",
+     "sources": [
+      "https://www.acces-maroc.ma/assets/docs/Conditions%20utilisation%20eVisa%20-%20An.pdf",
+      "https://in.diplomatie.ma/en/e-visa"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No official Moroccan rule for airside transit at Casablanca was found. Passengers who stay airside normally need nothing; confirm with the airline.",
+   "landSea": "Visa-exempt travellers need nothing extra for ferries from Spain or the Ceuta and Melilla land borders. The eVisa allows one entry only, so leaving for Ceuta, Melilla or Spain and coming back needs a new visa.",
+   "source": "research"
+  },
+  "ZA": {
+   "items": [
+    {
+     "id": "za-eta",
+     "kind": "eta",
+     "name": "South Africa Electronic Travel Authorisation (ETA)",
+     "required": true,
+     "who": "Chinese, Indian and Indonesian passport holders visiting for up to 90 days and landing at OR Tambo, Cape Town, King Shaka or Lanseria airports.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "CN",
+      "IN",
+      "ID"
+     ],
+     "modes": [
+      "air"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "Shown at payment. Not refundable. The amount is not published on the official FAQ.",
+     "url": "https://eta.dha.gov.za/",
+     "steps": [
+      "Register on eta.dha.gov.za and verify your phone and email by OTP.",
+      "Scan your passport and upload a selfie.",
+      "Pay and wait for the outcome, usually within 24 hours.",
+      "Show the ETA at the airport, where your face is checked again."
+     ],
+     "validity": "Usually up to 6 months, multiple entry, up to 90 days per stay.",
+     "note": "Launched nationally on 12 Aug 2026 after a pilot for China, India, Indonesia and Mexico. It will progressively become compulsory for other visa-required nationalities and later open voluntarily to visa-exempt travellers. Your passport must be valid 7 months from travel. The FAQ says applications for minors will come in a future phase, so ask a South African mission how children should travel. If refused, apply through a mission or the eVisa system.",
+     "sources": [
+      "https://eta.dha.gov.za/faq",
+      "https://www.gov.za/news/speeches/minister-leon-schreiber-launch-south-africa%E2%80%99s-electronic-travel-authorisation-12-aug",
+      "https://www.sanews.gov.za/south-africa/south-africa-ushers-eta-make-international-travel-easier-more-secure"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "The ETA is for travellers entering South Africa. No official guidance on airside transit was found; confirm with the airline.",
+   "landSea": "The ETA currently works only at OR Tambo, Cape Town, King Shaka and Lanseria airports. Land and sea ports will follow later, so visa-required travellers using them still need a regular visa from a mission or the eVisa system.",
+   "source": "research"
+  },
+  "EG": {
+   "items": [
+    {
+     "id": "eg-evisa",
+     "kind": "evisa",
+     "name": "Egypt e-Visa",
+     "required": false,
+     "who": "Visitors from e-Visa eligible countries, including Singapore, Malaysia, China and India.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 90,
+     "leadDays": 10,
+     "fee": "USD 30 single entry, USD 65 multiple entry, paid by card.",
+     "url": "https://visa2egypt.gov.eg/",
+     "steps": [
+      "Sign up on visa2egypt.gov.eg.",
+      "Apply and pay at least 7 days before departure.",
+      "Download the e-Visa from the email link and print it.",
+      "Show it with your passport, itinerary and hotel booking on arrival."
+     ],
+     "validity": "Tourist e-visas are valid up to 3 months; check the dates on yours.",
+     "note": "Optional if your nationality can get a visa on arrival (Singapore citizens can, for USD 30). Indonesian and Philippine passports are not on the e-Visa list, so check with an Egyptian embassy. Arrivals at Sharm El-Sheikh airport staying under 15 days only in Sharm El-Sheikh, Dahab, Nuweiba or Taba get a free Sinai-only stamp.",
+     "sources": [
+      "https://visa2egypt.gov.eg/eVisa/FAQ",
+      "https://visa2egypt.gov.eg/eVisa/Home",
+      "https://www.gov.uk/foreign-travel-advice/egypt/entry-requirements",
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/egypt/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "eg-digital-voa-cairo",
+     "kind": "voa-online",
+     "name": "Egypt digital visa on arrival (QR code), Cairo airport",
+     "required": false,
+     "who": "Travellers eligible for an Egyptian visa on arrival, such as Singapore citizens, landing at Cairo International Airport.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": 2,
+     "leadDays": 1,
+     "fee": "USD 36 (USD 30 visa fee plus USD 6 service fee), Visa or Mastercard only.",
+     "url": "https://visaonarrival.gov.eg/home/landing",
+     "steps": [
+      "Open the portal or the Visa On Arrival Egypt app and choose your nationality and Cairo (CAI).",
+      "Enter your details and email, then pay by card.",
+      "Save the QR code on your phone; each traveller needs their own.",
+      "Show the QR code with your passport at passport control."
+     ],
+     "validity": "One use. Officials said 7 days from issue at launch, but an earlier notice said 48 hours, so get it within 2 days of landing.",
+     "note": "Pilot at Cairo only since 1 Aug 2026. Other airports such as Hurghada, Sharm El-Sheikh and Luxor still sell a USD 30 cash visa at bank kiosks before passport control. It is not a pre-approval and details cannot be changed after payment.",
+     "sources": [
+      "https://www.gov.uk/foreign-travel-advice/egypt/entry-requirements",
+      "https://cairo.gov.eg/en/news/2026/august/1/fb84d752e2484ed6842cb5c5b87edaa6",
+      "https://egypt.mid.ru/ru/press-centre/news/o_poryadke_oformleniya_elektronnykh_viz_v_egipte/"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No official Egyptian rule for airside transit at Cairo was found. Stay airside and confirm with the airline.",
+   "landSea": "At Taba (from Israel) bring cash: a USD 20 border tax for Taba only, USD 120 for the rest of Sinai, and USD 120 plus a USD 30 visa and a travel agent letter of guarantee to go beyond Sinai. Charges have changed at short notice since March 2026. Ferry arrivals from Aqaba at Taba Heights pay USD 35.",
+   "source": "research"
+  },
+  "IN": {
+   "items": [
+    {
+     "id": "in-e-arrival-card",
+     "kind": "arrival-card",
+     "name": "India e-Arrival Card",
+     "required": true,
+     "who": "All foreign nationals and OCI or e-OCI cardholders entering India; Indian passport holders are exempt.",
+     "exemptNationalities": [
+      "IN"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://indianvisaonline.gov.in/earrival/",
+     "steps": [
+      "Within 72 hours before arrival, fill in the e-Arrival Card online or in the Indian Visa Su-Swagatam app.",
+      "Enter passport, visa, flight, address in India and recent travel details.",
+      "Download or screenshot the acknowledgement with its QR code.",
+      "Show it with your passport and visa at immigration."
+     ],
+     "validity": "One arrival.",
+     "note": "It is arrival information, not a visa. With a connecting flight the 72 hours count from your final arrival in India. The paper disembarkation card has been phased out. The government does not authorise agents to charge for it.",
+     "sources": [
+      "https://indianvisaonline.gov.in/",
+      "https://indianvisaonline.gov.in/earrival/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "in-air-suvidha-sdf",
+     "kind": "registration",
+     "name": "Air Suvidha 2.0 Self-Declaration Form (health)",
+     "required": true,
+     "who": "Every international air passenger arriving in India, including Indian citizens, OCI holders and foreigners.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": 3,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://airsuvidha.civilaviation.gov.in/",
+     "steps": [
+      "Fill in the form on the Air Suvidha 2.0 portal within 72 hours before arrival, ideally at web check-in.",
+      "Add up to 4 family members; each gets their own form.",
+      "Verify by OTP and download each person's form.",
+      "Show it to immigration and health officers on arrival."
+     ],
+     "validity": "One trip.",
+     "note": "Required since June 2026 because of the Ebola outbreak, under India's health ministry advisory, and may end when the outbreak is over. It is separate from the e-Arrival Card. Departing passengers do not need it. Some sources say to file within 24 hours of starting travel; filing at web check-in meets both readings.",
+     "sources": [
+      "https://airsuvidha.civilaviation.gov.in/faq",
+      "https://airsuvidha.civilaviation.gov.in/instructions",
+      "https://indianvisaonline.gov.in/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "in-e-visa",
+     "kind": "evisa",
+     "name": "India e-Visa (e-Tourist)",
+     "required": true,
+     "who": "Foreign tourists from e-Visa eligible countries, including Singapore, Malaysia, Indonesia and the Philippines; Chinese passport holders are not eligible.",
+     "exemptNationalities": [
+      "IN"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": 120,
+     "leadDays": 14,
+     "fee": "From the 8 Sep 2026 table: Singapore USD 10 (Apr to Jun) or USD 25 (Jul to Mar) for 30 days, USD 25 for 1 year, USD 200 for 5 years. Malaysia and Philippines free for 30 days, USD 40 for 1 year, USD 200 for 5 years. Indonesia free. Plus a 3% bank charge. Not refundable.",
+     "url": "https://indianvisaonline.gov.in/evisa/tvoa.html",
+     "steps": [
+      "Apply on the official e-Visa site between 120 and 4 days before arrival.",
+      "Upload a photo and passport page; the passport needs 6 months validity and 2 blank pages.",
+      "Pay online and wait for the approval email.",
+      "Enter at a designated airport or seaport and carry the approval."
+     ],
+     "validity": "30-day e-Tourist: 30 days from first arrival, multiple entry. 1-year and 5-year: multiple entry, up to 180 days per calendar year.",
+     "note": "Chinese nationals need a regular visa from an Indian mission. People of Pakistani origin and diplomatic passport holders cannot use it. The official FAQ says e-Visa holders cannot enter by land; cruise passengers can use it only at Mumbai, Chennai, Cochin, Goa and Mangalore.",
+     "sources": [
+      "https://indianvisaonline.gov.in/evisa/tvoa.html",
+      "https://indianvisaonline.gov.in/evisa/images/Etourist_fee_final.pdf"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No official page confirms the rule for airside transit. Third-party guidance says passengers who stay airside and do not pass Indian immigration need no e-Arrival Card. It is unclear whether they must file Air Suvidha, so check with the airline. To leave the airport you need a visa (India offers an e-Transit visa).",
+   "landSea": "The e-Arrival Card covers all foreign arrivals. The e-Visa works at designated seaports, but cruise passengers can use only Mumbai, Chennai, Cochin, Goa and Mangalore. The official FAQ says e-Visa holders cannot enter by land, though the site also lists land checkposts, so check before crossing from Nepal or Bangladesh. Air Suvidha applies to air arrivals.",
+   "source": "research"
+  },
+  "LK": {
+   "items": [
+    {
+     "id": "lk-eta",
+     "kind": "eta",
+     "name": "Sri Lanka Electronic Travel Authorization (ETA)",
+     "required": true,
+     "who": "All foreign visitors, including nationals who get it free of charge.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "Free from 25 May 2026 for 40 countries including India, China, Indonesia and Malaysia, and free for Singapore under a reciprocal agreement. Philippines and other nationalities pay USD 50 (SAARC USD 20). Children under 12 free.",
+     "url": "https://eta.gov.lk/slvisa/",
+     "steps": [
+      "Apply on eta.gov.lk before you travel, even if yours is free.",
+      "Enter passport and trip details and pay if your nationality is charged.",
+      "Wait for the approval email and keep a copy.",
+      "Show it with your passport on arrival."
+     ],
+     "validity": "30 days with double entry, counted from first arrival. Maldivians get 90 days.",
+     "note": "Only eta.gov.lk is official; copycat sites charge extra. The free scheme started 25 May 2026 with no end date on the official page; it was reportedly approved for one year, so recheck for trips after May 2027. Fees paid before 25 May 2026 are not refunded. The Immigration website has offered an optional online arrival and departure card since 2023, but its current status could not be confirmed.",
+     "sources": [
+      "https://eta.gov.lk/slvisa/",
+      "https://www.eta.gov.lk/slvisa/visainfo/fees.jsp?locale=en_US",
+      "https://eta.gov.lk/slvisa/visainfo/center.jsp?locale=en_US",
+      "https://www.immigration.gov.lk/pages_e.php?id=60"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "The ETA pages do not cover airside connections at Colombo (CMB). Staying airside normally needs no ETA; confirm with the airline. If you leave the airport, a free 2-day transit visa is available through the ETA system.",
+   "landSea": "The ETA must be held before arrival by all foreign nationals, which includes cruise and ferry arrivals such as ferries from India. Confirm with the operator.",
+   "source": "research"
+  },
+  "MV": {
+   "items": [
+    {
+     "id": "mv-imuga-traveller-declaration",
+     "kind": "arrival-card",
+     "name": "IMUGA Traveller Declaration",
+     "required": true,
+     "who": "Every traveller arriving in the Maldives, including children, each with their own declaration.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": 4,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://imuga.immigration.gov.mv/traveller",
+     "steps": [
+      "Within 96 hours before your arrival flight time, open imuga.immigration.gov.mv.",
+      "Fill in one declaration per person, including children.",
+      "Save the QR code; airlines check it before boarding.",
+      "Show the QR code at immigration on arrival."
+     ],
+     "validity": "One arrival.",
+     "note": "It is free; ignore sites that charge. All tourists then get a free visa on arrival but need a passport with MRZ valid at least 1 month, a confirmed return ticket, a prepaid booking at a registered facility and enough funds. Israeli passports are refused entry since 15 Apr 2025.",
+     "sources": [
+      "https://imuga.immigration.gov.mv/traveller",
+      "https://www.immigration.gov.mv/traveller-declaration",
+      "https://www.immigration.gov.mv/visa/tourist-visa"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No official rule for airside transit at Male (MLE) was found; confirm with the airline.",
+   "landSea": "The portal ties the 96-hour window to flight time. Yacht and cruise arrivals should check the declaration with their agent; not confirmed on an official page.",
+   "source": "research"
+  },
+  "NP": {
+   "items": [
+    {
+     "id": "np-online-visa-form",
+     "kind": "voa-online",
+     "name": "Nepal online Tourist Visa form (visa on arrival)",
+     "required": false,
+     "who": "Foreign visitors getting a tourist visa on arrival; Indian citizens need no visa.",
+     "exemptNationalities": [
+      "IN"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land"
+     ],
+     "windowDays": 15,
+     "leadDays": 3,
+     "fee": "Visa paid on arrival or online in advance: USD 30 (15 days), USD 50 (30 days), USD 125 (90 days). Free for Chinese nationals, SAARC citizens on their first visit of the year (up to 30 days) and children under 10 (except US citizens). Online card payment adds 3.5% or USD 1.",
+     "url": "https://nepaliport.immigration.gov.np/",
+     "steps": [
+      "Within 15 days before arrival, fill in the Tourist Visa form on Nepaliport and choose your entry point.",
+      "Print or save the submission receipt with its barcode.",
+      "Optionally pay the visa fee online by card, or pay at the bank counter on arrival.",
+      "Fill in the paper arrival card and hand everything to the immigration officer."
+     ],
+     "validity": "Receipt valid 15 days. The visa is multiple entry for the period paid.",
+     "note": "Airport kiosks can do the form if you skip it. Do not fill it in more than 15 days ahead or it expires. Nationals of some countries, such as Nigeria, Ghana, Syria and Afghanistan, cannot get a visa on arrival.",
+     "sources": [
+      "https://immigration.gov.np/en/page/tourist-visa",
+      "https://immigration.gov.np/en/page/arrival-departure-information-1",
+      "https://tia.immigration.gov.np/user-manual-for-visa-fee-payment",
+      "https://ntb.gov.np/en/plan-your-trip/before-you-come/tourist-visa"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "np-eta",
+     "kind": "eta",
+     "name": "Nepal Electronic Travel Authorization (pre-approved tourist visa)",
+     "required": false,
+     "who": "Tourists who want their Nepal visa approved before travel instead of on arrival.",
+     "exemptNationalities": [
+      "IN"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "Same as the tourist visa (USD 30, 50 or 125), paid online by card plus a convenience fee.",
+     "url": "https://nepaliport.immigration.gov.np/",
+     "steps": [
+      "On Nepaliport choose Electronic Travel Authorization.",
+      "Enter passport, travel dates, first hotel and flight, and upload a photo.",
+      "Pay online and wait for approval by email.",
+      "Print the ETA and show it at immigration."
+     ],
+     "validity": "Reported as usable within 6 months of issue.",
+     "note": "Optional; the visa on arrival still works. The ETA option is on the official portal, but the 17 Aug 2026 start date and about 72 hours processing come from third-party reports. Confirm it is accepted if you enter anywhere other than Kathmandu.",
+     "sources": [
+      "https://nepaliport.immigration.gov.np/",
+      "https://tia.immigration.gov.np/user-manual-for-visa-fee-payment"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "Kathmandu airport immigration lists a USD 5 transit visa for passengers who need to pass immigration. Confirm with the airline whether your connection stays airside.",
+   "landSea": "Visa on arrival and the online form also work at land borders such as Belahiya (Bhairahawa) and Kakarbhitta. Indian citizens need no visa by land or air but must show a passport or voter ID. Pokhara and Gautam Buddha (Lumbini) airports also issue visas on arrival.",
+   "source": "research"
+  },
+  "AU": {
+   "items": [
+    {
+     "id": "au-eta",
+     "kind": "eta",
+     "name": "Australian Electronic Travel Authority (ETA, subclass 601)",
+     "required": true,
+     "who": "Holders of ETA-eligible passports, including Singapore and Malaysia, visiting for tourism or business visitor activities must get an ETA before travel.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "AD",
+      "AT",
+      "BE",
+      "BN",
+      "CA",
+      "DK",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "HK",
+      "IS",
+      "IE",
+      "IT",
+      "JP",
+      "LI",
+      "LU",
+      "MY",
+      "MT",
+      "MC",
+      "NO",
+      "PT",
+      "SM",
+      "SG",
+      "KR",
+      "ES",
+      "SE",
+      "CH",
+      "TW",
+      "NL",
+      "GB",
+      "US",
+      "VA"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 14,
+     "fee": "AUD 20 service charge in the Australian ETA app. No visa charge.",
+     "url": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/electronic-travel-authority-601",
+     "validity": "12 months or until the passport expires, whichever is first. Multiple entries, up to 3 months per visit.",
+     "steps": [
+      "Download the official Australian ETA app from the Apple App Store or Google Play.",
+      "Scan your passport chip and take a live face photo in the app.",
+      "Answer the questions and pay the AUD 20 service charge.",
+      "Wait for the grant email before booking non-refundable travel."
+     ],
+     "note": "Apply only through the official app. You must be outside Australia when you apply and when it is granted. Most results are immediate, but some take longer. Declare any other passports you hold. Taiwan passports qualify except official or diplomatic ones. Australian citizens cannot use an ETA.",
+     "sources": [
+      "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/electronic-travel-authority-601"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "au-visitor-visa-600",
+     "kind": "evisa",
+     "name": "Visitor visa (subclass 600), Tourist stream",
+     "required": true,
+     "who": "Passport holders who cannot get an ETA or eVisitor, including Indonesia, India, China and the Philippines, must hold this visa before travel.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "ID",
+      "IN",
+      "CN",
+      "PH"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 45,
+     "fee": "Visa application charge applies. Third-party summaries of Home Affairs pricing report AUD 250 from 1 July 2026. Confirm in the official Visa Pricing Estimator before paying.",
+     "url": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/visitor-600/tourist-stream-overseas",
+     "validity": "Stay up to 12 months. The grant notice sets your stay and entry conditions.",
+     "steps": [
+      "Create an ImmiAccount on the Home Affairs website.",
+      "Complete the Visitor visa (600) Tourist stream form and upload passport, funds and itinerary documents.",
+      "Pay the visa application charge and give biometrics or health checks if asked.",
+      "Travel only after you receive the grant notice. Check it in VEVO."
+     ],
+     "note": "Apply from outside Australia. No label goes in your passport; the visa is linked to it electronically. Processing times vary, so apply early. The AUD 250 figure was not shown on the official pricing page, which loads amounts dynamically.",
+     "sources": [
+      "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/visitor-600/tourist-stream-overseas",
+      "https://immi.homeaffairs.gov.au/visas/getting-a-visa/fees-and-charges/current-visa-pricing"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "au-incoming-passenger-card",
+     "kind": "arrival-card",
+     "name": "Incoming Passenger Card (IPC) or Australia Travel Declaration (ATD)",
+     "required": true,
+     "who": "Almost everyone entering Australia, including Australian citizens, must complete a passenger card. The digital ATD replaces it only on eligible flights.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://www.abf.gov.au/entering-and-leaving-australia/crossing-the-border/at-the-border/incoming-passenger-card-(ipc)",
+     "validity": "One arrival",
+     "steps": [
+      "If you fly Qantas into Brisbane, Sydney or Melbourne, check the Qantas app for an ATD invite up to 72 hours before departure.",
+      "If you land at Western Sydney International Airport, use the ABF ATD web form.",
+      "Otherwise fill in the paper card handed out on board, in English.",
+      "Show the paper card or ATD QR pass to officers when you exit the airport."
+     ],
+     "note": "The ATD is still a pilot. ABF says the Qantas in-app ATD reaches Perth and Adelaide before the end of 2026, and a web form will cover all international airports and seaports before the end of 2027. The old Digital Passenger Declaration was scrapped in 2022. If your flight is cancelled, changed or diverted, you may need the paper card anyway. The ATD does not replace a visa or ETA.",
+     "sources": [
+      "https://www.abf.gov.au/entering-and-leaving-australia/crossing-the-border/at-the-border/incoming-passenger-card-(ipc)",
+      "https://www.abf.gov.au/entering-and-leaving-australia/australia-travel-declaration",
+      "https://www.abf.gov.au/newsroom-subsite/Pages/Australia-Travel-Declaration-to-be-rolled-out-nationwide.aspx",
+      "https://www.abf.gov.au/entering-and-leaving-australia/australia-travel-declaration-faqs"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "Transit without a visa (TWOV) is allowed for citizens of many countries, including Singapore, Malaysia, Indonesia and the Philippines, if you arrive by air, leave by air within 8 hours on a confirmed ticket and never clear immigration (for example to collect bags). Chinese and Indian ordinary passports are not on the TWOV list and need a Transit visa (subclass 771) or another Australian visa. ETA and visitor visa holders can also transit.",
+   "landSea": "Cruise passengers need an ETA or visa before boarding and fill in the paper Incoming Passenger Card until their port joins the digital ATD, planned before the end of 2027. Australia has no land borders.",
+   "source": "research"
+  },
+  "NZ": {
+   "items": [
+    {
+     "id": "nz-nzeta",
+     "kind": "eta",
+     "name": "New Zealand Electronic Travel Authority (NZeTA)",
+     "required": true,
+     "who": "Visa waiver passport holders, including Singapore and Malaysia, must get an NZeTA before travel. Australian permanent residents and all cruise passengers also need one. Australian citizens do not.",
+     "exemptNationalities": [
+      "AU",
+      "NZ"
+     ],
+     "onlyNationalities": [
+      "AD",
+      "AR",
+      "AT",
+      "BH",
+      "BE",
+      "BR",
+      "BN",
+      "BG",
+      "CA",
+      "CL",
+      "HR",
+      "CY",
+      "CZ",
+      "DK",
+      "EE",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "HK",
+      "HU",
+      "IS",
+      "IE",
+      "IL",
+      "IT",
+      "JP",
+      "KR",
+      "LV",
+      "LI",
+      "LT",
+      "LU",
+      "MO",
+      "MY",
+      "MT",
+      "MU",
+      "MX",
+      "MC",
+      "NL",
+      "NO",
+      "OM",
+      "PL",
+      "PT",
+      "QA",
+      "RO",
+      "SM",
+      "SA",
+      "SC",
+      "SG",
+      "SK",
+      "SI",
+      "ES",
+      "SE",
+      "CH",
+      "TW",
+      "AE",
+      "GB",
+      "US",
+      "UY",
+      "VA"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "NZD 17 in the NZeTA app or NZD 23 on the website, plus the NZD 100 International Visitor Levy (IVL) paid at the same time.",
+     "url": "https://nzeta.immigration.govt.nz/",
+     "validity": "2 years, multiple visits. Each visit up to 3 months (6 months for UK citizens), and no more than 6 months in any 12 months.",
+     "steps": [
+      "Download the official NZeTA app or open the NZeTA website.",
+      "Choose visiting (not transit) and enter passport details exactly as printed.",
+      "Pay the NZeTA fee and the IVL together.",
+      "Allow up to 72 hours for approval. The confirmation comes by email."
+     ],
+     "note": "The app is cheaper and can request NZeTAs for up to 10 people at once. Your passport must be valid for 3 months after you leave New Zealand. You still need the New Zealand Traveller Declaration. Kuwait visa waiver travel is suspended.",
+     "sources": [
+      "https://www.immigration.govt.nz/visas/new-zealand-electronic-travel-authority-nzeta/",
+      "https://www.immigration.govt.nz/visit/what-you-need-to-visit-new-zealand/visa-waiver-countries-and-territories/",
+      "https://www.immigration.govt.nz/assets/inz/documents/forms-and-guides/Fees-Guide-INZ-1028.pdf"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "nz-ivl",
+     "kind": "levy",
+     "name": "International Visitor Conservation and Tourism Levy (IVL)",
+     "required": true,
+     "who": "Most visitors pay it when they request an NZeTA or apply for a visitor visa. Australian, New Zealand and many Pacific Island passport holders, and Auckland transit passengers, are exempt.",
+     "exemptNationalities": [
+      "AU",
+      "NZ"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "NZD 100 per person, not refundable",
+     "url": "https://www.immigration.govt.nz/process-to-apply/applying-for-a-visa/fees-processing-times-and-refunds/paying-the-international-visitor-levy/",
+     "validity": "Paid once per NZeTA or visa. An NZeTA lasts 2 years.",
+     "steps": [
+      "Pay the IVL in the same payment as your NZeTA or visitor visa.",
+      "Keep the receipt email. There is nothing separate to show at the border."
+     ],
+     "note": "There is no separate IVL form. It is not refunded even if your application is declined. It rose from NZD 35 to NZD 100 on 1 October 2024. Transit NZeTAs do not include the IVL.",
+     "sources": [
+      "https://www.immigration.govt.nz/process-to-apply/applying-for-a-visa/fees-processing-times-and-refunds/paying-the-international-visitor-levy/",
+      "https://www.immigration.govt.nz/assets/inz/documents/forms-and-guides/Fees-Guide-INZ-1028.pdf"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "nz-visitor-visa",
+     "kind": "evisa",
+     "name": "New Zealand Visitor Visa (online application)",
+     "required": true,
+     "who": "Passport holders not on the visa waiver list, including Indonesia, India, China and the Philippines, must get a visitor visa before travel.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "ID",
+      "IN",
+      "CN",
+      "PH"
+     ],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 30,
+     "fee": "From NZD 441 (NZD 300 fee, NZD 41 immigration levy, NZD 100 IVL)",
+     "url": "https://www.immigration.govt.nz/visas/visitor-visa/",
+     "validity": "Stay up to 6 or 9 months as granted. You cannot work.",
+     "steps": [
+      "Create an account in Immigration Online.",
+      "Fill in the Visitor Visa form and upload your passport, proof of funds and travel plans.",
+      "Pay the fee, levy and IVL online.",
+      "Wait for the decision by email. Allow about 2 weeks, longer from September to March."
+     ],
+     "note": "Chinese citizens travelling from Australia with an eligible Australian visa can use an NZeTA instead. Cruise passengers of any nationality can use an NZeTA. INZ asks visitors to show NZD 1,000 a month, or NZD 400 a month if accommodation is prepaid.",
+     "sources": [
+      "https://www.immigration.govt.nz/visas/visitor-visa/",
+      "https://www.immigration.govt.nz/assets/inz/documents/forms-and-guides/Fees-Guide-INZ-1028.pdf"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "nz-traveller-declaration",
+     "kind": "arrival-card",
+     "name": "New Zealand Traveller Declaration (NZTD)",
+     "required": true,
+     "who": "Everyone entering New Zealand, including New Zealand citizens, babies and children, needs one declaration each. Auckland transit passengers do not.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": 1,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://www.travellerdeclaration.govt.nz/",
+     "validity": "One trip",
+     "steps": [
+      "From 24 hours before your trip to New Zealand starts, open travellerdeclaration.govt.nz or the NZTD app.",
+      "Complete one declaration per traveller. Answers must be in English.",
+      "Submit it before you reach passport control. It links to your passport for the eGate."
+     ],
+     "note": "A paper declaration is available on board if you cannot do it online. By sea, the window opens 24 hours before the ship leaves its last foreign port. NZeTA and visa holders must still do the NZTD.",
+     "sources": [
+      "https://www.travellerdeclaration.govt.nz/",
+      "https://www.immigration.govt.nz/visas/new-zealand-electronic-travel-authority-nzeta/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "Only Auckland Airport has a transit area: stay airside, up to 24 hours, no bag collection. Visa waiver and transit visa waiver passports, including Singapore, Malaysia, Indonesia, the Philippines and China, need a transit NZeTA (NZD 17 app or NZD 23 web, no IVL). Any nationality flying to or from Australia can use a transit NZeTA with a valid Australian visa. Others, such as Indian passports not going to or from Australia, need a Transit Visa (NZD 235). Connections at other New Zealand airports count as entering the country.",
+   "landSea": "Cruise and cargo ship passengers of any nationality need an NZeTA (choose visiting) before the ship departs for New Zealand, plus the IVL unless exempt. The NZTD opens 24 hours before the ship leaves its last foreign port. New Zealand has no land borders.",
+   "source": "research"
+  },
+  "US": {
+   "items": [
+    {
+     "id": "us-esta",
+     "kind": "eta",
+     "name": "Electronic System for Travel Authorization (ESTA)",
+     "required": true,
+     "who": "Citizens of Visa Waiver Program countries, including Singapore, visiting up to 90 days without a US visa must have an approved ESTA, by air, sea or land.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "AD",
+      "AU",
+      "AT",
+      "BE",
+      "BN",
+      "CL",
+      "HR",
+      "CZ",
+      "DK",
+      "EE",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "HU",
+      "IS",
+      "IE",
+      "IL",
+      "IT",
+      "JP",
+      "LV",
+      "LI",
+      "LT",
+      "LU",
+      "MT",
+      "MC",
+      "NL",
+      "NZ",
+      "NO",
+      "PL",
+      "PT",
+      "QA",
+      "SM",
+      "SG",
+      "SK",
+      "SI",
+      "KR",
+      "ES",
+      "SE",
+      "CH",
+      "TW",
+      "GB"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "USD 40.62 from 16 October 2026 (USD 10.62 if denied). It was USD 40.27 from 1 January 2026 and USD 40 from 30 September 2025.",
+     "url": "https://esta.cbp.dhs.gov/",
+     "validity": "2 years or until the passport expires, whichever is first. Up to 90 days per visit.",
+     "steps": [
+      "Apply on esta.cbp.dhs.gov or the official CBP ESTA Mobile app as soon as you book.",
+      "Enter passport details and answer the eligibility questions.",
+      "Pay by card and check your status. Apply no later than 72 hours before travel.",
+      "If denied, apply for a B1/B2 visa at a US embassy."
+     ],
+     "note": "Look-alike sites charge more. Only the CBP site and app are official. A new passport needs a new ESTA. Romania is not in the program (designation rescinded May 2025). In December 2025 CBP proposed making 5 years of social media history mandatory and moving ESTA to an app only; we could not confirm it is final.",
+     "sources": [
+      "https://public-inspection.federalregister.gov/2026-20185.pdf",
+      "https://www.federalregister.gov/documents/2025/08/28/2025-16453/cbp-immigration-fees-required-by-hr-1-for-fiscal-year-2025",
+      "https://www.cbp.gov/newsroom/national-media-release/cbp-expands-esta-requirements-visa-waiver-program-travelers",
+      "https://www.dhs.gov/news/2025/05/02/dhs-announces-rescission-romanias-designation-visa-waiver-program",
+      "https://www.federalregister.gov/documents/2025/12/10/2025-22461/agency-information-collection-activities-revision-arrival-and-departure-record-form-i-94-and"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "us-evus",
+     "kind": "registration",
+     "name": "Electronic Visa Update System (EVUS) enrollment",
+     "required": true,
+     "who": "Chinese (PRC) passport holders with a 10-year B1, B2 or B1/B2 visa must have a valid EVUS enrollment before each trip.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "CN"
+     ],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "USD 31.75 from 16 October 2026 (fee set by the HR-1 law)",
+     "url": "https://www.evus.gov/",
+     "validity": "2 years, or until the passport or visa expires or is replaced, whichever is first.",
+     "steps": [
+      "Go to evus.gov, the only official site.",
+      "Enter passport, visa and travel details.",
+      "Pay the fee and keep the confirmation.",
+      "Enroll again after 2 years or when you get a new passport or visa."
+     ],
+     "note": "Without a valid enrollment you cannot get a boarding pass or enter at a land port. EVUS used to be free; the fee comes from the 2025 HR-1 law and is adjusted yearly.",
+     "sources": [
+      "https://public-inspection.federalregister.gov/2026-20185.pdf",
+      "https://www.cbp.gov/travel/international-visitors/electronic-visa-update-system-evus/frequently-asked-questions"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "us-i94-land",
+     "kind": "registration",
+     "name": "Provisional Form I-94 for land border entry",
+     "required": false,
+     "who": "Non-US travellers entering by land who need an I-94, including ESTA travellers, can apply up to 7 days ahead to save time at the border.",
+     "exemptNationalities": [
+      "US",
+      "CA"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "land"
+     ],
+     "windowDays": 7,
+     "leadDays": 2,
+     "fee": "USD 30 (USD 6 land fee plus USD 24 HR-1 fee). No I-94 fee by air or sea.",
+     "url": "https://i94.cbp.dhs.gov/",
+     "validity": "One entry. The I-94 records your permitted stay.",
+     "steps": [
+      "Make sure your ESTA or US visa is valid first.",
+      "Apply on the CBP I-94 website or CBP mobile app up to 7 days before crossing.",
+      "Pay the fee.",
+      "Show your passport to the officer at the land port to finalise the I-94."
+     ],
+     "note": "ESTA has been required at land borders since 1 October 2022. If you do not apply ahead, the I-94 is done at the port of entry and the same fee applies. Canadian visitors usually do not need an I-94.",
+     "sources": [
+      "https://public-inspection.federalregister.gov/2026-20185.pdf",
+      "https://www.cbp.gov/travel/international-visitors/i-94",
+      "https://www.cbp.gov/newsroom/national-media-release/cbp-expands-esta-requirements-visa-waiver-program-travelers"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "There is no airside transit in the US. Every international connection clears US immigration. Visa Waiver passports such as Singapore need an ESTA. Others need a C-1 transit visa or a B1/B2 visa, and Chinese 10-year visa holders also need EVUS.",
+   "landSea": "ESTA is required for Visa Waiver travellers at land borders and on cruises. At land crossings an I-94 costs USD 30 and can be requested up to 7 days ahead online. No I-94 fee applies by air or sea.",
+   "source": "research"
+  },
+  "CA": {
+   "items": [
+    {
+     "id": "ca-eta",
+     "kind": "eta",
+     "name": "Electronic Travel Authorization (eTA)",
+     "required": true,
+     "who": "Citizens of visa-exempt countries, including Singapore, flying to or transiting through a Canadian airport need an eTA. US citizens and US green card holders are exempt.",
+     "exemptNationalities": [
+      "US",
+      "CA"
+     ],
+     "onlyNationalities": [
+      "AD",
+      "AU",
+      "AT",
+      "BS",
+      "BB",
+      "BE",
+      "BN",
+      "BG",
+      "CL",
+      "HR",
+      "CY",
+      "CZ",
+      "DK",
+      "EE",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "HK",
+      "HU",
+      "IS",
+      "IE",
+      "IL",
+      "IT",
+      "JP",
+      "LV",
+      "LI",
+      "LT",
+      "LU",
+      "MT",
+      "MC",
+      "NL",
+      "NZ",
+      "NO",
+      "PG",
+      "PL",
+      "PT",
+      "QA",
+      "KR",
+      "RO",
+      "WS",
+      "SM",
+      "SG",
+      "SK",
+      "SI",
+      "SB",
+      "ES",
+      "SE",
+      "CH",
+      "TW",
+      "AE",
+      "VA",
+      "GB"
+     ],
+     "modes": [
+      "air"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "CAD 7",
+     "url": "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eta/apply.html",
+     "validity": "Up to 5 years or until the passport expires, whichever is first. Stays normally up to 6 months.",
+     "steps": [
+      "Apply on the official Canada.ca eTA page with the passport you will fly on.",
+      "Answer the questions and pay CAD 7.",
+      "Most approvals arrive by email within minutes. If documents are requested, instructions come within 72 hours.",
+      "Get a new eTA if you get a new passport."
+     ],
+     "note": "Not needed by car, bus, train or boat. Romania qualifies only with an e-passport, and Taiwan only with an ordinary passport that shows the personal ID number.",
+     "sources": [
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eta/apply.html",
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eta/eligibility.html",
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/entry-requirements-country.html",
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eta/facts.html"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "ca-eta-select-visa-required",
+     "kind": "eta",
+     "name": "eTA for select visa-required countries (instead of a visitor visa)",
+     "required": true,
+     "who": "Citizens of 17 listed visa-required countries, including Malaysia, Indonesia and the Philippines, can fly to Canada on an eTA if they held a Canadian visitor visa in the last 10 years or now hold a valid US nonimmigrant visa.",
+     "exemptNationalities": [],
+     "onlyNationalities": [
+      "AG",
+      "AR",
+      "BR",
+      "CR",
+      "ID",
+      "MY",
+      "MX",
+      "MA",
+      "PA",
+      "PH",
+      "KN",
+      "LC",
+      "VC",
+      "SC",
+      "TH",
+      "TT",
+      "UY"
+     ],
+     "modes": [
+      "air"
+     ],
+     "windowDays": null,
+     "leadDays": 7,
+     "fee": "CAD 7",
+     "url": "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eta/eligibility/eta-x.html",
+     "validity": "Up to 5 years or until the passport expires, whichever is first.",
+     "steps": [
+      "Check you held a Canadian visitor visa in the last 10 years or hold a valid US nonimmigrant visa.",
+      "Apply for the eTA on Canada.ca with the passport you will fly on.",
+      "Enter your US visa details. It must be valid on the day you apply.",
+      "If you meet neither condition, apply for a Canadian visitor visa instead."
+     ],
+     "note": "Malaysia and Indonesia were added on 26 May 2026. Arriving by land or sea, including cruise ships, still needs a visitor visa. If your US visa is in an old passport, give that passport number in the background questions.",
+     "sources": [
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eta/eligibility/eta-x.html",
+      "https://www.canada.ca/en/immigration-refugees-citizenship/news/2026/05/canada-strengthens-indo-pacific-ties-through-changes-to-visa-requirements-for-eligible-travellers-from-indonesia-and-malaysia.html",
+      "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/entry-requirements-country.html"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "ca-advance-declaration",
+     "kind": "arrival-card",
+     "name": "Advance Declaration (ArriveCAN)",
+     "required": false,
+     "who": "Optional for travellers with a passport flying into one of 10 participating Canadian airports.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": 3,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://www.canada.ca/en/border-services-agency/services/arrivecan.html",
+     "validity": "Expires if not confirmed at a kiosk or eGate within 72 hours of submission.",
+     "steps": [
+      "Open the ArriveCAN app or web version.",
+      "Submit your customs and immigration declaration up to 72 hours before your flight.",
+      "Confirm it at the airport kiosk or eGate on arrival."
+     ],
+     "note": "Airports: Vancouver, Toronto Pearson (Terminals 1 and 3), Montreal, Winnipeg, Halifax, Quebec City, Calgary, Ottawa, Edmonton and Toronto Billy Bishop. Not usable at NEXUS kiosks. If you skip it, you declare at the kiosk. The official page is dated 2024, so the airport list may have changed.",
+     "sources": [
+      "https://www.canada.ca/en/border-services-agency/services/arrivecan.html"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "Visa-exempt passports such as Singapore need an eTA even to transit. Malaysia, Indonesia and the Philippines can transit on an eTA if they hold a valid US visa or had a Canadian visa in the last 10 years. Indonesian, Philippine, Thai and Taiwanese passports (Transit Without Visa) and Chinese passports (China Transit Program) flying to or from the US with a valid US visa can transit visa-free for up to 24 hours, staying airside, on participating airlines at Vancouver, Toronto Pearson Terminal 1, Calgary or Winnipeg (Montreal on Air Canada for the China program). Everyone else, including Indian passports, needs a transit visa.",
+   "landSea": "Visa-exempt travellers need no eTA by car, bus, train or boat, except by sea from Saint Pierre and Miquelon (not cruise ships). Passports in the conditional eTA group, such as Malaysia, Indonesia and the Philippines, need a full visitor visa for land or sea arrivals, including cruise ships.",
+   "source": "research"
+  },
+  "MX": {
+   "items": [
+    {
+     "id": "mx-fmm-digital-air",
+     "kind": "registration",
+     "name": "Forma Migratoria Múltiple Digital (FMMd)",
+     "required": false,
+     "who": "Foreign visitors arriving by air. Nothing is filed before the flight; the officer stamps your passport, and you can then download the FMMd as proof of legal stay.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": null,
+     "leadDays": 1,
+     "fee": "Free to download. The federal visitor fee (DNR) is normally collected in international air tickets.",
+     "url": "https://www.inm.gob.mx/spublic/portal/inmex.html",
+     "validity": "Covers the stay granted at entry, up to 180 days. It can be downloaded once, within that period.",
+     "steps": [
+      "At least 24 hours before travel, create an account on the INM services portal and register your passport.",
+      "On arrival, check the exit date the officer writes next to your passport stamp.",
+      "After entry, log in or scan the QR code at the immigration area and download your FMMd.",
+      "Keep it with your passport until you leave Mexico."
+     ],
+     "note": "Paper FMMs are no longer issued to air arrivals. Some passports that normally need a Mexican visa are exempt if they hold a valid visa or residence from the US, Canada, UK, Japan or Schengen area; we could not open the official SRE page, so confirm with a Mexican consulate. The DNR in the ticket is per INM practice but not shown on an official 2026 page.",
+     "sources": [
+      "https://www.gob.mx/inm/articulos/forma-migratoria-multiple-digital-fmmd",
+      "https://www.inm.gob.mx/spublic/appsm/publico/ayuda/inmx_fd.pdf"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "mx-fmm-electronic-land",
+     "kind": "arrival-card",
+     "name": "Forma Migratoria Múltiple electrónica (FMMe) for land entry",
+     "required": true,
+     "who": "Foreign visitors entering Mexico by land, for example from the US or Guatemala.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "land"
+     ],
+     "windowDays": null,
+     "leadDays": 3,
+     "fee": "Federal visitor fee (DNR) payable online by card when it applies (stays over 7 days). Check the INM 2026 fee table for the amount.",
+     "url": "https://www.inm.gob.mx/fmme/publico/solicitud.html",
+     "validity": "One entry, up to 180 days counted from the entry stamp.",
+     "steps": [
+      "Fill in the FMM on the INM site with your exact passport details and port of entry.",
+      "Pay the visitor fee on the INM services portal if it applies.",
+      "Print the FMM.",
+      "Stop at the INM office at the crossing to get it stamped. Without the stamp it is not valid."
+     ],
+     "note": "A US Passport Card works only for land crossings and the border zone, not for travel inside Mexico. Paying the fee does not guarantee entry. The 7-day fee rule comes from older INM guidance and was not confirmed on a 2026 page.",
+     "sources": [
+      "https://www.inm.gob.mx/fmme/publico/solicitud.html",
+      "https://www.gob.mx/inm/articulos/tarifas-de-derechos-migratorios-2026"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "mx-visitax-quintana-roo",
+     "kind": "levy",
+     "name": "Visitax (Quintana Roo state visitor fee)",
+     "required": true,
+     "who": "All foreign tourists who visit Quintana Roo (Cancun, Tulum, Playa del Carmen, Cozumel, Isla Mujeres, Bacalar), including children, whatever way they leave.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": null,
+     "leadDays": 1,
+     "fee": "About MXN 285 per person in 2026 (state government figure, no 2026 increase). The exact amount is shown on visitax.gob.mx before you pay.",
+     "url": "https://www.visitax.gob.mx/sitio/",
+     "validity": "One visit to Quintana Roo",
+     "steps": [
+      "Pay on visitax.gob.mx only. Look-alike sites add fees.",
+      "Enter each traveller's passport details and travel dates.",
+      "Download and keep the QR receipt for each person.",
+      "Show it if asked before airport security when you leave."
+     ],
+     "note": "This is separate from the federal visitor fee in your air ticket. Receipts can be recovered by passport number for at least a year. The official site confirms it is mandatory but did not show the amount; the MXN 285 figure is from the Quintana Roo government press office, which we could not open directly.",
+     "sources": [
+      "https://www.visitax.gob.mx/sitio/",
+      "https://cgc.qroo.gob.mx/visitax-en-quintana-roo-de-la-mano-de-empresarios-busca-mantener-la-competitividad-del-caribe-mexicano/"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "Not confirmed on an official INM page: Mexican airports generally have no visa-free airside transit, and connecting international passengers usually clear Mexican immigration. If your passport needs a Mexican visa, have one or a valid exemption (such as a valid US visa) even for a connection.",
+   "landSea": "By land, get the FMMe online or at the crossing and have it stamped at the INM office. A US Passport Card is valid only in the border zone. Cruise passengers follow the cruise line's process. Visitax also applies to visitors at Cozumel and other Quintana Roo ports.",
+   "source": "research"
+  },
+  "CU": {
+   "items": [
+    {
+     "id": "cu-evisa",
+     "kind": "evisa",
+     "name": "Cuba Tourist eVisa (replaces the paper tourist card)",
+     "required": true,
+     "who": "Tourists whose passport is not visa-exempt for Cuba must hold the eVisa, mandatory since 30 June 2025. Chinese ordinary passport holders are exempt for stays up to 90 days.",
+     "exemptNationalities": [
+      "CN"
+     ],
+     "onlyNationalities": [],
+     "modes": [
+      "air"
+     ],
+     "windowDays": null,
+     "leadDays": 10,
+     "fee": "Not confirmed. The price is shown on evisacuba.cu before payment and may vary by country.",
+     "url": "https://evisacuba.cu/",
+     "validity": "Single entry, stay up to 90 days, extendable by 90 days.",
+     "steps": [
+      "Apply on evisacuba.cu at least 72 hours before you arrive.",
+      "Pay and wait for the reply email with your 10-character visa code.",
+      "Enter that code in your D'Viajeros form.",
+      "Carry travel health insurance for your stay."
+     ],
+     "note": "If the app's visa check says your passport is visa-free for Cuba, skip this. Sea arrivals must contact a Cuban consulate. Some sites still sell paper tourist cards or add fees; use only evisacuba.cu. We could not load evisacuba.cu directly, so the fee and stay rules come from Cuban government press items.",
+     "sources": [
+      "https://misiones.cubaminrex.cu/es/articulo/la-visa-de-turismo-electronica-sera-obligatoria-para-la-entrada-cuba-desde-finales-de-1",
+      "https://misiones.cubaminrex.cu/es/visa-de-turismo-electronica",
+      "https://misiones.cubaminrex.cu/en/articulo/communique-ministry-foreign-affairs-republic-cuba-1",
+      "https://evisacuba.cu/"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    },
+    {
+     "id": "cu-dviajeros",
+     "kind": "arrival-card",
+     "name": "D'Viajeros traveller form",
+     "required": true,
+     "who": "Every traveller entering Cuba, Cuban or foreign, including children, through airports, ports or marinas.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "sea"
+     ],
+     "windowDays": 7,
+     "leadDays": 2,
+     "fee": "Free",
+     "url": "https://dviajeros.mitrans.gob.cu/",
+     "validity": "One arrival",
+     "steps": [
+      "Within 7 days before your trip, open dviajeros.mitrans.gob.cu.",
+      "Fill in the immigration, customs and health sections, adding your eVisa code if you need one.",
+      "Save or print the QR code.",
+      "Show the QR code at check-in and to Cuban immigration."
+     ],
+     "note": "One form per person per arrival. It collects information for immigration, customs and the Ministry of Public Health. Avoid paid third-party sites. The 7-day window comes from a Cuban Tourism Ministry statement published by MINREX; the form site itself did not show it.",
+     "sources": [
+      "https://dviajeros.mitrans.gob.cu/",
+      "https://misiones.cubaminrex.cu/es/articulo/la-visa-de-turismo-electronica-sera-obligatoria-para-la-entrada-cuba-desde-finales-de-1"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "No official airside transit rule found. Treat a connection in Havana as an entry: complete D'Viajeros and get the eVisa if your passport is not visa-exempt. Chinese ordinary passports are exempt for transit too.",
+   "landSea": "The eVisa portal asks sea arrivals to contact a Cuban consulate. D'Viajeros also covers ports and marinas. Cuba has no land borders.",
+   "source": "research"
+  },
+  "CO": {
+   "items": [
+    {
+     "id": "co-check-mig",
+     "kind": "arrival-card",
+     "name": "Check-MIG migration pre-registration",
+     "required": false,
+     "who": "Any traveller, Colombian or foreign, entering or leaving Colombia. Migración Colombia recommends it to speed up immigration.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land",
+      "sea"
+     ],
+     "windowDays": 3,
+     "leadDays": 1,
+     "fee": "Free",
+     "url": "https://apps.migracioncolombia.gov.co/pre-registro/",
+     "validity": "The trip you register. Do it again before you leave Colombia.",
+     "steps": [
+      "Between 72 hours and 1 hour before your flight, open Check-MIG from migracioncolombia.gov.co.",
+      "Enter your passport, flight and stay details.",
+      "Save or screenshot the confirmation.",
+      "Fill it in again before you leave Colombia."
+     ],
+     "note": "Official 2025 and 2026 guidance calls it a recommendation, not a legal duty, but some airlines still ask for it at check-in, so do it anyway. Sites charging about USD 50 are not official. Frequent travellers can reuse saved data.",
+     "sources": [
+      "https://apps.migracioncolombia.gov.co/pre-registro/public/",
+      "https://www.migracioncolombia.gov.co/detalle-noticia/agenda-migcol/comunicaciones-y-prensa/asi-puede-hacer-que-su-paso-por-los-puestos-de-control-migratorio-sea-mas-agil",
+      "https://unidad-administrativa-especial-migracion-colombia.micolombiadigital.gov.co/sites/unidad-administrativa-especial-migracion-colombia/content/files/001931/96519_76812-559029.pdf"
+     ],
+     "confidence": "medium",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "Staying in an airport's international transit zone is not entry into Colombia. Most passports can make a direct airside transit of up to 24 hours at one airport without a visa. A short list of nationalities in Resolution 5488 of 2022 needs an airport transit visa (Visa V). Changing airports means entering Colombia.",
+   "landSea": "Check-MIG can be filled in for any entry or exit, including land crossings. The free Biomig e-gate also works at the Rumichaca land crossing with Ecuador.",
+   "source": "research"
+  },
+  "PE": {
+   "items": [
+    {
+     "id": "pe-tam-virtual",
+     "kind": "registration",
+     "name": "Tarjeta Andina de Migración (TAM) Virtual",
+     "required": false,
+     "who": "Foreign visitors after entering Peru. Passports are no longer stamped on international flights, so the TAM Virtual is your official entry record.",
+     "exemptNationalities": [],
+     "onlyNationalities": [],
+     "modes": [
+      "air",
+      "land"
+     ],
+     "windowDays": null,
+     "leadDays": null,
+     "fee": "Free",
+     "url": "https://cel.migraciones.gob.pe/ConsultaTAMVirtual/VerificarTAM",
+     "validity": "Shows your last entry and the days of stay granted.",
+     "steps": [
+      "After passing immigration, open the TAM Virtual page.",
+      "Enter your passport details and download the record.",
+      "Check the days granted and keep a copy with your passport."
+     ],
+     "note": "Peru has no pre-arrival form for tourists. The MigraCheck pre-registration and e-gates at Lima's new terminal are for Peruvians and resident foreigners, not tourists. Police may ask for the TAM in checks. Overstaying costs 0.1% of the UIT per day.",
+     "sources": [
+      "https://www.gob.pe/institucion/migraciones/noticias/1308644-migraciones-turistas-extranjeros-tienen-que-verificar-su-tiempo-de-permanencia-en-el-pais-para-evitar-inconvenientes",
+      "https://www.gob.pe/80265-todo-lo-que-debes-saber-sobre-el-prerregistro",
+      "https://migracheck.migraciones.gob.pe/pe/"
+     ],
+     "confidence": "high",
+     "effectiveFrom": null,
+     "effectiveUntil": null
+    }
+   ],
+   "transit": "Connecting passengers at Lima stay in the international transit area and do not pass immigration; the transit charge is in the ticket. The official guide does not say whether visa-required passports are exempt for airside transit, so check with your airline if your passport needs a Peru visa.",
+   "landSea": "Land arrivals are recorded the same way. Download the TAM Virtual after the border post.",
+   "source": "research"
+  },
+  "AR": {
+   "items": [],
+   "transit": "No official airside transit rule confirmed. Changing between Ezeiza (EZE) and Aeroparque (AEP) means entering Argentina, so you need whatever entry document your passport requires.",
+   "landSea": "No separate land or sea arrival form found. The AVE and insurance rules apply to every entry.",
+   "source": "research"
+  }
+ }
+}

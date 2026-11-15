@@ -411,7 +411,7 @@ async function runChunk(jobId: string, continuation: boolean, startedAt: number,
       error: "",
     };
     if (needExtras && hasTripExtras(result.data)) {
-      update.result_extras = buildExtras(result.data, provider);
+      update.result_extras = buildExtras(result.data, provider, wizardState);
       update.result_title = result.data.tripTitle || "";
     }
     const partial = newDays.length < (to - from + 1) ? ` (partial, ${to - (from + newDays.length - 1)} day(s) regenerate next pass)` : "";

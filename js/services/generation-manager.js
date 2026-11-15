@@ -40,7 +40,6 @@ export async function startGeneration(tripId, wizardState) {
   activeGenerations.set(tripId, { status: 'generating', busy: false, attempt: 0, startedAt: Date.now() });
   logger.info('generation', 'Trip generation started', { tripId });
   notifyListeners(tripId);
-  requestNotificationPermission();
 
   try {
     await enqueueAndWatch(tripId, wizardState);
@@ -60,6 +59,21 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   const a = Math.sin(dLat / 2) ** 2
     + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Nearby = every destination other than home is a short hop from home (ground
+// or sea transport, no flights). A multi-city route that starts at home (e.g.
+// Singapore, Johor Bahru & Kuala Lumpur from Singapore) is judged by the other
+// cities; the old first-destination check saw 0 km and asked for flights.
+export function isNearbyTrip(wizardState, homeCity, destinations = DESTINATIONS) {
+  const home = destinations.find(d => d.name.toLowerCase() === String(homeCity || '').toLowerCase());
+  if (!home) return false;
+  const stops = (wizardState?.multiCity ? wizardState.destinations : [wizardState?.destination]) || [];
+  const away = stops.filter(d => d && d.lat && d.lng && d.name?.toLowerCase() !== home.name.toLowerCase());
+  return away.length > 0 && away.every(d => {
+    const km = haversineKm(home.lat, home.lng, d.lat, d.lng);
+    return km > 10 && km < 500;
+  });
 }
 
 // Inject the traveler's origin + a nearby-trip flag into the wizard state before
@@ -84,12 +98,7 @@ async function enrichWizardState(wizardState) {
     // Its own try: a failure here must not drop the origin set above.
     try {
       if (!enriched.isNearbyTrip && !wizardState.transport?.mode) {
-        const home = DESTINATIONS.find(d => d.name.toLowerCase() === profile.home_city.toLowerCase());
-        const dest = wizardState.multiCity ? wizardState.destinations?.[0] : wizardState.destination;
-        if (home && dest?.lat && dest?.lng) {
-          const km = haversineKm(home.lat, home.lng, dest.lat, dest.lng);
-          if (km < 500 && km > 10) enriched.isNearbyTrip = true;
-        }
+        enriched.isNearbyTrip = isNearbyTrip(wizardState, profile.home_city);
       }
     } catch (e) {
       logger.warn('generation', 'Nearby-trip check failed; keeping origin', { error: e?.message });
@@ -325,9 +334,24 @@ export async function resumeStaleGenerations(trips) {
   }
 }
 
-function requestNotificationPermission() {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') Notification.requestPermission();
+// Asked from a tap ("Notify me when it's ready"): browsers ignore or quietly
+// block permission prompts that no gesture started. Resolves to the permission
+// ('granted' | 'denied' | 'default'), or 'unsupported'.
+export async function requestCompletionNotifications() {
+  if (!('Notification' in window)) return 'unsupported';
+  if (Notification.permission !== 'default') return Notification.permission;
+  try { return await Notification.requestPermission(); } catch { return Notification.permission; }
+}
+
+// Days planned so far for a trip's newest job, from the worker's chunk counter
+// (never selects result_days, which can be large). null when unknown.
+export async function fetchGenerationProgress(tripId) {
+  const { data, error } = await supabase.from('generation_jobs')
+    .select('chunk_idx, chunk_size').eq('trip_id', tripId)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
+  if (error || !data) return null;
+  const size = Math.min(6, Math.max(2, Number(data.chunk_size) || 4));
+  return (Number(data.chunk_idx) || 0) * size;
 }
 
 async function showCompletionNotification(tripId) {

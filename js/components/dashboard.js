@@ -10,6 +10,7 @@ import { getHomeCurrency } from '../data/user-prefs.js';
 import { isSquareMode, onSquareModeChange } from '../lib/square-mode.js';
 import { buildDeckHtml, mountCardDeck } from '../lib/card-deck.js';
 import { listCoverCopies } from '../lib/trip-cover.js';
+import { estimateGenerationMinutes } from '../lib/trip-extras.js';
 
 // Human label for each trip stage. Maps the internal status to friendly copy
 // (the dashboard mockup uses "Live" for an in-progress trip).
@@ -153,7 +154,7 @@ function renderTripCard(trip, index) {
           <div class="trip-card-gen-status">
             <span class="trip-card-gen-dots"><span></span><span></span><span></span></span>
             <span class="trip-card-gen-label">Planning your itinerary</span>
-            <span class="trip-card-gen-eta">Usually takes 1 to 2 minutes <span class="trip-card-gen-elapsed" data-gen-elapsed></span></span>
+            <span class="trip-card-gen-eta">Usually about ${estimateGenerationMinutes(trip.dayCount)} minutes <span class="trip-card-gen-elapsed" data-gen-elapsed></span></span>
           </div>
         ` : isFailed ? `
           <div class="trip-card-gen-status">

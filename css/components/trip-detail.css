@@ -549,6 +549,11 @@ a.td-hero-credit:focus-visible {
   color: var(--plum);
 }
 
+/* Transport (bus, train, ferry) and entry requirements (passport). */
+.td-day-num--transport { color: var(--terracotta); }
+.td-day-num--entry { color: var(--amber); }
+.td-day-num--entry svg { width: 28px; height: 28px; }
+
 .td-day-info {
   flex: 1;
   min-width: 0;
@@ -3110,6 +3115,8 @@ body:has(.td-chat-drawer--open) #toast-container {
 
 .td-sidebar-item-icon--flights { color: var(--steel); }
 .td-sidebar-item-icon--accommodation { color: var(--plum); }
+.td-sidebar-item-icon--entry { color: var(--amber); }
+.td-sidebar-item-icon--entry svg { width: 16px; height: 16px; }
 
 .td-sidebar-item-num {
   width: 26px;

@@ -2,6 +2,11 @@
 // legacy synchronous endpoint (generate-itinerary). Keeping it here prevents the
 // ~300-line prompt/schema/provider code from being duplicated across functions.
 
+import {
+  bookedFlightLegs, bookedFlightPrompt, mergeBookedFlights, transportInstruction,
+  TRANSPORT_SCHEMA, TRANSPORT_EXAMPLE, FLIGHT_ROUTE_RULE,
+} from "./journey.ts";
+
 // Free-tier wall-clock cap is 150s PER invocation. In the async design each
 // provider runs in its OWN invocation, so it gets a full 150s — we allow 125s
 // for the model fetch and leave ~25s for parse + the replace_itinerary save.
@@ -200,14 +205,18 @@ export function buildPromptAndSchema(wizardState: any, opts: { dayFrom?: number;
   const accomCheckIn = wizardState.accommodation?.checkInDate || "";
 
   const flightsSettled = !!wizardState.flights?.settled;
-  const settledFlightNumber = wizardState.flights?.flightNumber || "";
-  const settledArrivalDate = wizardState.flights?.arrivalDate || "";
+  const booked = bookedFlightLegs(wizardState);
+  const bookedLines = bookedFlightPrompt(wizardState);
 
   const destName = wizardState.multiCity
     ? (wizardState.destinations?.[0]?.name || "")
     : (wizardState.destination?.name || "");
-  const isSameCity = departureCity && destName
+  // A LOCAL trip only when the single destination is the home city. A
+  // multi-city route that starts at home still travels to the other cities.
+  const isSameCity = !wizardState.multiCity && departureCity && destName
     && departureCity.toLowerCase() === destName.toLowerCase();
+  const startsAtHome = !!wizardState.multiCity && !!departureCity
+    && (wizardState.destinations || []).some((d: any) => String(d?.name || "").toLowerCase() === departureCity.toLowerCase());
 
   const transportMode = wizardState.transport?.mode || null;
   const isNearbyTrip = (!!transportMode || !!wizardState.isNearbyTrip) && !isSameCity;
@@ -304,9 +313,9 @@ ${isSameCity
   ? `- The traveler LIVES in ${destName}. This is a LOCAL exploration trip. Do NOT include any flights, inter-city transport, or arrival logistics. Start the itinerary directly with Day 1 activities.`
   : isNearbyTrip
   ? `- This is a NEARBY trip — absolutely NO FLIGHTS. Do NOT invent, suggest, or mention any airline or flight — not even hypothetical ones. Primary transport: ${transportMode ? (transportLabel[transportMode] || transportMode) : "bus, train, or ferry (pick the most common option for this route)"}. Suggest realistic ground/sea transport options with schedules, operators, duration, and pricing.`
-  : flightsSettled && settledFlightNumber
-  ? `- FLIGHTS (PRE-BOOKED): The traveler has ALREADY booked flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight number and details for the inbound flight. Do NOT suggest a different airline or flight. For the return flight, suggest a realistic option from the same airline if possible.`
-  : `- Flights: ${fareClass} class, ${connectionPref} connections`}
+  : flightsSettled && booked
+  ? `${bookedLines}${booked.inbound ? "" : "\n- The return flight is not booked yet: suggest a realistic one from the same airline."}`
+  : `- Flights: ${fareClass} class, ${connectionPref} connections`}${startsAtHome ? `\n- The trip starts in the traveller's home city (${departureCity}): the outbound journey is from ${departureCity} to the next city on the route, and the return is from the last city back to ${departureCity}.` : ""}
 - Travel pace: ${pace} — plan ${activityGuidance}${brevityNote}
 - Interests: ${interests}
 - ${foodStyle}
@@ -331,10 +340,10 @@ CRITICAL REQUIREMENTS:
 10. The timeSlot field should still categorize as morning/afternoon/evening for grouping.
 11. For EVERY day, include a "weather" object with the expected weather conditions for that day based on the destination, season, and travel dates. Include condition (e.g. "sunny", "partly cloudy", "rainy"), highC and lowC temperatures in Celsius.
 ${!includeExtras ? `12. Output ONLY the "days" array for days ${dayFrom}..${dayTo}. Do NOT include flights, transport, accommodation, bookingChecklist, or savingsTips — those are generated separately.` : `${isNearbyTrip
-  ? `12. Include "transport" (NOT "flights" — do NOT include a "flights" key at all) with suggested outbound and inbound ${transportMode ? (transportLabel[transportMode] || transportMode) : "ground/sea transport"} options — include operator name, mode (bus/train/ferry/drive), route, duration, schedule frequency, and pricing. For ferries include terminal names. For buses include bus operator and station. For trains include train service name and station. NEVER generate airline names or flight numbers.`
-  : flightsSettled && settledFlightNumber
-  ? `12. Include "flights" — the traveler has PRE-BOOKED flight ${settledFlightNumber}${settledArrivalDate ? ` arriving ${settledArrivalDate}` : ""}. Use this EXACT flight for the outbound/inbound entry. For the other direction, suggest a realistic return flight from the same airline.`
-  : `12. Include "flights" with suggested outbound and inbound flight options for ${fareClass} class. ${departureCity ? `The OUTBOUND flight MUST depart from ${departureCity}${homeCountry ? ` (${homeCountry})` : ""} and arrive at the entry city you selected above; the INBOUND flight MUST return from the last city of the route back to ${departureCity}. Use airlines and routes that realistically serve ${departureCity}.` : "Use the traveler's stated origin as the departure point."} Recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing.`}
+  ? `12. ${transportInstruction(transportMode ? (transportLabel[transportMode] || transportMode) : "the most common ground or sea option for this route (bus, train, ferry, car or taxi)")}`
+  : flightsSettled && booked
+  ? `12. Include "flights". The traveller's booked flights are listed above and are added to the trip as given; still return an "outbound" and "inbound" entry (repeat the booked ones as they are, and suggest any direction that is not booked). ${FLIGHT_ROUTE_RULE}`
+  : `12. Include "flights" with suggested outbound and inbound flight options for ${fareClass} class. ${departureCity ? `The OUTBOUND flight MUST depart from ${departureCity}${homeCountry ? ` (${homeCountry})` : ""} and arrive at the entry city you selected above; the INBOUND flight MUST return from the last city of the route back to ${departureCity}. Use airlines and routes that realistically serve ${departureCity}.` : "Use the traveler's stated origin as the departure point."} Recommend a specific airline with a realistic flight number (e.g. SQ237, QF9, JL3) and pricing. ${FLIGHT_ROUTE_RULE}`}
 ${accomSettled && accomAddress
   ? `13. Include "accommodation" with ONLY the pre-booked property: "${accomAddress}". Look up the actual name, neighborhood, and details of this property. Return it as a single item with badge "Pre-booked". Do NOT add alternative options.`
   : `13. Include "accommodation" with hotel/apartment options matching the traveler's ${accomType} preference. Each item needs: name, area (neighborhood), priceRange, type, highlights, a badge (Recommended, Best Value, Best Location, or Luxury Pick), and "city" (which city it is in).${cityNames.length > 1 ? ` This is a MULTI-CITY trip — provide 2-3 options FOR EACH city the traveler stays in (${cityNames.join(", ")}), and set "city" to that city's name so options can be grouped per city.` : ` Provide 2-3 options and set "city" to ${destName || "the destination"}.`}`}
@@ -397,7 +406,7 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
     jsonSchema.bookingChecklist = [{ group: "string", items: [{ label: "string", day: "integer", note: "string", url: "string (optional)" }] }];
     jsonSchema.savingsTips = [{ icon: "string (emoji)", title: "string", description: "string", estimatedSaving: "string" }];
     if (isNearbyTrip) {
-      jsonSchema.transport = { outbound: { operator: "string", mode: "string", route: "string", terminal: "string", duration: "string", frequency: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } };
+      jsonSchema.transport = TRANSPORT_EXAMPLE;
     } else if (!isSameCity) {
       jsonSchema.flights = { outbound: { airline: "string", flightNumber: "string", route: "string", duration: "string", priceRange: "string", tips: "string" }, inbound: { "...same fields": "" } };
     }
@@ -456,14 +465,7 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
       },
       ...(includeExtras ? {
         ...(isNearbyTrip ? {
-          transport: {
-            type: "object",
-            properties: {
-              outbound: { type: "object", properties: { operator: { type: "string" }, mode: { type: "string" }, route: { type: "string" }, terminal: { type: "string" }, duration: { type: "string" }, frequency: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["operator", "mode", "route", "duration", "priceRange"] },
-              inbound: { type: "object", properties: { operator: { type: "string" }, mode: { type: "string" }, route: { type: "string" }, terminal: { type: "string" }, duration: { type: "string" }, frequency: { type: "string" }, priceRange: { type: "string" }, tips: { type: "string" } }, required: ["operator", "mode", "route", "duration", "priceRange"] }
-            },
-            required: ["outbound", "inbound"]
-          }
+          transport: TRANSPORT_SCHEMA
         } : {
           flights: {
             type: "object",
@@ -802,9 +804,11 @@ export function sanitizeDbDays(days: any[]): any[] {
   }));
 }
 
-export function buildExtras(itinerary: any, provider: string): Record<string, unknown> {
+export function buildExtras(itinerary: any, provider: string, wizardState: any = {}): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
-  if (itinerary.flights) extras.flights = itinerary.flights;
+  // Booked flights replace the model's version of that direction.
+  const flights = itinerary.transport ? itinerary.flights : mergeBookedFlights(itinerary.flights, wizardState);
+  if (flights) extras.flights = flights;
   if (itinerary.transport) extras.transport = itinerary.transport;
   if (itinerary.accommodation) extras.accommodation = itinerary.accommodation;
   if (itinerary.bookingChecklist) extras.bookingChecklist = itinerary.bookingChecklist;

@@ -98,3 +98,10 @@ export function photoCreditText(credit) {
   const parts = [credit.creator, credit.license, credit.via].map(v => String(v || '').trim()).filter(Boolean);
   return parts.length ? `Photo: ${parts.join(', ')}` : '';
 }
+
+// Minutes AI planning usually takes: one model call per 4 days at about 70
+// seconds, plus the save (a 13-day packed trip measured 4m47s on 2026-11-15).
+export function estimateGenerationMinutes(days) {
+  const n = Math.max(1, Number(days) || 7);
+  return Math.max(2, Math.round((Math.ceil(n / 4) * 70 + 20) / 60));
+}
