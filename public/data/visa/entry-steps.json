@@ -1345,14 +1345,16 @@
      ],
      "sources": [
       "https://services.digital.go.jp/en/visit-japan-web/",
-      "https://services.digital.go.jp/en/visit-japan-web/guide/",
       "https://services.digital.go.jp/en/visit-japan-web/news/20250605-01/",
-      "https://www.customs.go.jp/english/passenger/declaration/declaration_app.html",
+      "https://services.digital.go.jp/en/visit-japan-web/news/20240125-01/",
+      "https://services.digital.go.jp/en/visit-japan-web/news/20261102-01/",
       "https://www.customs.go.jp/english/passenger/egate.htm",
+      "https://www.customs.go.jp/kaigairyoko/egate/faq.pdf",
+      "https://www.customs.go.jp/kaigairyoko/taxrefund.htm",
       "https://www.moj.go.jp/isa/01_00643.html"
      ],
      "confidence": "high",
-     "note": "Optional but recommended. Paper forms are still accepted, so do one or the other. Japan Customs requires a customs declaration from every passenger and recommends doing it through Visit Japan Web. Since 25 Jan 2024 one QR code covers immigration and customs. New Chitose (Sapporo) is one of 7 airports with customs e-Gates (with Narita, Haneda, Chubu, Kansai, Fukuoka, Naha). You need an IC passport to use the e-Gate. Fill it in before you fly, because you need internet to show the code. JESTA, Japan's planned pre-travel authorisation, has no start date yet. Under Act No. 32 of 2026, a Cabinet Order will set the date, no later than 31 Mar 2029. When it starts, visa-exempt visitors will need approval for each entry. It does not apply to trips in 2026 or 2027 unless a date is announced."
+     "note": "Optional but recommended. Paper forms are still accepted, so do one or the other. Japan Customs requires a customs declaration from every passenger and recommends doing it through Visit Japan Web. Since 25 Jan 2024 one QR code covers immigration and customs. New Chitose (Sapporo) is one of 7 airports with customs e-Gates (with Narita, Haneda, Chubu, Kansai, Fukuoka, Naha). You need an IC passport to use the e-Gate, and each traveller, including family members, scans their own code at the terminal. A child under 100 cm can walk through with a parent. Log in, register and add your trip while online before you fly. Japan Customs says the declaration and QR code can then be made offline if you stay logged in. Tax-free shopping changed on 1 Nov 2026: you pay tax in the shop and get it back after a customs check when you leave Japan within 90 days of purchase. Do this check in the departure hall before you check in bags and go through security. At the same 7 airports, including New Chitose, you can do it in Visit Japan Web on the airport's dedicated Wi-Fi instead of the kiosk. JESTA, Japan's planned pre-travel authorisation, has no start date yet. Under Act No. 32 of 2026, a Cabinet Order will set the date, no later than 31 Mar 2029. When it starts, visa-exempt visitors will need approval before travel. It does not apply to trips in 2026 or 2027 unless a date is announced."
     },
     {
      "id": "jp-evisa-singapore-residents",
@@ -1372,26 +1374,27 @@
      ],
      "windowDays": 90,
      "leadDays": 21,
-     "fee": "Visa fee depends on nationality (see the Embassy of Japan fee list). Applications through the Japan Visa Application Centre (JVAC) carry an extra SGD 22 handling fee.",
+     "fee": "For applications accepted from 1 Jul 2026, about JPY 15,000 for a single-entry visa, paid in local currency (SGD). Some nationalities pay a reduced fee or none; check the Embassy of Japan fee list. The JVAC adds a handling fee of SGD 22. No visa fee is charged if the visa is refused.",
      "url": "https://www.sg.emb-japan.go.jp/itpr_en/visit.html",
      "validity": "Single entry for tourism, stay up to 90 days.",
      "steps": [
-      "Check you are a long-term resident of Singapore. Short-term visitors must apply in their home country.",
+      "Check you are a long-term resident of Singapore. Short-term visitors must apply in their home country or country of residence.",
       "Apply for a tourist eVISA through the JVAC eVISA system linked from the Embassy of Japan page, no earlier than 3 months before travel.",
       "Allow at least 1 week for processing.",
       "At check-in and on arrival, show the Visa issuance notice online on your phone. PDFs, screenshots and printouts are not accepted."
      ],
      "sources": [
       "https://www.mofa.go.jp/j_info/visit/visa/visaonline.html",
+      "https://www.mofa.go.jp/j_info/visit/visa/procedure/pagewe_000001_00391.html",
       "https://www.sg.emb-japan.go.jp/itpr_en/visit.html"
      ],
      "confidence": "medium",
-     "note": "MOFA lists Singapore residents of any nationality, except visa-exempt ones, as eligible through an accredited agency. The Embassy in Singapore routes this through the JVAC. The eVISA is valid for arrival by air, or by sea only on scheduled ferries from Busan or Shanghai. Business, family visits, transit and multiple-entry visas still need a paper application at the JVAC. Fee amounts can change, so check the Embassy fee list."
+     "note": "MOFA (page dated 15 May 2026) lists all foreign residents of Singapore, except visa-exempt ones, as eligible through an accredited agency. The Embassy in Singapore routes this through the JVAC. The eVISA is valid for arrival by air, or by sea only on scheduled ferries from Busan or Shanghai. Business, family visits, transit and multiple-entry visas still need a paper application at the JVAC. Japan raised visa fees about fivefold on 1 Jul 2026 (from about JPY 3,000), the first rise since 1978. The exact SGD amount for your nationality is on the Embassy fee list. Indonesian e-passport holders without a Visa Waiver Registration can also use this eVISA route."
     },
     {
      "id": "jp-indonesia-visa-waiver-registration",
      "kind": "registration",
-     "name": "Japan Visa Waiver Registration for Indonesian e-passports",
+     "name": "Japan Visa Waiver Registration for Indonesian e-passports (JAVES)",
      "required": true,
      "who": "Indonesian ordinary passport holders who want to visit Japan visa-free for up to 15 days. Only ICAO e-passport holders can register.",
      "exemptNationalities": [],
@@ -1404,26 +1407,28 @@
      ],
      "windowDays": null,
      "leadDays": 14,
-     "fee": "Not stated on the MOFA page. Check with the Japanese mission.",
-     "url": "https://www.mofa.go.jp/j_info/visit/visa/short/novisa.html",
-     "validity": "3 years or until the passport expires, whichever is first. Each stay up to 15 days.",
+     "fee": "Free online through JAVES. A paper registration at a JVAC in Indonesia is also free, but the JVAC charges a service fee.",
+     "url": "https://www.evisa.mofa.go.jp/personal/logintoko",
+     "validity": "3 years or until the passport expires, whichever is first. Each stay up to 15 days. Register again if you get a new passport or change your name.",
      "steps": [
       "Check your passport is an ICAO e-passport (chip symbol on the cover).",
-      "Register it with a Japanese mission in Indonesia. If you live in Indonesia, you can register online.",
-      "Carry the Visa Waiver Registration notice. Airlines may ask for it at check-in.",
-      "For stays over 15 days, or without an e-passport, apply for a visa instead."
+      "Create an account on the Japan Visa Exemption System (JAVES) and submit the pre-registration with your passport scans.",
+      "Allow about 2 working days. You get an email when the Visa Exemption Registration Notice is ready.",
+      "At check-in and at Japan immigration, show the notice on your own phone or tablet. Printouts and screenshots are not accepted."
      ],
      "sources": [
       "https://www.mofa.go.jp/j_info/visit/visa/short/novisa.html",
+      "https://www.denpasar.id.emb-japan.go.jp/itpr_ja/11_000001_00760.html",
+      "https://www.denpasar.id.emb-japan.go.jp/itpr_id/02_02visa_01.html",
       "https://www.sg.emb-japan.go.jp/itpr_en/visit.html"
      ],
      "confidence": "medium",
-     "note": "MOFA says registration is with Japan's missions in Indonesia. The Embassy of Japan in Singapore only takes waiver registrations from Qatar nationals. So Indonesians living in Singapore may need to register through Indonesia or apply for a visa (eVISA via the JVAC) instead. Without registration you can be refused boarding or entry."
+     "note": "Online JAVES registration has been available since 27 Mar 2023 and covers arrivals by air only. For a ferry arrival, get the paper visa waiver sticker at a JVAC in Indonesia. Registration is processed by Japan's missions in Indonesia. The official pages do not say whether you must live in Indonesia to use JAVES, so Indonesians living in Singapore should check, or apply for a tourist eVISA through the JVAC in Singapore instead. The Embassy of Japan in Singapore only takes waiver registrations from Qatar nationals. Entering without registration means refusal at the Japanese airport. For stays over 15 days, or without an e-passport, apply for a visa."
     }
    ],
-   "transit": "Changing planes airside at a Japanese airport needs no visa and no Visit Japan Web, as long as you stay in the international transit area. Japan's International Tourist Tax rose from 1,000 to 3,000 yen per departure on 1 Jul 2026. It is collected in the air fare, and passengers leaving within 24 hours of arrival are not charged.",
-   "landSea": "Sea and cruise arrivals (for example the Busan to Fukuoka ferry): paper disembarkation cards and customs forms are accepted at all ports. Customs e-Gates are only at 7 airports. It is not officially confirmed that the Visit Japan Web QR code is read at seaports, so be ready to fill in paper forms. A JAPAN eVISA is valid by sea only on scheduled ferries from Busan or Shanghai.",
-   "source": "research"
+   "transit": "Changing planes airside at a Japanese airport needs no visa and no Visit Japan Web, as long as you stay in the international transit area. Japan's International Tourist Tax rose from 1,000 to 3,000 yen per departure on 1 Jul 2026. It is collected in the air fare. Passengers leaving within 24 hours of arriving by air and children under 2 are not charged. Tickets bought before 1 Jul 2026 with a fixed departure date keep the 1,000 yen rate.",
+   "landSea": "Sea and cruise arrivals (for example the Busan to Fukuoka ferry): paper disembarkation cards and customs forms are accepted at all ports. Customs e-Gates are only at 7 airports. It is not officially confirmed that the Visit Japan Web QR code is read at seaports, so be ready to fill in paper forms. A JAPAN eVISA is valid by sea only on scheduled ferries from Busan or Shanghai. Indonesian online (JAVES) visa waiver registration covers air arrivals only.",
+   "source": "verify"
   },
   "KR": {
    "items": [
@@ -1457,7 +1462,8 @@
       "CH",
       "LI",
       "AU",
-      "NZ"
+      "NZ",
+      "IL"
      ],
      "onlyNationalities": [
       "GY",
@@ -1577,7 +1583,7 @@
      ],
      "windowDays": null,
      "leadDays": 7,
-     "fee": "KRW 10,000 per person (about USD 7 to 8), plus an online payment fee. Not refundable, even if refused.",
+     "fee": "KRW 10,000 per person (about USD 7 to 8), plus a 3% online payment fee. Not refundable, even if refused.",
      "url": "https://www.k-eta.go.kr/",
      "validity": "3 years, or until the passport expires if sooner. Multiple entries. Each stay is limited to your visa-free period.",
      "effectiveUntil": "2026-12-31",
@@ -1591,11 +1597,14 @@
       "https://www.k-eta.go.kr/portal/board/viewboarddetail.do?bbsSn=299706",
       "https://www.k-eta.go.kr/portal/guide/viewetaalification.do",
       "https://www.k-eta.go.kr/portal/guide/viewetaapplication.do",
-      "https://overseas.mofa.go.kr/ch-en/brd/m_23429/view.do?seq=22&page=1",
-      "https://www.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761395"
+      "https://overseas.mofa.go.kr/ch-en/brd/m_23429/view.do?seq=22",
+      "https://overseas.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761438",
+      "https://www.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761395",
+      "https://embassies.gov.il/seoul/en/announcements/israelis-exempt-keta",
+      "https://www.mofa.go.kr/il-en/brd/m_11417/view.do?seq=759921"
      ],
      "confidence": "high",
-     "note": "The temporary exemption for the listed countries and regions runs until 31 Dec 2026 (KST). Nobody needs a K-ETA if they are 17 or under or 65 or over on the arrival date, hold a Korean visa, or stay airside in transit. With an approved K-ETA you do not submit an arrival card. A new passport needs a new K-ETA. Exempt nationals may still apply voluntarily (fee applies) to skip the arrival card. Indian, Indonesian, Chinese and Filipino passport holders are not K-ETA eligible and need a visa."
+     "note": "The temporary exemption runs until 31 Dec 2026 (KST). The K-ETA notice does not publish the list. Korean embassy notices name 22 countries and regions plus Switzerland and Liechtenstein, and Israel's embassy in Seoul says Israelis are also exempt until 31 Dec 2026. The K-ETA site shows a pop-up if you are exempt when you scan your passport. Nobody needs a K-ETA if they are 17 or under or 65 or over on the arrival date, hold a Korean visa, stay airside in transit, or fly direct to Jeju Island. With an approved K-ETA you do not submit an arrival card. A new passport needs a new K-ETA. Exempt nationals may still apply voluntarily (fee applies) to skip the arrival card. Indian, Indonesian, Chinese and Filipino passport holders are not K-ETA eligible and need a visa."
     },
     {
      "id": "kr-k-eta-2027",
@@ -1722,7 +1731,7 @@
      ],
      "windowDays": null,
      "leadDays": 7,
-     "fee": "KRW 10,000 per person, plus an online payment fee. Not refundable.",
+     "fee": "KRW 10,000 per person, plus a 3% online payment fee. Not refundable.",
      "url": "https://www.k-eta.go.kr/",
      "validity": "3 years, or until the passport expires if sooner. Multiple entries.",
      "effectiveFrom": "2027-01-01",
@@ -1738,7 +1747,7 @@
       "https://www.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761475"
      ],
      "confidence": "medium",
-     "note": "The official notice only says the exemption ends 31 Dec 2026. As of 15 Nov 2026 no extension has been announced. The last two extensions were announced in mid to late December, so this may change. The age exemptions (17 or under, 65 or over) still apply."
+     "note": "The official notice only says the exemption ends 31 Dec 2026. As of 15 Nov 2026 no extension has been announced. The last two extensions were announced on 19 Dec 2024 and 23 Dec 2025, so this may change late in December. The age exemptions (17 or under, 65 or over), the transit exemption and the direct-to-Jeju exemption still apply."
     },
     {
      "id": "kr-e-arrival-card",
@@ -1760,23 +1769,24 @@
      "url": "https://www.e-arrivalcard.go.kr/",
      "validity": "One entry. Expires 72 hours after submission, or once you pass immigration.",
      "steps": [
-      "Open e-arrivalcard.go.kr within 3 days of arrival (Korea time).",
-      "Enter your passport details, arrival flight number, address in Korea and contact details. One person can file for up to 9 people on a phone.",
+      "Open e-arrivalcard.go.kr within 3 days before arrival (Korea time).",
+      "Enter your passport details, flight or ship, address in Korea and contact details. One person can file for up to 9 people on a phone, or more on a PC, if all arrive on the same flight or ship and day.",
       "Keep the issuance number from the email. You do not need a printout.",
       "If your plans change, edit the card on the site before immigration."
      ],
      "sources": [
       "https://www.e-arrivalcard.go.kr/portal/guide/eacGuide.do",
       "https://www.e-arrivalcard.go.kr/portal/guide/eacTargetGuide.do",
-      "https://www.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761395"
+      "https://www.mofa.go.kr/sg-en/brd/m_2435/view.do?seq=761395",
+      "https://www.immigration.go.kr/bbs/immigration/223/593810/artclView.do"
      ],
      "confidence": "medium",
-     "note": "You need an arrival card in some form. The official guide still lets you choose a paper card. Paper cards may not be handed out on every flight, so filing online is the safest choice. Not needed if you hold an approved K-ETA, unless you enter on a visa. Singapore citizens aged 17 and over can register for automated immigration clearance at Incheon Airport (from 1 Dec 2025)."
+     "note": "You need an arrival card in some form. The official guide still lets you choose a paper card. Many travel sites say paper cards ended on 1 Jan 2026, but no official notice confirms this, so filing online is the safest choice. Not needed if you hold an approved K-ETA, unless you enter on a visa. Group visa holders (for example Chinese, Indonesian, Filipino and Indian tour groups) and visa-free Chinese tour groups do not file one. The arrival date can only be changed within 3 days of the first filing. Singapore citizens aged 17 and over can register for automated immigration clearance at Incheon Airport (from 1 Dec 2025)."
     }
    ],
-   "transit": "Transit passengers who stay airside at Incheon need no K-ETA and no arrival card. If your nationality needs a K-ETA, you must get one before travel if you plan to leave the transit area, for example to collect checked bags or change your itinerary.",
-   "landSea": "Ferry arrivals (for example Fukuoka to Busan) follow the same rules. Get any K-ETA before boarding the ship, and file the e-Arrival Card within 3 days of arrival. Cruise passengers are exempt from K-ETA.",
-   "source": "research"
+   "transit": "Transit passengers who stay airside at Incheon need no K-ETA and no arrival card. If your nationality needs a K-ETA, you must get one before travel if you plan to leave the transit area, for example to collect checked bags or change your itinerary, and you then also file the e-Arrival Card if you have no K-ETA.",
+   "landSea": "Ferry arrivals (for example Fukuoka to Busan) follow the same rules. Get any K-ETA before boarding the ship, and file the e-Arrival Card within 3 days before arrival. Official K-ETA pages do not list cruise passengers as exempt. Some cruise groups land under a tourist landing permit arranged by the ship, so check with your cruise line.",
+   "source": "verify"
   },
   "CN": {
    "items": [
@@ -1785,7 +1795,7 @@
      "kind": "arrival-card",
      "name": "China Online Arrival Card (Foreigner Arrival Card, National Immigration Administration)",
      "required": false,
-     "who": "All foreign nationals entering mainland China, by air, land or sea. Seven groups are exempt, including 24-hour airside transit passengers, group visa holders and PRC permanent residence card holders.",
+     "who": "All foreign nationals entering mainland China, by air, land or sea. Seven groups are exempt, including 24-hour airside transit passengers, group visa holders, people using the fast lanes (e-channels) and PRC permanent residence card holders.",
      "exemptNationalities": [
       "CN",
       "HK",
@@ -1812,15 +1822,18 @@
      "sources": [
       "https://en.nia.gov.cn/n147413/c187308/content.html",
       "https://my.china-embassy.gov.cn/eng/fwzc/zytz/202512/t20251203_11765712.htm",
-      "https://s.nia.gov.cn/mps/zcjd/202507/t20250750_1010.html"
+      "https://s.nia.gov.cn/mps/zcjd/202507/t20250750_1010.html",
+      "https://my.china-embassy.gov.cn/eng/fwzc/lsyw/qz/202508/t20250801_11681401.htm",
+      "https://www.mfa.gov.cn/wjbzwfwpt/kzx/tzgg/202511/t20251103_11746081.html",
+      "https://kab.sww.sh.gov.cn/xwzx/001001/20260922/63401467-811e-48ef-8aab-f06e68a666eb.html"
      ],
      "confidence": "high",
-     "note": "Launched 20 Nov 2025. You need an arrival card either way, but filing online saves time at the border. The official notices give no filing window. Some guides say within 3 days of arrival, but the NIA does not confirm this. Visa-free entry: Singapore (since 9 Feb 2024) and Malaysia (since 17 Jul 2025) ordinary passports are covered by mutual visa exemption treaties with no end date. Both allow up to 30 days per entry, and Malaysia also caps stays at 90 days in any 180. China's separate one-way 30-day visa-free list ends 31 Dec 2026 unless extended. It does not cover Indonesia, India or the Philippines, who need a visa."
+     "note": "Launched 20 Nov 2025. You need an arrival card either way, but filing online saves time at the border. The official notices give no filing window. Some guides say within 3 days of arrival, but the NIA does not confirm this. Visa-free entry: Singapore (since 9 Feb 2024) and Malaysia (since 17 Jul 2025) ordinary passports are covered by mutual visa exemption agreements with no set end date (Malaysia's renews automatically every 5 years). Both allow up to 30 days per entry, and Malaysia also caps stays at 90 days in any 180. China's separate one-way 30-day visa-free list ends 31 Dec 2026 unless extended. As of 15 Nov 2026 no general extension has been published. That list does not cover Indonesia, India or the Philippines, who need a visa for most of China. Indonesian and Philippine passport holders can enter Hainan Province visa-free for up to 30 days through Hainan's own ports."
     }
    ],
-   "transit": "Airside transit within 24 hours without leaving the restricted area needs no visa and no arrival card. To leave the airport on a layover you need visa-free entry, a visa, or the 240-hour visa-free transit. The 240-hour transit covers 55 countries, including Indonesia since 12 Jun 2025. It needs a confirmed onward ticket to a third country or region and is only valid at designated ports.",
+   "transit": "Airside transit within 24 hours without leaving the restricted area needs no visa and no arrival card. Leaving the restricted area during such a transit needs a temporary entry permit from border inspection. To leave the airport on a layover you otherwise need visa-free entry, a visa, or the 240-hour visa-free transit. The 240-hour transit covers 57 countries, including Singapore, Indonesia (since 12 Jun 2025), and Kyrgyzstan and Vietnam (since 20 Aug 2026). It needs an ordinary passport, a confirmed onward ticket to a third country or region, entry through one of 65 designated ports, and the arrival card. India and the Philippines are not covered.",
    "landSea": "Entering from Hong Kong (Lo Wu, Lok Ma Chau, Shenzhen Bay, Heung Yuen Wai, the Hong Kong-Zhuhai-Macao Bridge, or high-speed rail at West Kowloon, where mainland immigration is inside the station) or from Macao (Gongbei, Hengqin, Qingmao): you clear Hong Kong or Macao exit first, then mainland entry. Foreigners must give the arrival card at the mainland checkpoint, so file online before you cross.",
-   "source": "research"
+   "source": "verify"
   },
   "TW": {
    "items": [
@@ -1855,20 +1868,19 @@
       "https://www.boca.gov.tw/cp-149-4486-7785a-2.html"
      ],
      "confidence": "high",
-     "note": "Mandatory. Paper arrival cards ended on 1 Oct 2025, and immigration cannot process you without a TWAC. The filing window grew from 3 to 7 days on 15 Jul 2026. Not needed if you stay airside in transit. Beware of fake TWAC sites that charge fees. Singapore and Malaysia passport holders get 30 days visa-free. Philippine, Thai and Bruneian nationals get 14 days on a trial that ends 31 Jul 2027."
+     "note": "Mandatory. The online card fully replaced paper cards on 1 Oct 2025, and immigration cannot process you without a TWAC. The filing window grew from 3 to 7 days on 15 Jul 2026. Not needed if you stay airside in transit. Beware of fake TWAC sites that charge fees. Singapore and Malaysia passport holders get 30 days visa-free. Philippine, Thai and Bruneian nationals get 14 days on a trial that ends 31 Jul 2027."
     },
     {
      "id": "tw-travel-authorization-certificate",
      "kind": "eta",
      "name": "ROC (Taiwan) Travel Authorization Certificate",
      "required": true,
-     "who": "Indian, Indonesian, Vietnamese, Cambodian, Lao and Myanmar passport holders who want to visit Taiwan without a visa. You must hold a qualifying foreign visa or residence permit, or have held an ROC visa or resident card in the past 10 years.",
+     "who": "Indian, Indonesian, Vietnamese, Lao and Myanmar passport holders who want to visit Taiwan without a visa. You must hold a qualifying foreign visa or residence permit, or have held an ROC visa or resident card in the past 10 years.",
      "exemptNationalities": [],
      "onlyNationalities": [
       "IN",
       "ID",
       "VN",
-      "KH",
       "LA",
       "MM"
      ],
@@ -1878,26 +1890,28 @@
      ],
      "windowDays": null,
      "leadDays": 14,
-     "fee": "Not stated on the official BOCA page.",
+     "fee": "No fee is listed on the official pages.",
      "url": "https://niaspeedy.immigration.gov.tw/nia_southeast/",
      "validity": "90 days, multiple entries, up to 30 days per stay.",
      "steps": [
-      "Check you hold a valid visa or residence card (or one that expired less than 10 years ago) from the US, Canada, UK, a Schengen state, Japan, Korea, Australia or New Zealand.",
+      "Check you hold a valid visa or residence card (or one that expired less than 10 years ago) from the US, Canada, UK, a Schengen state, Japan, Korea, Australia or New Zealand, or an ROC visa or resident card from the past 10 years.",
       "Apply online on the National Immigration Agency site with your passport and visa details.",
-      "Print the approved certificate and carry it with the supporting visa or card.",
-      "Still file the TWAC arrival card before each entry."
+      "Print the approved certificate and carry it with the supporting visa or card and your onward or return ticket.",
+      "Still file the TWAC arrival card within 7 days before each entry."
      ],
      "sources": [
       "https://www.boca.gov.tw/cp-220-1885-b6ae7-2.html",
+      "https://www.boca.gov.tw/cp-56-8253-ff790-2.html",
+      "https://www.boca.gov.tw/dl-4750-9804fc4d943a4d75ae534cbe285210fc.html",
       "https://www.boca.gov.tw/cp-149-4486-7785a-2.html"
      ],
      "confidence": "medium",
-     "note": "Singapore passes are not on the qualifying list. Indonesians with a valid Japan Visa Waiver Registration also qualify. Work permits and ROC visas marked FL or X do not count. The passport must be valid for at least 6 months. The BOCA page was last updated in 2023 and its nationality lists are inconsistent, so check before applying. Filipinos currently use visa-free entry (trial until 31 Jul 2027) instead. Anyone who does not qualify needs a visa."
+     "note": "Cambodian nationals lost eligibility on 1 Aug 2026. MOFA confirmed in Jul 2026 that the scheme continues for India, Indonesia, Vietnam, Myanmar and Laos. BOCA's Oct 2026 summary adds conditions: a Japan or Korea visa only counts with a record of entry to Japan or Korea, Vietnamese nationals cannot use Japan or Korea visas, and an Australian or New Zealand eVisa must still be valid. Singapore passes are not on the qualifying list. Indonesians with a valid Japan Visa Waiver Registration also qualify. You must never have worked in Taiwan as a blue-collar worker. Work permits and ROC visas marked FL or X do not count. The passport must be valid for at least 6 months. Request a new certificate 7 days before the current one expires. Filipinos currently use visa-free entry (trial until 31 Jul 2027) instead. Anyone who does not qualify needs a visa."
     }
    ],
-   "transit": "Airside transit at Taoyuan (TPE) needs no visa, no eVisa and no TWAC, as long as you stay in the international transit area. Transfer passengers pass a transfer counter and a security re-check. Liquids over 100 ml, including duty-free bought before your first flight, can be taken away. Scoot TR892 Singapore to Sapporo (CTS) is a through flight that stops at TPE. Published schedules show about 1 hour 45 minutes on the ground, with arrival at CTS around 17:00 to 17:20 Japan time, but check your booking. Follow crew instructions: if asked to leave the aircraft, take your belongings, go through transit screening and re-board at the gate. There is no Taiwan immigration and no TWAC. Your entry paperwork is for Japan (Visit Japan Web).",
+   "transit": "Airside transit at Taoyuan (TPE) needs no visa, no eVisa and no TWAC, as long as you stay in the international transit area. Transfer passengers pass a transfer counter and a security re-check, so liquids over 100 ml can be taken away. Scoot TR892 Singapore to Sapporo (CTS) is a through flight that stops at TPE. Published schedules for Nov 2026 to Mar 2027 show about 06:10 departure from Singapore, about 11:00 arrival at TPE, about 12:15 to 12:20 departure, and about 17:00 arrival at CTS (Japan time), so about 1 hour 15 to 20 minutes on the ground. From 28 Mar 2027 the schedule moves later (about 07:00 departure, about 17:55 arrival). These times come from flight schedule data, not an official source, so check your booking. Passengers are normally asked to leave the aircraft with all belongings, go through transit screening and re-board at the gate. There is no Taiwan immigration and no TWAC. Your entry paperwork is for Japan (Visit Japan Web).",
    "landSea": "Ferry and cruise passengers entering Taiwan must also file TWAC within 7 days before arrival. TWAC QR codes are posted at ports.",
-   "source": "research"
+   "source": "verify"
   },
   "HK": {
    "items": [
@@ -1922,27 +1936,27 @@
      "url": "https://www.gov.hk/en/apps/immdes2indianparreg.htm",
      "validity": "6 months, or until the passport expires if sooner. Multiple visits of up to 14 days each.",
      "steps": [
-      "Apply online on GovHK. The result is instant.",
+      "Apply online on GovHK with details exactly as in your passport. The result is instant.",
       "Print the notification slip on blank A4 white paper and sign it.",
-      "Show the slip with your passport at check-in and at Hong Kong immigration.",
+      "Show the slip with the same passport at check-in and at Hong Kong immigration.",
       "If registration fails, apply to the Immigration Department for a visa (about 4 weeks)."
      ],
      "sources": [
       "https://www.immd.gov.hk/eng/services/visas/pre-arrival_registration_for_indian_nationals.html"
      ],
      "confidence": "high",
-     "note": "Not needed for direct air transit without leaving the transit area. Also not needed if you hold a valid Hong Kong visa, an HKSAR Travel Pass, or e-Channel enrolment. A successful registration does not guarantee entry."
+     "note": "Your passport must be valid for at least 6 months. You cannot register again until the current registration expires, and a new passport needs a new registration. Not needed for direct air transit without leaving the transit area. Also not needed if you hold a valid Hong Kong visa, an HKSAR Travel Pass, or e-Channel enrolment. A successful registration does not guarantee entry."
     }
    ],
    "transit": "Airside transit at Hong Kong International Airport needs no paperwork. Hong Kong dropped arrival and departure cards for all visitors on 16 Oct 2024. Indian nationals need PAR only if they leave the transit area.",
-   "landSea": "Hong Kong has no arrival card at any land or sea checkpoint. To Macao: take a ferry from Hong Kong, or the shuttle bus over the Hong Kong-Zhuhai-Macao Bridge from the Hong Kong Port to the Macao Port. You clear Hong Kong exit and Macao entry, with no forms. To mainland China (Lo Wu, Lok Ma Chau, Shenzhen Bay, or high-speed rail at West Kowloon): file China's online arrival card before crossing. Singapore citizens aged 11 and over with 2 or more visits in the past 24 months can enrol free for the visitor e-Channel.",
-   "source": "research"
+   "landSea": "Hong Kong has no arrival card at any land or sea checkpoint. To Macao: take a ferry from Hong Kong, or the shuttle bus over the Hong Kong-Zhuhai-Macao Bridge from the Hong Kong Port to the Macao Port. You clear Hong Kong exit and Macao entry, with no forms. To mainland China (Lo Wu, Lok Ma Chau, Shenzhen Bay, or high-speed rail at West Kowloon): file China's online arrival card before crossing. Optional e-Channel: Singapore citizens aged 11 and over with 2 or more visits in the past 24 months can enrol free in person at Immigration Headquarters, the airport arrival halls or the Macao Ferry Terminal. Since 16 Sep 2026, other frequent visitors aged 18 or over with a designated e-passport and 2 or more arrivals through Hong Kong International Airport in the past 24 months can enrol before arrival in the Immigration Department's Go Hong Kong app.",
+   "source": "verify"
   },
   "MO": {
    "items": [],
    "transit": "Macao International Airport has no arrival card. Visitors do not get a passport stamp. Instead they receive a printed Slip of Authorization to Stay showing the permitted stay. Keep it until you leave.",
-   "landSea": "Macao checkpoints (ferry terminals, the Hong Kong-Zhuhai-Macao Bridge Macao Port, Border Gate) have no arrival card. Keep the printed stay slip. Going on to Zhuhai (Gongbei, Hengqin or Qingmao): foreigners file China's online arrival card. Cash or cheques worth MOP 120,000 or more must be declared at the customs Red Channel.",
-   "source": "research"
+   "landSea": "Macao checkpoints (ferry terminals, the Hong Kong-Zhuhai-Macao Bridge Macao Port, Border Gate) have no arrival card. Keep the printed stay slip. Going on to Zhuhai (Gongbei, Hengqin or Qingmao): foreigners file China's online arrival card. Cash or cheques worth MOP 120,000 or more must be declared at the customs Red Channel. Optional: Singapore and Malaysian passport holders can register free in person at Macao checkpoints to use the automated channels (passport valid more than 90 days; ages 7 to 17 with a parent or guardian).",
+   "source": "verify"
   },
   "AE": {
    "items": [
