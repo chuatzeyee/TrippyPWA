@@ -10,6 +10,8 @@ import { getHomeCurrency } from '../data/user-prefs.js';
 import { formatNumber } from '../lib/locale.js';
 import { showToast } from '../components/toast.js';
 import { logger } from '../lib/logger.js';
+import { bookedFlightsHtml, bindBookedFlights } from './booked-flights.js';
+import { renderPassportPicker, isTripAbroad } from './passport-picker.js';
 
 const TOTAL_STEPS = 8;
 
@@ -131,6 +133,7 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 
 let _homeCoords = null;
 let _homeCoordsLoaded = false;
+let _home = { name: '', flag: '', nationality: '' };
 
 async function loadHomeCoords() {
   if (_homeCoordsLoaded) return _homeCoords;
@@ -138,6 +141,7 @@ async function loadHomeCoords() {
   try {
     const { fetchProfile } = await import('../data/profile-repository.js');
     const { data: profile } = await fetchProfile();
+    _home = { name: profile?.home_city || '', flag: profile?.home_flag || '', nationality: profile?.nationality || '' };
     if (profile?.home_city) {
       const match = DESTINATIONS.find(d => d.name.toLowerCase() === profile.home_city.toLowerCase());
       if (match) _homeCoords = { lat: match.lat, lng: match.lng };
@@ -151,10 +155,15 @@ function computeNearby(dest) {
   return haversineKm(_homeCoords.lat, _homeCoords.lng, dest.lat, dest.lng) < NEARBY_THRESHOLD_KM;
 }
 
+// Nearby when every destination other than home is close by. A multi-city
+// route that starts at home (Singapore, Johor Bahru & Kuala Lumpur) is judged
+// by the other cities, not by its first stop (0 km away).
 function isNearbyTrip() {
   if (!state) return false;
-  const dest = state.multiCity ? state.destinations?.[0] : state.destination;
-  return computeNearby(dest);
+  const stops = (state.multiCity ? state.destinations : [state.destination]) || [];
+  const home = _home.name.toLowerCase();
+  const away = stops.filter(d => d && d.name?.toLowerCase() !== home);
+  return away.length > 0 && away.every(computeNearby);
 }
 
 function isSameCityTrip() {
@@ -894,7 +903,26 @@ function renderTravelerStepper(el) {
       const next = Math.max(1, Math.min(20, count + parseInt(btn.dataset.travelerStep)));
       state = updateWizardField(state, 'travelers', next);
       renderTravelerStepper(el);
+      renderPassports(document.getElementById('passport-section'));
     });
+  });
+}
+
+// Passports for the trip's entry requirements; only for trips abroad.
+async function renderPassports(el) {
+  if (!el) return;
+  await loadHomeCoords();
+  if (!el.isConnected || !isTripAbroad(state, _home.flag)) { el.innerHTML = ''; return; }
+  renderPassportPicker(el, {
+    passports: state.passports, own: _home.nationality, travelers: state.travelers || 1,
+    onChange: (passports, ownChanged) => {
+      state = updateWizardField(state, 'passports', passports);
+      if (ownChanged && passports[0]) {
+        _home = { ..._home, nationality: passports[0] };
+        import('../data/profile-repository.js').then(({ updateProfile }) => updateProfile({ nationality: passports[0] })).catch(() => {});
+      }
+      renderPassports(el);
+    },
   });
 }
 
@@ -904,6 +932,7 @@ function renderStep2(el) {
     <p class="wizard-step-subtitle">Lock in your dates or let fate decide</p>
 
     <div id="traveler-section"></div>
+    <div id="passport-section"></div>
 
     <div class="date-mode-cards" style="margin-top: var(--sp-6);">
       <div class="date-mode-card ${state.dates.mode === 'fixed' ? 'date-mode-card--active' : ''}" data-date-mode="fixed" role="button" tabindex="0" aria-pressed="${state.dates.mode === 'fixed'}">
@@ -921,6 +950,7 @@ function renderStep2(el) {
   `;
 
   renderTravelerStepper(el.querySelector('#traveler-section'));
+  renderPassports(el.querySelector('#passport-section'));
 
   el.querySelectorAll('[data-date-mode]').forEach(card => {
     card.addEventListener('click', () => {
@@ -1298,21 +1328,7 @@ function renderStep4(el) {
       ${settled ? 'Already Settled' : 'Already booked?'}
     </button>
 
-    ${settled ? `
-      <div class="settled-fields">
-        <label class="settled-field">
-          <span class="settled-field-label">Flight number</span>
-          <input type="text" class="settled-input" data-settled-field="flightNumber"
-            placeholder="e.g. SQ 321" value="${escapeHtml(state.flights.flightNumber || '')}">
-        </label>
-        <label class="settled-field">
-          <span class="settled-field-label">Arrival date at destination</span>
-          <input type="date" class="settled-input" data-settled-field="arrivalDate"
-            value="${state.flights.arrivalDate || ''}">
-        </label>
-        <p class="settled-hint">Both fields are optional</p>
-      </div>
-    ` : `
+    ${settled ? bookedFlightsHtml(state.flights) : `
       <div class="wizard-section-label">Cabin class</div>
       <div class="fare-cards">
         ${fares.map(f => `
@@ -1361,11 +1377,9 @@ function renderStep4(el) {
   });
 
   if (settled) {
-    el.querySelectorAll('[data-settled-field]').forEach(input => {
-      input.addEventListener('input', () => {
-        state.flights = { ...state.flights, [input.dataset.settledField]: input.value };
-        state = updateWizardField(state, 'flights', state.flights);
-      });
+    bindBookedFlights(el, () => state.flights, (next) => {
+      state.flights = next;
+      state = updateWizardField(state, 'flights', state.flights);
     });
     return;
   }
@@ -1761,6 +1775,11 @@ async function renderGeneration() {
     startGeneration(trip.id, state);
     clearWizardState();
     navigate('/');
+    // Confirm the request and follow the planning live (closable; planning
+    // carries on in the background).
+    import('../components/generation-popup.js')
+      .then(({ showGenerationPopup }) => showGenerationPopup(trip))
+      .catch(err => logger.warn('generation', 'Generation popup unavailable', { error: err?.message }));
   } catch (err) {
     logger.error('generation', 'Wizard generation threw', { error: err?.message });
     app.innerHTML = `

@@ -2050,6 +2050,86 @@
   margin-top: var(--sp-1);
 }
 
+/* Passports (step 2, trips abroad only) */
+.pp { margin-top: var(--sp-6); }
+.pp-hint { margin: calc(-1 * var(--sp-2)) 0 var(--sp-3); font: var(--text-caption); color: var(--ink-secondary); }
+.pp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+.pp-who { width: 56px; font-size: 0.85rem; color: var(--ink-secondary); }
+.pp-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+.pp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 36px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.pp-chip:has(.pp-x) { padding-right: 4px; }
+.pp-flag { border-radius: 3px; object-fit: cover; }
+.pp-x {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 1.05rem;
+  color: var(--ink-ghost);
+  cursor: pointer;
+}
+.pp-x:hover { background: var(--border); color: var(--ink); }
+.pp-select select {
+  min-height: 36px;
+  padding: 0 var(--sp-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+.pp-select select:hover { color: var(--ink); border-color: var(--ink-ghost); }
+.pp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Booked flights: one group per direction, two fields a row on wider screens. */
+.booked-leg {
+  margin: 0;
+  padding: var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+
+.booked-leg-title {
+  padding: 0 var(--sp-2);
+  margin-left: calc(-1 * var(--sp-2));
+  font: var(--text-h3);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.booked-leg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+  margin-top: var(--sp-2);
+}
+
+.booked-leg .settled-input { width: 100%; min-width: 0; }
+.booked-flights .settled-hint { text-align: left; line-height: 1.5; }
+
 /* ===== Light Mode ===== */
 [data-theme="light"] .wizard-header {
   background: rgba(245, 241, 234, 0.88);

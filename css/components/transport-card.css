@@ -1,0 +1,233 @@
+/* ===== Transport card (bus, train, ferry, car, taxi) =====
+   Each leg reads like the journey: board or embark, any changes, get off or
+   disembark, then the facts. Names wrap; nothing is cut off. */
+
+.tl-legs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: var(--sp-4);
+}
+
+.tl-leg {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  overflow: hidden;
+}
+
+.tl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-inset);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Matches the flight card's "Outbound" / "Return" label. */
+.tl-dir {
+  font: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+}
+
+.tl-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tl-mode .tl-icon { color: var(--terracotta); }
+
+.tl-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+}
+
+.tl-operator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font: var(--text-h3);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.tl-service {
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+/* Route: a dashed spine with a ring where you board and a dot where you get off. */
+.tl-route {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0 0 0 var(--sp-6);
+  list-style: none;
+}
+
+.tl-route::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 6px;
+  border-left: 2px dashed var(--border-strong);
+}
+
+.tl-stop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tl-stop::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: calc(-1 * var(--sp-6));
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid var(--terracotta);
+  border-radius: 50%;
+  background: var(--surface-solid);
+}
+
+.tl-stop--end::before { background: var(--terracotta); }
+
+.tl-stop-kind {
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+.tl-stop-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.tl-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.tl-step-num {
+  position: absolute;
+  top: 1px;
+  left: calc(-1 * var(--sp-6) - 1px);
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.tl-step-text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+  overflow-wrap: anywhere;
+}
+
+.tl-step-text .tl-icon { flex-shrink: 0; color: var(--ink-ghost); }
+.tl-step-time { color: var(--ink-ghost); font-variant-numeric: tabular-nums; }
+
+.tl-change {
+  margin: calc(-1 * var(--sp-2)) 0 0;
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.tl-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--sp-3);
+  margin: 0;
+  padding: var(--sp-3) 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.tl-facts div { min-width: 0; }
+.tl-facts dt { font: var(--text-caption); color: var(--ink-secondary); }
+.tl-facts dd {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.tl-border {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--amber) 10%, transparent);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.tl-border .tl-icon { flex-shrink: 0; margin-top: 1px; color: var(--amber); }
+
+.tl-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font: var(--text-caption);
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+
+.tl-tip .tl-icon { flex-shrink: 0; margin-top: 2px; color: var(--ink-ghost); }
+
+.tl-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin-top: auto;
+}
+
+[data-theme="light"] .tl-change { color: color-mix(in srgb, var(--amber) 60%, var(--ink)); }
+[data-theme="light"] .tl-border .tl-icon { color: color-mix(in srgb, var(--amber) 70%, var(--ink)); }

@@ -820,6 +820,18 @@ export async function updateActivityById(activityId, updates, { previous } = {})
   return { error: error?.message || null, photoReset: !error && resetPhoto };
 }
 
+/**
+ * Passports the trip's group travels on (lowercase ISO2 codes), kept in the
+ * trip's wizard_state. Used by the entry requirements card.
+ */
+export async function updateTripPassports(tripId, wizardState, passports) {
+  const clean = [...new Set((passports || []).map(p => String(p).toLowerCase()).filter(p => /^[a-z]{2}$/.test(p)))];
+  const { error } = await supabase.from('trips')
+    .update({ wizard_state: { ...(wizardState || {}), passports: clean } })
+    .eq('id', tripId);
+  return { data: error ? null : clean, error: error ? 'Could not save passports' : null };
+}
+
 export async function updateTripStatus(id, status) {
   // Defense in depth: RLS already restricts updates to the owner, but filtering
   // by user_id makes the intent explicit and consistent with the other mutations.

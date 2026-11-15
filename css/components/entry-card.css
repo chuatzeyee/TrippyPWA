@@ -1,0 +1,269 @@
+/* ===== Entry requirements card =====
+   Country by country, in trip order; a row per passport when the group holds
+   more than one; each piece of paperwork is a tickable item with when and how. */
+
+.ec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.ec-loading,
+.ec-ask {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+
+.ec-flag {
+  flex-shrink: 0;
+  width: 20px;
+  height: 15px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+/* ----- Passports in the group ----- */
+.ec-passports-label {
+  margin: 0 0 var(--sp-2);
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+.ec-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ec-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ec-chip-x {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ink-ghost);
+  cursor: pointer;
+}
+
+.ec-chip-x:hover { background: var(--border); color: var(--ink); }
+
+.ec-add select {
+  height: 34px;
+  padding: 0 var(--sp-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+.ec-add select:hover { color: var(--ink); border-color: var(--ink-ghost); }
+.ec-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ----- Countries ----- */
+.ec-country {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+.ec-country-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font: var(--text-h3);
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.ec-role {
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+.ec-row { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.ec-passport {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.ec-visa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.ec-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--teal); }
+.ec-visa--note .ec-dot { background: var(--ink-ghost); }
+.ec-visa--action .ec-dot { background: var(--amber); }
+.ec-visa--blocked .ec-dot { background: var(--error); }
+
+.ec-transit {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+
+/* ----- Paperwork items ----- */
+.ec-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface-inset);
+}
+
+.ec-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  cursor: pointer;
+}
+
+.ec-check input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--terracotta);
+  cursor: pointer;
+}
+
+.ec-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.ec-item.is-done .ec-item-name { text-decoration: line-through; color: var(--ink-secondary); }
+.ec-item.is-done > :not(.ec-check) { display: none; }
+
+.ec-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--sp-3);
+  margin: 0 0 0 calc(18px + var(--sp-3));
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+.ec-tag {
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-pill);
+  font-weight: 600;
+  border: 1px solid var(--border-strong);
+}
+
+.ec-tag--required { border-color: color-mix(in srgb, var(--amber) 55%, transparent); color: var(--amber); }
+
+.ec-item-when,
+.ec-note,
+.ec-steps,
+.ec-link {
+  margin: 0 0 0 calc(18px + var(--sp-3));
+}
+
+.ec-item-when { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+
+.ec-steps {
+  padding-left: var(--sp-4);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+
+.ec-steps li + li { margin-top: 2px; }
+
+.ec-note { font: var(--text-caption); line-height: 1.5; color: var(--ink-secondary); }
+
+.ec-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--teal);
+  text-decoration: none;
+}
+
+.ec-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Steps and notes fold away; the name, tag, timing and link stay visible. */
+.ec-more { margin: 0 0 0 calc(18px + var(--sp-3)); }
+.ec-fold .ec-more { margin: var(--sp-1) 0 0; }
+.ec-more summary {
+  width: fit-content;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  list-style-position: inside;
+}
+.ec-more summary:hover { color: var(--ink); }
+.ec-more[open] summary { margin-bottom: var(--sp-2); }
+.ec-more .ec-steps, .ec-more .ec-note { margin-left: 0; }
+.ec-more .ec-note { margin-top: var(--sp-2); }
+.ec-fold-title { margin: 0 0 2px; font: var(--text-caption); font-weight: 600; color: var(--ink-secondary); }
+
+.ec-disclaimer {
+  margin: 0;
+  font: var(--text-caption);
+  line-height: 1.5;
+  color: var(--ink-ghost);
+}
+
+[data-theme="light"] .ec-tag--required { color: color-mix(in srgb, var(--amber) 60%, var(--ink)); }
+[data-theme="light"] .ec-link { color: color-mix(in srgb, var(--teal) 60%, var(--ink)); }

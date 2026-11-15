@@ -1,7 +1,7 @@
 import { C } from './colors.js';
 import { PW, MX, MX_R, CW, BOTTOM, ensureSpace, drawPageAccent } from './layout.js';
+import { groundJourney, journeyMode } from '../../components/transport-card.js';
 
-const MODE_LABELS = { ferry: 'Ferry', bus: 'Bus', train: 'Rail', drive: 'Drive' };
 
 function drawRouteVisualization(doc, from, to, y, isTransport, mode) {
   const centerX = MX + CW / 2;
@@ -36,16 +36,20 @@ function drawRouteVisualization(doc, from, to, y, isTransport, mode) {
   }
 }
 
+// Long place names would run off the card; the app shows them in full.
+const fit = (s, n = 30) => (String(s || '').length > n ? `${String(s).slice(0, n - 3).trim()}...` : String(s || ''));
+
 function renderFlightOrTransport(doc, ctx, extras) {
-  const isTransport = !!extras?.transport;
-  const data = isTransport ? extras.transport : extras?.flights;
+  // Same reading as the app: ground and sea journeys (including older trips
+  // whose bus legs were stored as flights) are Transport, never Flights.
+  const ground = groundJourney(extras);
+  const isTransport = !!ground;
+  const data = isTransport ? ground : extras?.flights;
   if (!data) return;
 
-  const mode = isTransport
-    ? (data.outbound?.mode || data.inbound?.mode || 'bus')
-    : null;
+  const mode = isTransport ? journeyMode(ground) : null;
 
-  const title = isTransport ? (MODE_LABELS[mode] || 'Transport') : 'Flights';
+  const title = isTransport ? 'Transport' : 'Flights';
 
   ensureSpace(doc, ctx, 70);
 
@@ -70,8 +74,8 @@ function renderFlightOrTransport(doc, ctx, extras) {
     doc.text(label.toUpperCase(), MX + 6, ctx.y + 5);
 
     const routeParts = (leg.route || '').split(/\s*(?:[→➔>]|\bto\b)\s*/i);
-    const from = routeParts[0] || '???';
-    const to = routeParts.length > 1 ? routeParts[routeParts.length - 1] : '???';
+    const from = isTransport ? fit(leg.from) || '???' : routeParts[0] || '???';
+    const to = isTransport ? fit(leg.to) || '???' : routeParts.length > 1 ? routeParts[routeParts.length - 1] : '???';
     drawRouteVisualization(doc, from, to, ctx.y + 15, isTransport, mode);
 
     if (leg.duration) {
@@ -89,11 +93,12 @@ function renderFlightOrTransport(doc, ctx, extras) {
       doc.text(airline, MX + 6, ctx.y + 25);
     }
 
-    if (leg.priceRange) {
+    const price = isTransport ? leg.price : leg.priceRange;
+    if (price) {
       doc.setFont('courier', 'bold');
       doc.setFontSize(9);
       doc.setTextColor(...C.terracotta);
-      doc.text(leg.priceRange, MX_R - 6, ctx.y + 25, { align: 'right' });
+      doc.text(price, MX_R - 6, ctx.y + 25, { align: 'right' });
     }
 
     ctx.y += 34;

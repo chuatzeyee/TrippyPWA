@@ -21,6 +21,9 @@ import {
 import { heroCover, coverNeedsPick } from '../lib/trip-cover.js';
 import { requestTripCover } from '../services/trip-cover.js';
 import { heroHtml, swapHeroCover } from './trip-hero.js';
+import { bindModalA11y } from '../lib/modal-a11y.js';
+import { groundJourney, journeyMode, transportJourneyHtml, transportIcon as journeyIcon } from './transport-card.js';
+import { mountEntryCard, ENTRY_ICON } from './entry-card.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -1244,78 +1247,6 @@ function renderFlightContent(extras, trip) {
   `;
 }
 
-const TRANSPORT_MODE_ICONS = { ferry: '⛴️', bus: '🚌', train: '🚂', drive: '🚗' };
-const TRANSPORT_MODE_LABELS = { ferry: 'Ferry', bus: 'Bus', train: 'Rail', drive: 'Getting There' };
-const TRANSPORT_MODE_MD = { ferry: MD.ferry, bus: MD.bus, train: MD.train, drive: MD.car };
-
-function getTransportMode(extras) {
-  return extras?.transport?.outbound?.mode || extras?.transport?.inbound?.mode || 'bus';
-}
-
-function transportBookingLink(mode, from, to) {
-  const searchSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
-  if (mode === 'drive') {
-    const url = `https://www.google.com/maps/dir/${encodeURIComponent(from)}/${encodeURIComponent(to)}`;
-    return `<a class="td-flight-book" href="${url}" target="_blank" rel="noopener noreferrer">${searchSvg} Google Maps</a>`;
-  }
-  const labels = { ferry: 'Search Ferries', bus: 'Search Routes', train: 'Search Trains' };
-  const url = `https://www.rome2rio.com/s/${encodeURIComponent(from)}/${encodeURIComponent(to)}`;
-  return `<a class="td-flight-book" href="${url}" target="_blank" rel="noopener noreferrer">${searchSvg} ${labels[mode] || 'Search Routes'}</a>`;
-}
-
-function renderTransportContent(extras) {
-  const transport = extras?.transport;
-  if (!transport) return '';
-
-  const renderLeg = (leg, label) => {
-    if (!leg) return '';
-    // Routes arrive in mixed shapes: "A → B", "A to B", "A - B". Split on any of
-    // them (arrows, the word "to", en/em/hyphen dashes) so the destination is
-    // never lost to a "???" placeholder.
-    const routeParts = (leg.route || '')
-      .split(/\s*(?:[→➔>]|\bto\b|[-–—])\s*/i)
-      .map(s => s.trim())
-      .filter(Boolean);
-    const from = routeParts[0] || leg.from || '???';
-    const to = routeParts.length > 1 ? routeParts[routeParts.length - 1] : (leg.to || '???');
-    const icon = TRANSPORT_MODE_ICONS[leg.mode] || '🚌';
-    return `
-      <div class="td-flight-leg">
-        <div class="td-flight-leg-header">
-          <span class="td-flight-leg-label">${esc(label)}</span>
-          <span class="td-flight-leg-airline">${icon} ${esc(leg.operator || '')}</span>
-        </div>
-        <div class="td-flight-route">
-          <div class="td-flight-endpoint">
-            <div class="td-flight-code">${esc(from)}</div>
-            ${leg.terminal ? `<div class="td-flight-flag" style="font-size: 0.65rem;">${esc(leg.terminal)}</div>` : ''}
-          </div>
-          <div class="td-flight-route-line">
-            <span class="td-flight-route-dash"></span>
-            <span class="td-flight-route-plane" style="font-size: 1.1rem;">${icon}</span>
-            <span class="td-flight-route-dash"></span>
-          </div>
-          <div class="td-flight-endpoint">
-            <div class="td-flight-code">${esc(to)}</div>
-          </div>
-        </div>
-        <div class="td-flight-duration">${esc(to12h([leg.duration, leg.frequency].filter(Boolean).join(', ')))}</div>
-        <div class="td-flight-bottom">
-          <div class="td-flight-price">${addThousandSeps(esc(leg.priceRange))}</div>
-          ${transportBookingLink(leg.mode, from, to)}
-        </div>
-        ${leg.tips ? `<div class="td-flight-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(to12h(leg.tips))}</div>` : ''}
-      </div>
-    `;
-  };
-
-  return `
-    <div class="td-flight-legs">
-      ${renderLeg(transport.outbound, 'Outbound')}
-      ${renderLeg(transport.inbound, 'Return')}
-    </div>
-  `;
-}
 
 const ACCOM_ICON_SEARCH = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 const ACCOM_ICON_EXTERNAL = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
@@ -1505,9 +1436,9 @@ function bindChecklist(container, tripId) {
 function renderTripQuickChecklist(extras, tripId) {
   const stored = readStoredJson(`trip-quick-${tripId}`);
   const items = [];
-  if (extras?.flights) {
+  if (extras?.flights && !groundJourney(extras)) {
     items.push({ key: 'flights', label: 'Flights', icon: MD.flightTakeoff, target: 'flights' });
-  } else if (extras?.transport) {
+  } else if (groundJourney(extras)) {
     items.push({ key: 'transport', label: 'Transport', icon: MD.tram, target: 'transport' });
   }
   if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) {
@@ -1592,60 +1523,44 @@ function bindQuickChecklist(container, tripId) {
   });
 }
 
-// Visa/entry-requirement advisory for the Prep tab. Loads after render because
-// it needs the user's nationality (profile fetch) and per-passport data files.
-// Advisory-only: official links, explicit disclaimer, never a blocking UI.
-async function loadVisaAdvisories(container, trip) {
-  const slot = container.querySelector('#td-visa-slot');
-  if (!slot) return;
+// Entry requirements (visas, arrival cards, travel authorisations) for every
+// passport in the group, in the plan right after Flights / Transport and in the
+// Prep tab. Loads after render: it needs the profile and per-passport data.
+async function mountEntryCards(container, trip) {
+  const slots = [container.querySelector('[data-entry-slot]'), container.querySelector('#td-visa-slot')].filter(Boolean);
+  if (!slots.length) return;
+  let profile = null;
   try {
     const { fetchProfile } = await import('../data/profile-repository.js');
-    const { data: profile } = await fetchProfile();
-    const nationality = profile?.nationality;
-    if (!nationality) {
-      slot.innerHTML = `
-        <div class="td-section-card td-visa-card">
-          <div class="td-section-header">
-            <span class="td-section-icon">${mdIcon(MD.place, 20)}</span>
-            <h3 class="td-section-title">Entry requirements</h3>
-          </div>
-          <p class="td-visa-empty">Add your passport nationality in your <a href="#/profile">profile</a> and Trippy will flag visas, eVisas, and arrival cards you need for this trip.</p>
-        </div>`;
-      return;
-    }
-
-    const { checkTrip, VISA_DISCLAIMER } = await import('../services/visa-advisor.js');
-    const advisories = await checkTrip(trip.wizard_state, nationality);
-    if (advisories.length === 0) { slot.remove(); return; }
-
-    const fmtDate = (iso) => iso ? formatDate(iso) : '';
-    slot.innerHTML = `
-      <div class="td-section-card td-visa-card">
-        <div class="td-section-header">
-          <span class="td-section-icon">${mdIcon(MD.place, 20)}</span>
-          <h3 class="td-section-title">Entry requirements</h3>
-        </div>
-        ${advisories.map(a => `
-          <div class="td-visa-item td-visa-item--${esc(a.level)}">
-            <div class="td-visa-item-main">
-              <span class="td-visa-flag">${flagImg(a.country.toLowerCase(), 20)}</span>
-              <div class="td-visa-text">
-                <span class="td-visa-name">${esc(plainDashes(a.label))}</span>
-                ${a.auth ? `<span class="td-visa-meta">${esc(plainDashes([a.auth.fee, a.auth.validity ? `valid ${a.auth.validity}` : ''].filter(Boolean).join(', ')))}</span>` : ''}
-                ${a.applyBy ? `<span class="td-visa-deadline">${esc(a.applyFrom ? `Submit from ${fmtDate(a.applyFrom)} until departure` : `Apply by ${fmtDate(a.applyBy)}`)}</span>` : ''}
-                ${a.auth?.note ? `<span class="td-visa-note">${esc(plainDashes(a.auth.note))}</span>` : ''}
-                ${a.extraNote ? `<span class="td-visa-note">${esc(plainDashes(a.extraNote))}</span>` : ''}
-              </div>
-            </div>
-            ${safeUrl(a.auth?.url) ? `<a class="btn btn--secondary btn--pill td-visa-apply" href="${esc(safeUrl(a.auth.url))}" target="_blank" rel="noopener noreferrer">Official site ${ICONS.openInNew}</a>` : ''}
-          </div>
-        `).join('')}
-        <p class="td-visa-disclaimer">${esc(VISA_DISCLAIMER)}</p>
-      </div>`;
+    ({ data: profile } = await fetchProfile());
   } catch (e) {
-    logger.warn('data', 'Visa advisory failed', { error: e?.message });
-    slot.remove();
+    logger.warn('data', 'Profile unavailable for entry requirements', { error: e?.message });
   }
+  const own = profile?.nationality ? [profile.nationality] : [];
+  let passports = Array.isArray(trip.wizard_state?.passports) && trip.wizard_state.passports.length
+    ? trip.wizard_state.passports : own;
+  let cards = [];
+  const savePassports = async (next) => {
+    const { updateTripPassports } = await import('../data/trip-repository.js');
+    const { data, error } = await updateTripPassports(trip.id, trip.wizard_state, next);
+    if (error) { showToast("Couldn't save passports. Try again.", 'error'); return; }
+    passports = data;
+    trip.wizard_state = { ...(trip.wizard_state || {}), passports: data };
+    // The traveller's own passport, if the profile has none yet.
+    if (!profile?.nationality && data[0]) {
+      profile = { ...(profile || {}), nationality: data[0] };
+      import('../data/profile-repository.js').then(({ updateProfile }) => updateProfile({ nationality: data[0] })).catch(() => {});
+    }
+    cards.forEach(c => c?.refresh());
+  };
+  cards = await Promise.all(slots.map(slot => mountEntryCard(slot, {
+    trip, homeFlag: profile?.home_flag, getPassports: () => passports, savePassports,
+    onEmpty: () => {
+      const card = slot.closest('.td-day-card--section');
+      if (card) card.hidden = true; else slot.hidden = true;
+      container.querySelector('[data-sidebar-section="entry"]')?.remove();
+    },
+  })));
 }
 
 function bindCollapsibleSections(container) {
@@ -1657,9 +1572,17 @@ function bindCollapsibleSections(container) {
   });
 }
 
-function countSectionCards(extras) {
+// Shown for every trip with a destination; mountEntryCards hides it when no
+// passport in the group needs anything.
+function hasEntryCard(trip) {
+  const ws = trip?.wizard_state;
+  return !!(ws?.multiCity ? ws?.destinations?.length : ws?.destination);
+}
+
+function countSectionCards(extras, trip) {
   let n = 0;
   if (extras?.flights || extras?.transport) n++;
+  if (hasEntryCard(trip)) n++;
   if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) n++;
   return n;
 }
@@ -1695,7 +1618,10 @@ function weatherText(w) {
 function buildSectionCards(extras, totalCards, trip, animate = true) {
   const cards = [];
   let i = 0;
-  if (extras?.flights) {
+  // Ground or sea journeys (including older trips whose bus legs were stored
+  // as flights) get the Transport card, never the flight card.
+  const ground = groundJourney(extras);
+  if (extras?.flights && !ground) {
     i++;
     cards.push(`
       <div class="td-day-card td-day-card--section" data-section="flights" style="--i: ${i}; --total: ${totalCards}; ${cardAnimStyle(i - 1, animate)}">
@@ -1711,22 +1637,37 @@ function buildSectionCards(extras, totalCards, trip, animate = true) {
         </div>
       </div>
     `);
-  } else if (extras?.transport) {
+  } else if (ground) {
     i++;
-    const mode = getTransportMode(extras);
-    const modeLabel = TRANSPORT_MODE_LABELS[mode] || 'Transport';
-    const modeIcon = TRANSPORT_MODE_MD[mode] ? mdIcon(TRANSPORT_MODE_MD[mode], 28) : SECTION_ICONS.transport;
+    const modeIcon = journeyIcon(journeyMode(ground), 28);
     cards.push(`
       <div class="td-day-card td-day-card--section" data-section="transport" style="--i: ${i}; --total: ${totalCards}; ${cardAnimStyle(i - 1, animate)}">
         <div class="td-day-card-header">
           <div class="td-day-num td-day-num--section td-day-num--transport">${modeIcon}</div>
           <div class="td-day-info">
-            <h3 class="td-day-card-title">${esc(modeLabel)}</h3>
+            <h3 class="td-day-card-title">Transport</h3>
           </div>
           <span class="td-day-chevron">›</span>
         </div>
         <div class="td-day-card-body">
-          ${renderTransportContent(extras)}
+          ${transportJourneyHtml(ground)}
+        </div>
+      </div>
+    `);
+  }
+  if (hasEntryCard(trip)) {
+    i++;
+    cards.push(`
+      <div class="td-day-card td-day-card--section" data-section="entry" style="--i: ${i}; --total: ${totalCards}; ${cardAnimStyle(i - 1, animate)}">
+        <div class="td-day-card-header">
+          <div class="td-day-num td-day-num--section td-day-num--entry">${ENTRY_ICON}</div>
+          <div class="td-day-info">
+            <h3 class="td-day-card-title">Entry requirements</h3>
+          </div>
+          <span class="td-day-chevron">›</span>
+        </div>
+        <div class="td-day-card-body">
+          <div data-entry-slot></div>
         </div>
       </div>
     `);
@@ -1755,20 +1696,25 @@ function renderSidebar(trip, days, sym, totalCost, tripCode = tripCurrencyCode(t
   const extras = trip.extras;
   const sectionItems = [];
 
-  if (extras?.flights) {
+  const ground = groundJourney(extras);
+  if (extras?.flights && !ground) {
     sectionItems.push(`<div class="td-sidebar-item td-sidebar-item--section" data-sidebar-section="flights">
       <span class="td-sidebar-item-icon td-sidebar-item-icon--flights">${mdIcon(MD.flightTakeoff, 16)}</span>
       <span class="td-sidebar-item-label">Flights</span>
     </div>`);
-  } else if (extras?.transport) {
-    const mode = getTransportMode(extras);
-    const label = TRANSPORT_MODE_LABELS[mode] || 'Transport';
+  } else if (ground) {
     sectionItems.push(`<div class="td-sidebar-item td-sidebar-item--section" data-sidebar-section="transport">
-      <span class="td-sidebar-item-icon">${mdIcon(TRANSPORT_MODE_MD[mode] || MD.tram, 16)}</span>
-      <span class="td-sidebar-item-label">${esc(label)}</span>
+      <span class="td-sidebar-item-icon">${journeyIcon(journeyMode(ground), 16)}</span>
+      <span class="td-sidebar-item-label">Transport</span>
     </div>`);
   }
 
+  if (hasEntryCard(trip)) {
+    sectionItems.push(`<div class="td-sidebar-item td-sidebar-item--section" data-sidebar-section="entry">
+      <span class="td-sidebar-item-icon td-sidebar-item-icon--entry">${ENTRY_ICON}</span>
+      <span class="td-sidebar-item-label">Entry requirements</span>
+    </div>`);
+  }
   if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) {
     sectionItems.push(`<div class="td-sidebar-item td-sidebar-item--section" data-sidebar-section="accommodation">
       <span class="td-sidebar-item-icon td-sidebar-item-icon--accommodation">${mdIcon(MD.hotel, 16)}</span>
@@ -2100,35 +2046,9 @@ function bindSidebar(container) {
   });
 }
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/**
- * Modal dialog behaviour for an overlay panel: focus moves inside, Tab stays
- * inside, Escape closes, and focus goes back to the opener afterwards.
- * Returns a release function to call when the dialog closes.
- * @param {HTMLElement} dialog
- * @param {{ onClose?: () => void, returnFocus?: Element | null, initialFocus?: HTMLElement | null }} [options]
- */
-export function bindModalA11y(dialog, { onClose, returnFocus = document.activeElement, initialFocus = null } = {}) {
-  const focusables = () => [...dialog.querySelectorAll(FOCUSABLE)].filter(el => el.getClientRects().length > 0);
-  const onKey = (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); onClose?.(); return; }
-    if (e.key !== 'Tab') return;
-    const items = focusables();
-    if (!items.length) { e.preventDefault(); return; }
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (!dialog.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
-    else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-  };
-  document.addEventListener('keydown', onKey);
-  requestAnimationFrame(() => (initialFocus || focusables()[0])?.focus());
-  return () => {
-    document.removeEventListener('keydown', onKey);
-    if (returnFocus?.isConnected && typeof returnFocus.focus === 'function') returnFocus.focus();
-  };
-}
+// Moved to lib so small modules (the generation popup) need not pull in the
+// trip page; re-exported here for existing importers.
+export { bindModalA11y } from '../lib/modal-a11y.js';
 
 // Friendly copy for share/collaborator failures (never the raw backend text).
 function shareErrorText(action) {
@@ -2552,7 +2472,7 @@ function renderDayPicker(app, trip, opts = {}) {
           ${renderSidebar(trip, days, sym, totalCost, tripCode)}
           <div class="td-main">
             <div class="td-day-grid" data-tz="${esc(trip.timezone || trip.wizard_state?.destination?.timezone || '')}">
-          ${(() => { const offset = countSectionCards(trip.extras); const total = days.length + offset; const townCells = collectTownCells(trip.extras); return buildSectionCards(trip.extras, total, trip, animate) + days.map((d, i) => {
+          ${(() => { const offset = countSectionCards(trip.extras, trip); const total = days.length + offset; const townCells = collectTownCells(trip.extras); return buildSectionCards(trip.extras, total, trip, animate) + days.map((d, i) => {
             const acts = d.activities || [];
             const dayCost = sumCosts(acts, tripCode).total;
             const dateStr = d.date ? formatDate(d.date) : '';
@@ -2741,7 +2661,7 @@ function renderDayPicker(app, trip, opts = {}) {
   bindDayCards(app, animate);
   bindChecklist(app, trip.id);
   bindQuickChecklist(app, trip.id);
-  loadVisaAdvisories(app, trip);
+  mountEntryCards(app, trip);
   bindTripStatus(view);
 
   // Affiliate click telemetry (links open in a new tab; no navigation race).
@@ -3143,8 +3063,8 @@ function tripCountdownHtml(trip) {
   const diff = Math.ceil((start - new Date()) / 86400000);
   if (diff < 0) return '';
   const label = diff === 0 ? 'Today!' : diff === 1 ? '1 day' : `${diff} days`;
-  const mode = trip.extras?.transport ? getTransportMode(trip.extras) : null;
-  const icon = mode && TRANSPORT_MODE_MD[mode] ? mdIcon(TRANSPORT_MODE_MD[mode], 14) : mdIcon(MD.flightTakeoff, 14);
+  const ground = groundJourney(trip.extras);
+  const icon = ground ? journeyIcon(journeyMode(ground), 14) : mdIcon(MD.flightTakeoff, 14);
   return `<div class="td-countdown">${icon} ${label}</div>`;
 }
 

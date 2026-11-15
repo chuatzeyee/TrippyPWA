@@ -1,0 +1,268 @@
+/* ===== Generation popup (trip request sent) =====
+   A ticket: the top says where you are going, the stub below follows the
+   planning. The route is one segment per trip day; segments light up as the
+   server finishes them, with the plane at the leading edge. */
+
+.gp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop);
+  background: rgba(12, 11, 10, 0.55);
+  backdrop-filter: blur(6px);
+  animation: fadeIn var(--duration-slow) ease both;
+}
+
+.gp-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  pointer-events: none; /* clicks around the ticket reach the backdrop */
+}
+
+.gp {
+  --gp-notch: 11px;
+  position: relative;
+  width: min(400px, 100%);
+  max-height: calc(100dvh - 2 * var(--sp-4));
+  overflow-y: auto;
+  pointer-events: auto;
+  /* drop-shadow, not box-shadow: the notch masks would clip a box-shadow. */
+  filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.45)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+  animation: gpRise 420ms var(--ease-out) both;
+}
+
+/* The two halves of the ticket, each with half-circle notches where they meet. */
+.gp-top,
+.gp-stub {
+  position: relative;
+  -webkit-mask:
+    radial-gradient(circle at 0 var(--gp-notch-y), transparent var(--gp-notch), #000 calc(var(--gp-notch) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% var(--gp-notch-y), transparent var(--gp-notch), #000 calc(var(--gp-notch) + 0.5px)) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle at 0 var(--gp-notch-y), transparent var(--gp-notch), #000 calc(var(--gp-notch) + 0.5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% var(--gp-notch-y), transparent var(--gp-notch), #000 calc(var(--gp-notch) + 0.5px)) right / 51% 100% no-repeat;
+}
+
+.gp-top {
+  --gp-notch-y: 100%;
+  padding: var(--sp-8) var(--sp-6) var(--sp-6);
+  background: var(--surface-solid);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+}
+
+.gp-stub {
+  --gp-notch-y: 0%;
+  padding: var(--sp-6) var(--sp-6) var(--sp-6);
+  background: var(--surface-inset);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
+}
+
+/* Perforation between the halves, stopping short of the notches. */
+.gp-stub::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(var(--gp-notch) + 6px);
+  right: calc(var(--gp-notch) + 6px);
+  border-top: 2px dashed var(--border-strong);
+}
+
+.gp-close {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-ghost);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.gp-close:hover { background: var(--border); color: var(--ink); }
+.gp-close svg { width: 20px; height: 20px; fill: currentColor; }
+
+.gp-heading {
+  margin: 0;
+  padding-right: var(--sp-8);
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 6.4vw, 1.95rem);
+  line-height: 1.12;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.gp-lede {
+  margin: var(--sp-3) 0 0;
+  max-width: 36ch;
+  font: var(--text-body);
+  font-size: 0.95rem;
+  color: var(--ink-secondary);
+}
+
+/* ----- Route ----- */
+.gp-ends {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--ink-secondary);
+}
+
+.gp-from,
+.gp-to {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gp-to { color: var(--ink); font-weight: 600; text-align: right; }
+
+.gp-track {
+  --gp-plane: 22px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: var(--gp-plane);
+}
+
+.gp-seg {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  transition: background 500ms ease;
+}
+
+.gp-seg.is-done { background: var(--terracotta); }
+
+/* The day being planned right now. */
+.gp-seg.is-next {
+  background: color-mix(in srgb, var(--terracotta) 55%, transparent);
+  animation: gpPulse 1.6s ease-in-out infinite;
+}
+
+.gp-plane {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--gp-progress) * (100% - var(--gp-plane)));
+  display: grid;
+  place-items: center;
+  width: var(--gp-plane);
+  height: var(--gp-plane);
+  border-radius: var(--r-pill);
+  background: var(--surface-inset); /* clears the segments under the plane */
+  color: var(--terracotta);
+  transform: translateY(-50%);
+  transition: left 800ms var(--ease-out), color 500ms ease;
+}
+
+.gp-plane-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  transform: rotate(90deg); /* nose to the destination */
+}
+
+.gp-status {
+  margin: var(--sp-4) 0 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.gp-eta {
+  margin: var(--sp-1) 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+
+/* ----- Actions ----- */
+.gp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3) var(--sp-4);
+  margin-top: var(--sp-6);
+}
+
+.gp-notify,
+.gp-notify-on {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-2) 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--ink-secondary);
+}
+
+/* display above would otherwise beat the hidden attribute */
+.gp-notify[hidden],
+.gp-notify-on[hidden],
+.gp-eta[hidden] { display: none; }
+
+.gp-notify { cursor: pointer; transition: color var(--duration-fast) ease; }
+.gp-notify:hover { color: var(--ink); }
+.gp-notify span { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--border-strong); }
+.gp-notify svg,
+.gp-notify-on svg { flex-shrink: 0; width: 16px; height: 16px; fill: currentColor; }
+.gp-notify-on svg { fill: var(--amber); }
+
+.gp-primary { min-width: 112px; margin-left: auto; }
+
+/* ----- States ----- */
+.gp[data-state="done"] .gp-seg.is-done { background: var(--amber); }
+.gp[data-state="done"] .gp-plane { color: var(--amber); }
+.gp[data-state="failed"] .gp-plane { color: var(--ink-ghost); }
+
+/* ----- Closing ----- */
+.gp-wrap--out .gp { animation: gpSink 220ms ease both; pointer-events: none; }
+.gp-backdrop--out { animation: gpFadeOut 220ms ease both; pointer-events: none; }
+
+@keyframes gpRise {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes gpSink {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(10px) scale(0.99); }
+}
+
+@keyframes gpFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes gpPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp, .gp-wrap--out .gp, .gp-backdrop, .gp-backdrop--out, .gp-seg.is-next { animation: none; }
+  .gp-plane, .gp-seg { transition: none; }
+}
+
+[data-theme="light"] .gp-backdrop { background: rgba(44, 42, 37, 0.35); }
+[data-theme="light"] .gp { filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.16)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08)); }

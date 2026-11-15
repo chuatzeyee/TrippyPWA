@@ -7,6 +7,7 @@ import { setLocaleFromFlag } from '../lib/locale.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from '../components/toast.js';
 import { escapeHtml as esc } from '../data/day-builder.js';
+import { NATIONALITIES, searchNationalities } from '../data/nationalities.js';
 
 function flagImg(code, size = 24) {
   // Country codes only: the value comes from the stored profile.
@@ -82,31 +83,8 @@ function searchCities(query) {
   ).slice(0, 8);
 }
 
-// Passport countries for the nationality selector (ISO2 lowercase, matching
-// the app's flag-code convention). Names mirror common passport designations.
-const NATIONALITIES = [
-  ['sg', 'Singapore'], ['my', 'Malaysia'], ['id', 'Indonesia'], ['th', 'Thailand'],
-  ['ph', 'Philippines'], ['vn', 'Vietnam'], ['kh', 'Cambodia'], ['la', 'Laos'],
-  ['mm', 'Myanmar'], ['bn', 'Brunei'], ['cn', 'China'], ['hk', 'Hong Kong'],
-  ['tw', 'Taiwan'], ['jp', 'Japan'], ['kr', 'South Korea'], ['in', 'India'],
-  ['lk', 'Sri Lanka'], ['bd', 'Bangladesh'], ['pk', 'Pakistan'], ['np', 'Nepal'],
-  ['au', 'Australia'], ['nz', 'New Zealand'], ['us', 'United States'], ['ca', 'Canada'],
-  ['mx', 'Mexico'], ['br', 'Brazil'], ['ar', 'Argentina'], ['cl', 'Chile'],
-  ['co', 'Colombia'], ['pe', 'Peru'], ['gb', 'United Kingdom'], ['ie', 'Ireland'],
-  ['fr', 'France'], ['de', 'Germany'], ['it', 'Italy'], ['es', 'Spain'],
-  ['pt', 'Portugal'], ['nl', 'Netherlands'], ['be', 'Belgium'], ['ch', 'Switzerland'],
-  ['at', 'Austria'], ['se', 'Sweden'], ['no', 'Norway'], ['dk', 'Denmark'],
-  ['fi', 'Finland'], ['is', 'Iceland'], ['pl', 'Poland'], ['cz', 'Czechia'],
-  ['hu', 'Hungary'], ['gr', 'Greece'], ['hr', 'Croatia'], ['ro', 'Romania'],
-  ['tr', 'Türkiye'], ['il', 'Israel'], ['ae', 'United Arab Emirates'], ['sa', 'Saudi Arabia'],
-  ['qa', 'Qatar'], ['eg', 'Egypt'], ['ma', 'Morocco'], ['za', 'South Africa'],
-  ['ke', 'Kenya'], ['ng', 'Nigeria'], ['ru', 'Russia'], ['ua', 'Ukraine'],
-];
 
-function searchNationalities(query) {
-  const q = query.toLowerCase();
-  return NATIONALITIES.filter(([, name]) => name.toLowerCase().includes(q)).slice(0, 8);
-}
+
 
 let profileState = {
   displayName: '',
