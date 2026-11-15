@@ -9,7 +9,7 @@
      "kind": "arrival-card",
      "name": "SG Arrival Card (SGAC) with electronic health declaration",
      "required": true,
-     "who": "Everyone entering Singapore, including Singapore citizens, PRs and long-term pass holders arriving by air or sea; residents are exempt only at the Woodlands and Tuas land checkpoints.",
+     "who": "Everyone entering Singapore by air or sea, including Singapore citizens, PRs and long-term pass holders. Foreign visitors must file at every checkpoint; residents are exempt only at the Woodlands and Tuas land checkpoints.",
      "exemptNationalities": [],
      "onlyNationalities": [],
      "modes": [
@@ -20,25 +20,26 @@
      "windowDays": 2,
      "leadDays": 1,
      "fee": "Free",
-     "url": "https://eservices.ica.gov.sg/sgarrivalcard/",
-     "validity": "One submission can cover up to 3 trips within the 3-day window",
+     "url": "https://eservices.ica.gov.sg/arrivalcard/sgac",
+     "validity": "Up to 3 trips can be declared in one submission (ICA FAQ)",
      "steps": [
-      "Within 3 days of arrival (arrival day counts), open the SGAC e-Service or the MyICA app.",
+      "Within 3 days before arrival, counting arrival day, open the SGAC e-Service or the MyICA app.",
       "Pick the resident option (health declaration only) or the foreign visitor option (trip details plus health declaration).",
-      "Submit and keep the acknowledgement email. Foreign visitors get their e-Pass by email.",
+      "Submit and keep the acknowledgement email. Foreign visitors get their e-Pass by email only after clearing immigration.",
       "At immigration, show only your passport."
      ],
      "sources": [
       "https://www.ica.gov.sg/enter-transit-depart/entering-singapore/sg-arrival-card",
-      "https://eservices.ica.gov.sg/arrivalcard/sgac"
+      "https://www.ica.gov.sg/enter-transit-depart/at-our-checkpoints/for-travellers/retrieval-of-electronic-visit-pass",
+      "https://www.ica.gov.sg/news-and-publications/newsroom/media-release/ica-to-issue-no-boarding-directives-from-30-january-2026"
      ],
      "confidence": "high",
-     "note": "ICA example: arriving 30 June, you can submit from 28 June. Long-term pass holders means Student's Pass, Dependant's Pass, LTVP and Work Pass holders. Not a visa. ICA never charges a fee, so avoid paid look-alike sites. If your health changes after submitting, use Update SGAC. Page last updated 28 Oct 2026."
+     "note": "ICA example: arriving 30 June, you can submit from 28 June. Long-term pass holders means Student's Pass, Dependant's Pass, LTVP and Work Pass holders. Not a visa. ICA never charges a fee, so avoid paid look-alike sites. If your health changes after submitting, use Update SGAC. Since 30 Jan 2026 ICA can direct airlines flying to Changi or Seletar not to board travellers who fail entry checks, using SGAC and other advance data, so file before you fly. ICA page last updated 28 Oct 2026."
     }
    ],
    "transit": "No SGAC is needed if you transfer airside at Changi without clearing immigration (ICA). If you must clear immigration to collect bags or a new boarding pass, which is common on low-cost carriers and separate tickets, you are entering Singapore and need the SGAC and any visa.",
-   "landSea": "From Johor by road (Causeway into Woodlands, Second Link into Tuas): foreign visitors must file the SGAC; Singapore citizens, PRs and long-term pass holders are exempt at these two checkpoints only. By sea (ferries from Batam, Bintan or Desaru, or cruises): everyone files the SGAC, and residents file the health declaration part. Malaysia-registered cars and motorcycles need an LTA Vehicle Entry Permit and Autopass Card. The RTS Link (Woodlands North to Bukit Chagar) will have co-located checks, so you clear both countries at the departure station; LTA still says end 2026, but news reports in October 2026 say the operator now expects February 2027.",
-   "source": "research"
+   "landSea": "From Johor by road (Causeway into Woodlands, Second Link into Tuas): foreign visitors must file the SGAC; Singapore citizens, PRs and long-term pass holders are exempt at these two checkpoints only. By sea (ferries from Batam, Bintan or Desaru, or cruises): everyone files the SGAC, and residents file the health declaration part. Malaysia-registered cars and motorcycles need an LTA Vehicle Entry Permit and Autopass Card. The RTS Link (Bukit Chagar to Woodlands North) will have co-located checks, so you clear both countries at the departure station. LTA and Malaysia's Transport Ministry said on 2 Oct 2026 that service is now targeted for February 2027, subject to safety certification. We found no ICA statement yet on whether the resident land-checkpoint exemption will cover RTS Link arrivals.",
+   "source": "verify"
   },
   "MY": {
    "items": [
@@ -47,7 +48,7 @@
      "kind": "arrival-card",
      "name": "Malaysia Digital Arrival Card (MDAC)",
      "required": true,
-     "who": "All foreign visitors except Singapore citizens, Malaysian PRs and long-term pass holders, diplomatic and official passport holders, and holders of certain Brunei, Thai and Indonesian border passes.",
+     "who": "All foreign visitors except Singapore citizens, Malaysian PRs and long-term pass holders, diplomatic and official passport holders, Brunei GCI and Brunei-Malaysia Frequent Traveller Facility holders, Thai Border Pass holders and Indonesian cross-border pass (PLB) holders.",
      "exemptNationalities": [
       "SG",
       "MY"
@@ -75,14 +76,14 @@
       "https://www.imi.gov.my/index.php/en/pengumuman/mdac-can-now-be-filled-directly-through-the-myniise-app/"
      ],
      "confidence": "high",
-     "note": "Mandatory since 1 Jan 2024. The exemption follows the passport: Singapore PRs and work pass holders on a foreign passport must file it. Singapore citizens are exempt at all entry points, but Singapore MFA says to file it 3 days ahead if you want to enrol fingerprints for Malaysian e-gates on later trips. Whether the 3 days include arrival day is not stated officially."
+     "note": "Mandatory since 1 Jan 2024. The exemption follows the passport: Singapore PRs and work pass holders on a foreign passport must file it. Singapore citizens are exempt at all entry points (Singapore MFA page updated 14 Nov 2026), but MFA says to file it 3 days ahead if you want to enrol fingerprints for Malaysian e-gates on later trips. Whether the 3 days include arrival day is not stated officially, so filing 1 to 2 days ahead is safest."
     },
     {
      "id": "my-vep",
      "kind": "registration",
      "name": "Vehicle Entry Permit (VEP) RFID tag for Singapore-registered vehicles",
      "required": true,
-     "who": "Anyone driving a Singapore-registered car into Malaysia through the Causeway or the Second Link.",
+     "who": "Anyone driving a Singapore-registered car (individual or private company owned) into Malaysia through the Causeway or the Second Link.",
      "exemptNationalities": [],
      "onlyNationalities": [],
      "modes": [
@@ -90,9 +91,9 @@
      ],
      "windowDays": null,
      "leadDays": 30,
-     "fee": "RM10 tag processing fee, plus RM29.50 if a collection agent handles the tag. A Road Charge (reported as RM20 per entry for cars) is deducted from your Touch 'n Go eWallet.",
+     "fee": "RM10 tag processing fee, plus RM29.50 if a collection agent handles the tag, plus any courier charge. A Road Charge (reported as RM20 per entry for cars) is deducted from your Touch 'n Go eWallet.",
      "url": "https://vep.jpj.gov.my",
-     "validity": "Tag valid 5 years; tied to one vehicle",
+     "validity": "Tag valid 5 years from activation; tied to one vehicle",
      "steps": [
       "Register the vehicle on vep.jpj.gov.my, linked to a Touch 'n Go eWallet.",
       "Pay and choose courier or collection on vepams.jpj.gov.my.",
@@ -104,7 +105,7 @@
       "https://www.jpj.gov.my/accordions/soalan-lazim-lesen-memandu-2-2-2-2-3-2-2/"
      ],
      "confidence": "medium",
-     "note": "Required since 1 July 2025. Without a VEP you can be fined RM300 and must pay and register before the car may leave Malaysia. A Touch 'n Go tag cannot replace the VEP tag. Not needed if you ride a bus or taxi. The RM20 Road Charge figure comes from news reports, not a JPJ page we could read.",
+     "note": "Required since 1 July 2025 (Singapore MFA). Without a VEP you can be fined RM300 and must pay and register before the car may leave Malaysia. A Touch 'n Go tag cannot replace the VEP tag. Not needed if you ride a bus or taxi. The RM20 Road Charge figure comes from news reports, not a JPJ page we could read.",
      "vehicles": [
       "car"
      ]
@@ -131,7 +132,7 @@
      "effectiveFrom": "2027-01-01",
      "steps": [
       "Check imi.gov.my in late December 2026 for any extension.",
-      "If no extension, apply on malaysiavisa.imi.gov.my before booking.",
+      "If no extension, apply on malaysiavisa.imi.gov.my before you travel.",
       "Print or save the approved eVISA and carry it with your passport.",
       "File the MDAC within 3 days before arrival as well."
      ],
@@ -140,7 +141,7 @@
       "https://www.kln.gov.my/web/sgp_singapore/requirement_foreigner"
      ],
      "confidence": "medium",
-     "note": "Malaysian Immigration states: India citizen visa exempt until 31 December 2026. No extension was announced as of 15 Nov 2026; the last extension came only 11 days before expiry. Chinese passports are covered by a separate mutual visa exemption and are not affected."
+     "note": "Malaysian Immigration still states: India citizen visa exempt until 31 December 2026. No extension was announced as of 15 Nov 2026; the last extension came only 11 days before expiry. The old eNTRI page on imi.gov.my only covers 2017 to 2018, so do not rely on eNTRI. Trips that start before and end after 31 Dec 2026 have no published rule. Chinese passports are covered by a separate mutual visa exemption and are not affected."
     },
     {
      "id": "my-myniise",
@@ -166,15 +167,16 @@
      ],
      "sources": [
       "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/malaysia/",
-      "https://www.imi.gov.my/index.php/en/pengumuman/mdac-can-now-be-filled-directly-through-the-myniise-app/"
+      "https://www.imi.gov.my/index.php/en/pengumuman/mdac-can-now-be-filled-directly-through-the-myniise-app/",
+      "https://www.bernama.com/en/general/news.php?id=2626494"
      ],
      "confidence": "medium",
-     "note": "NIISe began phased national rollout on 31 March 2026. The passport remains mandatory. Non-exempt foreigners can file the MDAC inside the app. Not every gate supports QR yet; news reports say nationwide QR checks are targeted for January 2027."
+     "note": "NIISe began phased national rollout on 31 March 2026 (Singapore MFA). The passport remains mandatory. Non-exempt foreigners can file the MDAC inside the app. Not every gate supports QR yet; Malaysia's Home Minister said on 27 Oct 2026 that the wider rollout is targeted for January 2027, and using the app stays optional."
     }
    ],
    "transit": "The MDAC is for travellers who pass Malaysian immigration. No official page we found addresses airside transit at KLIA. If you clear immigration, for example to re-check bags on separate tickets, file the MDAC unless exempt.",
-   "landSea": "From Singapore by bus, taxi or car: clear Singapore exit at Woodlands (Causeway) or Tuas (Second Link), then Malaysian entry at Bangunan Sultan Iskandar (JB) or Kompleks Sultan Abu Bakar. Non-exempt foreigners need the MDAC; Singapore citizens do not. Singapore-registered cars need an active VEP tag. Optional MyNIISe QR lanes run at both Johor checkpoints. The RTS Link (Woodlands North to Bukit Chagar) will clear both countries at the departure station and is expected to open in early 2027. Ferry arrivals also need the MDAC. Sabah and Sarawak run their own immigration checks even on domestic flights from Peninsular Malaysia, so carry your passport.",
-   "source": "research"
+   "landSea": "From Singapore by bus, taxi or car: clear Singapore exit at Woodlands (Causeway) or Tuas (Second Link), then Malaysian entry at Bangunan Sultan Iskandar (JB) or Kompleks Sultan Abu Bakar. Non-exempt foreigners need the MDAC; Singapore citizens do not. Singapore-registered cars need an active VEP tag. Optional MyNIISe QR lanes run at both Johor checkpoints. The RTS Link (Woodlands North to Bukit Chagar) will clear both countries at the departure station and is targeted to open in February 2027 (LTA and Malaysia's Transport Ministry, 2 Oct 2026). Ferry arrivals also need the MDAC. Sabah and Sarawak run their own immigration checks even on domestic flights from Peninsular Malaysia, so carry your passport.",
+   "source": "verify"
   },
   "ID": {
    "items": [
@@ -183,13 +185,13 @@
      "kind": "arrival-card",
      "name": "All Indonesia arrival declaration (immigration, customs, health and quarantine)",
      "required": true,
-     "who": "Every passenger arriving from abroad, Indonesian citizens and foreigners alike, at all airports, seaports and land border posts.",
+     "who": "Every passenger arriving from abroad, Indonesian citizens and foreigners alike, at all international airports and seaports; land border posts are being added in phases.",
      "exemptNationalities": [],
      "onlyNationalities": [],
      "modes": [
       "air",
-      "land",
-      "sea"
+      "sea",
+      "land"
      ],
      "windowDays": 3,
      "leadDays": 2,
@@ -198,16 +200,17 @@
      "validity": "One arrival",
      "steps": [
       "From 3 days before arrival, open allindonesia.imigrasi.go.id or the All Indonesia app.",
-      "Choose Foreign Visitor (or Indonesian Citizen), your transport mode (air or sea) and arrival port.",
+      "Choose Foreign Visitor (or Indonesian Citizen), your transport mode and arrival port.",
       "Fill in passport, trip, customs and health details for each traveller.",
       "Save the QR code and show it on arrival."
      ],
      "sources": [
       "https://www.imigrasi.go.id/siaran_pers/mulai-1-oktober-deklarasi-kedatangan-penumpang-wajib-dilakukan-di-aplikasi-all-indonesia",
-      "https://allindonesia.imigrasi.go.id/"
+      "https://kemenimipas.go.id/berita-utama/mulai-1-oktober-deklarasi-kedatangan-penumpang-wajib-dilakukan-di-aplikasi-all-indonesia",
+      "https://bnpp.go.id/berita/plbn-entikong-siap-jadi-pilot-project-penerapan-aplikasi-%22all-indonesia%22-di-wilayah-perbatasan"
      ],
      "confidence": "high",
-     "note": "Mandatory everywhere since 1 Oct 2025. Replaces paper cards and the old e-CD customs form. Not a visa. Without it you go to a counter for manual checks and wait longer. It can also be done on arrival."
+     "note": "Mandatory at all airports and seaports since 1 Oct 2025. Replaces paper cards and the old e-CD customs form for air and sea arrivals. Not a visa. Without it you go to a counter for manual checks and wait longer; it can also be done on arrival. Land border posts: a trial ran at PLBN Entikong (from Sarawak) from 28 Jul 2026, with Aruk and Motaain to follow; we could not confirm full launch, and some land posts may still use the Customs e-CD."
     },
     {
      "id": "id-evoa",
@@ -311,17 +314,18 @@
      "steps": [
       "Apply on evisa.imigrasi.go.id with your passport bio page, a photo and a return or onward ticket.",
       "Pay IDR 500,000 by card.",
-      "Receive the e-VOA by email within about 24 hours.",
+      "Receive the e-VOA by email, usually within about 24 hours.",
       "Enter through an airport, seaport or land post on the e-VOA entry list."
      ],
      "sources": [
       "https://imigrasi.go.id/wna/daftar-visa-indonesia/B1",
       "https://evisa.imigrasi.go.id/front/faq/59e5c2c3-525d-485b-928b-ed25079d0fd1",
       "https://www.imigrasi.go.id/wna/daftar-negara-voa-bvk-calling-visa/daftar-%20negara-subjek-visa-on-arrival?golden_visa=0",
-      "https://www.imigrasi.go.id/siaran_pers/silmy-karim-tarik-wisatawan-asing-imigrasi-berikan-bebas-visa-kunjungan-ke-batam-bintan-dan-karimun-bagi-pemegang-pr-singapur"
+      "https://www.imigrasi.go.id/siaran_pers/silmy-karim-tarik-wisatawan-asing-imigrasi-berikan-bebas-visa-kunjungan-ke-batam-bintan-dan-karimun-bagi-pemegang-pr-singapur",
+      "https://www.antaranews.com/berita/5691068/ditjen-imigrasi-lakukan-penyesuaian-tarif-visa-on-arrival-indonesia"
      ],
      "confidence": "high",
-     "note": "Visa-free for 30 days instead: all ASEAN passports (incl. SG, MY, PH), Timor-Leste, Hong Kong, Macau, Brazil, Colombia, Peru, Suriname, Turkiye, Kazakhstan, Belarus. Foreign Singapore PRs with a blue NRIC get a free 4-day stay (not extendable) in Batam, Bintan and Karimun at listed ferry ports, so they need no e-VOA for short trips there. Only official channels: evisa.imigrasi.go.id and indonesiavoa.vfsevisa.id. A rise to IDR 750,000 was proposed in August 2026 but has no effective date."
+     "note": "Visa-free for 30 days instead: all ASEAN passports (incl. SG, MY, PH), Timor-Leste, Hong Kong, Macau, Brazil, Colombia, Peru, Suriname, Turkiye, Kazakhstan, Belarus. Foreign Singapore PRs with a blue NRIC get a free 4-day stay (not extendable) in Batam, Bintan and Karimun at listed ferry ports, so they need no e-VOA for short trips there; this rule dates from Oct 2024 and we found no 2026 reconfirmation. Only official channels: evisa.imigrasi.go.id and indonesiavoa.vfsevisa.id. Immigration proposed on 12 Aug 2026 to raise the fee to IDR 750,000 online and IDR 1,000,000 on arrival, but no regulation or start date had been published by mid-Nov 2026."
     },
     {
      "id": "id-bali-levy",
@@ -354,7 +358,7 @@
       "https://lovebali.baliprov.go.id/terms"
      ],
      "confidence": "high",
-     "note": "Only needed if your trip includes Bali. Non-refundable. Exempt: diplomatic and official visas, crew, KITAS or KITAP holders, family unification and student visa holders. Golden visa and other non-tourist visa holders must apply for exemption at least 5 days before arrival. Can also be paid at counters on arrival.",
+     "note": "Only needed if your trip includes Bali. Non-refundable. Children pay too. Exempt: diplomatic and official visas, crew, KITAS or KITAP holders, family unification and student visa holders. Golden visa and other non-tourist visa holders must apply for exemption at least 5 days before arrival. Can also be paid at counters on arrival. Bali's governor proposed raising the levy (reported Aug 2026) but no change had been adopted; the portal still showed IDR 150,000. The portal blocked our access from outside Indonesia, so the fee was confirmed through search results of the official site.",
      "places": [
       "bali",
       "denpasar",
@@ -372,8 +376,8 @@
     }
    ],
    "transit": "All Indonesia is for passengers who enter Indonesia. No official page we found covers airside transit; if you must clear immigration to change flights, file it and hold the right visa.",
-   "landSea": "Ferries from Singapore (HarbourFront and Tanah Merah) go to Batam (Batam Centre, Harbour Bay, Sekupang, Nongsa), Bintan (Bandar Bentan Telani at Lagoi, Sri Bintan Pura at Tanjung Pinang) and Tanjung Balai Karimun. Everyone files All Indonesia, choosing SEA and the arrival port. Singapore citizens and other ASEAN passports are visa-free for 30 days. India and China passports need an e-VOA, which these ports accept. Foreign Singapore PRs with a blue NRIC can instead enter visa-free for 4 days at Nongsa Terminal Bahari, Marina Teluk Senimba, Batam Centre, Harbour Bay (Citra Tri Tunas), Sekupang, Sri Bintan Pura, Bandar Bentan Telani or Tanjung Balai Karimun; they use the counter, not the autogate, and must stay in Batam, Bintan or Karimun. Returning to Singapore by ferry, everyone including citizens must file the SG Arrival Card.",
-   "source": "research"
+   "landSea": "Ferries from Singapore (HarbourFront and Tanah Merah) go to Batam (Batam Centre, Harbour Bay, Sekupang, Nongsa), Bintan (Bandar Bentan Telani at Lagoi, Sri Bintan Pura at Tanjung Pinang) and Tanjung Balai Karimun. Everyone files All Indonesia, choosing SEA and the arrival port. Singapore citizens and other ASEAN passports are visa-free for 30 days. India and China passports need an e-VOA, which these ports accept. Foreign Singapore PRs with a blue NRIC can instead enter visa-free for 4 days at Nongsa Terminal Bahari, Marina Teluk Senimba, Batam Centre, Harbour Bay (Citra Tri Tunas), Sekupang, Sri Bintan Pura, Bandar Bentan Telani or Tanjung Balai Karimun; they use the counter, not the autogate, and must stay in Batam, Bintan or Karimun. By land from Sarawak (Entikong), All Indonesia was trialled from 28 Jul 2026; follow the instructions at the post. Returning to Singapore by ferry, everyone including citizens must file the SG Arrival Card.",
+   "source": "verify"
   },
   "TH": {
    "items": [
@@ -382,7 +386,7 @@
      "kind": "arrival-card",
      "name": "Thailand Digital Arrival Card (TDAC)",
      "required": true,
-     "who": "All non-Thai nationals entering by air, land or sea, including children; exempt are airside transit passengers, Border Pass holders and operating crew.",
+     "who": "All non-Thai nationals entering by air, land or sea, including children and diplomats; exempt are transit passengers who do not pass immigration and operating crew.",
      "exemptNationalities": [
       "TH"
      ],
@@ -409,12 +413,12 @@
       "https://www.tatnews.org/2026/09/thailand-introduces-new-30-day-and-15-day-visa-exemption-rules-from-15-september/"
      ],
      "confidence": "high",
-     "note": "Official example: arriving 5 May, you can submit from 2 May. Name, passport number, nationality and date of birth cannot be edited after submitting. Not a visa. Since 15 Sep 2026 visa-free stays are 30 days (SG, MY, ID, PH, IN on the list; China uses a separate bilateral exemption). The planned tourist entry fee and an ETA are not in force as of Nov 2026."
+     "note": "The FAQ says both 'within 3 days in advance (including the date of arrival)' and 'up to 72 hours before your entry', so filing 1 to 2 days ahead is safest. Name, passport number, nationality and date of birth cannot be edited after submitting; submit a new form instead. Not a visa. The FAQ does not mention Border Pass holders, so we could not confirm that exemption. Since 15 Sep 2026 visa-free stays are 30 days (SG, MY, ID, PH, IN on the list; China uses a separate bilateral exemption). No ETA is in force. A tourist entry fee, now proposed at 450 baht, is not in force as of Nov 2026; the earliest reported target is 2027 for air arrivals."
     }
    ],
    "transit": "No TDAC is needed if you transfer airside without passing immigration (TDAC FAQ). If you leave the airport, you need one.",
-   "landSea": "By road or rail from Malaysia (e.g. Bukit Kayu Hitam to Sadao, Padang Besar), and by sea, the TDAC is still required. From 15 Sep 2026, visa-exempt entries at land checkpoints are capped at 2 per calendar year, but the cap does not apply to Malaysian, Bruneian, Indonesian or Singaporean nationals. Land crossings between Thailand and Cambodia are closed (Australian travel advice, 22 Sep 2026).",
-   "source": "research"
+   "landSea": "By road or rail from Malaysia (e.g. Bukit Kayu Hitam to Sadao, Padang Besar), and by sea, the TDAC is still required. From 15 Sep 2026, visa-exempt entries at land checkpoints are capped at 2 per calendar year, but the cap does not apply to Malaysian, Bruneian, Indonesian or Singaporean nationals (TAT). Land crossings between Thailand and Cambodia remain closed; Thailand's prime minister said on 31 Oct 2026 there is no date to reopen them.",
+   "source": "verify"
   },
   "VN": {
    "items": [
@@ -422,8 +426,8 @@
      "id": "vn-pre-arrival",
      "kind": "arrival-card",
      "name": "Vietnam Pre-Arrival Information (PAI) declaration",
-     "required": false,
-     "who": "All international air passengers who do not hold a Vietnamese passport.",
+     "required": true,
+     "who": "All international air passengers who do not hold a Vietnamese passport, at all airports since June 2026.",
      "exemptNationalities": [
       "VN"
      ],
@@ -438,16 +442,17 @@
      "validity": "One arrival",
      "steps": [
       "Within 3 days before arrival, open prearrival.immigration.gov.vn.",
-      "Enter passport, flight and accommodation details.",
+      "Enter passport, flight and accommodation details exactly as in your passport and visa.",
       "Save or print the confirmation QR code.",
       "Show the QR code at immigration."
      ],
      "sources": [
       "https://hanoi.mfa.gov.sg/mission-updates/pre-arrival-declaration-for-foreign-travellers-entering-vietnam/",
-      "https://vn.usembassy.gov/notice-implementation-of-pre-arrival-declaration-for-international-visitors-arriving-at-airports-in-vietnam/"
+      "https://vn.usembassy.gov/notice-implementation-of-pre-arrival-declaration-for-international-visitors-arriving-at-airports-in-vietnam/",
+      "https://vn.usembassy.gov/change-to-entry-requirements-for-passengers-arriving-at-tan-son-nhat-international-airport-sgn/"
      ],
      "confidence": "medium",
-     "note": "Started 15 Apr 2026 at Tan Son Nhat; by late June 2026 also at Noi Bai, Da Nang, Cam Ranh and Phu Quoc. Singapore's Embassy in Hanoi says travellers are encouraged and strongly advised to do it; the US Embassy calls it mandatory at all airports. Guidance differs, so do it in advance to avoid queues. It can also be done on arrival by QR code or paper form. Not a visa."
+     "note": "Started 15 Apr 2026 at Tan Son Nhat. The US Embassy (17 Jun 2026) calls it mandatory and says it now covers all airports; Singapore's Embassy in Hanoi (25 Jun 2026) says travellers are encouraged and strongly advised to do it. Either way it must be completed, before arrival or on arrival by QR code or paper form, so doing it in advance avoids queues. Not a visa."
     },
     {
      "id": "vn-evisa",
@@ -512,18 +517,18 @@
       "Print the e-Visa and enter through a designated e-Visa border gate."
      ],
      "sources": [
+      "https://evisa.gov.vn",
       "https://immigration.gov.vn/trang-chu-ttdt",
       "https://e-services.mps.gov.vn/bocongan/bothutuc/tthc?matt=26277",
-      "https://vietnamtourism.gov.vn/en/post/21219",
-      "https://hef.gov.vn/official-guidance-on-entry-and-visa-requirements-for-viet-nam.html"
+      "https://baochinhphu.vn/thi-diem-mien-thi-thuc-cho-cong-dan-trung-quoc-di-du-lich-theo-doan-den-khanh-hoa-102261012185353656.htm"
      ],
      "confidence": "high",
-     "note": "India and China passports need it. ASEAN passports are visa-free for 14 to 30 days depending on nationality (Singapore 30 days). 45-day waivers: Denmark, Finland, France, Germany, Italy, Japan, Korea, Norway, Russia, Spain, Sweden, UK until 14 Mar 2028; Belgium, Bulgaria, Croatia, Czechia, Hungary, Luxembourg, Netherlands, Poland, Romania, Slovakia, Slovenia, Switzerland until 14 Aug 2028 (tourism only). Since 11 Nov 2024 the official portals are evisa.gov.vn and thithucdientu.gov.vn."
+     "note": "India and China passports need it. ASEAN passports are visa-free for 14 to 30 days depending on nationality (Singapore 30 days). Indonesian passports dropped from 30 to 14 days from 15 Jul 2026, for tourism and family visits only (Indonesian Embassy in Hanoi). 45-day waivers: Denmark, Finland, France, Germany, Italy, Japan, Korea, Norway, Russia, Spain, Sweden, UK until 14 Mar 2028; Belgium, Bulgaria, Croatia, Czechia, Hungary, Luxembourg, Netherlands, Poland, Romania, Slovakia, Slovenia, Switzerland until 14 Aug 2028 (tourism only). Chinese passports on a package group tour of 2 or more, flying direct from mainland China to Cam Ranh and staying in Khanh Hoa, are visa-free from 12 Oct 2026 to 31 Dec 2027 (Resolution 325/NQ-CP); independent Chinese travellers still need the e-Visa. Phu Quoc island allows 30 days visa-free for all nationalities if you fly in directly. Official portals: evisa.gov.vn and thithucdientu.gov.vn."
     }
    ],
-   "transit": "PAI and the e-Visa apply to travellers entering Vietnam. No official page we found covers airside transit; check with your airline if you change planes.",
-   "landSea": "E-Visa holders must use a border gate on the official e-Visa port list; check evisa.gov.vn before crossing by land (e.g. from Cambodia at Bavet to Moc Bai). The PAI declaration is airport only so far.",
-   "source": "research"
+   "transit": "PAI and the e-Visa apply to travellers entering Vietnam. Vietnamese reports say passengers who stay airside do not file the PAI, but no English official page confirms this; check with your airline if you change planes.",
+   "landSea": "E-Visa holders must use a border gate on the official e-Visa port list; check evisa.gov.vn before crossing by land (e.g. from Cambodia at Bavet to Moc Bai). The PAI declaration is confirmed for airports only so far.",
+   "source": "verify"
   },
   "PH": {
    "items": [
@@ -532,7 +537,7 @@
      "kind": "arrival-card",
      "name": "Philippines eTravel",
      "required": true,
-     "who": "All arriving passengers and crew, Filipino and foreign, plus departing Filipinos; exempt are diplomats and their dependants, 9(e) visa holders and diplomatic or official passport holders.",
+     "who": "All arriving passengers and crew, Filipino and foreign, plus departing Filipinos; exempt are foreign diplomats and their dependants, foreign dignitaries and delegations, 9(e) visa holders and diplomatic or official passport holders.",
      "exemptNationalities": [],
      "onlyNationalities": [],
      "modes": [
@@ -540,29 +545,30 @@
       "sea"
      ],
      "windowDays": 3,
-     "leadDays": 3,
+     "leadDays": 2,
      "fee": "Free",
      "url": "https://etravel.gov.ph",
      "validity": "One arrival",
      "steps": [
       "Within 72 hours before arrival, register at etravel.gov.ph or in the eGovPH app.",
       "Enter passport, flight and health details.",
-      "Screenshot or download the QR code; airlines may ask for it before boarding.",
+      "Screenshot or download the QR code; airlines ask for it before boarding.",
       "Green QR: go to immigration. Red QR: see Quarantine first."
      ],
      "sources": [
       "https://etravel.gov.ph/frequently-asked-questions",
+      "https://etravel.gov.ph/",
       "https://immigration.gov.ph/advisory-etravel-registration/"
      ],
      "confidence": "high",
-     "note": "Free; fake sites have charged PHP 3,000 to 5,000. The eTravel FAQ says register within 72 hours before arrival, while an October 2026 Immigration advisory says at least 72 hours before travel, so register as soon as the portal allows, about 3 days ahead. The eTravel home page has a separate cruise registration."
+     "note": "Free; fake sites have charged PHP 3,000 to 5,000. The eTravel FAQ says register within 72 hours before arrival, while a 2026 Immigration advisory says at least 72 hours before travel. Since the portal only opens 72 hours ahead, register 1 to 2 days before your flight. If you lose the QR code, retrieve it under Edit Registration with your reference number and date of birth. Cruise passengers and crew use the separate Cruise Travel Registration on the eTravel home page."
     },
     {
      "id": "ph-evisa-china",
      "kind": "evisa",
-     "name": "Philippine e-Visa (Chinese passports outside the visa-free scheme)",
+     "name": "Philippine e-Visa (Chinese passports outside the visa-free schemes)",
      "required": true,
-     "who": "Chinese passport holders staying more than 14 days, or arriving anywhere other than Manila NAIA or Mactan-Cebu airports.",
+     "who": "Chinese passport holders staying more than 14 days or arriving anywhere other than Manila NAIA or Mactan-Cebu airports, unless they qualify for the 7-day stay with a valid Australian, Japanese, Canadian, Schengen or US visa.",
      "exemptNationalities": [],
      "onlyNationalities": [
       "CN"
@@ -573,27 +579,27 @@
      ],
      "windowDays": null,
      "leadDays": 30,
-     "fee": "Set by the Philippine Embassy; non-refundable",
+     "fee": "Set by the Philippine Embassy; paid by bank transfer; non-refundable",
      "url": "https://evisa.gov.ph",
      "steps": [
       "Create an account on evisa.gov.ph (live for Singapore residents since 23 June 2025).",
       "Fill in the form and upload your documents.",
-      "Pay by bank transfer.",
-      "Wait 7 to 12 working days for a single-entry e-Visa, then travel."
+      "Pay by bank transfer within 48 hours, or the application lapses.",
+      "Wait 7 to 12 working days for a single-entry e-Visa (15 to 21 for multiple entry), then travel."
      ],
      "sources": [
-      "https://www.philippine-embassy.org.sg/consular/visa/faqs-travel-to-the-philippines-of-foreign-nationals/",
+      "https://evisa.gov.ph/page/policy",
+      "https://evisa.gov.ph/frequently-ask-questions",
       "https://www.philippine-embassy.org.sg/evisa-guidelines/",
-      "https://guangzhoupcg.dfa.gov.ph/en/consular-services/visa-services/visa-general-information/9a-visa-requirements",
-      "https://evisa.gov.ph/frequently-ask-questions"
+      "https://dfa.gov.ph/dfa-news/statements-and-advisoriesupdate/37650-philippines-to-allow-visa-free-entry-for-14-days-for-chinese-nationals"
      ],
      "confidence": "medium",
-     "note": "Since 16 Jan 2026 Chinese nationals get 14 days visa-free (tourism or business, non-extendable) via NAIA and Mactan-Cebu only, with hotel booking, proof of funds and onward ticket. The scheme runs for one year and will be reviewed, so recheck from January 2027. Indian nationals get 14 days visa-free, or 30 days with a valid visa or PR from Australia, Japan, the US, Canada, Schengen, Singapore or the UK."
+     "note": "Since 16 Jan 2026 Chinese nationals get 14 days visa-free (tourism or business, not extendable or convertible) via NAIA and Mactan-Cebu only, with a passport valid 6 months, hotel booking and onward ticket. The scheme runs for one year and will be reviewed, so recheck from January 2027. Mainland Chinese tourists with a valid Australian, Japanese, Canadian, Schengen or US visa can instead get 7 days, extendable to 21. Hong Kong and Macau passports get 14 days. Indian nationals get 14 days visa-free at any port since 8 Jun 2025, or 30 days (tourism) with a valid visa or residence permit from Australia, Japan, the US, Canada, Schengen, Singapore or the UK."
     }
    ],
-   "transit": "Chinese and Indian nationals transiting the Philippines to a third country must get a Philippine transit visa before entry. eTravel covers arriving passengers; the official FAQ does not address airside transit.",
-   "landSea": "No land borders. Sea and cruise arrivals also register on eTravel; the eTravel home page has a separate cruise registration QR code.",
-   "source": "research"
+   "transit": "Chinese and Indian nationals transiting the Philippines to a third country must get a Philippine visa before entry (evisa.gov.ph policy). eTravel covers arriving passengers; the official FAQ does not address airside transit.",
+   "landSea": "No land borders. Sea and cruise arrivals also register on eTravel; the eTravel home page has a separate Cruise Travel Registration for passengers and crew.",
+   "source": "verify"
   },
   "KH": {
    "items": [
@@ -602,7 +608,7 @@
      "kind": "arrival-card",
      "name": "Cambodia e-Arrival Card (CeA)",
      "required": true,
-     "who": "All travellers arriving by air at Techo (Phnom Penh), Siem Reap-Angkor and Sihanoukville international airports.",
+     "who": "All travellers arriving by air at Techo (Phnom Penh), Siem Reap-Angkor and Sihanoukville international airports, even if they already hold a visa.",
      "exemptNationalities": [],
      "onlyNationalities": [],
      "modes": [
@@ -625,7 +631,7 @@
       "https://www.vps.akp.gov.kh/post/detail/329102"
      ],
      "confidence": "high",
-     "note": "In force since 1 Sep 2024. Replaces paper immigration, health and customs forms. Still needed if you already have a visa. Only arrival.gov.kh and the Cambodia e-Arrival app are official; there is no service fee. Land arrivals may still get paper forms."
+     "note": "Introduced in 2024; sources differ on whether it became mandatory in July or September 2024. Replaces paper immigration, health and customs forms. Only arrival.gov.kh and the Cambodia e-Arrival app are official; there is no fee (Singapore MFA, page updated 14 Nov 2026). Land arrivals may still get paper forms."
     },
     {
      "id": "kh-evisa",
@@ -651,7 +657,7 @@
      ],
      "windowDays": 90,
      "leadDays": 10,
-     "fee": "USD 30 (tourist e-Visa T)",
+     "fee": "USD 30 (tourist e-Visa T); reported as all-in since 1 Jan 2025",
      "url": "https://www.evisa.gov.kh",
      "validity": "Use within 3 months; single entry; 1-month stay",
      "steps": [
@@ -662,15 +668,17 @@
      ],
      "sources": [
       "https://www.evisa.gov.kh/",
-      "https://www.smartraveller.gov.au/destinations/asia/cambodia"
+      "https://www.evisa.gov.kh/information/tourist_visa/4",
+      "https://www.smartraveller.gov.au/destinations/asia/cambodia",
+      "https://www.akp.gov.kh/post/detail/373161"
      ],
      "confidence": "medium",
-     "note": "Singapore passports are visa-free for 30 days. A tourist visa on arrival is also available. e-Visa entry ports: the three international airports, Bavet (Vietnam border) and Tropaeng Kreal (Laos border). Poipet and Cham Yeam are on the e-Visa list but Thai border crossings are closed. The e-Visa site still names the old Phnom Penh airport."
+     "note": "Singapore passports are visa-free for 30 days. A tourist visa on arrival is also available. e-Visa entry ports: the three international airports, Bavet (Vietnam border) and Tropaeng Kreal (Laos border). Poipet and Cham Yeam are on the e-Visa list but Thai border crossings are closed. The e-Visa site still names the old Phnom Penh airport. Older sites quote USD 36 including a USD 6 processing fee; reports say this was cut to USD 30 all-in on 1 Jan 2025, but the official site's bot protection stopped us confirming the amount. A 14-day visa-free trial for Chinese passports ran from 15 Jun to 15 Oct 2026; no extension was confirmed by mid-Nov 2026, so Chinese passports should plan on the e-Visa."
     }
    ],
    "transit": "",
-   "landSea": "All land crossings with Thailand (incl. Poipet and Cham Yeam) are closed and Australia advises against travel within 50 km of that border (22 Sep 2026). From Vietnam, Bavet accepts the e-Visa. From Laos, Tropaeng Kreal (Stung Treng) accepts it. The e-Arrival Card is confirmed for airports only.",
-   "source": "research"
+   "landSea": "All land crossings with Thailand (incl. Poipet and Cham Yeam) remain closed, and Australia advises against travel within 50 km of that border. From Vietnam, Bavet accepts the e-Visa. From Laos, Tropaeng Kreal (Stung Treng) accepts it. The e-Arrival Card is confirmed for airports only.",
+   "source": "verify"
   },
   "LA": {
    "items": [
@@ -679,7 +687,7 @@
      "kind": "arrival-card",
      "name": "Lao Digital Immigration Form (LDIF)",
      "required": true,
-     "who": "All foreign nationals entering or leaving Laos through Wattay (Vientiane), Luang Prabang or Pakse airports or Lao-Thai Friendship Bridge I.",
+     "who": "All non-Lao nationals entering or leaving Laos through Wattay (Vientiane), Luang Prabang or Pakse airports or Lao-Thai Friendship Bridge I.",
      "exemptNationalities": [
       "LA"
      ],
@@ -701,10 +709,11 @@
      ],
      "sources": [
       "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/lao-peoples-democratic-republic/",
+      "https://www.gov.uk/foreign-travel-advice/laos/entry-requirements",
       "https://www.indianembassylaos.gov.in/page/lao-digital-immigration-form-ldif-to-streamline-border-procedure/"
      ],
      "confidence": "medium",
-     "note": "In force since 1 Sep 2025. Laos said it would extend LDIF to all international checkpoints from early 2026, but we could not confirm this has happened; other crossings may still use paper cards. Not a visa."
+     "note": "In force since 1 Sep 2025. Laos said it would extend LDIF to all international checkpoints from early 2026, but Singapore MFA and GOV.UK still list only these four checkpoints as of Nov 2026; other crossings may still use paper cards. Not a visa."
     },
     {
      "id": "la-evisa",
@@ -732,7 +741,7 @@
      "leadDays": 14,
      "fee": "Calculated by passport on the portal (about USD 50 for many passports); non-refundable",
      "url": "https://laoevisa.gov.la",
-     "validity": "Approval letter valid 60 days; single entry; 30-day stay",
+     "validity": "Enter within 60 days of receiving the approval letter; single entry; 30-day stay",
      "steps": [
       "Apply on laoevisa.gov.la at least 5 days before arrival with a 4x6 cm photo and passport bio page.",
       "Pay the fee online.",
@@ -741,15 +750,16 @@
      ],
      "sources": [
       "https://laoevisa.gov.la/info/",
+      "https://laoevisa.gov.la/faq",
       "https://www.gov.uk/foreign-travel-advice/laos/entry-requirements"
      ],
      "confidence": "medium",
-     "note": "Singapore passports are visa-free for 30 days. eVisa ports: Wattay, Luang Prabang and Pakse airports; Friendship Bridges I, II and IV; Boten checkpoint; Boten and Khamsavath (Vientiane) railway stations. At any other port you must buy a visa on arrival and the eVisa fee is not refunded."
+     "note": "Singapore passports are visa-free for 30 days. eVisa ports: Wattay, Luang Prabang and Pakse airports; Friendship Bridges I, II and IV; Boten checkpoint; Boten and Khamsavath (Vientiane) railway stations. At any other port you must buy a visa on arrival and the eVisa fee is not refunded. The exempt list here covers ASEAN only; some other passports (for example Japan and Korea) are also exempt."
     }
    ],
    "transit": "",
    "landSea": "Lao-China Railway passengers can use the eVisa at Boten and Khamsavath stations. From Thailand, Friendship Bridge I (Nong Khai to Vientiane) uses LDIF. At crossings not on the eVisa list, such as Friendship Bridge III, get a visa on arrival instead.",
-   "source": "research"
+   "source": "verify"
   },
   "BN": {
    "items": [
@@ -779,12 +789,12 @@
       "Show your passport, and visa if needed, at immigration."
      ],
      "sources": [
-      "https://www.immigration.gov.bn/Borang%20PDF/FAQS%20E-ARRIVAL%20CARD.pdf",
       "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/brunei/",
-      "https://brunei.mfa.gov.sg/consular-services/"
+      "https://brunei.mfa.gov.sg/consular-services/",
+      "https://www.immigration.gov.bn/Borang%20PDF/FAQS%20E-ARRIVAL%20CARD.pdf"
      ],
      "confidence": "medium",
-     "note": "Mandatory since 9 Feb 2023; replaces paper Form 19. Singapore MFA says submit at least 3 days before arrival, but Brunei's FAQ gives no fixed window and allows registering on your phone at the checkpoint. Each traveller files their own. Australian advice also says tourists staying over 2 weeks need medical insurance of at least BND 10,000; not confirmed on a Brunei page."
+     "note": "Mandatory since 9 Feb 2023; replaces paper Form 19. Singapore MFA (page updated 14 Nov 2026) says submit at least 3 days before arrival, while Brunei's FAQ reportedly gives no fixed window and allows registering on your phone at the checkpoint; we could not open the FAQ PDF. Each traveller files their own. Australian advice also says tourists staying over 2 weeks need medical insurance of at least BND 10,000; not confirmed on a Brunei page."
     },
     {
      "id": "bn-bruhealth",
@@ -811,16 +821,16 @@
      ],
      "sources": [
       "https://brunei.mfa.gov.sg/consular-services/",
-      "https://www.healthinfo.gov.bn/travel",
-      "https://www.smartraveller.gov.au/destinations/asia/brunei-darussalam"
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/brunei/",
+      "https://www.healthinfo.gov.bn/travel"
      ],
      "confidence": "medium",
-     "note": "Mandatory since 7 Sep 2024 because of mpox. Separate from the E-Arrival Card. Still listed as required by Singapore's High Commission (Jan 2026) and Australia (Sep 2026)."
+     "note": "Mandatory since 7 Sep 2024 (Singapore High Commission, Jan 2026). Separate from the E-Arrival Card. Singapore MFA's Brunei page (updated 14 Nov 2026) still lists it as mandatory for all travellers."
     }
    ],
-   "transit": "No E-Arrival Card is needed if you transit without passing immigration (Brunei Immigration FAQ).",
+   "transit": "No E-Arrival Card is needed if you transit without passing immigration (Singapore MFA, citing Brunei rules).",
    "landSea": "By road from Sarawak (e.g. Miri or Limbang) or by ferry from Labuan, the E-Arrival Card and BruHealth declaration still apply. Coming back into Malaysia, non-exempt foreigners need the MDAC.",
-   "source": "research"
+   "source": "verify"
   },
   "MM": {
    "items": [
@@ -829,7 +839,7 @@
      "kind": "evisa",
      "name": "Myanmar eVisa (Tourist)",
      "required": true,
-     "who": "Most foreign passports, including Malaysia, India and China; Singapore, Vietnam and several ASEAN passports are visa-exempt.",
+     "who": "Passport holders who are not visa-exempt, including India and China; India, China, Japan, Korea and Macau passports flying in may instead use a visa on arrival trial.",
      "exemptNationalities": [
       "SG",
       "VN",
@@ -837,8 +847,10 @@
       "KH",
       "ID",
       "LA",
+      "MY",
       "PH",
-      "TH"
+      "TH",
+      "BY"
      ],
      "onlyNationalities": [],
      "modes": [
@@ -847,27 +859,28 @@
      ],
      "windowDays": 90,
      "leadDays": 14,
-     "fee": "USD 50 (USD 56 express); non-refundable",
+     "fee": "USD 50 standard (express reported as USD 56); non-refundable",
      "url": "https://evisa.moip.gov.mm",
-     "validity": "Approval letter valid 90 days; single entry; 28-day stay",
+     "validity": "Single entry; enter within 90 days of issue; 28-day stay",
      "steps": [
       "Apply on evisa.moip.gov.mm with a recent photo, passport bio page, hotel booking and return ticket.",
       "Pay by card.",
-      "Get the approval letter in up to 3 working days (24 hours for express).",
+      "Get the approval letter in at least 3 working days (faster with express).",
       "Show the letter on arrival to get the visa stamp."
      ],
      "sources": [
+      "https://www.mofa.gov.mm/wp-content/uploads/2026/07/List-of-Countries-Having-Bilateral-Visa-Exemption-Agreements-with-Myanmar-AS-of-8-7-2026-1-1.pdf",
+      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/myanmar/",
       "https://www.tourism.gov.mm/electronic-visa.html",
-      "http://myanmarembassy.sg/downloads/visa/eVisa_information.pdf",
-      "https://www.mfa.gov.sg/travelling-overseas/travel-advisories-notices-and-visa-information/myanmar/"
+      "http://myanmarembassy.sg/downloads/visa/eVisa_information.pdf"
      ],
      "confidence": "medium",
-     "note": "Singapore MFA strongly advises Singaporeans to defer all travel to Myanmar (June 2026). Visa-free: Singapore 30 days via Yangon, Mandalay or Nay Pyi Taw; Vietnam 30 days; Brunei, Cambodia, Indonesia, Laos, Philippines and Thailand 14 days via those three airports. eVisa entry: the three airports; official pages differ on which land checkpoints are open. The eVisa cannot be used at seaports."
+     "note": "Singapore MFA strongly advises Singaporeans to defer all travel to Myanmar (10 June 2026). Visa-free per Myanmar's Foreign Ministry list (8 Jul 2026): Singapore and Vietnam 30 days; Brunei, Cambodia, Indonesia, Laos, Malaysia, Philippines and Thailand 14 days; Belarus 30 days. Russia is also listed at 30 days, but its exemption was announced only to 30 Jun 2026, so recheck. Singapore MFA says Singaporeans may enter via Yangon, Mandalay or Nay Pyi Taw. Visa on arrival trial by air: China and India until 29 Aug 2027; Japan, Korea and Macau until 20 Oct 2027 (Ministry of Culture, Hotels and Tourism, reported Oct 2026); its fee and stay are not confirmed on an official page. We could not load the eVisa portal's fee and port pages. The eVisa cannot be used at seaports."
     }
    ],
    "transit": "",
-   "landSea": "Official pages list Kawthaung, and on some embassy pages also Tachileik and Myawaddy, as eVisa land checkpoints from Thailand, but conflict affects many border areas. Cruise passengers cannot use the eVisa and need a pre-arranged visa.",
-   "source": "research"
+   "landSea": "Recent reports say Kawthaung is the only land checkpoint from Thailand currently accepting the eVisa; older lists also named Tachileik, Myawaddy, Tamu and Rihkhawdar. Conflict affects many border areas, so check the eVisa portal before any land crossing (low confidence). Cruise passengers cannot use the eVisa and need a pre-arranged visa.",
+   "source": "verify"
   },
   "EU-SCHENGEN": {
    "items": [
