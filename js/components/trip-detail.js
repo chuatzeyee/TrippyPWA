@@ -44,6 +44,9 @@ const MD = {
   travelExplore: 'M12 2C8.14 2 5 5.14 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.13.48 1.53 0C14.58 18.92 19 13.17 19 9c0-3.86-3.14-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
   walk: 'M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7',
   flightTakeoff: 'M2.5 19h19v2h-19v-2zm19.57-9.36c-.21-.8-1.04-1.28-1.84-1.06L14.92 10l-6.9-6.43-1.93.51 4.14 7.17-4.97 1.33-1.97-1.54-1.45.39 2.59 4.49s7.12-1.9 16.57-4.43c.81-.23 1.28-1.05 1.07-1.85z',
+  flightLand: 'M2.5 19h19v2h-19v-2zm7.18-5.73l4.35 1.16 5.31 1.42c.8.21 1.62-.26 1.84-1.06.21-.8-.26-1.62-1.06-1.84l-5.31-1.42-2.76-9.02L10.12 2v8.28L5.15 8.95l-.93-2.32-1.45-.39v5.17l1.6.43 5.31 1.43z',
+  seat: 'M4 18v3h3v-3h10v3h3v-6H4zm15-8h3v3h-3zM2 10h3v3H2zm15 3H7V5c0-1.1.9-2 2-2h6c1.1 0 2 .9 2 2v8z',
+  luggage: 'M17 6h-2V3c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v3H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2 0 .55.45 1 1 1s1-.45 1-1h6c0 .55.45 1 1 1s1-.45 1-1c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM9.5 18H8V9h1.5v9zm3.25 0h-1.5V9h1.5v9zm.75-12h-3V3.5h3V6zM16 18h-1.5V9H16v9z',
   tram: 'M19 16.94V8.5c0-2.79-2.61-3.4-6.01-3.49l.76-1.51H17V2H7v1.5h4.75l-.76 1.52C7.86 5.11 5 5.73 5 8.5v8.44c0 1.45 1.19 2.66 2.59 2.97L6 21.5v.5h2.23l2-2H14l2 2h2v-.5L16.5 20h-.08c1.69 0 2.58-1.37 2.58-3.06zm-7 1.56c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm5-4.5H7V9h10v5z',
   bus: 'M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z',
   train: 'M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h2.23l2-2H14l2 2h2v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-3.58-4-8-4zM7.5 17c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm3.5-7H6V6h5v4zm2 0V6h5v4h-5zm3.5 7c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z',
@@ -1047,14 +1050,15 @@ function bookingRowHtml(ref, extraClass = '') {
     </div>`;
 }
 
-// Flight details (mostly from an imported booking), each under its own label.
+// Flight details (mostly from an imported booking), each under an icon; the
+// label stays in the markup for screen readers and as a hover title.
 // Imported values sometimes repeat the label ("Departs Wed 13 Jan 06:10"), so a
 // leading label word is dropped.
 const FLIGHT_DETAILS = [
-  ['depart', 'Depart', /^(?:departure|departs?)\b[\s:,]*/i],
-  ['arrive', 'Arrive', /^(?:arrival|arrives?)\b[\s:,]*/i],
-  ['seats', 'Seats', /^seats?\b[\s:,]*/i],
-  ['baggage', 'Baggage', /^baggage\b[\s:,]*/i],
+  ['depart', 'Depart', /^(?:departure|departs?)\b[\s:,]*/i, MD.flightTakeoff],
+  ['arrive', 'Arrive', /^(?:arrival|arrives?)\b[\s:,]*/i, MD.flightLand],
+  ['seats', 'Seats', /^seats?\b[\s:,]*/i, MD.seat],
+  ['baggage', 'Baggage', /^baggage\b[\s:,]*/i, MD.luggage],
 ];
 
 // A stored string or number as trimmed text; anything else (objects from a
@@ -1082,12 +1086,12 @@ function flightDetailValueHtml(key, value) {
 
 function flightDetailsHtml(leg) {
   const rows = FLIGHT_DETAILS
-    .map(([key, label, lead]) => [key, label, plainText(leg[key]).replace(lead, '').trim()])
-    .filter(([, , value]) => value);
+    .map(([key, label, lead, icon]) => [key, label, icon, plainText(leg[key]).replace(lead, '').trim()])
+    .filter(([, , , value]) => value);
   if (!rows.length) return '';
   return `
     <dl class="td-flight-details">
-      ${rows.map(([key, label, value]) => `<dt>${label}</dt><dd>${flightDetailValueHtml(key, value)}</dd>`).join('')}
+      ${rows.map(([key, label, icon, value]) => `<dt title="${label}">${mdIcon(icon, 16)}<span class="td-sr-only">${label}</span></dt><dd>${flightDetailValueHtml(key, value)}</dd>`).join('')}
     </dl>`;
 }
 
