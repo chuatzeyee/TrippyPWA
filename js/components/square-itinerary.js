@@ -10,6 +10,7 @@
 
 import { buildDeckHtml, mountCardDeck } from '../lib/card-deck.js';
 import { escapeHtml } from '../data/day-builder.js';
+import { to12h } from '../lib/locale.js';
 
 // Trippy's 7-day accent sequence (matches tokens.css --day-N).
 const DAY_VARS = ['--day-1', '--day-2', '--day-3', '--day-4', '--day-5', '--day-6', '--day-7'];
@@ -55,7 +56,7 @@ function activityCard(activity, opts) {
         </div>` : ''}
       <div class="sq-itin-card-inner" style="--day-color: ${dayColor}">
         <div class="sq-itin-card-top">
-          <span class="sq-itin-time">${time ? escapeHtml(time) : ''}</span>
+          <span class="sq-itin-time">${time ? escapeHtml(to12h(time)) : ''}</span>
           <span class="sq-itin-step">${escapeHtml(dayLabel)}, stop ${index + 1} of ${total}</span>
         </div>
         <div class="sq-itin-icon">${catIcon(activity.category)}</div>

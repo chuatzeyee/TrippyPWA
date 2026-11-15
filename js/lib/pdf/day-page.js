@@ -1,6 +1,7 @@
 import { C, dayColor, categoryBadge } from './colors.js';
 import { PW, PH, MX, MX_R, CW, BOTTOM, ensureSpace, drawPageAccent, fmtDateShort, fmtDuration } from './layout.js';
 import { convert } from '../../data/currencies.js';
+import { to12h } from '../locale.js';
 
 const NO_COST_CATS = new Set(['departure', 'arrival', 'flight', 'check-in', 'landing', 'transfer', 'check-out']);
 const TIMELINE_X = 26;
@@ -119,7 +120,7 @@ function drawActivityCard(doc, ctx, act, color, photoData, destSym, destCode, ho
     doc.setFont('courier', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(...C.terracotta);
-    doc.text(act.start_time, TIMELINE_X - 3, ctx.y + 4, { align: 'right' });
+    doc.text(to12h(act.start_time), TIMELINE_X - 3, ctx.y + 4, { align: 'right' });
   }
 
   doc.setFillColor(...C.white);
