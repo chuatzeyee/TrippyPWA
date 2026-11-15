@@ -4611,3 +4611,6 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
   bottom: auto;
   top: calc(var(--nav-h) + var(--sp-3));
 }
+
+a.td-activity-photo-credit { text-decoration: none; }
+a.td-activity-photo-credit:hover { text-decoration: underline; }

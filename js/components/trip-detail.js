@@ -370,7 +370,7 @@ function renderTripFooter(trip) {
   const credit = `<div class="td-footer-credit">Photos via
     <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>,
     <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a> (Creative Commons),
-    venue websites &amp;
+    venue websites, Google Maps, the web pages credited on each photo &amp;
     <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a></div>`;
   if (pills.length === 0) return `<div class="td-footer">${credit}</div>`;
   return `<div class="td-footer"><div class="td-footer-pills">${pills.join('')}</div>${credit}</div>`;
@@ -672,7 +672,7 @@ function renderActivity(activity, currencySymbol, isFirst, tripCode = '') {
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(to12h(activity.description))}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(to12h(activity.tips))}</div>` : ''}
-        ${wantsActivityPhoto(activity) ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${credit ? `data-photo-credit="${esc(credit)}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
+        ${wantsActivityPhoto(activity) ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${credit ? `data-photo-credit="${esc(credit)}"` : ''} ${safeUrl(_photoCredits[activity.id]?.link || '') ? `data-photo-link="${esc(safeUrl(_photoCredits[activity.id].link))}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
         ${activity.id ? `<button type="button" class="td-alt-btn" data-alt-for="${esc(activity.id)}" title="Suggest alternatives" aria-expanded="false">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
       </div>
     </div>
@@ -2936,11 +2936,14 @@ function attachActivityImg(el, url, venue, source, credit = '') {
   img.onerror = () => showPhotoPlaceholder(el);
   el.querySelector('.td-photo-ph')?.remove();
   el.appendChild(img);
-  // Creative Commons photos need visible attribution.
+  // Creative Commons photos need visible attribution; web and Google Maps
+  // photos link back to the page they came from.
   if (credit) {
-    const c = document.createElement('span');
+    const link = safeUrl(el.dataset.photoLink || '');
+    const c = document.createElement(link ? 'a' : 'span');
     c.className = 'td-activity-photo-credit';
     c.textContent = credit;
+    if (link) { c.href = link; c.target = '_blank'; c.rel = 'noopener noreferrer'; }
     el.appendChild(c);
   }
 }
@@ -2954,6 +2957,8 @@ function applyActivityPhoto(el, activity, credit) {
   const sameCredit = (el.dataset.photoCredit || '') === (credit || '');
   if (url) el.dataset.photo = url; else delete el.dataset.photo;
   if (source) el.dataset.photoSource = source; else delete el.dataset.photoSource;
+  const link = safeUrl(_photoCredits[activity.id]?.link || '');
+  if (link) el.dataset.photoLink = link; else delete el.dataset.photoLink;
   if (credit) el.dataset.photoCredit = credit; else delete el.dataset.photoCredit;
   el.classList.remove('td-activity-photo--pending');
   if (url) {
