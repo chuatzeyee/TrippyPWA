@@ -1,6 +1,5 @@
-// Shared generation logic used by the async worker (process-generation) and the
-// legacy synchronous endpoint (generate-itinerary). Keeping it here prevents the
-// ~300-line prompt/schema/provider code from being duplicated across functions.
+// Shared generation logic: prompt, schema, provider calls and validation, used
+// by the async worker (process-generation), itinerary chat and alternatives.
 
 import {
   bookedFlightLegs, bookedFlightPrompt, mergeBookedFlights, transportInstruction,
@@ -618,6 +617,11 @@ function itineraryFromText(name: string, text: string, stop: string, requireDays
   }
   const parsed = parseItineraryJson(text);
   if (!parsed) return { data: null, error: `${name} returned unparseable JSON (stop: ${stop})` };
+  // Some models wrap the answer one level deep ({"itinerary": {"days": [...]}}).
+  if (!Array.isArray(parsed.data?.days) && parsed.data && typeof parsed.data === "object") {
+    const inner = Object.values(parsed.data).find((v: any) => v && typeof v === "object" && Array.isArray(v.days));
+    if (inner) parsed.data = inner;
+  }
   if (!Array.isArray(parsed.data?.days)) return { data: null, error: `${name} returned incomplete itinerary` };
   return parsed.salvaged
     ? { data: parsed.data, error: null, note: `kept ${parsed.data.days.length} complete day(s) from a cut-off ${name} reply (stop: ${stop})` }
@@ -666,8 +670,16 @@ export async function callGemini(
   }
 }
 
+// mistral-small-latest and mistral-medium-latest are capped at 0 requests per
+// minute on this project's Mistral plan (429 code 1300 on every call, checked
+// 2026-11-15 from the x-ratelimit headers), while the Ministral models answer.
+// ministral-8b-latest did a packed 2-day range in ~72s with valid output, so the
+// worker gives Mistral 2 days per call to stay inside the wall clock.
+export const MISTRAL_MODEL = "ministral-8b-latest";
+
 export async function callMistral(
   prompt: string, systemPrompt: string, jsonSchema: any, apiKey: string, timeoutMs = FETCH_TIMEOUT,
+  model = MISTRAL_MODEL,
 ): Promise<ProviderResult> {
   const schemaInstruction = `\n\nYou MUST return a JSON object matching this exact structure:\n${JSON.stringify(jsonSchema, null, 2)}\n\nReturn ONLY raw JSON. No markdown fences, no explanation.`;
 
@@ -676,7 +688,7 @@ export async function callMistral(
       method: "POST",
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "mistral-small-latest",
+        model,
         messages: [
           { role: "system", content: systemPrompt + schemaInstruction },
           { role: "user", content: prompt }

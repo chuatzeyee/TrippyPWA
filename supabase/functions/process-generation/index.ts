@@ -314,11 +314,13 @@ async function runChunk(jobId: string, continuation: boolean, startedAt: number,
     return;
   }
 
-  // Generate from the cursor to the end of the current chunk's range.
-  const from = daysDone + 1;
-  const to = Math.min(chunks[chunkIdx].to, totalDays);
-  const needExtras = !hasTripExtras(job.result_extras);
+  // Generate from the cursor to the end of the current chunk's range. The
+  // Mistral fallback is slower (about 36s a packed day), so it gets 2 days per
+  // call; the day cursor carries on from wherever it stops.
   const provider = providers[providerIdx % providers.length];
+  const from = daysDone + 1;
+  const to = Math.min(chunks[chunkIdx].to, totalDays, provider === "mistral" ? from + 1 : Infinity);
+  const needExtras = !hasTripExtras(job.result_extras);
 
   if (!(await updateActiveJob(jobId, token, {
     status: "processing", last_provider: provider,
