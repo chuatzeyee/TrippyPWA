@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { clip, corsHeadersFor, getCallerUserId, json, overDailyLimit, readJsonBody } from "../_shared/http.ts";
-import { callGemini } from "../_shared/generation.ts";
+import { callGemini, GEMINI_PRIMARY_MODEL } from "../_shared/generation.ts";
 
 // Tap-for-alternatives (feedback: "mango sticky rice was suggested — let me
 // click for 1-2 alternatives like pho or toast and pick one lazily").
@@ -8,7 +8,7 @@ import { callGemini } from "../_shared/generation.ts";
 // activities near the original, same budget band, different style.
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+const GEMINI_MODEL = GEMINI_PRIMARY_MODEL;
 
 // Input bounds: everything below is interpolated into the prompt.
 const MAX_BODY_BYTES = 64_000;

@@ -1,5 +1,10 @@
 import { logger } from '../lib/logger.js';
 import { supabase, getUser } from '../lib/supabase.js';
+// Static on purpose: both modules are already in the entry chunk, and the
+// production build turned the old dynamic import of destinations.js into
+// undefined ("n.find" error), so every flight trip lost the traveller's origin.
+import { DESTINATIONS } from '../wizard/destinations.js';
+import { fetchProfile } from '../data/profile-repository.js';
 
 // Async generation: we enqueue a job, fire the worker once, then watch the trip
 // row via Realtime. The edge worker runs each provider in its own invocation
@@ -9,8 +14,22 @@ const activeGenerations = new Map();
 const listeners = new Set();
 const channels = new Map();
 
-const WATCHDOG_MS = 240_000; // first DB reconcile if Realtime misses the event
-const WATCHDOG_GRACE_MS = 120_000; // extra grace before giving up locally
+// Progress-aware watchdog. A 13-day packed trip normally takes about five
+// minutes, and the server now resumes a stalled worker by itself, so the app
+// judges by progress (the job row's updated_at), not by a fixed deadline. The
+// old fixed 6-minute give-up showed slow but healthy jobs as failed, and its
+// Retry started a second job on the same trip.
+const POLL_MS = 60_000;          // check the job once a minute
+const SLOW_MS = 8 * 60_000;      // no progress this long: "taking longer than usual"
+const GIVE_UP_MS = 20 * 60_000;  // no progress this long: stop waiting, offer Retry
+
+// Server errors are technical ("Gemini 503 ..."); only the date problems are
+// meant for the traveller. Retry resumes from the last finished chunk.
+const RETRY_MESSAGE = "The AI planner couldn't finish this trip right now. Try again and it picks up where it stopped.";
+function friendlyError(serverError) {
+  const text = String(serverError || '');
+  return /up to \d+ days long|dates are not valid/i.test(text) ? text : RETRY_MESSAGE;
+}
 
 export async function startGeneration(tripId, wizardState) {
   // Guard against launching a second pipeline for a trip already in flight.
@@ -48,8 +67,6 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 // invent an origin (e.g. JFK for a Singapore-based user).
 async function enrichWizardState(wizardState) {
   try {
-    const { fetchProfile } = await import('../data/profile-repository.js');
-    const { DESTINATIONS } = await import('../wizard/destinations.js');
     const { data: profile } = await fetchProfile();
     if (!profile?.home_city) return wizardState;
 
@@ -64,13 +81,18 @@ async function enrichWizardState(wizardState) {
     };
 
     // Nearby = same landmass / short hop (use ground transport, no flights).
-    if (!enriched.isNearbyTrip && !wizardState.transport?.mode) {
-      const home = DESTINATIONS.find(d => d.name.toLowerCase() === profile.home_city.toLowerCase());
-      const dest = wizardState.multiCity ? wizardState.destinations?.[0] : wizardState.destination;
-      if (home && dest?.lat && dest?.lng) {
-        const km = haversineKm(home.lat, home.lng, dest.lat, dest.lng);
-        if (km < 500 && km > 10) enriched.isNearbyTrip = true;
+    // Its own try: a failure here must not drop the origin set above.
+    try {
+      if (!enriched.isNearbyTrip && !wizardState.transport?.mode) {
+        const home = DESTINATIONS.find(d => d.name.toLowerCase() === profile.home_city.toLowerCase());
+        const dest = wizardState.multiCity ? wizardState.destinations?.[0] : wizardState.destination;
+        if (home && dest?.lat && dest?.lng) {
+          const km = haversineKm(home.lat, home.lng, dest.lat, dest.lng);
+          if (km < 500 && km > 10) enriched.isNearbyTrip = true;
+        }
       }
+    } catch (e) {
+      logger.warn('generation', 'Nearby-trip check failed; keeping origin', { error: e?.message });
     }
     return enriched;
   } catch (e) {
@@ -123,7 +145,7 @@ async function enqueueAndWatch(tripId, wizardState) {
 
   // The worker may have already finished between subscribe and invoke; reconcile
   // once (non-failing) to catch a missed event.
-  reconcileOnce(tripId, false);
+  reconcileOnce(tripId);
 }
 
 function watchTrip(tripId) {
@@ -138,7 +160,7 @@ function watchTrip(tripId) {
         (payload) => {
           const status = payload.new?.status;
           if (status === 'generated') finishGeneration(tripId, 'done');
-          else if (status === 'failed') finishGeneration(tripId, 'failed');
+          else if (status === 'failed') failFromServer(tripId);
         })
       .subscribe((status) => {
         if (!settled && (status === 'SUBSCRIBED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')) {
@@ -147,45 +169,72 @@ function watchTrip(tripId) {
         }
       });
 
-    const watchdog = setTimeout(() => reconcileOnce(tripId), WATCHDOG_MS);
-    channels.set(tripId, { channel, watchdog });
+    channels.set(tripId, { channel, watchdog: setTimeout(() => checkProgress(tripId), POLL_MS) });
   });
 }
 
-// Realtime can drop on flaky networks; this is the safety net.
-// softTimeout=true (the watchdog) surfaces a non-terminal "slow" notice but keeps
-// the channel open so a late success still lands — it never writes the DB, which
-// the worker alone owns. softTimeout=false (a resume/post-invoke probe) only
-// finalizes if the DB is already terminal.
-async function reconcileOnce(tripId, softTimeout = true) {
+// The newest job for a trip (the owner or the starting editor can read it).
+// Never selects result_days, which can be large.
+async function latestJob(tripId) {
+  const { data, error } = await supabase.from('generation_jobs')
+    .select('status, error, updated_at').eq('trip_id', tripId)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// A failure from the server: show its reason when it is meant for the user.
+async function failFromServer(tripId) {
+  let job = null;
+  try { job = await latestJob(tripId); } catch { /* generic message */ }
+  finishGeneration(tripId, 'failed', friendlyError(job?.error));
+}
+
+// Realtime can drop on flaky networks; this is the safety net. It finalizes
+// only on a terminal DB state, warns when the job has made no progress for a
+// while, and stops waiting locally only after a long stall. It never writes the
+// DB: the worker (and the recovery cron) alone own trips.status.
+async function checkProgress(tripId) {
+  const entry = activeGenerations.get(tripId);
+  if (!entry || entry.status !== 'generating') return;
+  try {
+    const [{ data: trip, error: tripErr }, job] = await Promise.all([
+      supabase.from('trips').select('status').eq('id', tripId).single(),
+      latestJob(tripId),
+    ]);
+    if (tripErr) throw tripErr;
+    if (trip?.status === 'generated') return finishGeneration(tripId, 'done');
+    if (trip?.status === 'failed') return finishGeneration(tripId, 'failed', friendlyError(job?.error));
+
+    const lastProgress = Math.max(entry.startedAt || 0, Date.parse(job?.updated_at) || 0);
+    const idle = Date.now() - lastProgress;
+    if (idle > GIVE_UP_MS) {
+      return finishGeneration(tripId, 'failed', 'This is taking much longer than usual. Please try again.');
+    }
+    const slow = idle > SLOW_MS;
+    if (slow !== !!entry.slow) {
+      activeGenerations.set(tripId, { ...entry, slow });
+      notifyListeners(tripId);
+    }
+  } catch (e) {
+    // Unknown (offline, a read error): not progress and not failure. Ask again.
+    logger.warn('generation', 'Progress check failed', { tripId, error: e?.message });
+  }
+  const watch = channels.get(tripId);
+  if (watch && activeGenerations.get(tripId)?.status === 'generating') {
+    clearTimeout(watch.watchdog);
+    watch.watchdog = setTimeout(() => checkProgress(tripId), POLL_MS);
+  }
+}
+
+// One-off probe after invoking or resuming: finalize only if already terminal.
+async function reconcileOnce(tripId) {
   try {
     const { data } = await supabase.from('trips').select('status').eq('id', tripId).single();
     if (data?.status === 'generated') finishGeneration(tripId, 'done');
-    else if (data?.status === 'failed') finishGeneration(tripId, 'failed');
-    else if (softTimeout) {
-      // Still generating after the watchdog window. Do NOT mark failed yet (the
-      // worker may still finish and own trips.status); tell the user it's slow and
-      // re-arm one final check. Only after the grace window do we give up locally.
-      const existing = activeGenerations.get(tripId);
-      if (existing && existing.status === 'generating') {
-        if (existing.slow) {
-          // Already warned once and still not terminal — give up locally so the
-          // user can retry. The worker may have died; the DB row remains
-          // 'generating' and will be recovered by recover_stale_jobs on resume.
-          finishGeneration(tripId, 'failed', 'This is taking longer than expected. Please try again.');
-        } else {
-          activeGenerations.set(tripId, { ...existing, slow: true });
-          notifyListeners(tripId);
-          const entry = channels.get(tripId);
-          if (entry) {
-            clearTimeout(entry.watchdog);
-            entry.watchdog = setTimeout(() => reconcileOnce(tripId, true), WATCHDOG_GRACE_MS);
-          }
-        }
-      }
-    }
+    else if (data?.status === 'failed') failFromServer(tripId);
   } catch (e) {
-    logger.warn('generation', 'Watchdog reconcile failed', { tripId, error: e?.message });
+    logger.warn('generation', 'Generation reconcile failed', { tripId, error: e?.message });
   }
 }
 
@@ -245,8 +294,11 @@ export function clearGeneration(tripId) {
 // worker usually keeps running server-side, so we re-attach a watcher rather than
 // re-launching the pipeline (which would race the in-flight job). First we ask the
 // DB to requeue any job whose worker died mid-run (expired lease) and re-fire it.
+// A local entry that already gave up ('failed') or finished is re-attached when
+// the DB still says 'generating': the server recovers stalled jobs by itself,
+// so the trip may yet complete.
 export async function resumeStaleGenerations(trips) {
-  const generating = trips.filter(t => t.status === 'generating' && !activeGenerations.has(t.id));
+  const generating = trips.filter(t => t.status === 'generating' && activeGenerations.get(t.id)?.status !== 'generating');
   if (generating.length === 0) return;
 
   // Recover jobs whose worker isolate died (lease expired) and re-dispatch them.
@@ -268,7 +320,7 @@ export async function resumeStaleGenerations(trips) {
         .catch(e => logger.warn('generation', 'Resume re-invoke failed', { tripId: trip.id, error: e?.message }));
     } else {
       // Worker likely still running; just probe once for an already-finished result.
-      reconcileOnce(trip.id, false);
+      reconcileOnce(trip.id);
     }
   }
 }

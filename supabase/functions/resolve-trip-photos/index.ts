@@ -39,6 +39,7 @@ import {
   COVER_MAX_BYTES, COVER_MIN_BPP, COVER_RELAXED_MIN_WIDTH,
 } from "../_shared/photo-resolver.mjs";
 import { findCoverCandidates } from "../_shared/cover-resolver.mjs";
+import { GEMINI_FALLBACK_MODEL } from "../_shared/generation.ts";
 import { updateRowVersioned } from "../_shared/trip-row.mjs";
 import { CORS_MAX_AGE, bearerToken, isServiceRoleRequest } from "../_shared/http.ts";
 
@@ -47,7 +48,8 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const MAPILLARY_TOKEN = Deno.env.get("MAPILLARY_TOKEN") || "";
 const PEXELS_API_KEY = Deno.env.get("PEXELS_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+// Cover judge: a quick vision check, so the fast Flash-Lite model.
+const GEMINI_MODEL = GEMINI_FALLBACK_MODEL;
 const BUCKET = "trip-photos";
 const ACT_WIDTH = 960;   // Wikimedia standard thumbnail width
 const COVER_TRIES = 4;   // ranked cover candidates to try downloading

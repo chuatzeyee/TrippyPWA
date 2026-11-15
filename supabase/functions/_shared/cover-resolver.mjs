@@ -173,8 +173,9 @@ async function judgeCovers(ranked, ctx, { geminiKey, geminiModel }) {
       body: JSON.stringify({
         contents: [{ role: "user", parts }],
         generationConfig: {
-          responseMimeType: "application/json", responseSchema: JUDGE_SCHEMA, temperature: 0, maxOutputTokens: 2048,
-          thinkingConfig: { thinkingBudget: 256 },
+          // Gemini 3.x: no temperature (ignored, later rejected) and no
+          // thinkingBudget; the Flash-Lite judge thinks minimally by default.
+          responseMimeType: "application/json", responseSchema: JUDGE_SCHEMA, maxOutputTokens: 2048,
         },
       }),
       signal: AbortSignal.timeout(JUDGE_TIMEOUT_MS),
@@ -223,7 +224,7 @@ export async function findCoverCandidates(trip, opts = {}) {
     if (extra.length) ranked = rankCoverCandidates([...pool, ...extra], ctx);
   }
   if (opts.geminiKey && ranked.length) {
-    ranked = await judgeCovers(ranked, ctx, { geminiKey: opts.geminiKey, geminiModel: opts.geminiModel || "gemini-2.5-flash" });
+    ranked = await judgeCovers(ranked, ctx, { geminiKey: opts.geminiKey, geminiModel: opts.geminiModel || "gemini-3.5-flash-lite" });
   }
   const complete = answered.has("item") && answered.has("assessed") && (!opts.pexelsKey || answered.has("pexels"));
   return { ranked, ctx, complete };

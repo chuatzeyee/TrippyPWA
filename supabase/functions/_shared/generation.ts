@@ -7,10 +7,60 @@
 // for the model fetch and leave ~25s for parse + the replace_itinerary save.
 export const FETCH_TIMEOUT = 125_000;
 
-export function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+// The timeout covers reading the body too: a model can send headers quickly
+// and then stream a long answer past the wall clock.
+export async function fetchText(url: string, init: RequestInit, timeoutMs: number): Promise<{ ok: boolean; status: number; text: string }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    return { ok: res.ok, status: res.status, text: await res.text() };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// 503/502 (overloaded) clear in seconds, so the same provider may retry once.
+// 429 is a rate or quota limit: retrying the same provider just burns time, so
+// it moves straight on to the next one.
+function httpErrorTag(status: number): string {
+  if (status === 503 || status === 502) return " [retryable]";
+  if (status === 429) return " [rate-limited]";
+  return "";
+}
+
+// Parses a model reply. A reply cut off mid-way (output cap, timeout) still
+// keeps every complete day: the days array is scanned for whole objects and the
+// day cursor regenerates the rest. Returns null when nothing usable survives.
+export function parseItineraryJson(text: string): { data: any; salvaged: boolean } | null {
+  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+  try {
+    return { data: JSON.parse(cleaned), salvaged: false };
+  } catch { /* fall through to salvage */ }
+  const key = cleaned.search(/"days"\s*:\s*\[/);
+  if (key < 0) return null;
+  const days: any[] = [];
+  let i = cleaned.indexOf("[", key) + 1;
+  let depth = 0, start = -1, inString = false, escaped = false;
+  for (; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{") { if (depth === 0) start = i; depth++; }
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        try { days.push(JSON.parse(cleaned.slice(start, i + 1))); } catch { break; }
+        start = -1;
+      }
+    } else if (ch === "]" && depth === 0) break;
+  }
+  return days.length ? { data: { days }, salvaged: true } : null;
 }
 
 // Total day count for a trip: fixed start+end is authoritative (dates.duration
@@ -43,18 +93,47 @@ export function dateForDay(wizardState: any, dayNumber: number): string | null {
   return d.toISOString().slice(0, 10);
 }
 
+// Gemini models. 2.5 Flash is deprecated (shut down 1 Dec 2026) and was
+// returning 503 "high demand"; probed 2026-11-15 with this project's key:
+// 3.6 Flash did a packed 4-day chunk in ~60s, 3.5 Flash-Lite in ~30s.
+export const GEMINI_PRIMARY_MODEL = "gemini-3.6-flash";
+export const GEMINI_FALLBACK_MODEL = "gemini-3.5-flash-lite";
+
+// Restaurants, cafes and bars. A meal, coffee or drinks stop is the activity
+// most often repeated across days.
+const FOOD_CATEGORIES = /restaurant|cafe|coffee|food|bar|dessert|dining|breakfast|lunch|dinner/i;
+
+// Venue key for repeat checks. Unicode aware: Japanese, Chinese or Korean names
+// must not collapse to an empty key and collide with each other.
+function venueKey(v: unknown): string {
+  return String(v || "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
 // Compact summary of already-generated days, fed to later chunks so they
 // continue the SAME trip instead of re-planning the route from scratch.
 // Without this, every chunk of a multi-city trip independently re-decides the
 // city order — producing duplicate "fly to X" days at each chunk seam.
+// Every food venue is listed separately: a packed day has 11-14 activities, and
+// listing only the first few per day hid dinners from later chunks, which then
+// repeated them.
 export function summarizePriorDays(priorDays: any[]): string {
   if (!Array.isArray(priorDays) || priorDays.length === 0) return "";
   const lines = priorDays.map((d: any) => {
     const acts = Array.isArray(d.activities) ? d.activities : [];
-    const venues = acts.slice(0, 6).map((a: any) => a.venue_name || a.title).filter(Boolean).join("; ");
+    const venues = acts.map((a: any) => a.venue_name || a.title).filter(Boolean).join("; ");
     return `Day ${d.day_number}${d.date ? ` (${d.date})` : ""}: ${d.title || ""}${venues ? ` — ${venues}` : ""}`;
   });
-  return lines.join("\n");
+  const food = new Map<string, string>();
+  for (const d of priorDays) {
+    for (const a of d.activities || []) {
+      const key = venueKey(a.venue_name);
+      if (key && FOOD_CATEGORIES.test(a.category || "") && !food.has(key)) food.set(key, a.venue_name);
+    }
+  }
+  const foodLine = food.size
+    ? `\nRestaurants, cafes and bars ALREADY USED (never use them again): ${[...food.values()].join("; ")}`
+    : "";
+  return lines.join("\n") + foodLine;
 }
 
 // opts.dayFrom/dayTo scope generation to a day range (1-based, inclusive).
@@ -366,7 +445,9 @@ Respond ONLY with valid JSON. No markdown fences, no explanation — raw JSON on
                     }
                   }
                 },
-                required: ["startTime", "timeSlot", "sortOrder", "title", "description", "venueName", "category", "durationMinutes", "costAmount", "costCurrency"]
+                // Coordinates are required: when optional, about a quarter of
+                // activities came back without them (no map link, no photo match).
+                required: ["startTime", "timeSlot", "sortOrder", "title", "description", "venueName", "category", "durationMinutes", "costAmount", "costCurrency", "latitude", "longitude"]
               }
             }
           },
@@ -445,9 +526,12 @@ export function validateItinerary(data: any, expectedDays: number): { issues: st
     data.days = data.days.slice(0, expectedDays);
   }
 
-  // Drop incomplete days (truncated JSON usually cuts mid-day, leaving the last
-  // day with no activities). The cursor regenerates whatever is dropped.
-  const complete = data.days.filter((d: any) => Array.isArray(d.activities) && d.activities.length > 0);
+  // Keep complete days up to the first incomplete one (truncated JSON usually
+  // cuts mid-day, leaving the last day with no activities). Days after a gap
+  // are dropped too: the worker numbers days by position, so keeping them would
+  // shift their content onto the wrong dates. The cursor regenerates the rest.
+  const firstGap = data.days.findIndex((d: any) => !(Array.isArray(d.activities) && d.activities.length > 0));
+  const complete = firstGap < 0 ? data.days : data.days.slice(0, firstGap);
   if (complete.length < data.days.length) {
     issues.push(`Dropped ${data.days.length - complete.length} incomplete day(s)`);
   }
@@ -463,108 +547,130 @@ export function validateItinerary(data: any, expectedDays: number): { issues: st
 }
 
 // Feedback bug: the model scheduled the same restaurant 3 times in 2 days.
-// Non-fatal repair: drop days that repeat a food venue already used (in prior
-// chunks or earlier in this one) from the SECOND occurrence on — the cursor
-// regenerates the dropped days with the strengthened no-repeat prompt.
-const FOOD_CATEGORIES = /restaurant|cafe|coffee|food|bar|dessert|dining|breakfast|lunch|dinner/i;
-export function dedupeFoodVenues(data: any, priorDays: any[] = []): string[] {
+// Repair, never reject: drop only the repeated meal (a venue already used in
+// prior chunks or earlier in this one) and keep the rest of the day. Rejecting
+// whole days turned one repeat into a failed chunk, and the retry usually
+// repeated it again until every provider was used up.
+// `exempt` lists venues that may repeat: the traveller's own hotel or ryokan,
+// where breakfast or dinner every day is normal.
+export function dedupeFoodVenues(data: any, priorDays: any[] = [], exempt: string[] = []): string[] {
+  const allowed = new Set(exempt.map(venueKey).filter(Boolean));
   const seen = new Set<string>();
-  const norm = (v: string) => String(v || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   for (const d of priorDays || []) {
     for (const a of d.activities || []) {
-      if (a.venue_name && FOOD_CATEGORIES.test(a.category || "")) seen.add(norm(a.venue_name));
+      const key = venueKey(a.venue_name);
+      if (key && FOOD_CATEGORIES.test(a.category || "")) seen.add(key);
     }
   }
   const issues: string[] = [];
-  const keptDays: any[] = [];
-  for (const d of data.days) {
-    let dupe = "";
-    for (const a of d.activities || []) {
-      const cat = a.category || a.timeSlot || "";
-      const venue = a.venueName ?? a.venue_name;
-      if (!venue || !FOOD_CATEGORIES.test(cat)) continue;
-      const key = norm(venue);
-      if (seen.has(key)) { dupe = venue; break; }
-      seen.add(key);
-    }
-    if (dupe) {
-      issues.push(`Day ${d.dayNumber ?? d.day_number}: repeated food venue "${dupe}" — day dropped for regeneration`);
-      break; // keep days before the dupe; everything from here regenerates
-    }
-    keptDays.push(d);
-  }
-  if (issues.length) data.days = keptDays; // may be empty -> chunk retries
+  const days = (data.days || []).map((d: any) => {
+    const kept = (d.activities || []).filter((a: any) => {
+      const key = venueKey(a.venueName ?? a.venue_name);
+      if (!key || allowed.has(key) || !FOOD_CATEGORIES.test(a.category || "")) return true;
+      if (!seen.has(key)) { seen.add(key); return true; }
+      issues.push(`Day ${d.dayNumber ?? d.day_number}: dropped repeated food venue "${a.venueName ?? a.venue_name}"`);
+      return false;
+    });
+    return kept.length === (d.activities || []).length ? d : { ...d, activities: kept };
+  });
+  // A day left with nothing (it was only repeats) is incomplete: keep the days
+  // before it and let the day cursor regenerate from there.
+  const firstEmpty = days.findIndex((d: any) => (d.activities || []).length === 0);
+  data.days = firstEmpty < 0 ? days : days.slice(0, firstEmpty);
   return issues;
+}
+
+// Venue names the traveller sleeps at, from the trip extras (accommodation
+// options) and a pre-booked address. Meals there may repeat.
+export function accommodationVenues(extras: any, wizardState: any): string[] {
+  const names = Array.isArray(extras?.accommodation) ? extras.accommodation.map((a: any) => a?.name) : [];
+  return [...names, wizardState?.accommodation?.hotelAddress].filter((n) => typeof n === "string" && n.trim());
+}
+
+// Gemini 3.x request settings (probed 2026-11-15). thinkingLevel replaces the
+// 2.x thinkingBudget; "low" keeps a packed 4-day chunk near 60s, while the
+// default ("medium") once looped on a single day for 98s. Flash-Lite already
+// defaults to minimal thinking. temperature is ignored by 3.x and later models
+// reject it, so it is not sent. responseJsonSchema takes the plain JSON Schema
+// the callers already write.
+export function geminiGenerationConfig(model: string, schema: unknown, maxOutputTokens: number): Record<string, unknown> {
+  return {
+    responseMimeType: "application/json",
+    responseJsonSchema: schema,
+    maxOutputTokens,
+    ...(model.includes("lite") ? {} : { thinkingConfig: { thinkingLevel: "low" } }),
+  };
+}
+
+export type ProviderResult = { data: any; error: string | null; note?: string };
+
+// Turns reply text into an itinerary result. Shared by both providers so a cut
+// off reply is salvaged the same way. `stop` is the provider's stop reason.
+function itineraryFromText(name: string, text: string, stop: string, requireDays: boolean): ProviderResult {
+  if (!requireDays) {
+    try {
+      return { data: JSON.parse(text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "")), error: null };
+    } catch {
+      return { data: null, error: `${name} returned unparseable JSON (stop: ${stop})` };
+    }
+  }
+  const parsed = parseItineraryJson(text);
+  if (!parsed) return { data: null, error: `${name} returned unparseable JSON (stop: ${stop})` };
+  if (!Array.isArray(parsed.data?.days)) return { data: null, error: `${name} returned incomplete itinerary` };
+  return parsed.salvaged
+    ? { data: parsed.data, error: null, note: `kept ${parsed.data.days.length} complete day(s) from a cut-off ${name} reply (stop: ${stop})` }
+    : { data: parsed.data, error: null };
 }
 
 // `requireDays` is for itinerary generation only: chat edits ({reply, edits})
 // and alternatives ({alternatives}) have no `days` and must pass false.
+// `timeoutMs` lets the worker fit the call inside its remaining wall clock.
 export async function callGemini(
   prompt: string, systemPrompt: string, geminiSchema: any,
-  apiKey: string, model: string, maxOutputTokens = 32_000, requireDays = true,
-): Promise<{ data: any; error: string | null }> {
+  apiKey: string, model: string, maxOutputTokens = 40_000, requireDays = true, timeoutMs = FETCH_TIMEOUT,
+): Promise<ProviderResult> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const payload = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: systemPrompt + "\nRespond ONLY with valid JSON matching the provided schema." }] },
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: geminiSchema,
-      temperature: 0.7,
-      maxOutputTokens,
-      // 2.5 Flash is a thinking model. Leaving thinking UNBOUNDED lets it consume
-      // the entire output-token budget and return empty text (finishReason
-      // MAX_TOKENS). A small bounded budget keeps quality without starving output.
-      thinkingConfig: { thinkingBudget: 512 },
-    }
+    generationConfig: geminiGenerationConfig(model, geminiSchema, maxOutputTokens),
   };
 
   try {
-    const res = await fetchWithTimeout(`${url}?key=${apiKey}`, {
+    const res = await fetchText(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify(payload)
-    }, FETCH_TIMEOUT);
+    }, timeoutMs);
 
     if (!res.ok) {
-      const errText = await res.text();
-      const retryable = res.status === 429 || res.status === 503 || res.status === 502;
-      return { data: null, error: `Gemini ${res.status}: ${errText.substring(0, 200)}${retryable ? " [retryable]" : ""}` };
+      return { data: null, error: `Gemini ${model} ${res.status}: ${res.text.substring(0, 200)}${httpErrorTag(res.status)}` };
     }
 
-    const geminiData = await res.json();
+    const geminiData = JSON.parse(res.text);
     const cand = geminiData.candidates?.[0];
-    const textContent = cand?.content?.parts?.[0]?.text;
-    if (!textContent) {
-      // Surface WHY there's no text (MAX_TOKENS, SAFETY, RECITATION...) so the
-      // failure is diagnosable instead of an opaque "No content".
-      const reason = cand?.finishReason || geminiData.promptFeedback?.blockReason || "unknown";
-      return { data: null, error: `No content from Gemini (finishReason: ${reason})` };
-    }
-
-    const cleaned = textContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
-    let parsed;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      return { data: null, error: "Gemini returned unparseable JSON (likely truncated)" };
-    }
-    if (requireDays && (!parsed.days || !Array.isArray(parsed.days))) return { data: null, error: "Gemini returned incomplete itinerary" };
-
-    return { data: parsed, error: null };
+    // Thinking models can split the answer over several parts and add thought
+    // parts; join the answer parts and skip the thoughts.
+    const textContent = (cand?.content?.parts || [])
+      .filter((p: any) => typeof p?.text === "string" && !p.thought)
+      .map((p: any) => p.text).join("");
+    // Surface WHY a reply is empty or cut off (MAX_TOKENS, SAFETY, RECITATION).
+    const stop = cand?.finishReason || geminiData.promptFeedback?.blockReason || "unknown";
+    if (!textContent) return { data: null, error: `No content from Gemini ${model} (finishReason: ${stop})` };
+    return itineraryFromText(`Gemini ${model}`, textContent, stop, requireDays);
   } catch (err: any) {
-    if (err.name === "AbortError") return { data: null, error: "Gemini request timed out" };
-    return { data: null, error: `Gemini error: ${err.message || "Unknown"}` };
+    if (err.name === "AbortError") return { data: null, error: `Gemini ${model} request timed out` };
+    return { data: null, error: `Gemini ${model} error: ${err.message || "Unknown"}` };
   }
 }
 
 export async function callMistral(
-  prompt: string, systemPrompt: string, jsonSchema: any, apiKey: string
-): Promise<{ data: any; error: string | null }> {
+  prompt: string, systemPrompt: string, jsonSchema: any, apiKey: string, timeoutMs = FETCH_TIMEOUT,
+): Promise<ProviderResult> {
   const schemaInstruction = `\n\nYou MUST return a JSON object matching this exact structure:\n${JSON.stringify(jsonSchema, null, 2)}\n\nReturn ONLY raw JSON. No markdown fences, no explanation.`;
 
   try {
-    const res = await fetchWithTimeout("https://api.mistral.ai/v1/chat/completions", {
+    const res = await fetchText("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -576,28 +682,17 @@ export async function callMistral(
         response_format: { type: "json_object" },
         temperature: 0.7,
       }),
-    }, FETCH_TIMEOUT);
+    }, timeoutMs);
 
     if (!res.ok) {
-      const errText = await res.text();
-      const retryable = res.status === 429 || res.status === 503 || res.status === 502;
-      return { data: null, error: `Mistral ${res.status}: ${errText.substring(0, 200)}${retryable ? " [retryable]" : ""}` };
+      return { data: null, error: `Mistral ${res.status}: ${res.text.substring(0, 200)}${httpErrorTag(res.status)}` };
     }
 
-    const json = await res.json();
-    const content = json.choices?.[0]?.message?.content;
+    const json = JSON.parse(res.text);
+    const choice = json.choices?.[0];
+    const content = choice?.message?.content;
     if (!content) return { data: null, error: "No content from Mistral" };
-
-    const cleaned = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
-    let parsed;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      return { data: null, error: "Mistral returned unparseable JSON (likely truncated)" };
-    }
-    if (!parsed.days || !Array.isArray(parsed.days)) return { data: null, error: "Mistral returned incomplete itinerary" };
-
-    return { data: parsed, error: null };
+    return itineraryFromText("Mistral", content, choice?.finish_reason || "unknown", true);
   } catch (err: any) {
     if (err.name === "AbortError") return { data: null, error: "Mistral request timed out" };
     return { data: null, error: `Mistral error: ${err.message || "Unknown"}` };
@@ -611,6 +706,33 @@ function toFiniteNumber(v: unknown): number | null {
   if (Array.isArray(v)) v = v[0];
   const n = typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN;
   return Number.isFinite(n) ? n : null;
+}
+
+// replace_itinerary casts these with ::int and numeric(10,7). One bad value
+// ("90.5", "", 95.2 latitude) used to fail the whole save after every chunk had
+// already succeeded, so each is coerced into range here.
+const INT4_MAX = 2_147_483_647;
+function toInt(v: unknown, fallback: number, min: number, max: number): number {
+  const n = toFiniteNumber(v);
+  return n === null ? fallback : Math.min(max, Math.max(min, Math.round(n)));
+}
+// Money: "1,000", "¥1,000" or "S$45" as a number (parseFloat alone reads "1,000" as 1).
+function toMoney(v: unknown): number | null {
+  return typeof v === "string" ? toFiniteNumber(v.replace(/[^\d.-]/g, "")) : toFiniteNumber(v);
+}
+function toCoord(v: unknown, limit: number): number | null {
+  const n = toFiniteNumber(v);
+  return n !== null && Math.abs(n) <= limit ? n : null;
+}
+function dbSafeActivity(a: any, index: number): any {
+  return {
+    ...a,
+    sort_order: toInt(a.sort_order, index, 0, 10_000),
+    duration_minutes: toInt(a.duration_minutes, 60, 1, 1440),
+    cost_amount: toInt(toMoney(a.cost_amount), 0, 0, INT4_MAX),
+    latitude: toCoord(a.latitude, 90),
+    longitude: toCoord(a.longitude, 180),
+  };
 }
 
 const VALID_SLOTS = new Set(["morning", "afternoon", "evening"]);
@@ -642,7 +764,7 @@ export function toDbDays(itinerary: any, fallbackCurrency: string): any[] {
       title: d.title || `Day ${d.dayNumber ?? (i + 1)}`,
       theme: d.theme || "",
       weather: d.weather || {},
-      activities: activities.map((a: any, j: number) => ({
+      activities: activities.map((a: any, j: number) => dbSafeActivity({
         time_slot: normSlot(a.timeSlot ?? a.time_slot),
         sort_order: a.sortOrder ?? a.sort_order ?? j,
         start_time: a.startTime ?? a.start_time ?? "",
@@ -653,7 +775,7 @@ export function toDbDays(itinerary: any, fallbackCurrency: string): any[] {
         place_id: a.placeId ?? a.place_id ?? "",
         category: a.category ?? "culture",
         duration_minutes: a.durationMinutes ?? a.duration_minutes ?? 60,
-        cost_amount: Math.round(a.costAmount ?? a.cost_amount ?? 0),
+        cost_amount: a.costAmount ?? a.cost_amount ?? 0,
         cost_currency: a.costCurrency ?? a.cost_currency ?? fallbackCurrency,
         cost_note: a.costNote ?? a.cost_note ?? "",
         latitude: toFiniteNumber(a.latitude),
@@ -665,7 +787,7 @@ export function toDbDays(itinerary: any, fallbackCurrency: string): any[] {
         transport_duration: a.transportDuration ?? a.transport_duration ?? "",
         transport_cost: a.transportCost ?? a.transport_cost ?? "",
         transport_options: a.transportOptions ?? a.transport_options ?? [],
-      })),
+      }, j)),
     };
   });
 }
@@ -676,12 +798,7 @@ export function toDbDays(itinerary: any, fallbackCurrency: string): any[] {
 export function sanitizeDbDays(days: any[]): any[] {
   return (days || []).map((d: any) => ({
     ...d,
-    activities: (d.activities || []).map((a: any) => ({
-      ...a,
-      latitude: toFiniteNumber(a.latitude),
-      longitude: toFiniteNumber(a.longitude),
-      cost_amount: Math.round(toFiniteNumber(a.cost_amount) ?? 0),
-    })),
+    activities: (d.activities || []).map((a: any, j: number) => dbSafeActivity(a, j)),
   }));
 }
 
