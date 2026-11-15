@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { clip, corsHeadersFor, getCallerUserId, json, overDailyLimit, readJsonBody } from "../_shared/http.ts";
-import { callGemini } from "../_shared/generation.ts";
+import { callGemini, GEMINI_PRIMARY_MODEL } from "../_shared/generation.ts";
 
 // Chat edits on the itinerary ("make day 2 more relaxed", "swap dinner for
 // something vegetarian"). One Gemini call: trip context + user message ->
@@ -12,7 +12,7 @@ import { callGemini } from "../_shared/generation.ts";
 // shapes; add a patch type for them if chat editing earns it.
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+const GEMINI_MODEL = GEMINI_PRIMARY_MODEL;
 
 // Input bounds: the client sends the whole trip, so cap what reaches the prompt.
 const MAX_BODY_BYTES = 1_000_000;   // same ceiling as a trip import file

@@ -90,11 +90,14 @@ describe('findCoverCandidates', () => {
       return jsonResponse({ candidates: [{ content: { parts: [{ text: JSON.stringify({ images }) }] } }] });
     };
     const calls = fakeNetwork({ gemini });
-    const { ranked } = await findCoverCandidates(TRIP, { pexelsKey: 'k', geminiKey: 'g-key', geminiModel: 'gemini-2.5-flash' });
+    const { ranked } = await findCoverCandidates(TRIP, { pexelsKey: 'k', geminiKey: 'g-key', geminiModel: 'gemini-3.5-flash-lite' });
     expect(calls.filter((c) => c.url.hostname === 'generativelanguage.googleapis.com')).toHaveLength(1);
     expect(request.headers['x-goog-api-key']).toBe('g-key');
     const body = JSON.parse(request.body);
-    expect(body.generationConfig).toMatchObject({ temperature: 0, responseMimeType: 'application/json' });
+    expect(body.generationConfig).toMatchObject({ responseMimeType: 'application/json' });
+    // Gemini 3.x ignores temperature (later models reject it) and replaced thinkingBudget.
+    expect(body.generationConfig).not.toHaveProperty('temperature');
+    expect(body.generationConfig).not.toHaveProperty('thinkingConfig');
     expect(body.contents[0].parts.filter((p) => p.inlineData)).toHaveLength(6);
     expect(body.contents[0].parts[0].text).toMatch(/Sapporo, Japan, travelling in January \(winter\)/);
     expect(ranked[0]).toMatchObject({ sourceId: '32970318', judgeFocusY: 30, judge: { beauty: 9, showsDestination: 'yes' } });

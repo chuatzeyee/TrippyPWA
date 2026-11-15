@@ -19,7 +19,7 @@
 
 <sub>Screenshots use a made up demo trip, not real bookings.</sub>
 
-Travel planner PWA. You go through a short wizard (where, when, budget, how you like to travel), and Gemini 2.5 Flash plans the whole trip day by day: real venues, how to get between them, flights or ferry, hotels, what to book early. If Gemini fails or times out, Mistral takes over.
+Travel planner PWA. You go through a short wizard (where, when, budget, how you like to travel), and Gemini 3.6 Flash plans the whole trip day by day: real venues, how to get between them, flights or ferry, hotels, what to book early. If it is busy or fails, Gemini 3.5 Flash-Lite takes over, then Mistral.
 
 Started this for our own trips out of Singapore, so the defaults lean that way (SGD, nearby spots like Batam and Desaru, Scoot flights and so on). Works for anywhere though.
 
@@ -60,7 +60,6 @@ Edge functions (Supabase secrets):
 |----------|------------|
 | `GEMINI_API_KEY` | Main AI provider |
 | `MISTRAL_API_KEY` | Backup AI provider |
-| `GEMINI_MODEL` | Optional. Defaults to `gemini-2.5-flash` |
 | `PEXELS_API_KEY` | Optional. Stock photo fallback when Wikipedia has nothing |
 | `MAPILLARY_TOKEN` | Optional. Street view photo as the last resort |
 | `ALLOWED_ORIGINS` | Optional. Comma separated CORS allowlist for the proxies |
@@ -78,7 +77,7 @@ No Google Maps or Places key needed anymore. Search, directions and photos all u
 | Styling | CSS custom properties | Token based, no preprocessor |
 | Backend | Supabase | Postgres, Auth, Edge Functions (Deno), RLS, Realtime |
 | Login | Google OAuth through Supabase | |
-| AI | Gemini 2.5 Flash, Mistral as backup | Structured JSON output |
+| AI | Gemini 3.6 Flash, then 3.5 Flash-Lite, then Mistral | Structured JSON output |
 | Place search | Photon (OpenStreetMap) | Free, no key |
 | Walking directions | OSRM | Free, no key |
 | Photos | Wikipedia, Wikimedia Commons, Openverse, Pexels, Mapillary | Free, with credits shown |
@@ -109,10 +108,10 @@ For nearby places (say Singapore to Batam), the flights step is swapped for ferr
 Long trips used to die halfway because Supabase free tier edge functions get killed around 150 seconds. An 11 day packed trip is about 90 activities, one model call cannot finish that in time. So generation runs as a job queue, a few days at a time:
 
 1. The app creates a row in `generation_jobs`, listens on the trip row through Realtime, then kicks off the `process-generation` worker once.
-2. The worker does one chunk (about four days) per call, then calls itself for the next chunk. Each chunk tries Gemini first, then Mistral.
-3. The first chunk also does the trip level stuff: flights or transport, hotels, booking checklist, money saving tips.
+2. The worker does one chunk (about four days) per call, then calls itself for the next chunk. Each chunk tries Gemini 3.6 Flash first, then 3.5 Flash-Lite, then Mistral. Every call is sized to fit the time left in that run, so a slow model cannot get the worker killed halfway.
+3. The first chunk also does the trip level stuff: flights or transport, hotels, booking checklist, money saving tips. If a reply gets cut off, the complete days in it are kept and the rest is generated next pass. A restaurant repeated from an earlier day is dropped instead of failing the chunk.
 4. When the last chunk is done, everything is saved in one transaction through the `replace_itinerary` RPC. If the save fails, your old itinerary is still there. Regenerate never wipes a trip unless the new one actually commits.
-5. The app sees the status change through Realtime and updates. If a Realtime event goes missing or a worker crashes, a watchdog and the `recover_stale_jobs` reaper pick it up.
+5. The app sees the status change through Realtime and updates. If a worker dies halfway, a `pg_cron` job (`dispatch_stale_generations`, every minute) starts it again from the last finished chunk, so nobody needs to reload. Only a trip's newest job can write to it, so a Retry never fights an older run. Retry also picks up from the days already done.
 
 What you get back:
 
