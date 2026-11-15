@@ -12,6 +12,12 @@ describe('Serper place photo', () => {
     expect(pickSerperPlace(places, { names: ['Daruma Honten'], ...at }).cid).toBe('1');
     expect(pickSerperPlace([places[2]], { names: ['Daruma Honten'], ...at })).toBeNull();
   });
+  it("trusts Google's top result right at the venue, but not a nearby different shop", () => {
+    const beat = { title: 'ビートレコーズ「Beat Records」', latitude: 43.0578 + 0.0033, longitude: 141.3562, thumbnailUrl: 'https://lh3.googleusercontent.com/p/b' };
+    expect(pickSerperPlace([beat], { names: ['Beatnik Records'], lat: 43.0578, lng: 141.3562 })).toBeNull();
+    const jp = { title: '炭焼き 北の味 大助', latitude: 43.0538 + 0.0009, longitude: 141.3521, thumbnailUrl: 'https://lh3.googleusercontent.com/p/c' };
+    expect(pickSerperPlace([jp], { names: ['Robata Daisuke'], lat: 43.0538, lng: 141.3521 })).toBe(jp);
+  });
   it('accepts an unnamed place only when it sits on the coordinates', () => {
     const onTop = { title: 'だるま 本店', latitude: 43.0553, longitude: 141.3531, thumbnailUrl: 'https://lh3.googleusercontent.com/p/j' };
     expect(pickSerperPlace([onTop], { names: ['Daruma Honten'], ...at })).toBe(onTop);
@@ -36,5 +42,8 @@ describe('Tavily candidates', () => {
   it('matches names loosely on a distinctive word', () => {
     expect(looseNameMatch('Baristart Coffee Sapporo', 'BARISTART COFFEE')).toBe(true);
     expect(looseNameMatch('Starbucks Reserve', 'Baristart Coffee')).toBe(false);
+    expect(looseNameMatch('FreshAir（フレッシュエアー）', 'Fresh Air Records')).toBe(true);
+    expect(looseNameMatch('Osuke', 'Robata Oosuke Main Store')).toBe(true);
+    expect(looseNameMatch('ビートレコーズ「Beat Records」', 'Beatnik Records')).toBe(false);
   });
 });
