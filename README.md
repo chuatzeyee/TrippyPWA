@@ -19,7 +19,7 @@
 
 <sub>Screenshots use a made up demo trip, not real bookings.</sub>
 
-Travel planner PWA. You go through a short wizard (where, when, budget, how you like to travel), and Gemini 3.6 Flash plans the whole trip day by day: real venues, how to get between them, flights or ferry, hotels, what to book early. If it is busy or fails, Gemini 3.5 Flash-Lite takes over, then Mistral.
+Travel planner PWA. You go through a short wizard (where, when, budget, how you like to travel), and Gemini 3.6 Flash plans the whole trip day by day: real venues, how to get between them, flights or ferry, hotels, what to book early. If it is busy or fails, Gemini 3.5 Flash-Lite takes over, then Mistral's Ministral 8B.
 
 Started this for our own trips out of Singapore, so the defaults lean that way (SGD, nearby spots like Batam and Desaru, Scoot flights and so on). Works for anywhere though.
 
@@ -59,7 +59,7 @@ Edge functions (Supabase secrets):
 | Variable | What it is |
 |----------|------------|
 | `GEMINI_API_KEY` | Main AI provider |
-| `MISTRAL_API_KEY` | Backup AI provider |
+| `MISTRAL_API_KEY` | Last-resort AI provider (uses `ministral-8b-latest`) |
 | `PEXELS_API_KEY` | Optional. Stock photo fallback when Wikipedia has nothing |
 | `MAPILLARY_TOKEN` | Optional. Street view photo as the last resort |
 | `ALLOWED_ORIGINS` | Optional. Comma separated CORS allowlist for the proxies |
@@ -77,7 +77,7 @@ No Google Maps or Places key needed anymore. Search, directions and photos all u
 | Styling | CSS custom properties | Token based, no preprocessor |
 | Backend | Supabase | Postgres, Auth, Edge Functions (Deno), RLS, Realtime |
 | Login | Google OAuth through Supabase | |
-| AI | Gemini 3.6 Flash, then 3.5 Flash-Lite, then Mistral | Structured JSON output |
+| AI | Gemini 3.6 Flash, then 3.5 Flash-Lite, then Ministral 8B | Structured JSON output |
 | Place search | Photon (OpenStreetMap) | Free, no key |
 | Walking directions | OSRM | Free, no key |
 | Photos | Wikipedia, Wikimedia Commons, Openverse, Pexels, Mapillary | Free, with credits shown |
@@ -94,21 +94,23 @@ No Google Maps or Places key needed anymore. Search, directions and photos all u
 Seven steps:
 
 1. **Where to?** One city or a multi-city route. If your city is not in the list, just type it and pick "Use {city}".
-2. **When?** Number of travellers, exact dates or a rough duration and season.
+2. **When?** Number of travellers, exact dates or a rough duration and season. For trips overseas it also asks which passports the group is on (yours comes from your profile, add anyone on a different one), so the trip can show the right visas and arrival cards.
 3. **Comfort level.** Backpacker, comfortable or luxury, plus a daily budget in the local currency.
 4. **Where to stay.** Hotel type, star rating, what matters to you. Already booked? Toggle "Already Settled" and it skips.
-5. **How to fly.** Fare class, preferred departure time, connections. Same "Already Settled" toggle.
+5. **How to fly.** Fare class, preferred departure time, connections. Already booked? Key in the flight number, route with any stopover (like `SIN > TPE > CTS`) and the local departure and landing times for both directions. These go onto the trip exactly as you typed them, and day 1 is planned to start after you land, not before.
 6. **Travel style.** Sliders for pace, food, nightlife, exploring, plus interest chips.
 7. **Summary.** Everything on one screen. You can also paste your own research here (places you must go, things you already booked) and the AI will plan around it.
 
-For nearby places (say Singapore to Batam), the flights step is swapped for ferry, train or bus. It works this out from your home city and the distance.
+For nearby places (say Singapore to Batam, or Singapore, JB and KL), the flights step is swapped for ferry, train or bus. It works this out from your home city and the distance to every stop that is not home.
+
+Once you send the request, a popup confirms it and says how long it usually takes (about 5 minutes for a 10 to 14 day trip, shorter for short trips). It follows the planning live: a route line from your home city to the destination with one segment per day, lighting up as the days get planned. You can close it any time. There is a "Notify me when it's ready" button, and if the popup is still open at the end it turns into "Open my trip".
 
 ### Itinerary generation
 
 Long trips used to die halfway because Supabase free tier edge functions get killed around 150 seconds. An 11 day packed trip is about 90 activities, one model call cannot finish that in time. So generation runs as a job queue, a few days at a time:
 
 1. The app creates a row in `generation_jobs`, listens on the trip row through Realtime, then kicks off the `process-generation` worker once.
-2. The worker does one chunk (about four days) per call, then calls itself for the next chunk. Each chunk tries Gemini 3.6 Flash first, then 3.5 Flash-Lite, then Mistral. Every call is sized to fit the time left in that run, so a slow model cannot get the worker killed halfway.
+2. The worker does one chunk (about four days) per call, then calls itself for the next chunk. Each chunk tries Gemini 3.6 Flash first, then 3.5 Flash-Lite, then Ministral 8B (which gets 2 days per call because it is slower). Every call is sized to fit the time left in that run, so a slow model cannot get the worker killed halfway.
 3. The first chunk also does the trip level stuff: flights or transport, hotels, booking checklist, money saving tips. If a reply gets cut off, the complete days in it are kept and the rest is generated next pass. A restaurant repeated from an earlier day is dropped instead of failing the chunk.
 4. When the last chunk is done, everything is saved in one transaction through the `replace_itinerary` RPC. If the save fails, your old itinerary is still there. Regenerate never wipes a trip unless the new one actually commits.
 5. The app sees the status change through Realtime and updates. If a worker dies halfway, a `pg_cron` job (`dispatch_stale_generations`, every minute) starts it again from the last finished chunk, so nobody needs to reload. Only a trip's newest job can write to it, so a Retry never fights an older run. Retry also picks up from the days already done.
@@ -117,7 +119,7 @@ What you get back:
 
 - Day by day plan with times, real venue names, addresses, coordinates, tips and costs
 - A short "how to get there" line between activities
-- Flights from your actual home city, or ferry, bus and train options for nearby trips
+- Flights from your actual home city with every stopover listed, or ferry, bus and train options for nearby trips (where to board and get off, any change on the way, the border crossing, door to door time)
 - Multi-city routing in a sensible order (not just the order you typed)
 - Hotels per city, tagged Recommended, Best Value and so on
 - Booking checklist split into "Must Book Ahead" and "Good to Book"
@@ -135,6 +137,8 @@ Imported trips can carry real bookings: flight numbers, booking refs, seats, bag
 - Day tabs with weather
 - Activity cards with time, venue, notes, cost and a photo
 - Flight cards in a boarding pass style: route with stopovers, airline logo, booking ref, depart and arrive times, seats and baggage
+- Transport card for bus, train, ferry and car trips: where to board and get off (embark and disembark for ferries), numbered steps when you need to change, the border crossing, door to door time, fare, and links to Google Maps and Rome2Rio. No plane icons for a bus ride.
+- Entry requirements, right after Flights or Transport: for every country on the trip, every connection stop and every passport in the group, whether you need a visa, plus the arrival cards, travel authorisations and levies to settle before you go (Visit Japan Web, SG Arrival Card, MDAC, All Indonesia, K-ETA, ESTA, UK ETA and so on). Each one says when to do it, how, and links the official site only. Tick them off as you go. The data was researched from official sources in Nov 2026 (Europe, North-East and South-East Asia also fact-checked) and lives in `public/data/visa/entry-steps.json`.
 - Hotels per city with booking links (Booking.com, Agoda, Google Hotels)
 - Booking checklist with deadlines
 - Live tracking: on the day itself there is a marker on the timeline showing where you should be now
