@@ -39,6 +39,7 @@ import {
   COVER_MAX_BYTES, COVER_MIN_BPP, COVER_RELAXED_MIN_WIDTH,
 } from "../_shared/photo-resolver.mjs";
 import { findCoverCandidates } from "../_shared/cover-resolver.mjs";
+import { resolveWebPhoto } from "../_shared/photo-web.mjs";
 import { GEMINI_FALLBACK_MODEL } from "../_shared/generation.ts";
 import { updateRowVersioned } from "../_shared/trip-row.mjs";
 import { CORS_MAX_AGE, bearerToken, isServiceRoleRequest } from "../_shared/http.ts";
@@ -47,6 +48,10 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const PEXELS_API_KEY = Deno.env.get("PEXELS_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+// Web photo sources, used only when the licensed ones find nothing. Each is
+// skipped while its key is unset.
+const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY") || "";
+const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY") || "";
 // Cover judge: a quick vision check, so the fast Flash-Lite model.
 const GEMINI_MODEL = GEMINI_FALLBACK_MODEL;
 const BUCKET = "trip-photos";
@@ -90,6 +95,20 @@ async function storeImage(srcUrl: string, path: string): Promise<string | null> 
     return admin.storage.from(BUCKET).getPublicUrl(fullPath).data.publicUrl;
   } catch {
     return null;
+  }
+}
+
+// A linked (not stored) web photo must still download and look like a photo.
+async function isRealPhoto(url: string): Promise<boolean> {
+  try {
+    const res = await safeFetch(url, {}, 12_000);
+    if (!res?.ok) return false;
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.startsWith("image/") || contentType.includes("svg")) { res.body?.cancel(); return false; }
+    const bytes = await readCapped(res, MAX_IMAGE_BYTES);
+    return !!bytes && looksLikePhoto(imageDims(bytes), bytes.byteLength, contentType);
+  } catch {
+    return false;
   }
 }
 
@@ -330,7 +349,16 @@ async function resolveTrip(tripId: string, ownerCall = false) {
       website: isOfficialSite(a.booking_url) ? a.booking_url : "",
       lat, lng, maxWidth: ACT_WIDTH,
     });
-    const hit = await storeFirst(cands, `${tripId}/act-${a.id}`);
+    let hit = await storeFirst(cands, `${tripId}/act-${a.id}`);
+    if (!hit && (SERPER_API_KEY || TAVILY_API_KEY)) {
+      // Nothing licensed: a Google Maps place photo (Serper) or a vision-checked
+      // web photo (Tavily), linked with its source rather than copied.
+      const web = await resolveWebPhoto(
+        { query: a.venue_name, city, category: a.category, lat, lng },
+        { serperKey: SERPER_API_KEY, tavilyKey: TAVILY_API_KEY, geminiKey: GEMINI_API_KEY, model: GEMINI_FALLBACK_MODEL },
+      );
+      if (web && (web.source !== "maps" || await isRealPhoto(web.url))) hit = { stored: web.url, cand: web };
+    }
     if (!hit) {
       // Tried and found nothing trustworthy: remember, so neither this worker
       // nor the client's legacy live-resolve retries it with a generic image.

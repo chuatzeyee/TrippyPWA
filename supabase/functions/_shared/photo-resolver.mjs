@@ -626,8 +626,12 @@ export async function resolvePhotoCandidates(place, opts = {}) {
   const site = place.website && isOfficialSite(place.website) ? place.website : osm?.website || "";
   const searchQ = `${query} ${city}`.trim();
   const localQ = osm?.localName && osm.localName !== query ? osm.localName : "";
-  const [official, commons, commonsLocal, openverse] = await Promise.all([
+  // Commons by name inside a 300 m geofence (CirrusSearch nearcoord): found
+  // the venue for 15 of 21 test places, restaurants and cafes included.
+  const nearQ = hasCoords ? `${query} nearcoord:300m,${lat},${lng} filetype:bitmap` : "";
+  const [official, commonsNear, commons, commonsLocal, openverse] = await Promise.all([
     site ? officialSitePhoto(site).catch(() => null) : Promise.resolve(null),
+    nearQ ? commonsSearch(nearQ, names, lat, lng, maxWidth).catch(() => null) : Promise.resolve(null),
     commonsSearch(searchQ, names, lat, lng, maxWidth).catch(() => null),
     localQ ? commonsSearch(localQ, names, lat, lng, maxWidth).catch(() => null) : Promise.resolve(null),
     openverseSearch(searchQ, names).catch(() => null),
@@ -636,7 +640,7 @@ export async function resolvePhotoCandidates(place, opts = {}) {
     osm?.photo,
     wd && { url: wd, source: "wikidata", credit: { via: "Wikimedia Commons" } },
     wiki && { url: wiki, source: "wikipedia", credit: { via: "Wikipedia" } },
-    official, commons, commonsLocal, openverse,
+    official, commonsNear, commons, commonsLocal, openverse,
   ].filter(Boolean);
   const seen = new Set();
   return ordered.filter((c) => !seen.has(c.url) && seen.add(c.url));
