@@ -4614,3 +4614,9 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
 
 a.td-activity-photo-credit { text-decoration: none; }
 a.td-activity-photo-credit:hover { text-decoration: underline; }
+
+/* Days opened by hand or by scrolling to the end of the day before: no slide for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .td-day-card--open .td-day-card-body,
+  .td-day-card-header--entering { animation: none; }
+}
