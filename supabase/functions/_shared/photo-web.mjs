@@ -156,7 +156,7 @@ export async function visionPick(cands, { query, category, city }, { geminiKey, 
   const previews = await Promise.all(cands.map((c) => preview(c.url)));
   const sent = cands.filter((_, i) => previews[i]);
   if (!sent.length) return null;
-  const parts = [{ text: `These images were found on web pages about "${query}", a ${category || "place"} in ${city || "the destination"}. For each image, ok = true only if it is a real photo of this venue: its outside, its inside, or its own food, drinks or products. ok = false for a logo, menu, map, screenshot, text graphic, a portrait of a person, a generic stock photo, or a different place.` }];
+  const parts = [{ text: `These images were found on web pages about "${query}", a ${category || "place"} in ${city || "the destination"}. For each image, ok = true only if it is a real photo of this venue: its outside, its inside, or its own food, drinks or products. ok = false for a logo, menu, map, screenshot, text graphic, a portrait of a person, a generic stock photo, a different place, a vehicle (bus, tram, boat) as the main subject, a construction site or hoarding, a sign on its own, or a close-up of an object or detail that does not show what the place looks like.` }];
   previews.filter(Boolean).forEach((inlineData, i) => parts.push({ text: `Image ${i}:` }, { inlineData }));
   try {
     const res = await fetch(`${GEMINI_API}/${encodeURIComponent(model)}:generateContent`, {

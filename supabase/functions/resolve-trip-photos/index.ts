@@ -39,7 +39,7 @@ import {
   COVER_MAX_BYTES, COVER_MIN_BPP, COVER_RELAXED_MIN_WIDTH,
 } from "../_shared/photo-resolver.mjs";
 import { findCoverCandidates } from "../_shared/cover-resolver.mjs";
-import { resolveWebPhoto } from "../_shared/photo-web.mjs";
+import { resolveWebPhoto, visionPick } from "../_shared/photo-web.mjs";
 import { GEMINI_FALLBACK_MODEL } from "../_shared/generation.ts";
 import { updateRowVersioned } from "../_shared/trip-row.mjs";
 import { CORS_MAX_AGE, bearerToken, isServiceRoleRequest } from "../_shared/http.ts";
@@ -349,12 +349,23 @@ async function resolveTrip(tripId: string, ownerCall = false) {
       website: isOfficialSite(a.booking_url) ? a.booking_url : "",
       lat, lng, maxWidth: ACT_WIDTH,
     });
-    let hit = await storeFirst(cands, `${tripId}/act-${a.id}`);
+    // Photos tied to the venue by an id or its own site are trusted. Commons and
+    // Openverse matches only share the venue's name in a file title, which in a
+    // dense city often shows something else (a bus at the "Peak Tram Lower
+    // Terminus", hoardings at "M+"), so they must pass the vision check.
+    const NAME_MATCHED = new Set(["commons", "openverse"]);
+    const place = { query: a.venue_name, city, category: a.category, lat, lng };
+    let hit = await storeFirst(cands.filter((c: Candidate) => !NAME_MATCHED.has(c.source)), `${tripId}/act-${a.id}`);
+    const fuzzy = cands.filter((c: Candidate) => NAME_MATCHED.has(c.source)).slice(0, 3);
+    if (!hit && fuzzy.length && GEMINI_API_KEY) {
+      const ok = await visionPick(fuzzy, place, { geminiKey: GEMINI_API_KEY, model: GEMINI_FALLBACK_MODEL });
+      if (ok) hit = await storeFirst([ok], `${tripId}/act-${a.id}`);
+    }
     if (!hit && (SERPER_API_KEY || TAVILY_API_KEY)) {
       // Nothing licensed: a Google Maps place photo (Serper) or a vision-checked
       // web photo (Tavily), linked with its source rather than copied.
       const web = await resolveWebPhoto(
-        { query: a.venue_name, city, category: a.category, lat, lng },
+        place,
         { serperKey: SERPER_API_KEY, tavilyKey: TAVILY_API_KEY, geminiKey: GEMINI_API_KEY, model: GEMINI_FALLBACK_MODEL },
       );
       if (web && (web.source !== "maps" || await isRealPhoto(web.url))) hit = { stored: web.url, cand: web };
