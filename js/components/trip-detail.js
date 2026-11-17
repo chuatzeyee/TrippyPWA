@@ -3260,45 +3260,39 @@ function injectNowKnob(card) {
 
 let dayCardManualSwitch = false;
 
-function getAdjacentDayCard(card, direction) {
-  let el = direction === 'next' ? card.nextElementSibling : card.previousElementSibling;
-  while (el) {
-    if (el.classList.contains('td-day-card') && !el.classList.contains('td-day-card--section')) return el;
-    el = direction === 'next' ? el.nextElementSibling : el.previousElementSibling;
-  }
-  return null;
+
+// How close (px) the end of an open day must come to the bottom of the screen
+// before the next day opens by itself.
+const AUTO_OPEN_MARGIN = 48;
+
+/**
+ * Scrolling down to the end of an open day opens the next day, with the usual
+ * open animation. The day just read stays open, so nothing above moves. A day
+ * the traveller closed by hand is never reopened automatically. Exported for
+ * tests.
+ */
+export function nextDayToAutoOpen(dayCards, viewportHeight) {
+  const open = dayCards.filter(c => c.classList.contains('td-day-card--open'));
+  const last = open[open.length - 1];
+  if (!last) return null;
+  const rect = last.getBoundingClientRect();
+  if (rect.bottom > viewportHeight - AUTO_OPEN_MARGIN || rect.bottom < 0) return null;
+  const next = dayCards[dayCards.indexOf(last) + 1];
+  if (!next || next.classList.contains('td-day-card--open') || next.dataset.userClosed) return null;
+  return next;
 }
 
 function setupDayScrollSpy(container) {
   const grid = container.querySelector('.td-day-grid');
   if (!grid) return null;
 
-  let switching = false;
   let rafId = null;
-
-  function switchDay(from, to) {
-    if (switching) return;
-    switching = true;
-
-    from.classList.remove('td-day-card--open');
-    to.classList.add('td-day-card--open');
-
-    const offset = to.getBoundingClientRect().top;
-    if (Math.abs(offset) > 2) window.scrollBy(0, offset);
-
-    const h = to.querySelector('.td-day-card-header');
-    h.classList.add('td-day-card-header--entering');
-    h.addEventListener('animationend', () => h.classList.remove('td-day-card-header--entering'), { once: true });
-
-    const dayIdx = to.dataset.dayIndex;
-    if (dayIdx != null) updateSidebarActive(container, dayIdx);
-
-    injectNowKnob(to);
-    setTimeout(() => { switching = false; }, 400);
-  }
+  let lastY = window.scrollY;
 
   function tick() {
     rafId = null;
+    const goingDown = window.scrollY > lastY;
+    lastY = window.scrollY;
     if (dayCardManualSwitch || !grid.classList.contains('td-day-grid--has-open')) return;
 
     const dayCards = [...grid.querySelectorAll('.td-day-card:not(.td-day-card--section)')];
@@ -3308,6 +3302,15 @@ function setupDayScrollSpy(container) {
       if (rect.top <= 100) activeIdx = card.dataset.dayIndex;
     }
     if (activeIdx !== null) updateSidebarActive(container, activeIdx);
+
+    if (!goingDown) return;
+    const next = nextDayToAutoOpen(dayCards, window.innerHeight);
+    if (!next) return;
+    openDayCard(grid, next);
+    const h = next.querySelector('.td-day-card-header');
+    h?.classList.add('td-day-card-header--entering');
+    h?.addEventListener('animationend', () => h.classList.remove('td-day-card-header--entering'), { once: true });
+    injectNowKnob(next);
   }
 
   function onScroll() {
@@ -3364,14 +3367,17 @@ function bindDayCards(container, animate = true) {
       const card = header.closest('.td-day-card');
 
       if (card.classList.contains('td-day-card--open')) {
-        // Close this day; restack the wallet once nothing is open.
+        // Close this day; restack the wallet once nothing is open. Closed by
+        // hand, so scrolling past the day before never reopens it.
         card.classList.remove('td-day-card--open');
+        card.dataset.userClosed = '1';
         if (!grid.querySelector('.td-day-card--open')) grid.classList.remove('td-day-grid--has-open');
         syncDayHeaderExpanded(grid);
         return;
       }
 
       const wasStacked = !grid.classList.contains('td-day-grid--has-open');
+      delete card.dataset.userClosed;
       openDayCard(grid, card);
       const dayIdx = card.dataset.dayIndex;
       if (dayIdx != null) updateSidebarActive(container, dayIdx);
