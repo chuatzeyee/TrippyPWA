@@ -3146,7 +3146,7 @@ function maybeRequestCover(trip, { stale = false } = {}) {
 const _photoResumeTried = new Set();
 
 function resumePhotoResolution(trip) {
-  if (!trip.wizard_state?.imported || isResolvingPhotos(trip.id) || _photoResumeTried.has(trip.id)) return;
+  if (isResolvingPhotos(trip.id) || _photoResumeTried.has(trip.id)) return;
   if (!trip.user_id || trip.user_id !== getUser()?.id) return; // only the owner may run the worker
   const pending = (trip.itinerary_days || []).some(d => (d.activities || []).some(isPendingPhoto));
   if (!pending) return;
@@ -3163,60 +3163,30 @@ function resumePhotoResolution(trip) {
     });
 }
 
-// Imported cards never look photos up live, so after a venue change
-// (editor, Alternatives) or a chat edit the worker runs again for the new
-// pending activities (resumePhotoResolution checks the owner and the pending
-// rows).
+// Cards never look photos up live, so after a venue change (editor,
+// Alternatives) or a chat edit the worker runs again for the new pending
+// activities (resumePhotoResolution checks the owner and the pending rows).
 function restartPhotoResolution(trip) {
-  if (!trip?.wizard_state?.imported) return;
+  if (!trip) return;
   _photoResumeTried.delete(trip.id);
   resumePhotoResolution(trip);
 }
 
+// Venue photos come only from the server worker (resolve-trip-photos), never a
+// live lookup in the app: the old live path fell back to generic stock photos
+// matched on the venue's name, which showed the wrong place (Hong Kong trip,
+// 2026-11-17). Pending slots shimmer while the worker runs; with no run (a
+// viewer who is not the owner) they show the placeholder.
 function loadActivityPhotos(container, trip) {
   const photoEls = container.querySelectorAll('.td-activity-photo[data-venue]');
   if (!photoEls.length) return null;
-  const imported = Boolean(trip?.wizard_state?.imported);
   const resolving = Boolean(trip && isResolvingPhotos(trip.id));
-
-  // Trips generated/backfilled after the photo-store rollout carry a persisted
-  // Storage URL (data-photo) — use it directly, no network resolve on open.
-  // Legacy trips (no stored URL) fall back to a lazy live resolve as before.
-  const legacy = [];
   for (const el of photoEls) {
     if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue, el.dataset.photoSource, el.dataset.photoCredit);
-    // 'none' = the photo resolver checked and found no trustworthy photo: the
-    // block collapses rather than live-resolving a generic stock image.
-    else if (el.dataset.photoSource === 'none') showPhotoPlaceholder(el);
-    // Imported trips (and any trip whose photos are being resolved right now)
-    // wait for the server worker instead of live stock lookups: shimmer while
-    // it runs, collapsed otherwise (it opens again if a run starts).
-    else if (resolving) el.classList.add('td-activity-photo--pending');
-    else if (imported) showPhotoPlaceholder(el);
-    else legacy.push(el);
+    else if (el.dataset.photoSource === 'none' || !resolving) showPhotoPlaceholder(el);
+    else el.classList.add('td-activity-photo--pending');
   }
-  if (!legacy.length) return null;
-
-  const observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      observer.unobserve(entry.target);
-      const el = entry.target;
-      const venue = el.dataset.venue;
-      const lat = parseFloat(el.dataset.lat);
-      const lng = parseFloat(el.dataset.lng);
-      const location = (!isNaN(lat) && !isNaN(lng) && lat !== 0) ? { lat, lng } : null;
-
-      fetchPlacePhotoByQuery(venue, location, 600, { kind: 'venue', category: el.dataset.category }).then(url => {
-        if (!el.isConnected || el.dataset.photo) return;
-        if (!url) { el.classList.add('td-activity-photo--failed'); return; }
-        attachActivityImg(el, url, venue);
-      });
-    }
-  }, { rootMargin: '200px' });
-
-  legacy.forEach(el => observer.observe(el));
-  return observer;
+  return null;
 }
 
 function parseTimeToMinutes(timeStr) {
