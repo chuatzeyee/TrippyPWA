@@ -400,7 +400,6 @@
 }
 .sq-itin-card-inner {
   border: 1px solid var(--border);
-  border-left: 3px solid var(--day-color, var(--terracotta));
   border-radius: var(--r-lg);
   background: var(--surface-solid);
   padding: var(--sp-4);

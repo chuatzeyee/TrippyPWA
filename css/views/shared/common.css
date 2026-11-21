@@ -332,7 +332,6 @@
   gap: var(--sp-2) var(--sp-3);
   padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-4);
   border: 1px solid var(--border-strong);
-  border-left: 3px solid var(--warning);
   border-radius: var(--r-md);
   background: var(--amber-light);
   color: var(--ink);
