@@ -6,7 +6,6 @@
 import { attr, button, esc, flagChip, link } from '../shared/html.js';
 import { icon } from '../shared/icons.js';
 import { coverFrameHtml } from '../shared/photo-frame.js';
-import { readinessChipHtml } from '../shared/readiness-list.js';
 import { failedCardHtml, generatingCardHtml } from '../shared/state-cards.js';
 import { costFigures } from '../../lib/money.js';
 import { flagsHtml, placeName, titleWithFlags, toneOf } from './parts.js';
@@ -25,9 +24,6 @@ function toGoHtml(card) {
   return `<span class="atl-tu-in"><b>${esc(toGo.count)}</b> ${toGo.words}</span>`;
 }
 
-/** The readiness chip, or the space it will take while the briefing is awaited. */
-const chipHtml = (card) => (card.briefingPending ? '<span class="atl-chip-wait atl-wait" aria-hidden="true"></span>' : readinessChipHtml(card.readiness));
-
 function metaText(card) {
   const cost = costLine(card.cost);
   return [daysText(card.dates?.dayCount), cost].filter(Boolean).join(', ');
@@ -37,7 +33,7 @@ function upcomingRow(card, ctx) {
   const dates = card.dates?.start ? `<p class="atl-tu-dates">${esc(card.dates.text)}</p>` : '';
   return `<article class="atl-tu"${tripAttrs(card)}>
     ${coverFrameHtml(card.cover, { ...frameOpts(card, ctx), ratio: 'free', sizes: '(min-width: 1024px) 168px, 80px', cls: 'atl-tu-ph' })}
-    <p class="atl-tu-side">${toGoHtml(card)}${chipHtml(card)}</p>
+    <p class="atl-tu-side">${toGoHtml(card)}</p>
     <div class="atl-tu-body">
       <h3 class="atl-tu-title">${esc(card.title)} ${flagsHtml(card.flags)}</h3>
       ${dates}<p class="atl-tu-meta">${esc(metaText(card))}</p>${sharedHtml(card, 'atl-tu-meta')}
@@ -69,7 +65,7 @@ function nextCard(next, ctx) {
     <p class="atl-tu-side">${toGoHtml(card)}</p>
     <div class="atl-tu-body">
       <p class="atl-tu-k"><i aria-hidden="true"></i>Next departure</p>
-      <h3 class="atl-tu-title">${esc(card.title)} ${flagsHtml(card.flags)} ${chipHtml(card)}</h3>
+      <h3 class="atl-tu-title">${esc(card.title)} ${flagsHtml(card.flags)}</h3>
       <p class="atl-tu-dates">${esc(card.dates?.text)}</p>
       <p class="atl-tu-meta">${esc(length)}</p>${sharedHtml(card, 'atl-tu-meta')}
     </div>

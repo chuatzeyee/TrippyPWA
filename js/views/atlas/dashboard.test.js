@@ -153,7 +153,12 @@ describe.each(READY)('ready fixture %s', (key) => {
     for (const card of others) {
       const row = one(rest, `[data-trip-id="${card.id}"]`);
       expect(textOf(row)).toMatch(/\d+ days? to go/);
-      expect(all(row, '.ui-ready-chip')).toHaveLength(card.readiness ? 1 : 0);
+    }
+    // The rail carries no readiness chip: what is open is the checklist of the next departure alone.
+    for (const part of [next, rest]) {
+      expect(all(part, '.ui-ready-chip')).toHaveLength(0);
+      expect(all(part, '.atl-chip-wait')).toHaveLength(0);
+      expect(textOf(part)).not.toMatch(/\d+ to do/);
     }
     const marks = texts(root, '.atl-rm-k');
     for (const card of model.sections.upcoming) expect(marks.join('|')).toContain(card.monthKey.slice(0, 4));
@@ -260,7 +265,14 @@ describe('edge states', () => {
     const root = tree('briefingPending');
     const pending = all(root, '[data-briefing="pending"]');
     expect(pending.length).toBeGreaterThanOrEqual(4);
-    for (const card of pending) expect(all(card, '.atl-wait').length).toBeGreaterThanOrEqual(1);
+    // A live plan waits for its next stop and the next departure for its checklist; the other rows
+    // of the rail take nothing from the briefing, so they hold no place for it.
+    const rows = all(region(root, 'trips'), '[data-briefing="pending"]');
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    for (const card of rows) expect(all(card, '.atl-wait')).toHaveLength(0);
+    const waiting = pending.filter((card) => !rows.includes(card));
+    expect(waiting.length).toBeGreaterThanOrEqual(2);
+    for (const card of waiting) expect(all(card, '.atl-wait').length).toBeGreaterThanOrEqual(1);
     expect(all(tree('ready'), '.atl-wait')).toHaveLength(0);
   });
   it('a stale list has a status banner with the retry and says when it was saved', () => {
