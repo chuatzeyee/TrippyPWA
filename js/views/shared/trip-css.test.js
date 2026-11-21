@@ -126,7 +126,33 @@ describe('trip.css', () => {
   });
   it('pins only direct children of the trip root: a docked tab list does not stick on its own', () => {
     const sticky = trip.rules.filter((rule) => rule.declarations.some((declaration) => declaration.prop === 'position' && declaration.value === 'sticky'));
-    expect(sticky.flatMap((rule) => rule.selectors).sort()).toEqual([`${WRAP} > :where(.td-tabs)`, `${WRAP} > :where(.tv-bar)`]);
+    // The day panel sticks too, inside its open day card and under the pinned height: it is no part of the pinned chrome.
+    expect(sticky.flatMap((rule) => rule.selectors).sort()).toEqual([`${WRAP} :where(.tv-day-aside)`, `${WRAP} > :where(.td-tabs)`, `${WRAP} > :where(.tv-bar)`]);
+  });
+  it('the day panel: hidden by default, shown and stuck under the open day header from 960 px of card width, never taller than the screen', () => {
+    const DAY = '@container tv-day (min-width: 960px)';
+    expect(declared(trip, `${WRAP} :where(.tv-day-aside)`, '').display).toBe('none');
+    const wide = trip.rules.find((rule) => rule.at.join(' ') === DAY && rule.selectors.includes(`${WRAP} :where(.tv-day-aside)`));
+    const value = (prop) => wide.declarations.filter((declaration) => declaration.prop === prop).map((declaration) => squash(declaration.value));
+    expect(value('display')).toEqual(['flex']);
+    expect(value('position')).toEqual(['sticky']);
+    expect(value('top')).toEqual(['calc(var(--tv-day-under) + var(--sp-4))']);
+    expect(value('max-height')).toEqual(['calc(100vh - var(--tv-day-under) - var(--sp-8))', 'calc(100dvh - var(--tv-day-under) - var(--sp-8))']);
+    expect(value('overflow-y')).toEqual(['auto']);
+    const columns = trip.rules.find((rule) => rule.at.join(' ') === DAY && rule.selectors.includes(`${WRAP} :where(.td-day-card-body:has(> .tv-day-aside))`));
+    expect(squash(columns.declarations.find((declaration) => declaration.prop === 'grid-template-columns').value)).toBe('minmax(0, 2fr) minmax(300px, 1fr)');
+    // The container is the open card that holds a panel, and nothing else: a closed card and a section card are as they were.
+    const makers = trip.rules.filter((rule) => rule.declarations.some((declaration) => declaration.prop === 'container' && /tv-day/.test(declaration.value)));
+    expect(makers.flatMap((rule) => rule.selectors)).toEqual([`${WRAP} :where(.td-day-card.td-day-card--open:has(> .td-day-card-body > .tv-day-aside))`]);
+    // Where the panel and a stop it jumps to rest follows the offsets the resets give the open day header.
+    expect(squash(declared(trip, `${WRAP} :where(.td-day-card)`, '')['--tv-day-under'])).toBe(`calc(${PINNED} + var(--sp-2) + var(--tv-day-head-h, 76px))`);
+    expect(squash(declared(trip, `${WRAP} :where(.td-activity-card)`)['scroll-margin-top'])).toBe('calc(var(--tv-day-under) + var(--sp-4))');
+    expect(squash(declared(trip, `${WRAP} :where(.tv-day-aside-stop)`)['min-height'])).toBe('var(--ui-target)');
+  });
+  it('draws no coloured side border on the day panel', () => {
+    const panel = trip.rules.filter((rule) => rule.selectors.some((selector) => selector.includes('tv-day-aside')));
+    expect(panel.length).toBeGreaterThan(10);
+    for (const rule of panel) for (const declaration of rule.declarations) expect(declaration.prop).not.toMatch(/^(border-left|border-inline-start|border-right|border-inline-end|box-shadow)/);
   });
   it('makes the .tv-landing wrappers the container-query containers, and never the trip root', () => {
     const landing = declared(trip, `${WRAP} :where(.tv-landing)`);
@@ -135,7 +161,7 @@ describe('trip.css', () => {
     const makers = trip.rules.filter((rule) => rule.declarations.some((declaration) => /^(container|container-type|contain|transform|filter|backdrop-filter)$/.test(declaration.prop)));
     for (const rule of makers) for (const selector of rule.selectors) expect(selector).not.toMatch(/^\[data-view\](:where\(\.td-wrap[^)]*\))?$/);
     expect(trip.atRules.filter((rule) => rule.name === 'container').length).toBeGreaterThan(0);
-    for (const rule of trip.atRules.filter((one) => one.name === 'container')) expect(rule.prelude).toMatch(/^@container tv-landing \(/);
+    for (const rule of trip.atRules.filter((one) => one.name === 'container')) expect(rule.prelude).toMatch(/^@container (tv-landing|tv-day) \(/);
   });
   it('gives the jump targets it owns the scroll margin of the pinned height', () => {
     const [rule] = rulesWith(trip, '.ui-ready').filter((one) => one.declarations.some((declaration) => declaration.prop === 'scroll-margin-top'));

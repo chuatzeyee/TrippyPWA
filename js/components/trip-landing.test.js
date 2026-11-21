@@ -609,7 +609,7 @@ describe('buildLanding on the frozen stub view', () => {
   it('gives the parts of the view and keeps the model and the context on the view object', () => {
     const view = viewOf(STUB);
     const parts = buildLanding(view, PORTO, landingOpts());
-    expect(Object.keys(parts).sort()).toEqual(['bar', 'between', 'hero', 'openSections', 'openSectionsMinWidth', 'planIntro', 'planOutro', 'tabs']);
+    expect(Object.keys(parts).sort()).toEqual(['bar', 'between', 'dayAside', 'hero', 'openSections', 'openSectionsMinWidth', 'planIntro', 'planOutro', 'tabs']);
     expect(view.landing.parts).toBe(parts);
     expect(view.landing.model.id).toBe('t-9');
     expect(view.landing.ctx.slots.notes).toBe(NOTES);
@@ -617,6 +617,22 @@ describe('buildLanding on the frozen stub view', () => {
     expect(Object.isFrozen(view.landing.ctx.prefs)).toBe(true);
     expect(view.landing.dayExtras).toHaveLength(PORTO.itinerary_days.length);
     for (const block of view.landing.dayExtras) expect(block).toContain('data-day-extras=');
+  });
+  it('builds the day panels only for a view that asks for them (dayAside), one a day, none for a day without stops', () => {
+    const plain = { id: 'plain', renderTripLanding: (model, ctx) => { const { dayAside, ...parts } = renderTripLanding(model, ctx); void dayAside; return parts; } };
+    const off = viewOf(plain);
+    buildLanding(off, PORTO, landingOpts());
+    expect(off.landing.dayAsides).toEqual(['', '']);
+    const no = viewOf({ id: 'no', renderTripLanding: (model, ctx) => ({ ...renderTripLanding(model, ctx), dayAside: false }) });
+    buildLanding(no, PORTO, landingOpts());
+    expect(no.landing.dayAsides).toEqual(['', '']);
+    const on = viewOf({ id: 'on', renderTripLanding: (model, ctx) => ({ ...renderTripLanding(model, ctx), dayAside: true }) });
+    buildLanding(on, PORTO, landingOpts());
+    expect(on.landing.dayAsides).toHaveLength(2);
+    expect(on.landing.dayAsides[0]).toContain('<aside class="tv-day-aside" data-day-aside="0"');
+    expect(on.landing.dayAsides[0]).toContain('data-stop-jump="a2"');
+    expect(on.landing.dayAsides[0]).toContain('1 of 2 stops on the map');
+    expect(on.landing.dayAsides[1]).toBe('');
   });
   it('builds the real model: glance facts, readiness, the map points, the cost and the owner actions', () => {
     const view = viewOf(STUB);
@@ -736,6 +752,19 @@ describe('redrawLanding', () => {
     expect(next.model.map.points).toEqual([]);
     expect(next.dayExtras[0]).not.toBe(view.landing.dayExtras[0]);
     expect(next.footHtml).not.toContain('OpenStreetMap');
+  });
+  it('draws the day panels again from the plan and the ticks as they are now', () => {
+    const trip = { ...PORTO, extras: { ...PORTO.extras, bookingChecklist: [{ group: 'Must Book Ahead', items: [{ label: 'Soup table', day: 1 }] }] } };
+    const view = viewOf({ id: 'on', renderTripLanding: (model, ctx) => ({ ...renderTripLanding(model, ctx), dayAside: true }) }, trip);
+    buildLanding(view, trip, landingOpts());
+    expect(view.landing.dayAsides[0]).toContain('data-state="todo">To book<');
+    const ticked = redrawLanding(view, facts({ ticks: { quick: { reservations: true }, checklist: {}, entryDone: {} } }));
+    expect(ticked.dayAsides[0]).toContain('data-state="done">Booked<');
+    view.trip = { ...trip, itinerary_days: [{ ...trip.itinerary_days[0], activities: [trip.itinerary_days[0].activities[1]] }, trip.itinerary_days[1]] };
+    const next = redrawLanding(view, facts());
+    expect(next.dayAsides[0]).not.toContain('data-stop-jump="a1"');
+    expect(next.dayAsides[0]).toContain('data-stop-jump="a2"');
+    expect(redrawLanding(built(), facts()).dayAsides.every((html) => html === '' || html.includes('tv-day-aside'))).toBe(true);
   });
   it('takes the role, the entry answer and the ticks it is given', () => {
     const view = built(PORTO, { userId: 'someone' });

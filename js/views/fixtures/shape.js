@@ -139,6 +139,11 @@ export const DayIndexRow = {
   firstTime: nul(S), lastTime: nul(S), isToday: B,
 };
 export const MapPoint = { lat: N, lng: N, dayNumber: N, dayIndex: N, order: N, title: S, colorIndex: N };
+export const DayAsideModel = {
+  index: N, dayNumber: N, colorIndex: N, map: nul({ points: arr(MapPoint), placed: N, total: N }),
+  stops: N, firstTime: nul(S), lastTime: nul(S), cost: nul(CostEstimate), weather: nul({ range: S, condition: S }),
+  areas: arr(S), book: arr({ label: S, booked: B }), list: arr({ id: S, at: N, number: N, time: S, title: S }),
+};
 export const TripAction = {
   key: one('share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete'), label: S, hint: S, href: S, danger: B,
 };

@@ -4,7 +4,7 @@ import { all, attr, classesOf, elements, isElement, isInside, matches, parseHtml
 import { markupRules, regionRules } from './markup-rules.js';
 
 const STRING_PARTS = ['bar', 'hero', 'tabs', 'planIntro', 'between', 'planOutro'];
-const PART_KEYS = [...STRING_PARTS, 'openSections', 'openSectionsMinWidth'];
+const PART_KEYS = [...STRING_PARTS, 'openSections', 'openSectionsMinWidth', 'dayAside'];
 const OPENABLE = ['flights', 'transport', 'entry', 'accommodation'];
 const ACTION_KEYS = ['share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete'];
 const TAB_KEYS = ['plan', 'spending', 'prep', 'towns'];
@@ -21,6 +21,7 @@ function shapeRules(parts) {
   for (const key of Object.keys(parts)) if (!PART_KEYS.includes(key)) out.push(`${key}: not a part of the contract`);
   if (!Array.isArray(parts.openSections) || parts.openSections.some((name) => !OPENABLE.includes(name))) out.push(`openSections: any of ${OPENABLE.join(', ')}`);
   if (!Number.isInteger(parts.openSectionsMinWidth) || parts.openSectionsMinWidth < 0) out.push('openSectionsMinWidth: a width in px, 0 for always');
+  if ('dayAside' in parts && typeof parts.dayAside !== 'boolean') out.push('dayAside: true or false, or left out');
   return out;
 }
 

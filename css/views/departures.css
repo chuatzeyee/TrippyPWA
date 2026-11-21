@@ -707,8 +707,11 @@
   /* Room for a next stop whose line wraps to three, so the buttons under it keep their place when
      the briefing is late. */
   [data-view="departures"][data-view] .dep-pass--live .dep-today { min-height: 8.25rem; }
-  /* On a short screen the photo gives way, so today's next stop is on the first screen with it. */
-  [data-view="departures"][data-view] .dep-pass--live .ui-frame { aspect-ratio: auto; min-height: clamp(15rem, 100vh - 36rem, 24rem); }
+  /* The two covers that stand side by side are one height, so the two perforations are one line.
+     On a short screen the photo gives way, so today's next stop is on the first screen with it. */
+  [data-view="departures"][data-view] .dep-brief { --dep-cover-h: clamp(15rem, 100vh - 36rem, 24rem); }
+  [data-view="departures"][data-view] .dep-pass--live .ui-frame,
+  [data-view="departures"][data-view] .dep-pass--next .ui-frame { aspect-ratio: auto; min-height: var(--dep-cover-h); }
   /* When the pass beside it is the taller one, the spare height goes above the facts at the foot,
      level with the two buttons, not under them. */
   [data-view="departures"][data-view] .dep-stub-side { display: flex; flex-direction: column; }

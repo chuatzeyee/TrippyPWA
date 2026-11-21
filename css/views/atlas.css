@@ -453,11 +453,16 @@
   [data-view="atlas"][data-view] .atl-acts--top > .ui-btn { padding: 0 var(--sp-5); }
   [data-view="atlas"][data-view] .atl-acts--phone,
   [data-view="atlas"][data-view] .atl-band { display: none; }
-  [data-view="atlas"][data-view] .atl-first { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); align-items: start; gap: var(--sp-6); margin-top: var(--sp-5); }
+  [data-view="atlas"][data-view] .atl-first { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr); align-items: stretch; gap: var(--sp-6); margin-top: var(--sp-5); }
+  /* The two columns end on one line: the taller one sets the height, the plate stage or the cover of the lead card takes the spare. */
+  [data-view="atlas"][data-view] .atl-now { grid-template-rows: auto minmax(0, 1fr); align-content: stretch; }
+  [data-view="atlas"][data-view] .atl-now-list { grid-template-rows: minmax(0, 1fr); }
+  [data-view="atlas"][data-view] .atl-lead { display: flex; flex-direction: column; }
+  [data-view="atlas"][data-view] .atl-lead > .atl-now-photo { flex: 1 1 auto; }
   [data-view="atlas"][data-view] .atl-first > .atl-now-list:empty { display: block; }
   [data-view="atlas"][data-view] .atl-first:has(> .atl-now-list:empty) { grid-template-columns: minmax(0, 1fr); }
   [data-view="atlas"][data-view] .atl-plate { display: flex; flex-direction: column; border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--plate); overflow: hidden; }
-  [data-view="atlas"][data-view] .atl-plate-stage { position: relative; aspect-ratio: 746 / 470; overflow: hidden; }
+  [data-view="atlas"][data-view] .atl-plate-stage { position: relative; flex: 1 0 auto; aspect-ratio: 746 / 470; overflow: hidden; }
   [data-view="atlas"][data-view] .atl-first:has(> .atl-now-list:empty) .atl-plate-stage { aspect-ratio: 1232 / 470; }
   [data-view="atlas"][data-view] .atl-plate-map,
   [data-view="atlas"][data-view] .atl-plate-link { position: absolute; inset: 0; display: block; }
@@ -681,7 +686,7 @@
   --tv-bar-min-h: 56px;
   --tv-tabs-h: 50px;
   --tv-pinned-h: var(--tv-bar-h);
-  --tv-day-gap: var(--sp-3);
+  --tv-day-gap: 0px;
   --tv-day-shadow: none;
   --tv-day-extras-display: contents;
   font: 400 16px/1.5 var(--font-body);
@@ -783,8 +788,7 @@
 [data-view="atlas"][data-view] .atl-notes { position: relative; }
 [data-view="atlas"][data-view] .atl-notes > .td-photo-status { position: absolute; right: 0; bottom: -9px; z-index: 1; max-width: 100%; margin: 0; padding: 3px var(--sp-2); border: 1px solid var(--atl-rule); border-radius: var(--r-sm); background: var(--parchment); font: 400 12px/1.1 var(--font-body); color: var(--ink-secondary); white-space: nowrap; overflow: hidden; }
 [data-view="atlas"][data-view] .atl-hero-map { display: flex; min-width: 0; }
-[data-view="atlas"][data-view] .atl-hero-map:empty,
-[data-view="atlas"][data-view] .atl-days-map:empty { display: none; }
+[data-view="atlas"][data-view] .atl-hero-map:empty { display: none; }
 [data-view="atlas"][data-view] .atl-hero-map > .tv-map { display: flex; flex: 1; flex-direction: column; min-width: 0; }
 [data-view="atlas"][data-view] .atl-hero-map .tv-map-box { flex: 1; border-color: var(--atl-rule); }
 [data-view="atlas"][data-view] .tv-map-btn { background: color-mix(in srgb, var(--parchment) 84%, transparent); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); font: 600 13.5px/1.2 var(--font-body); }
@@ -816,47 +820,8 @@
   [data-view="atlas"][data-view] .atl-glance > .tv-fact:last-child:nth-child(2n+1) > :where(.tv-fact-body) { align-items: flex-end; text-align: right; }
 }
 
-/* Day by day: the map and, right under it, every day with the same number and colour. */
 [data-view="atlas"][data-view] .atl-jump { display: none; }
-[data-view="atlas"][data-view] .atl-days { margin-top: var(--sp-6); scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + 8px); outline: none; }
-[data-view="atlas"][data-view] .atl-days .atl-sec-title,
-[data-view="atlas"][data-view] .atl-before .atl-sec-title,
-[data-view="atlas"][data-view] .atl-between-title { font-size: 26px; }
-[data-view="atlas"][data-view] .atl-days > .atl-sec-head { margin-bottom: var(--sp-3); }
-[data-view="atlas"][data-view] .atl-days > .tv-map-caption { margin: 0 0 var(--sp-3); font: 400 13.5px/1.45 var(--font-body); color: var(--ink-secondary); }
-[data-view="atlas"][data-view] .atl-days-map { --tv-map-max-h: 420px; margin: 0 calc(-1 * var(--gutter)); border-top: 1px solid var(--atl-rule); }
-[data-view="atlas"][data-view] .atl-days-map .tv-map-box { border: 0; border-radius: 0; }
-[data-view="atlas"][data-view] .tv-days--strip {
-  gap: var(--sp-2);
-  padding: var(--sp-3) var(--gutter);
-  border-bottom: 1px solid var(--atl-rule);
-  background: var(--plate);
-  scrollbar-width: none;
-}
-[data-view="atlas"][data-view] .tv-days--strip > .tv-day {
-  --atl-day: color-mix(in srgb, var(--day-color, var(--terracotta)) 86%, var(--on-photo));
-  width: 150px;
-  border-top: 3px solid var(--atl-day);
-  border-radius: 0 0 var(--r-md) var(--r-md);
-  background: var(--surface-solid);
-  box-shadow: inset 0 0 0 1px var(--atl-rule-soft);
-}
-[data-view="atlas"][data-view] .tv-days--strip > .tv-day:hover { background: color-mix(in srgb, var(--day-color, var(--terracotta)) 8%, var(--surface-solid)); }
-[data-view="atlas"][data-view] .tv-days--strip > .tv-day:has(> .tv-day-pick[aria-pressed="true"]) { background: color-mix(in srgb, var(--day-color, var(--terracotta)) 16%, var(--surface-solid)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--day-color, var(--terracotta)) 55%, transparent); }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-pick { gap: 6px; padding: var(--sp-3) var(--sp-3) var(--sp-2); border: 0; border-radius: 0 0 var(--r-md) var(--r-md); background: none; }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-pick[aria-pressed="true"] { padding-bottom: 0; }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-num { min-width: 26px; height: 26px; padding: 0; border: 0; background: var(--atl-day); color: var(--ui-on-accent); font: 600 13px/1 var(--font-mono); letter-spacing: -0.04em; }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-date { font: 400 12px/1.2 var(--font-mono); letter-spacing: -0.03em; color: var(--ink-secondary); }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-title { font: 600 14.5px/1.3 var(--font-body); }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-weather,
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-stops { font: 400 12.5px/1.35 var(--font-body); color: var(--ink-secondary); }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-foot { justify-content: flex-start; gap: 0 var(--sp-2); margin-top: 0; }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-cost { font: 400 12px/1.35 var(--font-mono); letter-spacing: -0.03em; color: var(--ink); }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-hint { display: flex; align-items: center; min-height: 44px; margin-top: auto; font: 600 13px/1.2 var(--font-body); color: var(--ink-secondary); text-decoration-color: color-mix(in srgb, var(--ink) 30%, transparent); }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-pick[aria-pressed="true"] > .tv-day-hint { display: none; }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-open { display: none; justify-content: center; min-height: 44px; margin: var(--sp-1) var(--sp-3) var(--sp-1); padding: 0 var(--sp-2); border-radius: var(--r-md); background: var(--ink); color: var(--parchment); font: 600 13.5px/1.2 var(--font-body); text-decoration: none; white-space: nowrap; }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-pick[aria-pressed="true"] + .tv-day-open { display: inline-flex; }
-[data-view="atlas"][data-view] .tv-days--strip .tv-day-pick[data-day-jump] > .tv-day-hint { color: var(--ink); }
+[data-view="atlas"][data-view] .atl-before .atl-sec-title { font-size: 26px; }
 
 /* Before you go */
 [data-view="atlas"][data-view] .atl-before { display: grid; gap: var(--sp-4); margin-top: var(--sp-10); scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + 8px); outline: none; }
@@ -890,10 +855,9 @@
 [data-view="atlas"][data-view] .atl-before--live .ui-ready-line { font: 400 14px/1.4 var(--font-body); }
 [data-view="atlas"][data-view] .atl-outro { font: 400 13.5px/1.5 var(--font-body); color: var(--ink-secondary); }
 
-/* Wide landing: the map beside the cover, the ledger in one row, the strip as a grid. */
+/* Wide landing: the map beside the cover, the ledger in one row. */
 @container tv-landing (min-width: 600px) {
   [data-view="atlas"][data-view] .atl-tacts > .ui-btn { flex: 0 0 auto; padding: 0 var(--sp-4); }
-  [data-view="atlas"][data-view] .tv-days--strip > .tv-day { width: 168px; }
 }
 @container tv-landing (min-width: 960px) {
   [data-view="atlas"][data-view] .atl-hero { padding-top: var(--sp-5); }
@@ -922,32 +886,19 @@
   [data-view="atlas"][data-view] .atl-jump { position: absolute; top: calc(-1 * (var(--tv-tabs-h) + var(--sp-3) + 1px)); right: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0 var(--sp-5); height: var(--tv-tabs-h); padding-right: max(0px, calc(84px - max(var(--gutter), (100vw - var(--tv-max)) / 2))); }
   [data-view="atlas"][data-view] .atl-jump-link { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; background: none; color: var(--ink-secondary); font: 400 13.5px/1 var(--font-body); white-space: nowrap; cursor: pointer; }
   [data-view="atlas"][data-view] .atl-jump-link:hover { color: var(--ink); }
-  [data-view="atlas"][data-view] .atl-days { margin-top: var(--sp-10); }
-  [data-view="atlas"][data-view] .atl-days .atl-sec-title,
   [data-view="atlas"][data-view] .atl-before .atl-sec-title { font-size: 32px; }
-  [data-view="atlas"][data-view] .atl-days > .atl-sec-head { margin-bottom: var(--sp-4); }
-  /* Every day is on the page: rows of equal length (trip-words.js stripColumns), nothing scrolls and nothing is cut at the edge,
-     so the shared edge fade of a sideways row (common.css, ui-scroll-fade) is switched off here. */
-  [data-view="atlas"][data-view] .tv-days--strip { display: grid; grid-template-columns: repeat(var(--atl-cols-mid, 5), minmax(0, 1fr)); margin-inline: 0; padding: 0 0 var(--sp-1); border: 0; background: none; overflow: visible; animation: none; -webkit-mask-image: none; mask-image: none; }
-  [data-view="atlas"][data-view] .tv-days--strip > .tv-day { width: auto; }
-  [data-view="atlas"][data-view] .tv-days--strip .tv-day-pick { padding: var(--sp-3) var(--sp-2) var(--sp-2) var(--sp-3); gap: var(--sp-2); }
   [data-view="atlas"][data-view] .atl-before { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--sp-10); margin-top: var(--sp-16); }
   [data-view="atlas"][data-view] .atl-before--live { grid-template-columns: minmax(0, 1fr); margin-top: var(--sp-8); }
   [data-view="atlas"][data-view] .atl-checks .ui-ready-row { grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; }
   [data-view="atlas"][data-view] .atl-checks .ui-ready-action { grid-column: 3; justify-self: end; }
 }
 
-@container tv-landing (min-width: 1200px) {
-  [data-view="atlas"][data-view] .tv-days--strip { grid-template-columns: repeat(var(--atl-cols, 10), minmax(0, 1fr)); }
-}
-
 /* ==== The classic cards in this skin (blueprint 8.1: td- card hooks only) ==== */
 [data-view="atlas"][data-view] .tv-between { margin-top: var(--sp-10); }
-[data-view="atlas"][data-view] .atl-between-title { margin-bottom: var(--sp-1); }
 [data-view="atlas"][data-view] .td-day-card { animation: none; border-color: var(--atl-rule); border-radius: var(--r-lg); transition: none; }
 /* Section cards read as titled sections of the page: no card, an open body, a heading that toggles it. */
 [data-view="atlas"][data-view] .td-day-card.td-day-card--section { --tv-day-gap: var(--sp-10); border: 0; border-radius: 0; background: none; }
-[data-view="atlas"][data-view] .td-day-card.td-day-card--section.td-day-card--open { padding-top: 0; box-shadow: none; }
+[data-view="atlas"][data-view] .td-day-card.td-day-card--open { padding-top: 0; box-shadow: none; }
 [data-view="atlas"][data-view] .td-day-card.td-day-card--section > .td-day-card-header { gap: var(--sp-3); min-height: 44px; margin: 0; padding: 0; border: 0; border-radius: var(--r-md); background: none; box-shadow: none; }
 [data-view="atlas"][data-view] .td-day-card.td-day-card--section.td-day-card--open > .td-day-card-header { position: static; margin: 0 0 var(--sp-4); }
 [data-view="atlas"][data-view] .td-day-card.td-day-card--section > .td-day-card-header:hover { background: none; }
@@ -971,63 +922,66 @@
 [data-view="atlas"][data-view] .td-day-card .td-accom-name { font: 400 20px/1.2 var(--font-heading); }
 [data-view="atlas"][data-view] .td-day-card .td-accom-links { flex-wrap: wrap; }
 [data-view="atlas"][data-view] .td-day-card .td-accom-link { min-height: 32px; padding: 0 var(--sp-3); border-color: var(--border-strong); border-radius: var(--r-md); color: var(--ink); font: 500 13px/1 var(--font-body); }
-/* Day cards: the colour of the day down the edge, its number in a chip, the facts of the day, the photos. */
-[data-view="atlas"][data-view] .td-day-card[data-day-index] { --atl-day: color-mix(in srgb, var(--day-color, var(--terracotta)) 86%, var(--on-photo)); background: var(--surface-solid); }
+/* ---- between: the trip map board, then the heading of the day cards ----
+   Below 1024 px the map is on its board, under the day chips. From 1024 px it sits beside the cover, so
+   the board is the chips and the caption alone. */
+[data-view="atlas"][data-view] .atl-between { container: atl-between / inline-size; scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + 8px); outline: none; }
+[data-view="atlas"][data-view] .atl-board { min-width: 0; overflow: hidden; border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--surface-solid); }
+[data-view="atlas"][data-view] .atl-mapboard { margin-bottom: var(--sp-6); }
+[data-view="atlas"][data-view] .atl-board-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--atl-rule); }
+[data-view="atlas"][data-view] .atl-board-title { font: 400 24px/1.15 var(--font-heading); }
+[data-view="atlas"][data-view] .atl-board-n,
+[data-view="atlas"][data-view] .atl-board-note { font: 400 13.5px/1.45 var(--font-body); color: var(--ink-secondary); }
+[data-view="atlas"][data-view] .atl-board-note { flex-basis: 100%; }
+[data-view="atlas"][data-view] .atl-daychips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--atl-rule); }
+[data-view="atlas"][data-view] .atl-map .tv-map-box { border: 0; border-radius: 0; }
+[data-view="atlas"][data-view] .atl-map-foot { padding: 0 var(--sp-4) var(--sp-3); border-top: 1px solid var(--atl-rule); }
+[data-view="atlas"][data-view] .atl-dayboard { border-bottom: 0; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+[data-view="atlas"][data-view] .atl-day-head { display: none; }
+@container atl-between (min-width: 860px) {
+  [data-view="atlas"][data-view] .atl-day-head { display: grid; grid-template-columns: 2.5rem 6.5rem minmax(0, 1fr) 15rem 4.5rem 7.5rem 20px; gap: 0 var(--sp-4); padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--atl-rule); font: 400 12.5px/1.3 var(--font-body); color: var(--ink-secondary); }
+}
+@media (min-width: 1024px) {
+  [data-view="atlas"][data-view] .atl-mapboard-top,
+  [data-view="atlas"][data-view] .atl-map { display: none; }
+}
+
+/* ---- The classic day cards as the rows of the "Day by day" board ----
+   The header's own boxes (.td-day-info, the block from day-extras) are opened up with display: contents,
+   so the number, the title, the date, the stops, the cost and the typical weather are cells of one grid:
+   three lines on a phone, one table-like row once the card is wide enough. */
+[data-view="atlas"][data-view] .td-day-card[data-day-index] { container: atl-day tv-day / inline-size; border: 0; border-top: 1px solid var(--atl-rule); border-inline: 1px solid var(--atl-rule); border-radius: 0; background: var(--surface-solid); }
+[data-view="atlas"][data-view] .tv-between + .td-day-card[data-day-index] { border-top: 0; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index]:last-child { border-bottom: 1px solid var(--atl-rule); border-radius: 0 0 var(--r-lg) var(--r-lg); }
 [data-view="atlas"][data-view] .td-day-card[data-day-index] > .td-day-card-header {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  align-items: start;
-  gap: 6px var(--sp-3);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
+  grid-template-columns: auto auto auto minmax(0, 1fr) 20px;
+  grid-template-areas: "n title title title go" "n date stops cost go" "n wx wx wx go";
+  align-items: center;
+  gap: var(--sp-1) var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: 0;
 }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-num { grid-column: 1; grid-row: 1 / span 3; width: 32px; height: 32px; border-radius: 50%; background: var(--atl-day); color: var(--ui-on-accent); }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-num > svg { display: none; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-info,
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .tv-day-facts { display: contents; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-num { grid-area: n; width: 32px; height: 32px; border-radius: 50%; background: var(--day-color, var(--terracotta)); color: var(--ui-on-accent); }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-num > svg,
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-date > .td-day-weather,
+[data-view="atlas"][data-view] .td-day-card[data-day-index] :is(.tv-day-theme, .tv-day-times, .tv-day-photos, .tv-day-more, .tv-cost-basis, .tv-cost-other) { display: none; }
 [data-view="atlas"][data-view] .td-day-card[data-day-index] .td-cal-num { margin-top: 0; color: var(--ui-on-accent); font: 600 14px/1 var(--font-mono); letter-spacing: -0.04em; }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-info { grid-column: 2; display: flex; flex-direction: column-reverse; gap: 2px; }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-card-title { font: 400 22px/1.15 var(--font-heading); }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-date { margin-top: 0; font: 400 12.5px/1.3 var(--font-mono); letter-spacing: -0.02em; color: var(--ink-secondary); }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-date > .td-day-weather { display: none; }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-chevron { display: none; }
-[data-view="atlas"][data-view] .td-day-card .tv-day-theme { grid-column: 2; font: 400 14px/1.45 var(--font-body); color: var(--ink-secondary); }
-[data-view="atlas"][data-view] .td-day-card .tv-day-facts { grid-column: 2; gap: var(--sp-1) var(--sp-4); margin-top: 6px; font: 400 13px/1.35 var(--font-body); color: var(--ink-secondary); }
-[data-view="atlas"][data-view] .td-day-card .tv-day-times { gap: 6px; }
-[data-view="atlas"][data-view] .td-day-card .tv-cost-lead { font: 400 12.5px/1.35 var(--font-mono); letter-spacing: -0.03em; color: var(--ink); }
-[data-view="atlas"][data-view] .td-day-card .tv-cost-other { display: none; }
-[data-view="atlas"][data-view] .td-day-card .tv-day-photos { grid-column: 1 / -1; gap: 6px; margin-top: var(--sp-2); }
-[data-view="atlas"][data-view] .td-day-card .tv-day-photos > .ui-thumb { flex: 0 0 48px; width: 48px; border-radius: var(--r-sm); }
-[data-view="atlas"][data-view] .td-day-card .tv-day-more {
-  grid-column: 1 / -1;
-  justify-self: start;
-  justify-content: center;
-  gap: var(--sp-2);
-  min-height: 44px;
-  margin-top: var(--sp-1);
-  padding: 0 var(--sp-4);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--ink) 3%, transparent);
-  font: 600 15px/1.2 var(--font-body);
-  color: var(--ink);
-}
-[data-view="atlas"][data-view] .td-day-card .tv-day-more > .ui-icon { order: -1; }
-[data-view="atlas"][data-view] .td-day-card-header:hover .tv-day-more { background: color-mix(in srgb, var(--ink) 8%, transparent); }
-/* Open: the header floats over the stops, so it shrinks to the day, its weather and cost, and the way to
-   close it. trip.css dissolves .tv-day-facts in an open card; here the block is already dissolved into the
-   header grid (--tv-day-extras-display), so the facts stay one wrapping line in the text column. */
-[data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] > .td-day-card-header { grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; row-gap: var(--sp-1); padding-block: var(--sp-3); border-color: var(--atl-rule); background: var(--surface-solid); }
-[data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .tv-day-facts { display: flex; grid-column: 2; grid-row: 2; margin-top: 0; }
-[data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .tv-day-more { grid-column: 3; grid-row: 1 / span 2; margin-top: 0; }
-[data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .td-day-num { grid-row: 1 / span 2; }
-@media (max-width: 599px) {
-  /* A narrow open header: the date and "Hide stops" share the first line, so the title and the facts
-     keep the whole text column and nothing breaks inside a word. */
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] > .td-day-card-header { align-items: start; row-gap: 2px; padding: var(--sp-3); }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .td-day-info { display: contents; }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .td-day-date { grid-column: 2; grid-row: 1; align-self: center; }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .td-day-card-title { grid-column: 2 / -1; grid-row: 2; font-size: 19px; }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .tv-day-facts { grid-column: 2 / -1; grid-row: 3; margin-top: var(--sp-1); text-wrap: balance; }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .tv-day-more { grid-row: 1; align-self: center; gap: var(--sp-1); min-height: 0; padding: 0; border: 0; background: none; font-size: 13px; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-card-title { grid-area: title; font: 400 20px/1.2 var(--font-heading); text-wrap: wrap; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-date { grid-area: date; margin: 0; font: 400 12.5px/1.4 var(--font-mono); letter-spacing: -0.02em; color: var(--ink-secondary); white-space: nowrap; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .tv-day-stops { grid-area: stops; display: block; white-space: nowrap; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .tv-day-cost { grid-area: cost; display: block; white-space: nowrap; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .tv-day-weather { grid-area: wx; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] :is(.tv-day-stops, .tv-day-weather) { font: 400 13.5px/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .tv-cost-lead { font: 400 12.5px/1.4 var(--font-mono); letter-spacing: -0.02em; color: var(--ink); }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-chevron { grid-area: go; justify-self: center; }
+/* An open day: the header stays in sight over the stops, flat, with the page colour above it. */
+[data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] > .td-day-card-header { margin: 0; border: 0; border-bottom: 1px solid var(--atl-rule); border-radius: 0; background: var(--surface-solid); box-shadow: 0 calc(-1 * var(--sp-2)) 0 var(--parchment); }
+[data-view="atlas"][data-view] .td-day-card[data-day-index]:last-child > .td-day-card-body { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+@container atl-day (min-width: 860px) {
+  [data-view="atlas"][data-view] .td-day-card[data-day-index] > .td-day-card-header { grid-template-columns: 2.5rem 6.5rem minmax(0, 1fr) 15rem 4.5rem 7.5rem 20px; grid-template-areas: "n date title wx stops cost go"; gap: 0 var(--sp-4); min-height: 60px; }
 }
 @media (min-width: 1024px) {
   [data-view="atlas"][data-view].td-wrap { --tv-bar-min-h: 60px; }
@@ -1041,17 +995,20 @@
   [data-view="atlas"][data-view] .td-tab-panel { margin-inline: 0; padding-inline: 0; }
   [data-view="atlas"][data-view] .tv-between { margin-top: var(--sp-16); }
   [data-view="atlas"][data-view] .tv-landing--intro { margin-bottom: var(--sp-16); }
-  [data-view="atlas"][data-view] .atl-between-title,
   [data-view="atlas"][data-view] .td-day-card.td-day-card--section .td-day-card-title { font-size: 32px; }
   [data-view="atlas"][data-view] .td-day-card.td-day-card--section { --tv-day-gap: var(--sp-16); }
-  [data-view="atlas"][data-view] .td-day-card[data-day-index] > .td-day-card-header { grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; column-gap: var(--sp-5); padding: var(--sp-5); }
-  [data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-num { grid-row: 1 / span 3; align-self: center; }
-  [data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-card-title { font-size: 25px; }
-  [data-view="atlas"][data-view] .td-day-card .tv-day-photos { grid-column: 3; grid-row: 1 / span 2; justify-self: end; margin-top: 0; }
-  [data-view="atlas"][data-view] .td-day-card .tv-day-photos > .ui-thumb { flex-basis: 56px; width: 56px; }
-  [data-view="atlas"][data-view] .td-day-card .tv-day-more { grid-column: 3; grid-row: 3; justify-self: end; margin-top: 0; }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .tv-day-more { grid-row: 1 / span 2; }
 }
+
+/* ---- The day panel beside the stops of an open day (the layout is in the shared trip.css) ----
+   A ruled panel in this skin's type: sentence case headings, hairlines between the rows, times and money in mono. */
+[data-view="atlas"][data-view] .tv-day-aside { border-color: var(--atl-rule); font: 400 13.5px/1.45 var(--font-body); }
+[data-view="atlas"][data-view] .tv-day-aside-h { font: 600 13.5px/1.3 var(--font-body); letter-spacing: 0; text-transform: none; color: var(--ink); }
+[data-view="atlas"][data-view] .tv-day-aside-facts dl > div,
+[data-view="atlas"][data-view] .tv-day-aside-book li,
+[data-view="atlas"][data-view] .tv-day-aside-stop { border-top-color: var(--atl-rule); }
+[data-view="atlas"][data-view] .tv-day-aside-facts dd,
+[data-view="atlas"][data-view] .tv-day-aside-time,
+[data-view="atlas"][data-view] .tv-day-aside-n { font: 400 12.5px/1.5 var(--font-mono); letter-spacing: -0.02em; }
 
 /* ---- Motion: only for people who have not asked for less (blueprint 8.4), and only on a first render ---- */
 @media (prefers-reduced-motion: no-preference) {
@@ -1064,7 +1021,6 @@
   [data-view="atlas"][data-view] .atl-hop-ph { transition: var(--transition-interactive); }
   [data-view="atlas"][data-view] .tv-bar-title { transition: opacity var(--duration-normal) var(--ease-out), visibility 0s linear var(--duration-normal); }
   [data-view="atlas"][data-view] .tv-bar[data-stuck] .tv-bar-title { transition-delay: 0s; }
-  [data-view="atlas"][data-view] .tv-days--strip > .tv-day { transition: var(--transition-interactive); }
 }
 @keyframes atl-rise {
   from { opacity: 0; transform: translateY(8px); }

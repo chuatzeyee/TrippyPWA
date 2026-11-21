@@ -61,8 +61,8 @@ export function readySentence(model) {
 }
 
 /**
- * The in-page links beside the tabs: Day by day, Before you go, then the section card of each area
- * that has one, in the order the cards have on the page (the checklist is a tab, not a section). [] when the plan has no days or no readiness.
+ * The in-page links beside the tabs, in the order of the page: Before you go, the section card of each
+ * area that has one (the checklist is a tab, not a section), then Day by day. [] when the plan has no days or no readiness.
  * @param {import('../contract.js').TripOverviewModel} model
  * @returns {Array<{ label: string, to?: 'days'|'ready', section?: string }>}
  */
@@ -75,22 +75,7 @@ export function jumpItems(model) {
     seen.add(item.target);
     return [{ label: JUMP_LABELS[item.area] ?? item.label, section: item.target, at: JUMP_ORDER[item.area] ?? 0 }];
   }).sort((a, b) => a.at - b.at).map(({ label, section }) => ({ label, section }));
-  return [{ label: 'Day by day', to: 'days' }, { label: 'Before you go', to: 'ready' }, ...sections];
-}
-
-/** Days in one row of the strip before it breaks into rows: on a wide landing (1200 px up) and on a middling one. */
-const STRIP_ROW = Object.freeze({ wide: 10, mid: 8 });
-const columnsFor = (count, most) => Math.max(1, Math.ceil(count / Math.ceil(count / most)));
-
-/**
- * How many columns the day strip has once it is a grid (from 960 px): every day is on the page, in
- * rows of equal length, so no day is cut off at the edge with no sign that there are more.
- * @param {number} count  the number of days
- * @returns {{ wide: number, mid: number }} 10 days: 10 and 5; 12 days: 6 and 6; 21 days: 7 and 7
- */
-export function stripColumns(count) {
-  const n = Number.isFinite(count) && count > 0 ? Math.round(count) : 1;
-  return { wide: columnsFor(n, STRIP_ROW.wide), mid: columnsFor(n, STRIP_ROW.mid) };
+  return [{ label: 'Before you go', to: 'ready' }, ...sections, { label: 'Day by day', to: 'days' }];
 }
 
 const SHORT_CONDITION = /\bPt\.? ?(cloudy|sunny)\b/gi;
