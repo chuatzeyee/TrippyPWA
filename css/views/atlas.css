@@ -966,10 +966,23 @@
 [data-view="atlas"][data-view] .td-day-card.td-day-card--section .td-day-card-title { font: 400 26px/1.15 var(--font-heading); }
 [data-view="atlas"][data-view] .td-day-card.td-day-card--section > .td-day-card-body { padding: 0; }
 [data-view="atlas"][data-view] .td-day-card .td-day-chevron { color: var(--ink-ghost); }
+/* The ring of a section heading stays inside the width of the card under it. */
+[data-view="atlas"][data-view] .td-day-card.td-day-card--section > .td-day-card-header:focus-visible { outline-offset: -2px; }
+/* Flights: each leg a ruled panel with the state edge (set once a booking is held); times and money in mono. */
+[data-view="atlas"][data-view] .td-day-card .td-flight-leg { border: 1px solid var(--atl-rule); border-left: 3px solid var(--border-strong); background: var(--surface-solid); }
+[data-view="atlas"][data-view] .td-day-card .td-flight-leg--booked { border-left-color: var(--atl-up-ink); }
+[data-view="atlas"][data-view] .td-day-card .td-flight-leg-header { border-color: var(--atl-rule); background: none; }
+[data-view="atlas"][data-view] .td-day-card .td-flight-leg-label, [data-view="atlas"][data-view] .td-day-card .td-flight-duration, [data-view="atlas"][data-view] .td-day-card .td-accom-stay { font: 400 12.5px/1.3 var(--font-mono); letter-spacing: -0.02em; text-transform: none; color: var(--ink-secondary); }
+[data-view="atlas"][data-view] .td-day-card .td-flight-number, [data-view="atlas"][data-view] .td-day-card .td-flight-when, [data-view="atlas"][data-view] .td-day-card .td-flight-price-amount, [data-view="atlas"][data-view] .td-day-card .td-accom-price { font: 400 13px/1.4 var(--font-mono); letter-spacing: -0.03em; color: var(--ink); }
+[data-view="atlas"][data-view] .td-day-card .td-flight-bottom, [data-view="atlas"][data-view] .td-day-card .td-flight-tip { border-top: 1px solid var(--atl-rule); background: none; }
+[data-view="atlas"][data-view] .td-day-card .td-flight-price, [data-view="atlas"][data-view] .td-day-card .td-flight-tip, [data-view="atlas"][data-view] .td-day-card .td-accom-area, [data-view="atlas"][data-view] .td-day-card .td-accom-features > li { font: 400 13.5px/1.45 var(--font-body); color: var(--ink-secondary); }
 /* Where to stay: one panel, the options side by side with a rule between them; the links wrap. */
-[data-view="atlas"][data-view] .td-day-card .td-accom-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 0; border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--surface-solid); overflow: hidden; }
+[data-view="atlas"][data-view] .td-day-card .td-accom-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 0; border: 1px solid var(--atl-rule); border-left: 3px solid var(--border-strong); border-radius: var(--r-lg); background: var(--surface-solid); overflow: hidden; }
 [data-view="atlas"][data-view] .td-day-card .td-accom-option { border: 0; border-radius: 0; background: none; box-shadow: -1px 0 0 var(--atl-rule), 0 -1px 0 var(--atl-rule); }
+[data-view="atlas"][data-view] .td-day-card .td-accom-badge { border-radius: var(--r-sm); font: 600 12px/1.4 var(--font-body); letter-spacing: 0; text-transform: none; }
+[data-view="atlas"][data-view] .td-day-card .td-accom-name { font: 400 20px/1.2 var(--font-heading); }
 [data-view="atlas"][data-view] .td-day-card .td-accom-links { flex-wrap: wrap; }
+[data-view="atlas"][data-view] .td-day-card .td-accom-link { min-height: 32px; padding: 0 var(--sp-3); border-color: var(--border-strong); border-radius: var(--r-md); color: var(--ink); font: 500 13px/1 var(--font-body); }
 /* Day cards: the colour of the day down the edge, its number in a chip, the facts of the day, the photos. */
 [data-view="atlas"][data-view] .td-day-card[data-day-index] { --atl-day: color-mix(in srgb, var(--day-color, var(--terracotta)) 86%, var(--on-photo)); border-left: 3px solid var(--atl-day); background: var(--surface-solid); }
 [data-view="atlas"][data-view] .td-day-card[data-day-index] > .td-day-card-header {

@@ -706,6 +706,10 @@
 [data-view="concierge"][data-view] .con-hero--live .con-hero-in { grid-template-columns: minmax(0, 1fr); grid-template-areas: "t" "f" "c"; }
 [data-view="concierge"][data-view] .con-hero--live .con-hero-in { padding-top: 128px; }
 [data-view="concierge"][data-view] .con-hero--live::after { background: linear-gradient(to top, var(--parchment) 0, var(--parchment) 236px, color-mix(in srgb, var(--parchment) 86%, transparent) 300px, color-mix(in srgb, var(--parchment) 45%, transparent) 380px, transparent 480px); }
+/* Light theme: dark ink needs the page colour only close behind it, so the fade is thin above the
+   today panel and the title and the facts carry the halo. */
+[data-theme="light"] [data-view="concierge"][data-view] .con-hero--live::after { background: linear-gradient(to top, var(--parchment) 0, var(--parchment) 236px, color-mix(in srgb, var(--parchment) 78%, transparent) 268px, color-mix(in srgb, var(--parchment) 34%, transparent) 330px, color-mix(in srgb, var(--parchment) 10%, transparent) 400px, transparent 470px); }
+[data-theme="light"] [data-view="concierge"][data-view] .con-hero--live .con-hero-facts { text-shadow: var(--con-hero-halo); }
 [data-view="concierge"][data-view] .con-live-day { display: flex; align-items: baseline; gap: var(--sp-3); color: var(--ink-secondary); font: 400 22px/1 var(--font-heading); }
 [data-view="concierge"][data-view] .con-live-day > .con-num { color: var(--ink); font-size: 72px; }
 [data-view="concierge"][data-view] .con-hero-status > .ui-segs { margin-top: var(--sp-3); }
@@ -729,6 +733,9 @@
   [data-view="concierge"][data-view] .con-hero-count > .con-unit > span { display: block; }
   [data-view="concierge"][data-view] .con-hero--live .con-hero-in { grid-template-columns: minmax(0, 1fr) 380px; grid-template-areas: "t c" "f c"; padding-top: var(--sp-16); }
   [data-view="concierge"][data-view] .con-hero--live::after { background: linear-gradient(to top, var(--parchment) 0%, color-mix(in srgb, var(--parchment) 92%, transparent) 40%, color-mix(in srgb, var(--parchment) 55%, transparent) 70%, transparent 100%); }
+  /* Light theme: the cover stays clear across the row, and today sits on a panel of the page colour. */
+  [data-theme="light"] [data-view="concierge"][data-view] .con-hero--live::after { background: var(--con-hero-fade); }
+  [data-theme="light"] [data-view="concierge"][data-view] .con-hero--live .con-hero-status { padding: var(--sp-4) var(--sp-5) var(--sp-5); border-radius: var(--r-lg); background: color-mix(in srgb, var(--parchment) 90%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
   /* A running plan gives 380 px of the row to today, so its title has a narrower column: every step is
      one size down, and a name of several cities stays on two lines. */
   [data-view="concierge"][data-view] .con-hero--live .con-hero-title { font-size: 72px; line-height: 1.02; }

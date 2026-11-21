@@ -435,9 +435,54 @@ describe('placeLabels', () => {
     });
   });
 
+  describe('a pin right beside a labelled place', () => {
+    // Offsets in CSS px from a pin, turned back into degrees (my() is not linear, so the latitude is searched for).
+    const latAt = (y) => { let [lo, hi] = [-80, 84]; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; if (my(mid) > y) lo = mid; else hi = mid; } return (lo + hi) / 2; };
+    const beside = (from, dx, dy, u, kind, name) => pin(name, [latAt(my(from.at[0]) + dy * u), from.at[1] + (dx * u) / (mx(1) - mx(0))], kind);
+    const REACH = { live: 10, up: 7.5, home: 6.5, past: 3 };
+    const gapPx = (box, p, u) => {
+      const [x, y] = [mx(p.at[1]), my(p.at[0])];
+      return Math.hypot(x - Math.min(Math.max(x, box.x), box.x + box.w), y - Math.min(Math.max(y, box.y), box.y + box.h)) / u - REACH[p.kind];
+    };
+    const live = { ...LIVE, text: 'Spain, day 10 of 12' };
+    const WIDTHS = [360, 390, 800, 1280];
+
+    it('never lays a label over the pin of another place, upcoming, past or live, at any width', () => {
+      for (const cssW of WIDTHS) {
+        const sized = { ...WORLD, cssW };
+        const u = (mx(sized.view.east) - mx(sized.view.west)) / cssW;
+        // One pin on each side, just where the label of the selected place would start.
+        const near = [beside(LIVE, 32, 0, u, 'up', 'East'), beside(LIVE, -32, 0, u, 'past', 'West'), beside(LIVE, 0, -37, u, 'live', 'North'), beside(LIVE, 0, 37, u, 'up', 'South')];
+        for (const selected of [placeKey(LIVE), '']) {
+          const labels = placeLabels([live], { ...sized, pins: [LIVE, ...near], selected });
+          expect(labels.map((label) => label.text), `${cssW} ${selected}`).toEqual(['Spain, day 10 of 12']);
+          for (const other of near) expect(gapPx(labels[0].box, other, u), `${other.place} at ${cssW} ${selected}`).toBeGreaterThanOrEqual(1.9);
+          expect(inside(labels[0].box, sized.view)).toBe(true);
+          // The label still belongs to its pin: beside it or cornering it, never adrift.
+          expect(gapPx(labels[0].box, { ...LIVE, kind: 'past' }, u) + REACH.past).toBeLessThanOrEqual(30);
+        }
+      }
+    });
+
+    it('drops the label when no position is free of pins, and the lower priority one first', () => {
+      for (const cssW of WIDTHS) {
+        const sized = { ...WORLD, cssW };
+        const u = (mx(sized.view.east) - mx(sized.view.west)) / cssW;
+        // A lattice of past dots 14 px apart around the home pin: no box 22 px tall fits between them.
+        const lattice = [];
+        for (let dx = -280; dx <= 280; dx += 14) for (let dy = -84; dy <= 84; dy += 14) if (dx || dy) lattice.push(beside(HOME, dx, dy, u, 'past', `Dot ${dx} ${dy}`));
+        expect(placeLabels([HOME], { ...sized, pins: [HOME, ...lattice] }), `${cssW}`).toEqual([]);
+        const far = pin('Lima', [-12.05, -77.04], 'live');
+        const labels = placeLabels([HOME, far], { ...sized, pins: [HOME, far, ...lattice] });
+        expect(labels.map((label) => label.text), `${cssW}`).toEqual(['Lima']);
+        for (const other of lattice) expect(gapPx(labels[0].box, other, u)).toBeGreaterThanOrEqual(1.9);
+      }
+    });
+  });
+
   it('keeps the label with the higher priority when two cannot both fit', () => {
     // A strip one label tall, with both pins at its left edge: only the right side is free, once.
-    const narrow = { view: { north: 38.4, south: 36.9, west: -6.5, east: -0.5 }, cssW: 200 };
+    const narrow = { view: { north: 38.15, south: 36.95, west: -6.5, east: -0.5 }, cssW: 200 };
     const live = pin('Seville', [37.39, -5.98], 'live');
     const up = pin('Cordoba', [37.89, -5.9], 'up');
     for (const order of [[live, up], [up, live]]) {

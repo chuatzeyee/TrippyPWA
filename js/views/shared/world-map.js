@@ -39,7 +39,7 @@ const PING_GAP = 5;
 const HIT_RADIUS = 23;
 /** How far outside the view a pin is still drawn, in degrees: it can sit half on the edge. */
 const EDGE = { lon: 6, lat: 4 };
-const LABEL = { charW: 7.2, padX: 14, h: 22, gap: 10, font: 12, textX: 7, textY: 15.5, radius: 4, margin: 2, upcoming: 3, clear: 3 };
+const LABEL = { charW: 7.2, padX: 14, h: 22, gap: 10, font: 12, textX: 7, textY: 15.5, radius: 4, margin: 2, upcoming: 3, clear: 3, slideSteps: 4 };
 const RINGS = /^[Mlz\d\s-]+$/;
 const STATUS_WORDS = { live: 'in a plan running now', up: 'coming up', past: 'in past plans', home: '' };
 
@@ -117,12 +117,14 @@ export function groupPlaces(pins) {
 
 const overlaps = (a, b, pad) => a.x < b.x + b.w + pad && b.x < a.x + a.w + pad && a.y < b.y + b.h + pad && b.y < a.y + a.h + pad;
 
-function labelBox([x, y], text, dir, u, gapPx = LABEL.gap) {
+// `slide` moves the box along the side it is on, in world units: 0 is centred on the pin.
+function labelBox([x, y], text, dir, u, gapPx = LABEL.gap, slide = 0) {
   const w = (text.length * LABEL.charW + LABEL.padX) * u;
   const h = LABEL.h * u;
   const gap = gapPx * u;
-  const left = dir === 'r' ? x + gap : dir === 'l' ? x - gap - w : x - w / 2;
-  const top = dir === 't' ? y - gap - h : dir === 'b' ? y + gap : y - h / 2;
+  const sideways = dir === 'r' || dir === 'l';
+  const left = dir === 'r' ? x + gap : dir === 'l' ? x - gap - w : x - w / 2 + slide;
+  const top = dir === 't' ? y - gap - h : dir === 'b' ? y + gap : sideways ? y - h / 2 + slide : y - h / 2;
   return { x: round1(left), y: round1(top), w: round1(w), h: round1(h) };
 }
 
@@ -162,8 +164,10 @@ function diskTouches(box, disk, pad) {
  * already placed is tried on the other sides and then dropped, so a higher priority label always wins.
  * When the plate carries its pins (plate.pins, as worldPlateSvg() takes them), a label also keeps clear
  * of the mark of every other place, and of the selection ring of plate.selected: a side that only a mark
- * or the ring is in the way of is tried once more further out, just beyond the ring, before the label is
- * dropped. The label of the selected place itself starts beyond its own ring. With plate.keepLive true
+ * or the ring is in the way of is tried once more further out, just beyond the ring, and then every side
+ * is tried with the box slid along it (little further than where a corner of the box corners the pin, so
+ * the label still reads as that pin's), before the label is dropped. A label is never laid over the mark of
+ * another place, whatever its kind, at any width. The label of the selected place itself starts beyond its own ring. With plate.keepLive true
  * the label of a live plan is never dropped for a mark: with no clear side it lies over a lesser mark
  * (it still keeps to the plate and off the labels placed before it). Off by default, so a caller that
  * handles a dropped live label itself sees no change.
@@ -184,9 +188,21 @@ export function placeLabels(pins, plate) {
   const disks = markDisks(plate, frame);
   const selected = typeof plate?.selected === 'string' ? plate.selected : '';
   const farGap = HIT_RADIUS + LABEL.clear;
+  // Live plans rank alike: when the given order cannot name them all, the other order is tried, and kept
+  // only when it names more of them.
+  const liveKeys = new Set(wanted.filter((one) => one.priority === 0).map((one) => placeKey(one.pin)));
+  const first = placeIn(wanted);
+  const named = (labels) => labels.filter((label) => label.priority === 0).length;
+  if (liveKeys.size < 2 || named(first) >= liveKeys.size) return first;
+  const turned = placeIn([...wanted.filter((one) => one.priority === 0).reverse(), ...wanted.filter((one) => one.priority !== 0)]);
+  if (named(turned) <= named(first)) return first;
+  const order = wanted.map((one) => placeKey(one.pin));
+  return [...turned].sort((a, b) => a.priority - b.priority || order.indexOf(a.key) - order.indexOf(b.key));
+
+  function placeIn(list) {
   const placed = [];
   const seen = new Set();
-  for (const { pin, priority } of wanted) {
+  for (const { pin, priority } of list) {
     const key = placeKey(pin);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -213,10 +229,33 @@ export function placeLabels(pins, plate) {
       const side = sides.find((dir) => free(labelBox(at, text, dir, frame.u, nearGap)));
       return side ? { dir: side, box: labelBox(at, text, side, frame.u, nearGap) } : null;
     };
-    const spot = tryAt(nearGap, sides) ?? (nearGap < farGap ? tryAt(farGap, blocked) : null) ?? over();
+    // Then along each side, a quarter of a label's height at a time, as far as a corner of the box
+    // cornering the pin (and one label gap past it above and below): a pin close by takes the middle of a
+    // side and seldom all of it. The least slide wins, towards the middle of the plate first, the near gap
+    // before the far one.
+    const slid = () => {
+      const [w, h] = [(text.length * LABEL.charW + LABEL.padX) * frame.u, LABEL.h * frame.u];
+      const step = h / LABEL.slideSteps;
+      const reach = (dir, gap) => (dir === 'l' || dir === 'r' ? h : w / 2 + (gap + LABEL.gap) * frame.u);
+      const towards = (dir) => (dir === 'l' || dir === 'r' ? (upDown[0] === 'b' ? 1 : -1) : (sideways[0] === 'r' ? 1 : -1));
+      for (const gap of nearGap < farGap ? [nearGap, farGap] : [nearGap]) {
+        const most = Math.max(...sides.map((dir) => reach(dir, gap)));
+        for (let move = step; move <= most + 1e-6; move += step) {
+          for (const dir of sides.filter((side) => move <= reach(side, gap) + 1e-6)) {
+            for (const slide of [move * towards(dir), -move * towards(dir)]) {
+              const box = labelBox(at, text, dir, frame.u, gap, slide);
+              if (free(box) && clear(box)) return { dir, box };
+            }
+          }
+        }
+      }
+      return null;
+    };
+    const spot = tryAt(nearGap, sides) ?? (nearGap < farGap ? tryAt(farGap, blocked) : null) ?? slid() ?? over();
     if (spot) placed.push({ key, text, kind: pin.kind, dir: spot.dir, priority, at: [...pin.at], box: spot.box });
   }
   return placed;
+  }
 }
 
 // --- Drawing ------------------------------------------------------------------------------------------
