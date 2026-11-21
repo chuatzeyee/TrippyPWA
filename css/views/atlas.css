@@ -984,27 +984,23 @@
   [data-view="atlas"][data-view] .td-day-card.td-day-card--section { --tv-day-gap: var(--sp-16); }
 }
 
-/* ---- Flights, entry requirements and where to stay: closed, one row of compact cards ----
+/* ---- Flights, entry requirements and where to stay: one row of cards that open in place ----
    The plan column answers the landing queries, so the row follows the room the page has, not the
-   window. From 960 px a closed section is a card in its own column of the first row (two sections
-   make two columns, one is a full row). An open section is the titled section it always was, on a
-   row of its own under that row, in page order. A closed card never changes column, so opening or
-   closing one moves no other heading. */
+   window. From 960 px each section is a card in its own column (two sections make two columns, one
+   is a full row). A card opens downwards inside its own column and never changes place; the cards
+   beside it keep their own height. */
 [data-view="atlas"][data-view] .td-main { container: tv-landing / inline-size; }
 @container tv-landing (min-width: 960px) {
-  [data-view="atlas"][data-view] .td-day-grid { display: grid; grid-template-columns: repeat(var(--atl-secs, 1), minmax(0, 1fr)); column-gap: var(--sp-4); }
+  [data-view="atlas"][data-view] .td-day-grid { display: grid; grid-template-columns: repeat(var(--atl-secs, 1), minmax(0, 1fr)); column-gap: var(--sp-4); align-items: start; }
   [data-view="atlas"][data-view] .td-day-grid:has(> .td-day-card--section:nth-child(2)) { --atl-secs: 2; }
   [data-view="atlas"][data-view] .td-day-grid:has(> .td-day-card--section:nth-child(3)) { --atl-secs: 3; }
-  /* The first section never has a margin above it (trip-reset.css), so when it is open the row of closed cards keeps the distance. */
-  [data-view="atlas"][data-view] .td-day-grid:has(> .td-day-card--open:first-child) { --atl-row-end: var(--sp-16); }
-  [data-view="atlas"][data-view] .td-day-grid > :nth-child(n) { grid-column: 1 / -1; order: 2; }
-  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section { order: 1; }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--section:nth-child(2) { --atl-col: 2; }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--section:nth-child(3) { --atl-col: 3; }
-  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section:not(.td-day-card--open) { --tv-day-gap: 0px; grid-column: var(--atl-col, 1); order: 0; margin-bottom: var(--atl-row-end, 0px); border: 1px solid var(--atl-rule); border-radius: var(--r-md); background: var(--surface-solid); }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--section:not(.td-day-card--open):hover { border-color: var(--border-strong); }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--section:not(.td-day-card--open) > .td-day-card-header { min-height: 56px; padding: 0 var(--sp-4); }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--section:not(.td-day-card--open) .td-day-card-title { font-size: 20px; }
+  [data-view="atlas"][data-view] .td-day-grid > :nth-child(n) { grid-column: 1 / -1; }
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section { --tv-day-gap: 0px; grid-column: auto; min-width: 0; border: 1px solid var(--atl-rule); border-radius: var(--r-md); background: var(--surface-solid); }
+  [data-view="atlas"][data-view] .td-day-card.td-day-card--section:hover { border-color: var(--border-strong); }
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section > .td-day-card-header { min-height: 56px; margin: 0; padding: 0 var(--sp-4); }
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section .td-day-card-title { font-size: 20px; }
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section > .td-day-card-body { padding: var(--sp-4); border-top: 1px solid var(--atl-rule); }
+  [data-view="atlas"][data-view] .td-day-card.td-day-card--section .td-flight-legs { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ---- The day panel beside the stops of an open day (the layout is in the shared trip.css) ----
