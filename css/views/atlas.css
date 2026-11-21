@@ -907,29 +907,46 @@
 [data-view="atlas"][data-view] .td-day-card .td-accom-name { font: 400 20px/1.2 var(--font-heading); }
 [data-view="atlas"][data-view] .td-day-card .td-accom-links { flex-wrap: wrap; }
 [data-view="atlas"][data-view] .td-day-card .td-accom-link { min-height: 32px; padding: 0 var(--sp-3); border-color: var(--border-strong); border-radius: var(--r-md); color: var(--ink); font: 500 13px/1 var(--font-body); }
-/* ---- between: the trip map board, then the heading of the day cards ----
-   Below 1024 px the map is on its board, under the day chips. From 1024 px it sits beside the cover, so
-   the board is the chips and the caption alone. */
-[data-view="atlas"][data-view] .atl-between { container: atl-between / inline-size; scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + 8px); outline: none; }
+/* ---- between: the day bar, the map on a narrow screen, then the heading of the day cards ----
+   The between box and its wrapper have no box of their own, so the day bar is laid out in the day
+   grid itself and stays under the top bar for as long as the days scroll. Everything in the grid
+   that pins or is jumped to sits under the bar and the day bar together. */
+[data-view="atlas"][data-view] { --atl-daybar-h: 60px; }
+[data-view="atlas"][data-view] .td-day-grid { --tv-pinned-h: calc(var(--tv-bar-h) + var(--atl-daybar-h)); }
+[data-view="atlas"][data-view] .tv-between,
+[data-view="atlas"][data-view] .atl-between { display: contents; }
+[data-view="atlas"][data-view] .atl-daybar { position: sticky; top: calc(var(--tv-top) + var(--tv-bar-h)); z-index: calc(var(--z-sticky) + 8); display: flex; align-items: center; height: var(--atl-daybar-h); margin: var(--sp-10) calc(-1 * var(--sp-2)) var(--sp-3); padding: 0 var(--sp-2); background: var(--parchment); overflow-x: auto; scrollbar-width: none; }
+[data-view="atlas"][data-view] .atl-daybar > .tv-days--chips { flex-wrap: nowrap; gap: var(--sp-2); }
 [data-view="atlas"][data-view] .atl-board { min-width: 0; overflow: hidden; border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--surface-solid); }
-[data-view="atlas"][data-view] .atl-mapboard { margin-bottom: var(--sp-6); }
 [data-view="atlas"][data-view] .atl-board-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--atl-rule); }
 [data-view="atlas"][data-view] .atl-board-title { font: 400 24px/1.15 var(--font-heading); }
 [data-view="atlas"][data-view] .atl-board-n,
 [data-view="atlas"][data-view] .atl-board-note { font: 400 13.5px/1.45 var(--font-body); color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-board-note { flex-basis: 100%; }
-[data-view="atlas"][data-view] .atl-daychips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--atl-rule); }
+[data-view="atlas"][data-view] .atl-map { margin-bottom: var(--sp-4); border: 1px solid var(--atl-rule); border-radius: var(--r-lg); overflow: hidden; }
+[data-view="atlas"][data-view] .atl-map:empty { display: none; }
+[data-view="atlas"][data-view] .atl-map-words { display: none; }
 [data-view="atlas"][data-view] .atl-map .tv-map-box { border: 0; border-radius: 0; }
-[data-view="atlas"][data-view] .atl-map-foot { padding: 0 var(--sp-4) var(--sp-3); border-top: 1px solid var(--atl-rule); }
-[data-view="atlas"][data-view] .atl-dayboard { border-bottom: 0; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+[data-view="atlas"][data-view] .atl-dayboard { container: atl-days / inline-size; border-bottom: 0; border-radius: var(--r-lg) var(--r-lg) 0 0; scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + 8px); outline: none; }
 [data-view="atlas"][data-view] .atl-day-head { display: none; }
-@container atl-between (min-width: 860px) {
+@container atl-days (min-width: 860px) {
   [data-view="atlas"][data-view] .atl-day-head { display: grid; grid-template-columns: 2.5rem 6.5rem minmax(0, 1fr) 15rem 4.5rem 7.5rem 20px; gap: 0 var(--sp-4); padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--atl-rule); font: 400 12.5px/1.3 var(--font-body); color: var(--ink-secondary); }
 }
 @media (min-width: 1024px) {
-  [data-view="atlas"][data-view] .atl-mapboard-top,
   [data-view="atlas"][data-view] .atl-map { display: none; }
 }
+
+/* ---- Days carry no colour of their own ----
+   The seven day colours went round by day number and said nothing (day 8 looked like day 1). A day
+   is now a plain number; colour is kept for what it means: the day being read is filled, today has
+   the live ring, and everything a day puts on a map is one colour. */
+[data-view="atlas"][data-view] { --day-1: var(--teal); --day-2: var(--teal); --day-3: var(--teal); --day-4: var(--teal); --day-5: var(--teal); --day-6: var(--teal); --day-7: var(--teal); }
+[data-view="atlas"][data-view] .tv-day-chip { flex: none; border: 1px solid var(--border-strong); background: var(--surface-solid); color: var(--ink-secondary); }
+[data-view="atlas"][data-view] .tv-day-chip:hover { border-color: var(--ink-secondary); color: var(--ink); }
+[data-view="atlas"][data-view] .tv-day-chip[aria-pressed="true"] { border-color: var(--ink-secondary); background: var(--surface-solid); color: var(--ink); }
+[data-view="atlas"][data-view] .tv-day-chip.is-today { border-color: var(--teal); color: var(--ink); box-shadow: inset 0 0 0 1px var(--teal); }
+[data-view="atlas"][data-view] .tv-day-chip.is-active,
+[data-view="atlas"][data-view] .tv-days--chips:not(:has(.is-active)) .tv-day-chip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--parchment); box-shadow: none; }
 
 /* ---- The classic day cards as the rows of the "Day by day" board ----
    The header's own boxes (.td-day-info, the block from day-extras) are opened up with display: contents,
@@ -949,11 +966,13 @@
 }
 [data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-info,
 [data-view="atlas"][data-view] .td-day-card[data-day-index] .tv-day-facts { display: contents; }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-num { grid-area: n; width: 32px; height: 32px; border-radius: 50%; background: var(--day-color, var(--terracotta)); color: var(--ui-on-accent); }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-num { grid-area: n; width: 32px; height: 32px; border-radius: 50%; background: none; box-shadow: inset 0 0 0 1px var(--border-strong); color: var(--ink); }
+[data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .td-day-num { background: var(--ink); box-shadow: none; }
+[data-view="atlas"][data-view] .td-day-card.td-day-card--open[data-day-index] .td-cal-num { color: var(--parchment); }
 [data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-num > svg,
 [data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-date > .td-day-weather,
 [data-view="atlas"][data-view] .td-day-card[data-day-index] :is(.tv-day-theme, .tv-day-times, .tv-day-photos, .tv-day-more, .tv-cost-basis, .tv-cost-other) { display: none; }
-[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-cal-num { margin-top: 0; color: var(--ui-on-accent); font: 600 14px/1 var(--font-mono); letter-spacing: -0.04em; }
+[data-view="atlas"][data-view] .td-day-card[data-day-index] .td-cal-num { margin-top: 0; color: var(--ink); font: 600 14px/1 var(--font-mono); letter-spacing: -0.04em; }
 [data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-card-title { grid-area: title; font: 400 20px/1.2 var(--font-heading); text-wrap: wrap; }
 [data-view="atlas"][data-view] .td-day-card[data-day-index] .td-day-date { grid-area: date; margin: 0; font: 400 12.5px/1.4 var(--font-mono); letter-spacing: -0.02em; color: var(--ink-secondary); white-space: nowrap; }
 [data-view="atlas"][data-view] .td-day-card[data-day-index] .tv-day-stops { grid-area: stops; display: block; white-space: nowrap; }
@@ -978,7 +997,6 @@
   [data-view="atlas"][data-view] .td-tab { padding: 0 var(--sp-5); font-size: 14.5px; }
   [data-view="atlas"][data-view] .tv-landing--hero,
   [data-view="atlas"][data-view] .td-tab-panel { margin-inline: 0; padding-inline: 0; }
-  [data-view="atlas"][data-view] .tv-between { margin-top: var(--sp-16); }
   /* The essentials row ends the intro: a panel it opens sits right under it, and the trip map keeps its own distance. */
   [data-view="atlas"][data-view] .tv-landing--intro { margin-bottom: var(--sp-3); }
   [data-view="atlas"][data-view] .td-day-card.td-day-card--section .td-day-card-title { font-size: 32px; }
