@@ -197,11 +197,17 @@ describe('dayAsideHtml', () => {
     expect(all(root, 'h1, h2, h3')).toHaveLength(0);
   });
 
-  it('draws the stops of the day on a map without tiles, numbered as in the list, with the route between them', () => {
+  it('holds a map of the day: the map node with its points, and the drawing numbered as in the list until it is live', () => {
     const root = tree(dayAsideHtml(ASIDE));
     const [map] = all(root, '.tv-day-aside-map');
-    expect(all(map, 'svg')).toHaveLength(1);
-    expect(all(map, 'img, iframe, [data-trip-map], [data-map-slot]')).toHaveLength(0);
+    const [node] = all(map, '[data-trip-map]');
+    expect(node).toBeTruthy();
+    // The trip map's node is carried across a re-render; the map of a day is not, and has no full screen button.
+    expect(attr(node, 'data-carry')).toBeNull();
+    expect(all(node, '[data-action="map-full"]')).toHaveLength(0);
+    expect(attr(node, 'data-map-focus')).toBe(String(ASIDE.map.points[0].dayNumber));
+    const points = JSON.parse(attr(map, 'data-day-map'));
+    expect(points.map((point) => point.order)).toEqual(ASIDE.map.points.map((point) => point.order));
     expect(all(map, '.tv-map-fstop').map(textOf)).toEqual(['1', '3']);
     expect(all(map, '.tv-map-froute')).toHaveLength(1);
     expect(textOf(all(map, '.tv-day-aside-note')[0])).toBe('2 of 3 stops on the map');

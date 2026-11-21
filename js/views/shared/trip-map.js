@@ -261,9 +261,10 @@ export function mapCaptionHtml(map, { day = 0, id, areas, days: rows, cls: extra
  *   captionId: the id of the element that describes the map; anything that is not an id means MAP_CAPTION_ID.
  *   fullButton: only false and 'off' leave the button out.
  *   label: the accessible name of the map. day: a day number to draw selected from the start.
+ *   byOrder: number the stops of the selected day by MapPoint.order (the map of one day, whose list has every stop).
  * @returns {string}
  */
-export function tripMapHtml(map, { captionId, label = 'Trip map', fullButton = true, day = 0 } = {}) {
+export function tripMapHtml(map, { captionId, label = 'Trip map', fullButton = true, day = 0, byOrder = false } = {}) {
   const days = mapDays(map?.points);
   const points = days.flatMap((entry) => entry.stops);
   const shown = days.some((entry) => entry.dayNumber === day) ? day : 0;
@@ -272,7 +273,7 @@ export function tripMapHtml(map, { captionId, label = 'Trip map', fullButton = t
   return `<section class="tv-map" data-trip-map data-carry="map" data-map-state="${points.length ? 'idle' : 'empty'}" data-map-full="off" data-map-focus="${shown}"`
     + `${attr('aria-label', label || 'Trip map')}${attr('aria-describedby', ID.test(captionId ?? '') ? captionId : MAP_CAPTION_ID)}${attr('hidden', !points.length)}>`
     + `<div class="tv-map-box" data-map-box>${full}<div class="tv-map-stage" data-map-stage>`
-    + `<div class="tv-map-fallback" data-map-fallback>${mapFallbackSvg(points, { day: shown })}</div>`
+    + `<div class="tv-map-fallback" data-map-fallback>${mapFallbackSvg(points, { day: shown, byOrder })}</div>`
     + '<div class="tv-map-canvas" data-map-canvas hidden></div>'
     + `<div class="tv-map-zoom" data-map-zoom hidden>${zoomButton('map-zoom-in', 'Zoom in', icon('plus', 20))}${zoomButton('map-zoom-out', 'Zoom out', MINUS_ICON)}</div>`
     + `<p class="tv-map-attr" data-map-attr hidden>${link(TILE_PROVIDER.attributionHref, TILE_PROVIDER.attribution, { cls: 'tv-map-attr-link', focusKey: 'map-attribution', html: `<span>${esc(TILE_PROVIDER.attribution)}</span>` })}</p>`
@@ -457,7 +458,7 @@ export function mountTripMap(el, opts = {}) {
     ui.fallback.hidden = live;
     if (ui.zoom) ui.zoom.hidden = !live;
     if (ui.credit) ui.credit.hidden = !live;
-    if (!live && !asDrawn) ui.fallback.innerHTML = mapFallbackSvg(points, { day });
+    if (!live && !asDrawn) ui.fallback.innerHTML = mapFallbackSvg(points, { day, byOrder: opts.byOrder === true });
     if (ui.note) ui.note.textContent = status === 'fallback' ? NOTE_FAILED : '';
     if (selected) ui.stage.style.setProperty('--tv-map-tone', `var(--day-${selected.colorIndex})`);
     else ui.stage.style.removeProperty('--tv-map-tone');
@@ -489,7 +490,7 @@ export function mountTripMap(el, opts = {}) {
     if (selected) {
       if (selected.stops.length > 1) L.polyline(selected.stops.map(at), { className: 'tv-map-route', interactive: false }).addTo(layer);
       const spots = spreadApart(selected.stops.map((stop) => map.latLngToLayerPoint(at(stop))), STOP_GAP.live);
-      selected.stops.forEach((stop, i) => pin(map.layerPointToLatLng([spots[i].x, spots[i].y]), 'stop', { text: i + 1, tone: selected.colorIndex, title: stop.title, dayNumber: selected.dayNumber }));
+      selected.stops.forEach((stop, i) => pin(map.layerPointToLatLng([spots[i].x, spots[i].y]), 'stop', { text: opts.byOrder === true && Number.isInteger(stop.order) && stop.order > 0 ? stop.order : i + 1, tone: selected.colorIndex, title: stop.title, dayNumber: selected.dayNumber }));
       return;
     }
     for (const entry of days) for (const stop of entry.stops) pin(at(stop), 'dot', { tone: entry.colorIndex, dayNumber: entry.dayNumber });
@@ -703,6 +704,9 @@ export function mountTripMap(el, opts = {}) {
   function onClick(event) {
     const target = typeof event.target?.closest === 'function' ? event.target : null;
     if (!target || !(el.contains(target) || rootOf().contains(target))) return;
+    // A page can hold more than one map (the trip map and the map of an open day): a click inside another map is not ours.
+    const inMap = target.closest('[data-trip-map]');
+    if (inMap && inMap !== el) return;
     const dayControl = target.closest('[data-map-day]');
     if (dayControl) { focusDay(dayControl.getAttribute('data-map-day')); return; }
     const control = target.closest('[data-action]');

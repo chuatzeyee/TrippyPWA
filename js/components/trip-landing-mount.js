@@ -300,9 +300,17 @@ function syncDayAside(view, card) {
   const { landing } = view;
   const body = card.querySelector(':scope > .td-day-card-body');
   if (!landing?.asides || !body || !card.matches(OPEN_DAYS)) return;
+  const { maps } = landing.asides;
+  // A re-render of the day grid takes panels away without telling: their maps go with them.
+  for (const [node, handle] of maps) if (!node.isConnected) { handle.destroy(); maps.delete(node); }
   const html = landing.dayAsides?.[Number(card.dataset.dayIndex)] ?? '';
   const old = body.querySelector(':scope > .tv-day-aside');
-  if ((old ? landing.asides.shown.get(old) : '') === html) return;
+  if ((old ? landing.asides.shown.get(old) : '') === html) {
+    // The card was closed and is open again: the map measures its box anew.
+    if (old) maps.get(old)?.invalidate();
+    return;
+  }
+  if (old) { maps.get(old)?.destroy(); maps.delete(old); }
   if (!html) {
     old.remove();
     return;
@@ -315,9 +323,27 @@ function syncDayAside(view, card) {
   else body.append(fresh);
   fresh.scrollTop = scrolled;
   if (focusKey) byAttr(fresh, 'data-focus-key', focusKey)?.focus({ preventScroll: true });
+  mountDayMap(view, fresh);
   // The panel rests under the open day header, whose height follows its title and the width.
   const header = card.querySelector(':scope > .td-day-card-header');
   if (header) landing.asides.heads.observe(header);
+}
+
+/** The map of the day in a panel goes live like the trip map does; its drawing stays when it cannot. */
+function mountDayMap(view, aside) {
+  const { landing } = view;
+  const box = aside.querySelector('[data-day-map]');
+  const node = box?.querySelector('[data-trip-map]');
+  if (!node) return;
+  let points = [];
+  try {
+    points = JSON.parse(box.getAttribute('data-day-map'));
+  } catch (error) {
+    console.warn('Day panel: the points of the day map could not be read', error);
+    return;
+  }
+  if (!Array.isArray(points) || !points.length) return;
+  landing.asides.maps.set(aside, mountTripMap(node, { points, day: points[0].dayNumber, byOrder: true, root: aside, theme: landing.ctx.theme, signal: landing.asides.signal }));
 }
 
 const syncDayAsides = (view) => view.wrap.querySelectorAll(OPEN_DAYS).forEach((card) => syncDayAside(view, card));
@@ -345,11 +371,11 @@ function mountDayAsides(view, signal) {
     target.closest('.td-day-card')?.style.setProperty('--tv-day-head-h', `${Math.round(target.getBoundingClientRect().height)}px`);
   }));
   const opened = new MutationObserver((changes) => new Set(changes.map((change) => change.target)).forEach((el) => syncDayAside(view, el)));
-  landing.asides = { shown: new WeakMap(), heads };
+  landing.asides = { shown: new WeakMap(), heads, maps: new Map(), signal };
   opened.observe(grid, { attributes: true, attributeFilter: ['class'], subtree: true });
   syncDayAsides(view);
   wrap.addEventListener('click', jumpToStop, { signal });
-  view.cleanups.push(() => { heads.disconnect(); opened.disconnect(); });
+  view.cleanups.push(() => { heads.disconnect(); opened.disconnect(); for (const handle of landing.asides.maps.values()) handle.destroy(); landing.asides.maps.clear(); });
 }
 
 /** The foot names the map's source only while a map is drawn, and credits the photos now shown. */
