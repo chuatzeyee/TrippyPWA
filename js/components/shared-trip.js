@@ -1,5 +1,5 @@
 import { fetchSharedTrip, toSharedView } from '../data/share-repository.js';
-import { formatNumber, formatWeekdayDate, to12h } from '../lib/locale.js';
+import { formatNumber, formatTempRange, formatWeekdayDate, to12h } from '../lib/locale.js';
 import { canConvert, convert } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
 import { escapeHtml as esc } from '../data/day-builder.js';
@@ -31,10 +31,6 @@ function costStr(amount, currency, tripCurrency) {
   return own;
 }
 
-function temp(v) {
-  return Number.isFinite(v) ? String(Math.round(v)) : '';
-}
-
 export function weatherBadge(w) {
   if (!w?.condition) return '';
   const cond = w.condition.toLowerCase();
@@ -45,8 +41,8 @@ export function weatherBadge(w) {
   else if (cond.includes('snow')) icon = '❄️';
   else if (cond.includes('fog') || cond.includes('mist')) icon = '🌫';
   else if (cond.includes('partly') || cond.includes('partial')) icon = '⛅';
-  const range = [temp(w.highC), temp(w.lowC)].filter(Boolean).join('/');
-  return `<span class="td-weather">${icon}${range ? ` ${esc(range)}°C` : ''}</span>`;
+  const range = formatTempRange(w.lowC, w.highC, { style: 'slash' });
+  return `<span class="td-weather">${icon}${range ? ` ${esc(range)}` : ''}</span>`;
 }
 
 export async function renderSharedTrip(token) {
@@ -169,7 +165,7 @@ function renderReadView(app, trip, { mode, tripId }) {
 
       <div class="shared-cta">
         ${isOwner
-          ? `<button class="btn btn--primary btn--pill btn--lg" data-go="${esc(`/trip/${tripId}`)}">Back to full view</button>`
+          ? `<button class="btn btn--primary btn--pill btn--lg" data-go="${esc(`/trip/${tripId}?today=0`)}">Back to full view</button>`
           : `<p class="text-body" style="color:var(--ink-secondary)">Want to plan your own trip?</p>
              <button class="btn btn--primary btn--pill btn--lg" data-go="/">Try Trippy</button>`}
       </div>

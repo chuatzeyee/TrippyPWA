@@ -1,6 +1,8 @@
 import { supabase, getUser } from '../lib/supabase.js';
 import { logger } from '../lib/logger.js';
 import { formatCityList } from '../lib/locale.js';
+import { startMinutes, normStartTime, sortDayActivities } from '../lib/day-order.js';
+import { storedSessionUserId } from './profile-cache.js';
 
 function normDay(raw, index) {
   const d = raw && typeof raw === 'object' ? raw : {};
@@ -54,66 +56,10 @@ function normActivity(a, index) {
   };
 }
 
-// ===== Activity start times =====
-
-// A leading 'H:MM' or 'HH:MM' (optionally with seconds and am/pm). Anything
-// after it (for example the end of a '09:00-10:00' range) is ignored for sorting.
-const TIME_PREFIX_RE = /^\s*(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*([ap])\.?\s*m\b\.?)?/i;
-
-function parseTime(value) {
-  const m = TIME_PREFIX_RE.exec(String(value ?? ''));
-  if (!m) return null;
-  let hours = Number(m[1]);
-  const minutes = Number(m[2]);
-  const meridiem = m[3]?.toLowerCase();
-  if (meridiem && (hours < 1 || hours > 12)) return null;
-  if (meridiem === 'p' && hours < 12) hours += 12;
-  if (meridiem === 'a' && hours === 12) hours = 0;
-  if (hours > 23 || minutes > 59) return null;
-  return { minutes: hours * 60 + minutes, length: m[0].length };
-}
-
-/** Minutes after midnight of an activity's start time, or null when it has none. */
-export function startMinutes(value) {
-  return parseTime(value)?.minutes ?? null;
-}
-
-/** Zero-padded 'HH:MM' when the whole value is a time; any other text is kept as typed. */
-export function normStartTime(value) {
-  const text = value == null ? '' : String(value).trim();
-  const parsed = parseTime(text);
-  if (!parsed || text.slice(parsed.length).trim()) return text;
-  const pad = n => String(n).padStart(2, '0');
-  return `${pad(Math.floor(parsed.minutes / 60))}:${pad(parsed.minutes % 60)}`;
-}
-
-// Where an untimed activity with no timed one listed before it starts its day.
-const SLOT_START_MINUTES = { morning: 0, afternoon: 720, evening: 1020 };
-
-const bySortOrder = (a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0);
-
-/**
- * A day's activities in display order (a new array). Timed activities go by
- * start time. An untimed one stays right after the timed activity listed before
- * it (by sort_order), or at the start of its time slot when there is none, so a
- * list without times keeps the order it was written in. Every activity gets one
- * sort key, which makes this a total order whatever the input order.
- * @param {object[]} list activity rows (start_time, time_slot, sort_order)
- * @returns {object[]}
- */
-export function sortDayActivities(list) {
-  let previousTimed = null;
-  return (Array.isArray(list) ? [...list] : [])
-    .sort(bySortOrder)
-    .map((activity, position) => {
-      const own = startMinutes(activity.start_time);
-      if (own !== null) previousTimed = own;
-      const key = own ?? previousTimed ?? SLOT_START_MINUTES[activity.time_slot] ?? 0;
-      return { activity, key, position };
-    })
-    .sort((a, b) => a.key - b.key || a.position - b.position)
-    .map(({ activity }) => activity);
-}
+// ===== Activity start times and day order =====
+// These live in js/lib/day-order.js (pure, so the model builders can use them
+// too) and are still exported from here for the callers that import them here.
+export { startMinutes, normStartTime, sortDayActivities };
 
 function sortTrip(trip) {
   if (!Array.isArray(trip.itinerary_days)) return trip;
@@ -127,19 +73,23 @@ function sortTrip(trip) {
 
 // ===== Offline copies =====
 // The last successful fetch of a handful of recently opened trips (and the trip
-// list) is kept in localStorage so an installed app still shows them without a
-// connection. Entries are tagged with the user id and only served to that user.
+// list, and the briefings of live and upcoming trips) is kept in localStorage
+// so an installed app still shows them without a connection. Entries are
+// tagged with the user id and only served to that user.
 
 const OFFLINE_INDEX_KEY = 'trippy-offline-trips';
 const OFFLINE_TRIP_PREFIX = 'trippy-offline-trip:';
 const OFFLINE_LIST_KEY = 'trippy-offline-trip-list';
+const OFFLINE_BRIEFINGS_KEY = 'trippy-offline-trip-briefings';
 const OFFLINE_MAX_TRIPS = 5;
 // localStorage holds about 5M characters per origin, shared with the session,
 // prefs and drafts, whose writes don't expect a full store. All offline copies
-// together (trips plus the list) stay within this budget.
+// together (trips, the list and the briefings) stay within this budget: the
+// list and the briefings have a fixed share each, the trips get the rest.
 const OFFLINE_BUDGET_CHARS = 2_000_000;
 const OFFLINE_MAX_LIST_CHARS = 300_000;
-const OFFLINE_TRIPS_BUDGET_CHARS = OFFLINE_BUDGET_CHARS - OFFLINE_MAX_LIST_CHARS;
+const OFFLINE_MAX_BRIEFING_CHARS = 120_000;
+const OFFLINE_TRIPS_BUDGET_CHARS = OFFLINE_BUDGET_CHARS - OFFLINE_MAX_LIST_CHARS - OFFLINE_MAX_BRIEFING_CHARS;
 const OFFLINE_MAX_TRIP_CHARS = 500_000;
 const OFFLINE_MAX_LIST_ROWS = 100;
 // With an offline copy to fall back on, stop waiting for a slow network after this.
@@ -167,21 +117,9 @@ function isOffline() {
   return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
-// User id of the session supabase-js persisted, readable before (or without) a
-// token refresh. Only used to pick this user's offline copies.
-function storedSessionUserId() {
-  const s = storage();
-  if (!s) return null;
-  try {
-    for (let i = 0; i < s.length; i++) {
-      const key = s.key(i);
-      if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
-      const id = JSON.parse(s.getItem(key))?.user?.id;
-      if (id) return id;
-    }
-  } catch { /* malformed session: treat as signed out */ }
-  return null;
-}
+// Whose copies to read: the signed-in user, else (before or without a token
+// refresh) the user of the session supabase-js persisted.
+const deviceUserId = () => getUser()?.id || storedSessionUserId();
 
 // Size of a saved copy; index entries written before sizes were recorded are measured.
 function storedTripChars(s, entry) {
@@ -241,6 +179,10 @@ function forgetOfflineTrip(id) {
   try {
     s.removeItem(OFFLINE_TRIP_PREFIX + id);
     s.setItem(OFFLINE_INDEX_KEY, JSON.stringify(readOfflineIndex().filter(e => e.id !== id)));
+    const briefings = readJson(OFFLINE_BRIEFINGS_KEY);
+    if (Array.isArray(briefings?.rows) && briefings.rows.some(row => row?.id === id)) {
+      s.setItem(OFFLINE_BRIEFINGS_KEY, JSON.stringify({ ...briefings, rows: briefings.rows.filter(row => row?.id !== id) }));
+    }
   } catch { /* nothing cached */ }
 }
 
@@ -268,7 +210,7 @@ function readTripListOffline(userId) {
 
 /** Trips saved on this device for the signed-in (or last signed-in) user, most recent first. */
 export function listOfflineTrips() {
-  const userId = getUser()?.id || storedSessionUserId();
+  const userId = deviceUserId();
   if (!userId) return [];
   return readOfflineIndex()
     .filter(e => e.userId === userId)
@@ -282,7 +224,9 @@ export function clearOfflineTripCache() {
   const keys = [];
   for (let i = 0; i < s.length; i++) keys.push(s.key(i));
   for (const key of keys) {
-    if (key && (key.startsWith(OFFLINE_TRIP_PREFIX) || key === OFFLINE_INDEX_KEY || key === OFFLINE_LIST_KEY)) s.removeItem(key);
+    const ours = key && (key.startsWith(OFFLINE_TRIP_PREFIX) || key === OFFLINE_INDEX_KEY
+      || key === OFFLINE_LIST_KEY || key === OFFLINE_BRIEFINGS_KEY);
+    if (ours) s.removeItem(key);
   }
 }
 
@@ -315,31 +259,46 @@ function isNetworkFailure(error, status) {
 // ===== Trip list (dashboard) =====
 
 // Only what the dashboard cards read: no `extras`, and just the destination
-// parts of wizard_state. Activity costs feed the card's budget total.
+// parts of wizard_state plus two small values from it. Activity costs, each
+// with its currency, feed the card's total.
 const TRIP_LIST_SELECT = [
   'id', 'title', 'emoji', 'status', 'start_date', 'end_date', 'created_at',
   'budget_daily', 'budget_currency', 'budget_currency_symbol', 'travelers', 'cover_image',
+  'timezone',
   'ws_multi:wizard_state->multiCity',
   'ws_destination:wizard_state->destination',
   'ws_destinations:wizard_state->destinations',
+  'ws_imported:wizard_state->imported',
+  // The day total of a plan with flexible dates (it has no start and end date).
+  'ws_duration:wizard_state->dates->duration',
   'import_pending:extras->importPending',
   // The v2 cover's copies ({ url, w, h }); cards use the 1280px one, cropped
   // at the picked height (focusY, %).
   'cover_small:extras->cover->small',
   'cover_large:extras->cover->large',
   'cover_focus:extras->cover->focusY',
-  'itinerary_days(day_number,activities(cost_amount))',
+  'cover_credit:extras->cover->credit',
+  'cover_none:extras->cover->none',
+  'itinerary_days(day_number,activities(cost_amount,cost_currency))',
 ].join(',');
 
 // A trip still marked as importing after this long was abandoned mid-import
 // (tab closed, phone slept) and is removed.
 const STALE_IMPORT_MS = 10 * 60 * 1000;
 
+// `wizard_state.imported` (true) and `wizard_state.dates.duration` (a day
+// count) are there only when the plan has them; `timezone` and the `cover_*`
+// values stay on the row as selected.
 function toListRow(row, shared, role) {
-  const { ws_multi, ws_destination, ws_destinations, import_pending, ...rest } = row;
+  const { ws_multi, ws_destination, ws_destinations, ws_imported, ws_duration, import_pending, ...rest } = row;
+  const duration = Number(ws_duration);
   return {
     ...rest,
-    wizard_state: { multiCity: !!ws_multi, destination: ws_destination ?? null, destinations: ws_destinations ?? [] },
+    wizard_state: {
+      multiCity: !!ws_multi, destination: ws_destination ?? null, destinations: ws_destinations ?? [],
+      ...(ws_imported === true ? { imported: true } : {}),
+      ...(Number.isFinite(duration) && duration > 0 ? { dates: { duration } } : {}),
+    },
     shared,
     collab_role: role || null,
   };
@@ -359,17 +318,19 @@ function dropAbandonedImports(userId, rows) {
  * Trips for the dashboard: the user's own plus trips they were invited to
  * collaborate on (RLS lets an invitee read those, matched by login email).
  * Shared trips carry `shared: true` and `collab_role`.
- * @returns {Promise<{ data: object[], error: string|null, stale?: boolean }>}
+ * @returns {Promise<{ data: object[], error: string|null, stale?: boolean, cachedAt?: string }>}
+ *   stale: true with cachedAt (when the list was saved) when the copy saved on this device was returned.
  */
 export async function fetchAllTrips() {
   const user = getUser();
+  const stale = entry => ({ data: entry.rows, error: null, stale: true, cachedAt: entry.savedAt });
   if (!user) {
     const cached = readTripListOffline(storedSessionUserId());
-    return cached ? { data: cached.rows, error: null, stale: true } : { data: [], error: 'Not authenticated' };
+    return cached ? stale(cached) : { data: [], error: 'Not authenticated' };
   }
 
   const cached = readTripListOffline(user.id);
-  if (cached && isOffline()) return { data: cached.rows, error: null, stale: true };
+  if (cached && isOffline()) return stale(cached);
 
   const ownQuery = supabase
     .from('trips')
@@ -390,7 +351,7 @@ export async function fetchAllTrips() {
   ]);
 
   if (own.error) {
-    if (cached && isNetworkFailure(own.error, own.status)) return { data: cached.rows, error: null, stale: true };
+    if (cached && isNetworkFailure(own.error, own.status)) return stale(cached);
     return { data: [], error: own.error.message || 'Could not load your trips' };
   }
   if (shared.error) logger.warn('data', 'Shared trips fetch failed', { error: shared.error.message });
@@ -409,6 +370,202 @@ export async function fetchAllTrips() {
   return { data: rows, error: null };
 }
 
+/**
+ * The role saved with the list row of a trip shared with this user: the first
+ * guess on the trip page, until fetchMyRole() (collab-repository.js) answers.
+ * @param {string} tripId
+ * @returns {'viewer'|'editor'|null} null for the user's own trip, a trip not in the saved list, or no saved list
+ */
+export function cachedListRole(tripId) {
+  const cached = readTripListOffline(deviceUserId());
+  const role = cached?.rows.find(row => row?.id === tripId)?.collab_role;
+  return role === 'viewer' || role === 'editor' ? role : null;
+}
+
+// ===== Briefings (live and upcoming trips) =====
+// What the dashboard needs beyond the list, for the few plans that are live or
+// coming up: journey, stay, checklist and passports for readiness, the days for
+// typical weather, and the stops of the days that are left.
+//
+// ONE QUERY, TWO ALIASES. `itinerary_days` is embedded twice: `days` whole, and
+// `stops` (with its activities) kept to a date range by filters on that alias
+// only. This form was run once, read-only, against this project's PostgREST on
+// 2026-11-20 (blueprint 7.2, risk 2): HTTP 200, the filters apply to `stops`
+// alone and `days` stays whole, 3.6 to 10 KB per plan. It is the form in use
+// because the range keeps the answer small while a live plan still gets every
+// remaining day. Should a PostgREST version refuse it, the fallback is a single
+// embed without a date filter: drop the `stops` line and the two filters in
+// fetchTripBriefings(), and add `,activities(...)` inside `days`. toBriefingRow()
+// reads both forms and applies the range itself, so nothing else changes.
+const TRIP_BRIEFING_SELECT = [
+  'id', 'timezone',
+  'flights:extras->flights',
+  'transport:extras->transport',
+  'accommodation:extras->accommodation',
+  'checklist:extras->bookingChecklist',
+  'ws_passports:wizard_state->passports',
+  'ws_transport_mode:wizard_state->transport->mode',
+  'ws_flights_settled:wizard_state->flights->settled',
+  'ws_stay_settled:wizard_state->accommodation->settled',
+  'days:itinerary_days(day_number,date,title,weather)',
+  'stops:itinerary_days(day_number,date,activities(start_time,time_slot,sort_order,title,venue_name))',
+].join(',');
+
+// The first briefing of a device has no copy to fall back on, so it may take longer.
+const BRIEFING_FIRST_TIMEOUT_MS = 20_000;
+
+const isRecord = value => Boolean(value) && typeof value === 'object';
+const isIsoDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+const byDayNumber = (a, b) => (Number(a.day_number) || 0) - (Number(b.day_number) || 0);
+
+// 'YYYY-MM-DD' on this device's calendar, `offsetDays` away from `now`.
+function deviceDate(now, offsetDays = 0) {
+  const given = now == null ? new Date() : new Date(now);
+  const base = Number.isNaN(given.getTime()) ? new Date() : given;
+  const day = new Date(base.getFullYear(), base.getMonth(), base.getDate() + offsetDays);
+  const pad = n => String(n).padStart(2, '0');
+  return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
+}
+
+const toStop = a => ({
+  start_time: a.start_time ?? '', time_slot: a.time_slot ?? null, sort_order: a.sort_order ?? 0,
+  title: a.title ?? '', venue_name: a.venue_name ?? '',
+});
+
+// One shape whichever form of the select answered. `extras` and `wizard_state`
+// hold their parts under the names the full trip row uses; `days` are in day
+// order without activities; `stops` are the days from `from` to `to` (both
+// included) with their activities in display order.
+function toBriefingRow(raw, from, to) {
+  const days = (Array.isArray(raw.days) ? raw.days : []).filter(isRecord);
+  // Two aliases: `stops` is its own embed. Single embed: the days carry the activities.
+  const stopDays = Array.isArray(raw.stops) ? raw.stops.filter(isRecord) : days;
+  return {
+    id: raw.id,
+    timezone: raw.timezone ?? null,
+    extras: {
+      flights: raw.flights ?? null,
+      transport: raw.transport ?? null,
+      accommodation: raw.accommodation ?? null,
+      bookingChecklist: raw.checklist ?? null,
+    },
+    wizard_state: {
+      passports: Array.isArray(raw.ws_passports) ? raw.ws_passports : null,
+      transport: { mode: raw.ws_transport_mode ?? null },
+      flights: { settled: raw.ws_flights_settled === true },
+      accommodation: { settled: raw.ws_stay_settled === true },
+    },
+    days: days
+      .map(d => ({ day_number: d.day_number, date: d.date ?? null, title: d.title ?? '', weather: d.weather ?? null }))
+      .sort(byDayNumber),
+    stops: stopDays
+      .filter(d => isIsoDate(d.date) && d.date >= from && d.date <= to)
+      .map(d => ({
+        day_number: d.day_number,
+        date: d.date,
+        activities: sortDayActivities((Array.isArray(d.activities) ? d.activities : []).filter(isRecord)).map(toStop),
+      }))
+      .sort(byDayNumber),
+  };
+}
+
+// For trimming the saved copy only: a plan counts as live when its days reach
+// from tomorrow or earlier to yesterday or later on this device's calendar (a
+// day of slack each way, because the plan's own zone can be a day ahead or behind).
+function isLiveBriefing(row, yesterday, tomorrow) {
+  const dates = row.days.map(d => d.date).filter(isIsoDate).sort();
+  return dates.length > 0 && dates[0] <= tomorrow && dates[dates.length - 1] >= yesterday;
+}
+
+function saveBriefingsOffline(userId, rows, yesterday, tomorrow) {
+  const s = storage();
+  if (!s) return;
+  const savedAt = new Date().toISOString();
+  const serialize = list => JSON.stringify({ userId, savedAt, rows: list });
+  try {
+    let kept = rows;
+    let raw = serialize(kept);
+    // Over its share of the budget: first drop the stops of plans that are not
+    // live, last plan first; then whole rows from the end (live plans are first).
+    for (let i = kept.length - 1; i >= 0 && raw.length > OFFLINE_MAX_BRIEFING_CHARS; i--) {
+      if (kept[i].stops.length === 0 || isLiveBriefing(kept[i], yesterday, tomorrow)) continue;
+      kept = kept.map((row, at) => (at === i ? { ...row, stops: [] } : row));
+      raw = serialize(kept);
+    }
+    while (raw.length > OFFLINE_MAX_BRIEFING_CHARS && kept.length > 0) {
+      kept = kept.slice(0, -1);
+      raw = serialize(kept);
+    }
+    s.setItem(OFFLINE_BRIEFINGS_KEY, raw);
+  } catch { /* quota: the copy is a convenience only */ }
+}
+
+function readBriefingsOffline(userId) {
+  const entry = readJson(OFFLINE_BRIEFINGS_KEY);
+  if (!entry || !userId || entry.userId !== userId || !Array.isArray(entry.rows)) return null;
+  return { savedAt: entry.savedAt, rows: entry.rows.filter(row => isRecord(row) && row.id) };
+}
+
+/**
+ * The briefings saved on this device for the signed-in (or last signed-in)
+ * user, for the first paint. Synchronous; empty when nothing is saved.
+ * @returns {object[]} rows in the shape fetchTripBriefings() gives
+ */
+export function readSavedBriefings() {
+  return readBriefingsOffline(deviceUserId())?.rows ?? [];
+}
+
+/**
+ * Briefings for a few live and upcoming trips, in one request. Rows come back
+ * in the order of `ids`, each as
+ * `{ id, timezone, extras: { flights, transport, accommodation, bookingChecklist },
+ *    wizard_state: { passports, transport: { mode }, flights: { settled }, accommodation: { settled } },
+ *    days: [{ day_number, date, title, weather }],
+ *    stops: [{ day_number, date, activities: [{ start_time, time_slot, sort_order, title, venue_name }] }] }`.
+ * `stops` covers the device's yesterday up to `liveUntil`, so it holds every
+ * remaining day of a live plan and is empty for a plan that starts later.
+ * The answer is saved on the device; offline or on a network failure the saved
+ * rows are returned with `stale: true`.
+ * @param {string[]} ids trip ids, live plans first
+ * @param {{ liveUntil?: string, now?: Date|number|string }} [options]
+ *   liveUntil: 'YYYY-MM-DD', the latest end date among the live plans (default: tomorrow);
+ *   now: the moment the device date is read from (default: the clock).
+ * @returns {Promise<{ data: object[], error: string|null, stale?: boolean, cachedAt?: string }>}
+ *   error 'offline' when the device is offline and nothing is saved.
+ */
+export async function fetchTripBriefings(ids, { liveUntil, now } = {}) {
+  const wanted = [...new Set((Array.isArray(ids) ? ids : []).filter(id => typeof id === 'string' && id))];
+  const user = getUser();
+  const saved = readBriefingsOffline(user?.id || storedSessionUserId());
+  const stale = () => ({ data: saved.rows, error: null, stale: true, cachedAt: saved.savedAt });
+  if (!user) return saved ? stale() : { data: [], error: 'Not authenticated' };
+  if (isOffline()) return saved ? stale() : { data: [], error: 'offline' };
+  if (wanted.length === 0) return { data: [], error: null };
+
+  // Device dates: which of these days is "today" for a plan is decided by the reader, in the plan's zone.
+  const yesterday = deviceDate(now, -1);
+  const tomorrow = deviceDate(now, 1);
+  const until = isIsoDate(liveUntil) ? liveUntil : tomorrow;
+  const query = supabase
+    .from('trips')
+    .select(TRIP_BRIEFING_SELECT)
+    .in('id', wanted)
+    .gte('stops.date', yesterday)
+    .lte('stops.date', until);
+  const { data, error, status } = await withTimeout(query, saved ? NETWORK_TIMEOUT_MS : BRIEFING_FIRST_TIMEOUT_MS);
+
+  if (error) {
+    if (saved && isNetworkFailure(error, status)) return stale();
+    return { data: [], error: error.message || 'Could not load the trip briefings' };
+  }
+
+  const byId = new Map((Array.isArray(data) ? data : []).filter(row => isRecord(row) && row.id)
+    .map(row => [row.id, toBriefingRow(row, yesterday, until)]));
+  const rows = wanted.filter(id => byId.has(id)).map(id => byId.get(id));
+  saveBriefingsOffline(user.id, rows, yesterday, tomorrow);
+  return { data: rows, error: null };
+}
+
 // ===== Single trip =====
 
 const TRIP_DETAIL_SELECT = `
@@ -424,7 +581,7 @@ const PREFETCH_TTL_MS = 10_000;
 let prefetched = null;
 
 async function loadTripById(id) {
-  const userId = getUser()?.id || storedSessionUserId();
+  const userId = deviceUserId();
   if (!userId) return { data: null, error: 'Not authenticated' };
 
   const cached = readOfflineTrip(userId, id);
@@ -842,7 +999,15 @@ export async function updateTripStatus(id, status) {
   return { error: error?.message || null };
 }
 
-export async function clearAllUserData() {
+/**
+ * Deletes every trip the signed-in user owns (trips shared with the user stay)
+ * and every offline copy on this device, and then, unless `keepProfile` is
+ * set, the profile row as well.
+ * @param {{ keepProfile?: boolean }} [options] keepProfile: leave the profile row (name, home, passport, prefs, role) alone
+ * @returns {Promise<{ error: string|null }>}
+ */
+export async function clearAllUserData(options) {
+  const keepProfile = Boolean(options?.keepProfile);
   const user = getUser();
   if (!user) return { error: 'Not authenticated' };
 
@@ -853,6 +1018,7 @@ export async function clearAllUserData() {
 
   if (tripsErr) return { error: `Failed to delete trips: ${tripsErr.message}` };
   clearOfflineTripCache();
+  if (keepProfile) return { error: null };
 
   const { error: profileErr } = await supabase
     .from('profiles')

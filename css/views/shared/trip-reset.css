@@ -1,0 +1,82 @@
+/* Classic resets for the trip page in view mode (tier 3, blueprint 8.1 and 8.3). Owner: F6.
+   Scope: td- card hooks only. Every selector is
+   .td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(<rest>)
+   and weighs exactly 0,7,0, so it beats every classic rule (they reach 0,5,0) and no skin can override
+   it (a skin stops at 0,6,0). Where a view wants its own value, the reset reads a variable the skin
+   sets: --tv-day-gap, --tv-day-pad, --tv-day-shadow, --tv-max, --tv-top, --tv-pinned-h, --tv-edit-h and
+   --tv-day-extras-display. Their defaults are in trip.css. Checked by css/views/css-rules.test.js.
+
+   These are the structural differences between the classic page and a view, and nothing else. Looks
+   (borders, backgrounds, type, the header layout) belong to trip.css and the skins. */
+
+/* 1. A flat day list instead of the wallet stack (trip-detail.css: .td-day-card margin-top and
+      padding-bottom at three widths, and the has-open variants). */
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-card) {
+  margin-top: var(--tv-day-gap);
+  padding-bottom: var(--tv-day-pad);
+}
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-card:first-child) {
+  margin-top: 0;
+}
+
+/* 2. No hover dim and no lift: the stack dims its siblings and raises the hovered card. In a flat
+      list the card keeps its place and its resting shadow. */
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(
+  .td-day-grid:not(.td-day-grid--has-open):hover .td-day-card,
+  .td-day-grid:not(.td-day-grid--has-open) .td-day-card:hover,
+  .td-day-grid:not(.td-day-grid--has-open) .td-day-card:active
+) {
+  filter: none;
+  transform: none;
+}
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-grid:not(.td-day-grid--has-open) .td-day-card:hover) {
+  box-shadow: var(--tv-day-shadow);
+}
+
+/* 3. One column: the classic two-column grid made room for the sidebar, which a view does not draw.
+      display: block also takes the chat-open grid columns out of play. */
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-body) {
+  display: block;
+}
+
+/* 4. With the chat panel open from 1440 px, classic lets the page run to the panel's edge. A view
+      keeps its content width; #app still makes room for the panel. */
+@media (min-width: 1440px) {
+  .td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] {
+    max-width: var(--tv-max);
+  }
+}
+
+/* 5. Offsets under the pinned bar instead of the app nav: the open day header, the jump targets and
+      the update notice. The day header is a jump target too: a section jump scrolls to it and moves
+      focus to it, so without the margin it would rest under the pinned bar. */
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-card.td-day-card--open > .td-day-card-header) {
+  top: calc(var(--tv-top) + var(--tv-pinned-h) + var(--sp-2));
+}
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-card, .td-section-card, .td-tab-panel, .td-day-card-header) {
+  scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + 8px);
+}
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-update-notice) {
+  top: calc(var(--tv-top) + var(--tv-pinned-h) + var(--sp-3));
+}
+
+/* 6. The edit bar stays in sight while a day is edited: under the pinned bar, over an open day
+      header, which moves down by the edit bar's height while both are on screen. */
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-edit-bar) {
+  position: sticky;
+  top: calc(var(--tv-top) + var(--tv-pinned-h) + var(--sp-2));
+  z-index: calc(var(--z-sticky) + 5);
+}
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-edit-bar ~ .td-day-grid .td-day-card.td-day-card--open > .td-day-card-header) {
+  top: calc(var(--tv-top) + var(--tv-pinned-h) + var(--tv-edit-h) + var(--sp-4));
+}
+
+/* 7. One day cost on the page: the day card block prints it (home currency first, "about", per
+      person), so the classic footer figure is hidden and the block, hidden by default in
+      trip-detail.css, is shown. */
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-footer > .td-day-footer-cost) {
+  display: none;
+}
+.td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-card-header .tv-day-extras) {
+  display: var(--tv-day-extras-display, flex);
+}

@@ -485,3 +485,535 @@ describe('updateActivityById', () => {
     expect(fake.calls).toHaveLength(0);
   });
 });
+
+// ===== Redesign data layer (task F2) =====
+// Everything below is invented: ids, places, people and dates.
+
+const dayOrder = await import('../lib/day-order.js');
+const collab = await import('./collab-repository.js');
+
+const offlineKeys = () => Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i))
+  .filter(k => k.startsWith('trippy-offline-trip'));
+const offlineChars = () => offlineKeys().reduce((n, k) => n + localStorage.getItem(k).length, 0);
+const ops = (call, name) => call.ops.filter(([n]) => n === name);
+const NETWORK_DOWN = () => ({ data: null, error: { message: 'TypeError: Failed to fetch', code: '' }, status: 0 });
+
+describe('the functions moved to js/lib/day-order.js', () => {
+  it('are still exported from the repository, as the very same functions', () => {
+    expect(repo.sortDayActivities).toBe(dayOrder.sortDayActivities);
+    expect(repo.startMinutes).toBe(dayOrder.startMinutes);
+    expect(repo.normStartTime).toBe(dayOrder.normStartTime);
+  });
+});
+
+describe('fetchAllTrips, list additions', () => {
+  const base = { id: 'a', title: 'Own', created_at: '2031-01-02T00:00:00Z', ws_multi: false, ws_destination: { name: 'Porto' }, ws_destinations: null, import_pending: null, itinerary_days: [] };
+  const listOf = (rows, shared = []) => (call) => (call.table === 'trips'
+    ? { data: rows, error: null, status: 200 }
+    : { data: shared, error: null, status: 200 });
+
+  it('asks for the small scalars and JSON paths the views need, and still not for extras', async () => {
+    fake.respond = listOf([base]);
+    await repo.fetchAllTrips();
+    const columns = op(fake.calls.find(c => c.table === 'trips'), 'select')[1].split(',');
+    for (const column of [
+      'timezone', 'ws_imported:wizard_state->imported', 'ws_duration:wizard_state->dates->duration',
+      'cover_credit:extras->cover->credit', 'cover_none:extras->cover->none',
+    ]) expect(columns, column).toContain(column);
+    expect(columns.join(',')).toContain('itinerary_days(day_number,activities(cost_amount,cost_currency))');
+    expect(columns).not.toContain('extras');
+    expect(columns).not.toContain('wizard_state');
+    expect(columns).not.toContain('*');
+  });
+
+  it('carries imported, duration, timezone and the cover credit on each row', async () => {
+    const credit = { title: 'Ribeira at dusk', creator: 'A. Photographer', license: 'CC BY 4.0', link: 'https://example.org/p/1' };
+    fake.respond = listOf([{
+      ...base, timezone: 'Europe/Lisbon', ws_imported: true, ws_duration: 6, cover_credit: credit, cover_none: null,
+      itinerary_days: [{ day_number: 1, activities: [{ cost_amount: 12, cost_currency: 'EUR' }] }],
+    }]);
+    const { data } = await repo.fetchAllTrips();
+    expect(data[0].wizard_state).toEqual({
+      multiCity: false, destination: { name: 'Porto' }, destinations: [], imported: true, dates: { duration: 6 },
+    });
+    expect(data[0].timezone).toBe('Europe/Lisbon');
+    expect(data[0].cover_credit).toEqual(credit);
+    expect(data[0].cover_none).toBeNull();
+    expect(data[0].itinerary_days[0].activities[0]).toEqual({ cost_amount: 12, cost_currency: 'EUR' });
+    expect(Object.keys(data[0]).filter(k => k.startsWith('ws_'))).toEqual([]);
+    // The saved list carries the same row.
+    expect(JSON.parse(localStorage.getItem('trippy-offline-trip-list')).rows[0].wizard_state.dates).toEqual({ duration: 6 });
+  });
+
+  it('leaves imported and duration out of wizard_state when the plan has neither', async () => {
+    fake.respond = listOf([
+      { ...base, id: 'nulls', ws_imported: null, ws_duration: null, timezone: null },
+      { ...base, id: 'odd', created_at: '2030-01-01T00:00:00Z', ws_imported: false, ws_duration: 'soon' },
+      { ...base, id: 'zero', created_at: '2029-01-01T00:00:00Z', ws_imported: 'yes', ws_duration: 0 },
+    ]);
+    const { data } = await repo.fetchAllTrips();
+    for (const row of data) {
+      expect(row.wizard_state, row.id).toEqual({ multiCity: false, destination: { name: 'Porto' }, destinations: [] });
+      expect('imported' in row.wizard_state, row.id).toBe(false);
+      expect('dates' in row.wizard_state, row.id).toBe(false);
+    }
+  });
+
+  it('keeps the same additions on a plan shared with the user', async () => {
+    fake.respond = listOf([], [{ role: 'viewer', trip: { ...base, id: 's', timezone: 'Asia/Seoul', ws_imported: true, ws_duration: 3 } }]);
+    const { data } = await repo.fetchAllTrips();
+    expect(data[0]).toMatchObject({ id: 's', shared: true, collab_role: 'viewer', timezone: 'Asia/Seoul' });
+    expect(data[0].wizard_state).toMatchObject({ imported: true, dates: { duration: 3 } });
+  });
+
+  describe('cachedAt on a stale result', () => {
+    const savedAtOf = () => JSON.parse(localStorage.getItem('trippy-offline-trip-list')).savedAt;
+
+    it('is not there on a fresh result', async () => {
+      fake.respond = listOf([base]);
+      const out = await repo.fetchAllTrips();
+      expect(out.stale).toBeUndefined();
+      expect(out.cachedAt).toBeUndefined();
+    });
+
+    it('is the time the list was saved, when the network fails', async () => {
+      fake.respond = listOf([base]);
+      await repo.fetchAllTrips();
+      fake.respond = NETWORK_DOWN;
+      const out = await repo.fetchAllTrips();
+      expect(out).toMatchObject({ stale: true, error: null, cachedAt: savedAtOf() });
+      expect(Number.isNaN(Date.parse(out.cachedAt))).toBe(false);
+    });
+
+    it('is there when the device is offline', async () => {
+      fake.respond = listOf([base]);
+      await repo.fetchAllTrips();
+      fake.calls = [];
+      navigator.onLine = false;
+      const out = await repo.fetchAllTrips();
+      expect(out).toMatchObject({ stale: true, cachedAt: savedAtOf() });
+      expect(fake.calls).toHaveLength(0);
+    });
+
+    it('is there when the session is not restored yet and the list of the stored session is served', async () => {
+      fake.respond = listOf([base]);
+      await repo.fetchAllTrips();
+      fake.user = null;
+      localStorage.setItem('sb-abcdefgh-auth-token', JSON.stringify({ user: { id: 'u1' } }));
+      const out = await repo.fetchAllTrips();
+      expect(out).toMatchObject({ stale: true, cachedAt: savedAtOf() });
+      expect(out.data.map(t => t.id)).toEqual(['a']);
+    });
+  });
+});
+
+describe('cachedListRole', () => {
+  const own = { id: 'own', title: 'Own', created_at: '2031-01-02T00:00:00Z', itinerary_days: [] };
+  const shared = (id, role) => ({ role, trip: { ...own, id, created_at: '2031-02-01T00:00:00Z' } });
+
+  beforeEach(async () => {
+    fake.respond = (call) => (call.table === 'trips'
+      ? { data: [own], error: null, status: 200 }
+      : { data: [shared('v', 'viewer'), shared('e', 'editor'), shared('odd', 'owner')], error: null, status: 200 });
+    await repo.fetchAllTrips();
+    fake.calls = [];
+  });
+
+  it('gives the role saved with the list row of a shared plan, without a request', () => {
+    expect(repo.cachedListRole('v')).toBe('viewer');
+    expect(repo.cachedListRole('e')).toBe('editor');
+    expect(fake.calls).toHaveLength(0);
+  });
+
+  it("is null for the user's own plan, an unknown plan, an unknown role and a missing id", () => {
+    expect(repo.cachedListRole('own')).toBeNull();
+    expect(repo.cachedListRole('nope')).toBeNull();
+    expect(repo.cachedListRole('odd')).toBeNull();
+    expect(repo.cachedListRole(undefined)).toBeNull();
+  });
+
+  it("never reads another user's saved list, and is null with no list saved", () => {
+    fake.user = { id: 'u2', email: 'other@example.com' };
+    expect(repo.cachedListRole('e')).toBeNull();
+    fake.user = { id: 'u1', email: 'me@example.com' };
+    repo.clearOfflineTripCache();
+    expect(repo.cachedListRole('e')).toBeNull();
+  });
+});
+
+describe('fetchMyRole (collab-repository)', () => {
+  it('asks for the one role row of the trip that row security lets the user see', async () => {
+    fake.respond = () => ({ data: { role: 'viewer' }, error: null });
+    expect(await collab.fetchMyRole('t1')).toEqual({ data: 'viewer', error: null });
+    expect(fake.calls).toHaveLength(1);
+    const [call] = fake.calls;
+    expect(call.table).toBe('trip_collaborators');
+    expect(call.ops).toEqual([['select', 'role'], ['eq', 'trip_id', 't1'], ['limit', 1], ['maybeSingle']]);
+  });
+
+  it('is null when there is no row or the role is not one the app knows', async () => {
+    fake.respond = () => ({ data: null, error: null });
+    expect(await collab.fetchMyRole('t1')).toEqual({ data: null, error: null });
+    fake.respond = () => ({ data: { role: 'owner' }, error: null });
+    expect(await collab.fetchMyRole('t1')).toEqual({ data: null, error: null });
+  });
+
+  it('reports a failed request, and makes none without a trip id', async () => {
+    fake.respond = () => ({ data: null, error: { message: 'Failed to fetch' } });
+    expect(await collab.fetchMyRole('t1')).toEqual({ data: null, error: 'Failed to fetch' });
+    fake.calls = [];
+    expect(await collab.fetchMyRole('')).toEqual({ data: null, error: null });
+    expect(fake.calls).toHaveLength(0);
+  });
+});
+
+describe('fetchTripBriefings', () => {
+  // The device date is 10 Mar 2031 whatever the zone of the machine running the tests.
+  const NOW = new Date(2031, 2, 10, 12, 0);
+  const YESTERDAY = '2031-03-09';
+  const TOMORROW = '2031-03-11';
+  const LIVE_UNTIL = '2031-03-13';
+
+  const stop = (title, start_time, sort_order, time_slot = 'morning') => ({ start_time, time_slot, sort_order, title, venue_name: `${title} hall` });
+  const dayOf = (n, date, activities) => ({ day_number: n, date, title: `Day ${n}`, weather: { high: 18, low: 11, condition: 'Sunny' }, activities });
+  const marchDays = (first, count, perDay = (n) => [stop(`Late ${n}`, '18:00', 0), stop(`Early ${n}`, '9:00', 1)]) => (
+    Array.from({ length: count }, (_, i) => dayOf(i + 1, `2031-03-${String(first + i).padStart(2, '0')}`, perDay(i + 1)))
+  );
+  const plan = (id, days, more = {}) => ({
+    id, timezone: 'Europe/Lisbon',
+    flights: { outbound: { flightNumber: 'ZZ101' } }, transport: null,
+    accommodation: [{ name: 'Casa Exemplo', city: 'Porto' }], checklist: [{ group: 'Must book', items: [{ label: 'Tower visit' }] }],
+    ws_passports: ['pt'], ws_transport_mode: null, ws_flights_settled: true, ws_stay_settled: null,
+    days, ...more,
+  });
+  const LIVE = plan('live1', marchDays(7, 7));                 // 7 to 13 Mar: live on the 10th
+  const UPCOMING = plan('up1', marchDays(20, 3), { ws_passports: null, flights: null, ws_flights_settled: null, timezone: null });
+
+  // What PostgREST answers for each form of the select.
+  const twoAlias = ({ days, ...rest }, from = YESTERDAY, to = LIVE_UNTIL) => ({
+    ...rest,
+    days: days.map(({ activities, ...day }) => day),
+    stops: days.filter(d => d.date >= from && d.date <= to).map(({ day_number, date, activities }) => ({ day_number, date, activities })),
+  });
+  const singleEmbed = ({ days, ...rest }) => ({ ...rest, days: days.map(d => ({ ...d })) });
+  const answer = (...rows) => () => ({ data: rows, error: null, status: 200 });
+  const briefings = (ids, opts = {}) => repo.fetchTripBriefings(ids, { liveUntil: LIVE_UNTIL, now: NOW, ...opts });
+
+  it('makes one request for the given plans: two aliases of the days, the second kept to the date range', async () => {
+    fake.respond = answer(twoAlias(LIVE));
+    const { error } = await briefings(['live1', 'up1']);
+    expect(error).toBeNull();
+    expect(fake.calls).toHaveLength(1);
+    const [call] = fake.calls;
+    expect(call.table).toBe('trips');
+    const select = op(call, 'select')[1];
+    for (const part of [
+      'id', 'timezone', 'flights:extras->flights', 'transport:extras->transport', 'accommodation:extras->accommodation',
+      'checklist:extras->bookingChecklist', 'ws_passports:wizard_state->passports',
+      'ws_transport_mode:wizard_state->transport->mode', 'ws_flights_settled:wizard_state->flights->settled',
+      'ws_stay_settled:wizard_state->accommodation->settled',
+      'days:itinerary_days(day_number,date,title,weather)',
+      'stops:itinerary_days(day_number,date,activities(start_time,time_slot,sort_order,title,venue_name))',
+    ]) expect(select, part).toContain(part);
+    expect(select).not.toMatch(/\*/);
+    expect(op(call, 'in')).toEqual(['in', 'id', ['live1', 'up1']]);
+    expect(op(call, 'gte')).toEqual(['gte', 'stops.date', YESTERDAY]);
+    expect(op(call, 'lte')).toEqual(['lte', 'stops.date', LIVE_UNTIL]);
+    expect(ops(call, 'gte')).toHaveLength(1);
+  });
+
+  it('looks until tomorrow when no plan is live, and drops ids that are empty or repeated', async () => {
+    fake.respond = answer();
+    await repo.fetchTripBriefings(['up1', '', null, 'up1', 7, 'up2'], { now: NOW });
+    expect(op(fake.calls[0], 'lte')).toEqual(['lte', 'stops.date', TOMORROW]);
+    expect(op(fake.calls[0], 'in')).toEqual(['in', 'id', ['up1', 'up2']]);
+    fake.calls = [];
+    await repo.fetchTripBriefings(['up1'], { now: NOW, liveUntil: 'next week' });
+    expect(op(fake.calls[0], 'lte')).toEqual(['lte', 'stops.date', TOMORROW]);
+  });
+
+  it('makes no request for an empty list of plans', async () => {
+    expect(await briefings([])).toEqual({ data: [], error: null });
+    expect(await briefings(undefined)).toEqual({ data: [], error: null });
+    expect(fake.calls).toHaveLength(0);
+  });
+
+  it('gives each row one shape', async () => {
+    fake.respond = answer(twoAlias(LIVE));
+    const { data } = await briefings(['live1']);
+    expect(data).toHaveLength(1);
+    const [row] = data;
+    expect(Object.keys(row)).toEqual(['id', 'timezone', 'extras', 'wizard_state', 'days', 'stops']);
+    expect(row).toMatchObject({ id: 'live1', timezone: 'Europe/Lisbon' });
+    expect(row.extras).toEqual({
+      flights: { outbound: { flightNumber: 'ZZ101' } }, transport: null,
+      accommodation: [{ name: 'Casa Exemplo', city: 'Porto' }],
+      bookingChecklist: [{ group: 'Must book', items: [{ label: 'Tower visit' }] }],
+    });
+    expect(row.wizard_state).toEqual({
+      passports: ['pt'], transport: { mode: null }, flights: { settled: true }, accommodation: { settled: false },
+    });
+    expect(row.days).toHaveLength(7);
+    expect(row.days[0]).toEqual({ day_number: 1, date: '2031-03-07', title: 'Day 1', weather: { high: 18, low: 11, condition: 'Sunny' } });
+    expect(row.stops[0]).toEqual({
+      day_number: 3, date: '2031-03-09',
+      activities: [
+        { start_time: '9:00', time_slot: 'morning', sort_order: 1, title: 'Early 3', venue_name: 'Early 3 hall' },
+        { start_time: '18:00', time_slot: 'morning', sort_order: 0, title: 'Late 3', venue_name: 'Late 3 hall' },
+      ],
+    });
+  });
+
+  it('normalises both select forms to the same rows: two aliases with the date range, or the single-embed fallback', async () => {
+    fake.respond = answer(twoAlias(LIVE), twoAlias(UPCOMING));
+    const viaAliases = await briefings(['live1', 'up1']);
+    fake.respond = answer(singleEmbed(LIVE), singleEmbed(UPCOMING));
+    const viaFallback = await briefings(['live1', 'up1']);
+    expect(viaFallback).toEqual(viaAliases);
+    expect(viaAliases.data.map(r => r.id)).toEqual(['live1', 'up1']);
+    // Neither form leaves activities on `days`.
+    for (const row of viaFallback.data) for (const day of row.days) expect(Object.keys(day)).toEqual(['day_number', 'date', 'title', 'weather']);
+  });
+
+  it('holds every remaining day of a live plan in stops, and nothing for a plan that starts after liveUntil', async () => {
+    for (const form of [twoAlias, singleEmbed]) {
+      fake.respond = answer(form(LIVE), form(UPCOMING));
+      const { data } = await briefings(['live1', 'up1']);
+      const [live, upcoming] = data;
+      // Yesterday (for a plan in a zone behind the device), today and every day to the end of the plan.
+      expect(live.stops.map(s => s.date), form.name).toEqual(['2031-03-09', '2031-03-10', '2031-03-11', '2031-03-12', '2031-03-13']);
+      expect(live.stops.every(s => s.activities.length === 2), form.name).toBe(true);
+      expect(live.days.map(d => d.date)).toHaveLength(7);
+      expect(upcoming.stops, form.name).toEqual([]);
+      expect(upcoming.days.map(d => d.date), form.name).toEqual(['2031-03-20', '2031-03-21', '2031-03-22']);
+    }
+  });
+
+  it('fills what a plan does not have with null, false and empty lists', async () => {
+    fake.respond = answer({ id: 'bare' }, twoAlias(UPCOMING));
+    const { data } = await briefings(['bare', 'up1']);
+    expect(data[0]).toEqual({
+      id: 'bare', timezone: null,
+      extras: { flights: null, transport: null, accommodation: null, bookingChecklist: null },
+      wizard_state: { passports: null, transport: { mode: null }, flights: { settled: false }, accommodation: { settled: false } },
+      days: [], stops: [],
+    });
+    expect(data[1].wizard_state.passports).toBeNull();
+    expect(data[1].timezone).toBeNull();
+  });
+
+  it('orders rows as the ids were given, days by number and stops for display, whatever order the server used', async () => {
+    const shuffled = plan('live1', [...marchDays(7, 7)].reverse());
+    fake.respond = answer(twoAlias(UPCOMING), twoAlias(shuffled), twoAlias(plan('extra', marchDays(9, 2))));
+    const { data } = await briefings(['live1', 'up1']);
+    expect(data.map(r => r.id)).toEqual(['live1', 'up1']);
+    expect(data[0].days.map(d => d.day_number)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(data[0].stops.map(s => s.day_number)).toEqual([3, 4, 5, 6, 7]);
+    expect(data[0].stops[0].activities.map(a => a.title)).toEqual(['Early 3', 'Late 3']);
+  });
+
+  it('does not change the rows it was answered with', async () => {
+    const raw = singleEmbed(LIVE);
+    const copy = JSON.parse(JSON.stringify(raw));
+    fake.respond = answer(raw);
+    await briefings(['live1']);
+    expect(raw).toEqual(copy);
+  });
+
+  describe('the saved copy', () => {
+    const saved = () => JSON.parse(localStorage.getItem('trippy-offline-trip-briefings'));
+
+    it('is written after a fetch and read back synchronously by readSavedBriefings', async () => {
+      expect(repo.readSavedBriefings()).toEqual([]);
+      fake.respond = answer(twoAlias(LIVE), twoAlias(UPCOMING));
+      const { data } = await briefings(['live1', 'up1']);
+      expect(Object.keys(saved())).toEqual(['userId', 'savedAt', 'rows']);
+      expect(saved().userId).toBe('u1');
+      expect(repo.readSavedBriefings()).toEqual(data);
+    });
+
+    it("is never read for another user, and is read for the stored session's user before the session is restored", async () => {
+      fake.respond = answer(twoAlias(LIVE));
+      await briefings(['live1']);
+      fake.user = { id: 'u2', email: 'other@example.com' };
+      expect(repo.readSavedBriefings()).toEqual([]);
+      fake.user = null;
+      expect(repo.readSavedBriefings()).toEqual([]);
+      localStorage.setItem('sb-abcdefgh-auth-token', JSON.stringify({ user: { id: 'u1' } }));
+      expect(repo.readSavedBriefings().map(r => r.id)).toEqual(['live1']);
+    });
+
+    it('reads as empty when it is corrupt', () => {
+      for (const bad of ['{"userId":"u1","rows":', 'null', '[]', '{"userId":"u1","rows":"none"}']) {
+        localStorage.setItem('trippy-offline-trip-briefings', bad);
+        expect(repo.readSavedBriefings(), bad).toEqual([]);
+      }
+    });
+
+    it('is served, marked stale, when the device is offline, without a request', async () => {
+      fake.respond = answer(twoAlias(LIVE));
+      const fresh = await briefings(['live1']);
+      fake.calls = [];
+      navigator.onLine = false;
+      const out = await briefings(['live1']);
+      expect(out).toEqual({ data: fresh.data, error: null, stale: true, cachedAt: saved().savedAt });
+      expect(fake.calls).toHaveLength(0);
+    });
+
+    it('is served, marked stale, when the network fails, and is left as it was', async () => {
+      fake.respond = answer(twoAlias(LIVE));
+      const fresh = await briefings(['live1']);
+      const before = localStorage.getItem('trippy-offline-trip-briefings');
+      fake.respond = NETWORK_DOWN;
+      const out = await briefings(['live1']);
+      expect(out).toMatchObject({ data: fresh.data, error: null, stale: true });
+      expect(localStorage.getItem('trippy-offline-trip-briefings')).toBe(before);
+    });
+
+    it('leaves the dashboard on list data when nothing is saved: no rows and an error, never a throw', async () => {
+      fake.respond = NETWORK_DOWN;
+      expect(await briefings(['live1'])).toEqual({ data: [], error: 'TypeError: Failed to fetch' });
+      navigator.onLine = false;
+      expect(await briefings(['live1'])).toEqual({ data: [], error: 'offline' });
+      navigator.onLine = true;
+      fake.user = null;
+      expect(await briefings(['live1'])).toEqual({ data: [], error: 'Not authenticated' });
+    });
+
+    it('is not served for an error that is not a network failure', async () => {
+      fake.respond = answer(twoAlias(LIVE));
+      await briefings(['live1']);
+      fake.respond = () => ({ data: null, error: { message: 'bad request', code: 'PGRST100' }, status: 400 });
+      expect(await briefings(['live1'])).toEqual({ data: [], error: 'bad request' });
+      expect(repo.readSavedBriefings().map(r => r.id)).toEqual(['live1']);
+    });
+
+    it('is removed by clearOfflineTripCache', async () => {
+      fake.respond = answer(twoAlias(LIVE));
+      await briefings(['live1']);
+      localStorage.setItem('trippy_user_prefs', '{}');
+      repo.clearOfflineTripCache();
+      expect(localStorage.getItem('trippy-offline-trip-briefings')).toBeNull();
+      expect(repo.readSavedBriefings()).toEqual([]);
+      expect(localStorage.getItem('trippy_user_prefs')).toBe('{}');
+    });
+
+    it('loses the row of a plan that is deleted', async () => {
+      fake.respond = answer(twoAlias(LIVE), twoAlias(UPCOMING));
+      await briefings(['live1', 'up1']);
+      fake.respond = () => ({ data: [{ id: 'up1' }], error: null });
+      await repo.deleteTrip('up1');
+      expect(repo.readSavedBriefings().map(r => r.id)).toEqual(['live1']);
+    });
+
+    // Plans with long stop titles (the venue name repeats the title: about 8,000
+    // characters a day), so a handful of them is over the 120,000 character cap.
+    const heavyStops = (n) => [stop(`${'x'.repeat(4000)} ${n}`, '10:00', 0)];
+    const HEAVY_LIVE = (id) => plan(id, marchDays(7, 7, heavyStops));                                    // about 40,000 characters of stops in range
+    const HEAVY_SOON = (id) => plan(id, marchDays(15, 5, heavyStops), { ws_passports: null });           // starts 15 Mar: not live, inside the range
+    const untilTwentieth = { liveUntil: '2031-03-20' };
+
+    it('stays within 120,000 characters by first dropping the stops of plans that are not live, last plan first', async () => {
+      fake.respond = answer(twoAlias(HEAVY_LIVE('live1'), YESTERDAY, '2031-03-20'), twoAlias(HEAVY_SOON('soon1'), YESTERDAY, '2031-03-20'), twoAlias(HEAVY_SOON('soon2'), YESTERDAY, '2031-03-20'));
+      const { data } = await briefings(['live1', 'soon1', 'soon2'], untilTwentieth);
+      // What the caller gets is whole.
+      expect(data.map(r => r.stops.length)).toEqual([5, 5, 5]);
+      expect(JSON.stringify(data).length).toBeGreaterThan(120_000);
+
+      expect(localStorage.getItem('trippy-offline-trip-briefings').length).toBeLessThanOrEqual(120_000);
+      const rows = repo.readSavedBriefings();
+      expect(rows.map(r => r.id)).toEqual(['live1', 'soon1', 'soon2']);
+      expect(rows.map(r => r.stops.length)).toEqual([5, 5, 0]);
+      expect(rows[2].days).toHaveLength(5);
+      expect(rows[2].extras.accommodation).toEqual([{ name: 'Casa Exemplo', city: 'Porto' }]);
+    });
+
+    it('then drops whole rows from the end, and never the stops of a live plan before that', async () => {
+      const liveToTwentieth = (id) => plan(id, marchDays(7, 14, heavyStops));      // 7 to 20 Mar: 12 days of stops in range
+      fake.respond = answer(twoAlias(liveToTwentieth('live1'), YESTERDAY, '2031-03-20'), twoAlias(liveToTwentieth('live2'), YESTERDAY, '2031-03-20'), twoAlias(HEAVY_SOON('soon1'), YESTERDAY, '2031-03-20'));
+      await briefings(['live1', 'live2', 'soon1'], untilTwentieth);
+      expect(localStorage.getItem('trippy-offline-trip-briefings').length).toBeLessThanOrEqual(120_000);
+      const rows = repo.readSavedBriefings();
+      expect(rows.map(r => r.id)).toEqual(['live1']);
+      expect(rows[0].stops).toHaveLength(12);
+    });
+
+    it('saves an empty list rather than a copy over the cap when not even one row fits', async () => {
+      const huge = plan('live1', marchDays(7, 7, (n) => [stop(`${'x'.repeat(40_000)} ${n}`, '10:00', 0)]));
+      fake.respond = answer(twoAlias(huge));
+      const { data } = await briefings(['live1']);
+      expect(data).toHaveLength(1);
+      expect(saved().rows).toEqual([]);
+    });
+
+    it('never pushes all offline copies together over the 2,000,000 character budget', async () => {
+      // Trip copies up to their share: 420,000 characters each.
+      for (let i = 0; i < 5; i++) {
+        fake.respond = () => ({ data: { id: `b${i}`, title: `Big ${i}`, notes: 'x'.repeat(420_000), itinerary_days: [] }, error: null, status: 200 });
+        await repo.fetchTripById(`b${i}`);
+      }
+      // A list over its share.
+      const listRows = Array.from({ length: 60 }, (_, i) => ({
+        id: `r${i}`, title: 'x'.repeat(10_000), itinerary_days: [],
+        created_at: new Date(Date.UTC(2031, 0, 1) + (60 - i) * 60_000).toISOString(),
+      }));
+      fake.respond = (call) => (call.table === 'trips' ? { data: listRows, error: null, status: 200 } : { data: [], error: null, status: 200 });
+      await repo.fetchAllTrips();
+      // Briefings over their share.
+      fake.respond = answer(...['l1', 'l2', 'l3', 'l4'].map(id => twoAlias(HEAVY_LIVE(id))));
+      await briefings(['l1', 'l2', 'l3', 'l4']);
+
+      const sizes = Object.fromEntries(offlineKeys().map(k => [k, localStorage.getItem(k).length]));
+      expect(sizes['trippy-offline-trip-list']).toBeGreaterThan(250_000);
+      expect(sizes['trippy-offline-trip-list']).toBeLessThanOrEqual(300_000);
+      expect(sizes['trippy-offline-trip-briefings']).toBeGreaterThan(80_000);
+      expect(sizes['trippy-offline-trip-briefings']).toBeLessThanOrEqual(120_000);
+      // The briefings' share came out of the trip copies' share: three of 420,000 fit, a fourth no longer does.
+      expect(repo.listOfflineTrips().map(t => t.id)).toEqual(['b4', 'b3', 'b2']);
+      expect(offlineChars()).toBeLessThanOrEqual(2_000_000);
+    });
+  });
+});
+
+describe('clearAllUserData', () => {
+  const deletes = () => fake.calls.filter(c => op(c, 'delete')).map(c => [c.table, op(c, 'eq')]);
+
+  it("by default deletes the user's trips and then the profile row, as it always has", async () => {
+    expect(await repo.clearAllUserData()).toEqual({ error: null });
+    expect(deletes()).toEqual([['trips', ['eq', 'user_id', 'u1']], ['profiles', ['eq', 'id', 'u1']]]);
+    fake.calls = [];
+    expect(await repo.clearAllUserData({})).toEqual({ error: null });
+    expect(await repo.clearAllUserData({ keepProfile: false })).toEqual({ error: null });
+    expect(deletes().map(([table]) => table)).toEqual(['trips', 'profiles', 'trips', 'profiles']);
+  });
+
+  it('issues no profile delete with keepProfile, and no request on the profiles table at all', async () => {
+    expect(await repo.clearAllUserData({ keepProfile: true })).toEqual({ error: null });
+    expect(deletes()).toEqual([['trips', ['eq', 'user_id', 'u1']]]);
+    expect(fake.calls.map(c => c.table)).toEqual(['trips']);
+  });
+
+  it('removes every offline copy either way, the saved briefings included', async () => {
+    for (const options of [undefined, { keepProfile: true }]) {
+      localStorage.setItem('trippy-offline-trip-briefings', JSON.stringify({ userId: 'u1', savedAt: 'x', rows: [] }));
+      localStorage.setItem('trippy-offline-trip-list', JSON.stringify({ userId: 'u1', savedAt: 'x', rows: [] }));
+      localStorage.setItem('trippy-offline-trip:t1', JSON.stringify({ userId: 'u1', data: { id: 't1' } }));
+      await repo.clearAllUserData(options);
+      expect(offlineKeys()).toEqual([]);
+    }
+  });
+
+  it('stops, keeping the profile and the offline copies, when the trips cannot be deleted', async () => {
+    localStorage.setItem('trippy-offline-trip-list', JSON.stringify({ userId: 'u1', savedAt: 'x', rows: [] }));
+    fake.respond = () => ({ data: null, error: { message: 'permission denied' } });
+    expect((await repo.clearAllUserData()).error).toMatch(/permission denied/);
+    expect(fake.calls.map(c => c.table)).toEqual(['trips']);
+    expect(offlineKeys()).toEqual(['trippy-offline-trip-list']);
+  });
+
+  it('does nothing when nobody is signed in', async () => {
+    fake.user = null;
+    expect(await repo.clearAllUserData({ keepProfile: true })).toEqual({ error: 'Not authenticated' });
+    expect(fake.calls).toHaveLength(0);
+  });
+});

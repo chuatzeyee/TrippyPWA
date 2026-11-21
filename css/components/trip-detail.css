@@ -2634,6 +2634,29 @@ body:has(.td-chat-drawer--open) .back-to-top { opacity: 0; pointer-events: none;
   transition: var(--transition-interactive), visibility 0s linear var(--duration-fast);
 }
 
+/* With a landing on a phone the page is one column of words that runs to the right edge, and the two
+   round buttons float over it. They are the least they may be (44 px) and sit in the corner, 8 px
+   from the edges, so they reach 36 px into the text column and not 56; a ring in the page colour
+   parts each from the words that pass under it. The square layout has no landing. */
+@media (max-width: 767px) {
+  .td-wrap[data-view] .td-chat-fab {
+    right: calc(var(--sp-2) + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--sp-2) + env(safe-area-inset-bottom, 0px));
+    width: 44px;
+    height: 44px;
+    box-shadow: var(--td-cm-edge), 0 0 0 3px var(--parchment), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .td-wrap[data-view] .td-chat-fab .td-cm { width: 26px; height: 26px; }
+  body:has(.td-wrap[data-view] .td-chat-fab) .back-to-top {
+    right: calc(var(--sp-2) + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--sp-2) + env(safe-area-inset-bottom, 0px) + 44px + var(--sp-3));
+    background: var(--surface-solid);
+    box-shadow: 0 0 0 3px var(--parchment), 0 2px 8px rgba(0, 0, 0, 0.25);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 /* Bottom sheet (the default). */
 .td-chat-drawer {
   --td-chat-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
@@ -4466,6 +4489,38 @@ a.td-town-venue-chip:hover { border-color: var(--terracotta); color: var(--terra
 .td-skel-lines { flex: 1; display: grid; gap: var(--sp-2); }
 .td-skel-line { height: 14px; border-radius: var(--r-sm); width: 70%; background-color: var(--surface-inset); }
 .td-skel-line--short { width: 40%; }
+/* While a view is preferred (landingSkeletonHtml in trip-landing.js): a bar with the way back. */
+.td-skel-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.td-skel-back { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-pill); color: var(--ink); font-weight: 600; text-decoration: none; }
+
+/* The block a landing adds to each day card header (js/views/shared/day-extras.js). Hidden unless a
+   view's reset shows it (css/views/shared/trip-reset.css), so it can never show on the classic page. */
+.tv-day-extras { display: none; }
+
+/* The Trip prep card of a landing (prepSlotHtml in trip-landing.js): its slot takes no room in the
+   Prep grid while there is nothing to prepare. */
+.td-prep-slot:empty { display: none; }
+
+/* Venue photos turned off in Settings (prefs.showVenuePhotos): no photo slot on a stop. The cover
+   stays; loadActivityPhotos and loadTownPhotos start nothing under this class. */
+.td-photos-off .td-activity-photo { display: none; }
+
+/* With a landing these classic controls are among its own, so each is a 44 px target: Refresh on the
+   update notice, the button of the status card, and Done on the edit bar. The edit bar keeps its
+   height (the open day header hangs right under it), so Done gets the room from a pseudo-element. */
+.td-wrap[data-view] .td-update-notice-btn { min-height: 44px; }
+.td-wrap[data-view] .td-status-card .btn { height: auto; min-height: 44px; }
+.td-wrap[data-view] .td-edit-bar .btn { position: relative; }
+.td-wrap[data-view] .td-edit-bar .btn::after { content: ''; position: absolute; inset: -8px 0; }
+
+/* With a landing the ring of the Spending tab prints the figures of js/lib/money.js ("about S$1,099",
+   "of about S$1,385", "HKD 6,347"), which are longer than the classic "$386": the ring is a little
+   larger and each figure may wrap inside it. :where() keeps these rules at the weight of the classic
+   ones above them, so a view's skin can still restyle the ring. */
+.td-wrap:where([data-view]) :where(.td-budget-ring) { width: 164px; height: 164px; }
+.td-wrap:where([data-view]) :where(.td-budget-ring-svg) { width: 100%; height: 100%; }
+.td-wrap:where([data-view]) :where(.td-budget-ring-spent, .td-budget-ring-of, .td-budget-ring-home) { max-width: 108px; line-height: 1.15; }
+.td-wrap:where([data-view]) :where(.td-budget-ring-spent) { font-size: 1.05rem; }
 
 /* ===== Trip status, offline note, update notice, photo progress ===== */
 .td-status-card {

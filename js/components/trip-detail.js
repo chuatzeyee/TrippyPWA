@@ -1,7 +1,7 @@
 import { navigate, onRouteLeave } from '../router.js';
-import { fetchTripById, deleteTrip } from '../data/trip-repository.js';
+import { fetchTripById, deleteTrip, cachedListRole } from '../data/trip-repository.js';
 import { getUser } from '../lib/supabase.js';
-import { formatNumber, formatDateRange, formatWeekdayDate, getLocale, formatCityList, to12h } from '../lib/locale.js';
+import { formatNumber, formatDateRange, formatWeekdayDate, getLocale, formatCityList, to12h, formatClock } from '../lib/locale.js';
 import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
@@ -11,6 +11,7 @@ import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, fligh
 import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
 import { isSquareMode } from '../lib/square-mode.js';
+import { wrapChildrenIntoDeck } from '../lib/card-deck.js';
 import { renderSquareItinerary } from './square-itinerary.js';
 import { bindAlternatives } from './alternatives.js';
 import { mountItineraryChat } from './itinerary-chat.js';
@@ -24,6 +25,29 @@ import { heroHtml, swapHeroCover } from './trip-hero.js';
 import { bindModalA11y } from '../lib/modal-a11y.js';
 import { groundJourney, journeyMode, transportJourneyHtml, transportIcon as journeyIcon } from './transport-card.js';
 import { mountEntryCard, ENTRY_ICON } from './entry-card.js';
+import { hasEntryCard, countSectionCards, findActivity } from '../lib/trip-shape.js';
+import { checklistKey, legacyChecklistKey, QUICK_KEYS } from '../lib/tick-keys.js';
+import { tripCurrencyCode, foreignCurrency, costInTripCurrency, sumCosts } from '../lib/cost-sum.js';
+import { weatherText } from '../lib/weather.js';
+import { scrollBehavior, prefersReducedMotion } from '../lib/motion.js';
+import { effectiveTheme } from '../lib/theme.js';
+import { normaliseTransportExtras } from '../lib/journey.js';
+import { tripPhase } from '../lib/trip-status.js';
+import { TICKS_EVENT, readTicks } from '../data/tick-store.js';
+import { getPrefs, prefsReady } from '../data/prefs-store.js';
+import { activeViewId, loadView } from '../views/registry.js';
+import { confirmDialog } from '../views/shared/confirm-dialog.js';
+import { getProfileSummary, profileSummaryReady, mergeProfileSummary } from '../data/profile-cache.js';
+import { nationalityName } from '../data/nationalities.js';
+import {
+  notesHtml, statusCardHtml, assemblePlanPanel, assembleSidePanels, assembleLandingWrap, shouldJumpToToday, isRebuild, openSectionFrom,
+  classicSkeletonHtml, landingSkeletonHtml, buildLanding, SECTION_TARGETS, spendingFigures, budgetRingHtml,
+  setTripViewFlag, syncSectionJumps, showTab, bindTabKeys, markActiveDay,
+} from './trip-landing.js';
+import {
+  mountLanding, holdLanding, landingChanged, setLandingRole, setLandingProfile, focusLandingDay, swapLandingCover, pagePlace, placeScrollY,
+  viewLoadHeals, claimFallbackNotice, menuTriggerFor, pdfProgress,
+} from './trip-landing-mount.js';
 
 function mdIcon(d, size = 18) {
   return `<svg class="td-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
@@ -215,18 +239,6 @@ function airportFlag(code) {
   return flag ? flagImg(flag, 16) : '';
 }
 
-const WEATHER_LABELS = {
-  sunny: 'Sunny', clear: 'Clear', 'partly cloudy': 'Pt. Cloudy', 'partly sunny': 'Pt. Sunny',
-  cloudy: 'Cloudy', overcast: 'Overcast', rainy: 'Rain', rain: 'Rain', showers: 'Showers',
-  stormy: 'Storm', thunderstorm: 'Storm', snowy: 'Snow', snow: 'Snow',
-  foggy: 'Fog', fog: 'Fog', windy: 'Windy', default: ''
-};
-
-function weatherLabel(condition) {
-  if (!condition) return WEATHER_LABELS.default;
-  return WEATHER_LABELS[condition.toLowerCase().trim()] || WEATHER_LABELS.default;
-}
-
 function esc(str) {
   const el = document.createElement('span');
   el.textContent = str || '';
@@ -262,38 +274,6 @@ function formatCost(amount, symbol) {
 // Activities carry their own cost_currency. Totals are shown in the trip's
 // currency, so other currencies are converted when both rates are known and
 // otherwise left out (and counted) rather than added up as if they matched.
-function tripCurrencyCode(trip) {
-  const ws = trip?.wizard_state;
-  const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
-  return String(dest?.currencyCode || trip?.budget_currency || 'USD').toUpperCase();
-}
-
-// The activity's own currency when it is a real code that differs from the
-// trip's; '' when it is priced in the trip currency (or the code is unusable).
-function foreignCurrency(activity, tripCode) {
-  const code = String(activity?.cost_currency || '').trim().toUpperCase();
-  return /^[A-Z]{3}$/.test(code) && code !== tripCode ? code : '';
-}
-
-function costInTripCurrency(activity, tripCode) {
-  const amount = Number(activity?.cost_amount) || 0;
-  if (!amount) return 0;
-  const from = foreignCurrency(activity, tripCode);
-  if (!from) return amount;
-  if (canConvert(from) && canConvert(tripCode)) return convert(amount, from, tripCode);
-  return null;
-}
-
-function sumCosts(activities, tripCode) {
-  let total = 0;
-  let excluded = 0;
-  for (const a of activities || []) {
-    const c = costInTripCurrency(a, tripCode);
-    if (c === null) excluded++;
-    else total += c;
-  }
-  return { total, excluded };
-}
 
 // Cost badge for one activity: its own currency code when it differs from the
 // trip's, otherwise the trip symbol. HTML-safe.
@@ -731,6 +711,10 @@ function plainDashes(text) {
 let _renderToken = 0;
 let _view = null;
 let _unregisterLeave = null;
+/** Where the user was when the route was last left ({ tripId, tab, open cards, place }): a rebuild in place resumes there. */
+let _leftAt = null;
+/** The trip whose draw was finished since the last navigation: only then is a redraw of the route a rebuild. */
+let _openedTripId = null;
 
 function isTripRoute(tripId) {
   const path = location.hash.slice(1).split('?')[0];
@@ -758,8 +742,21 @@ function ensureLeaveHandler() {
   _unregisterLeave = onRouteLeave(() => {
     _unregisterLeave = null;
     _renderToken++;
+    // Read before the teardown, which unpins the bar and lets the map go: both move the page.
+    const wrap = _view?.wrap;
+    _leftAt = wrap?.isConnected && wrap.querySelector('.td-day-grid') ? { tripId: _view.tripId, ...captureViewState(wrap), place: pagePlace(wrap) } : null;
+    if (_openedTripId && !isTripRoute(_openedTripId)) _openedTripId = null;
     teardownView();
+    setTripViewFlag(null);
   });
+}
+
+// A view that cannot load, or whose renderer throws, gives the classic page and one toast a session
+// (not while the registry is reloading the page to heal a failed import: `quiet`).
+function viewFellBack(viewId, error, quiet = false) {
+  setTripViewFlag(null);
+  logger.warn('ui', 'Trip view unavailable, classic rendered', { view: viewId, error: error?.message });
+  if (!quiet && claimFallbackNotice()) showToast('That view could not load, so this is the standard layout');
 }
 
 // Register a cleanup on the live view (observers created after first paint).
@@ -771,29 +768,9 @@ function trackObserver(observer) {
   if (observer) addViewCleanup(() => observer.disconnect());
 }
 
-function renderTripSkeleton() {
-  const day = `
-    <div class="td-skel-day">
-      <div class="td-skel-num skel-shimmer"></div>
-      <div class="td-skel-lines">
-        <div class="td-skel-line skel-shimmer"></div>
-        <div class="td-skel-line td-skel-line--short skel-shimmer"></div>
-      </div>
-    </div>`;
-  return `
-    <div class="td-wrap td-skel" role="status" aria-busy="true">
-      <span class="td-skel-label">Loading trip</span>
-      <div class="td-skel-topbar">
-        <div class="td-skel-tabs skel-shimmer"></div>
-        <div class="td-skel-actions skel-shimmer"></div>
-      </div>
-      <div class="td-skel-hero skel-shimmer"></div>
-      <div class="td-skel-days">${day}${day}${day}</div>
-    </div>`;
-}
-
 function renderTripError(app, rawTripId, kind) {
   const notFound = kind === 'not_found';
+  setTripViewFlag(null);
   app.innerHTML = `
     <div class="td-wrap">
       <button class="td-back" data-action="back">${ICONS.arrowBack} Back</button>
@@ -825,26 +802,15 @@ async function ensureHomeCurrency() {
   }
 }
 
-// Older trips stored ground transport under extras.flights; show it as transport.
-function normaliseTransport(trip) {
-  if (trip.wizard_state?.transport?.mode && trip.extras?.flights && !trip.extras?.transport) {
-    const mode = trip.wizard_state.transport.mode;
-    const f = trip.extras.flights;
-    trip.extras = {
-      ...trip.extras,
-      transport: {
-        outbound: f.outbound ? { ...f.outbound, mode, operator: f.outbound.airline || '' } : undefined,
-        inbound: f.inbound ? { ...f.inbound, mode, operator: f.inbound.airline || '' } : undefined
-      },
-    };
-    delete trip.extras.flights;
-  }
-  return trip;
-}
-
-export async function renderTripDetail(rawTripId) {
+/**
+ * @param {string} rawTripId the trip id, with the query of the address when there is one
+ * @param {{ reload?: boolean }} [opts] reload: the route is being drawn again (square flip, prefs or
+ *   auth change), so the page does not jump to today a second time
+ */
+export async function renderTripDetail(rawTripId, opts = {}) {
   const [tripId, qs] = String(rawTripId || '').split('?');
-  const jumpToToday = new URLSearchParams(qs || '').get('today') === '1';
+  const reload = isRebuild(opts.reload, _openedTripId, tripId); // a redraw that overtook the first draw is the first draw
+  const query = new URLSearchParams(qs || '');
   const app = document.getElementById('app');
   // The route may have changed while this chunk was loading.
   if (!app || !tripId || !isTripRoute(tripId)) return;
@@ -852,10 +818,20 @@ export async function renderTripDetail(rawTripId) {
   const token = ++_renderToken;
   teardownView();
   ensureLeaveHandler();
-  app.innerHTML = renderTripSkeleton();
+  // A rebuild in place (a view switch, a square flip) keeps the tab, the open cards and the user's place.
+  const resume = reload && _leftAt?.tripId === tripId ? _leftAt : null;
+  _leftAt = null;
+  // Square mode is always classic; otherwise the view the registry names (a dev view included).
+  const wantsView = !isSquareMode();
+  const heals = wantsView && viewLoadHeals();
+  setTripViewFlag(wantsView ? activeViewId() : null); // before the skeleton paints
+  app.innerHTML = wantsView ? landingSkeletonHtml() : classicSkeletonHtml();
 
   try {
-    const { data: trip, error, stale } = await fetchTripById(tripId);
+    const [{ data: trip, error, stale, cachedAt }, viewMod] = await Promise.all([
+      fetchTripById(tripId),
+      wantsView ? prefsReady().then(() => loadView(activeViewId())).catch(() => null) : null,
+    ]);
     if (!isCurrentRender(token, tripId)) return;
 
     if (error || !trip) {
@@ -868,7 +844,8 @@ export async function renderTripDetail(rawTripId) {
     await ensureHomeCurrency();
     if (!isCurrentRender(token, tripId)) return;
 
-    renderDayPicker(app, normaliseTransport(trip), { jumpToToday, stale: Boolean(stale) });
+    if (wantsView && !viewMod) viewFellBack(activeViewId(), null, heals);
+    renderDayPicker(app, trip, { query, reload, stale: Boolean(stale), cachedAt, viewMod, resume });
   } catch (err) {
     logger.error('data', 'Trip render failed', { tripId, error: err?.message, stack: err?.stack });
     if (isCurrentRender(token, tripId)) {
@@ -890,6 +867,16 @@ function captureViewState(app) {
   };
 }
 
+/**
+ * Brings a day or section card to the top of the page. In a view the card itself is the target: it
+ * rests under the pinned bar (its scroll margin, trip-reset.css), so the bar and the pinned day header
+ * cover nothing of the card. Classic scrolls the header, as it always did.
+ */
+function scrollCardToTop(card) {
+  const target = card.closest('.td-wrap[data-view]') ? card : card.querySelector('.td-day-card-header') || card;
+  target.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+}
+
 function restoreViewState(app, trip, state) {
   if (!state) return;
   if (state.tab && state.tab !== 'plan') activateTab(app, trip, state.tab);
@@ -899,8 +886,13 @@ function restoreViewState(app, trip, state) {
     for (const i of state.openDays) grid.querySelector(`.td-day-card[data-day-index="${i}"]`)?.classList.add('td-day-card--open');
     for (const name of state.openSections) grid.querySelector(`.td-day-card[data-section="${name}"]`)?.classList.add('td-day-card--open');
     syncDayHeaderExpanded(grid);
+    grid.querySelectorAll('.td-day-card--open[data-day-index]').forEach(injectNowKnob);
   }
-  requestAnimationFrame(() => window.scrollTo(0, state.scrollY));
+  // The same layout: the same scroll position. Another layout (resume): the same block, where it was,
+  // one frame later, so what loads near the top of a first render (the map) loads here too.
+  const wrap = app.querySelector('.td-wrap');
+  if (!('place' in state)) requestAnimationFrame(() => window.scrollTo(0, state.scrollY));
+  else requestAnimationFrame(() => requestAnimationFrame(() => { if (wrap?.isConnected) window.scrollTo(0, placeScrollY(wrap, state.place) ?? 0); }));
 }
 
 // Anything the user is typing into or in the middle of. A refresh would throw
@@ -909,7 +901,7 @@ function isEditorOpen(root) {
   if (!root) return false;
   // Edit mode sits on .td-wrap itself, which querySelector never matches.
   if (root.matches?.('.td-edit-mode')) return true;
-  if (root.querySelector('.td-edit-mode, .td-activity-card--editing, .td-chat-drawer--open, .td-alt-panel')) return true;
+  if (root.querySelector('.td-edit-mode, .td-activity-card--editing, .td-chat-drawer--open, .td-alt-panel, [data-map-full="on"], dialog[open]')) return true;
   const active = document.activeElement;
   return Boolean(active && root.contains(active)
     && active.matches('input:not([type="checkbox"]):not([type="radio"]), textarea, select'));
@@ -941,7 +933,7 @@ async function refreshTripInPlace({ force = false } = {}) {
     const chat = view.chat;
     view.chat = null; // handed over to the new render
     try {
-      renderDayPicker(app, normaliseTransport(trip), { restore: state, chat });
+      renderDayPicker(app, trip, { restore: state, chat, viewMod: view.viewMod, carry: holdLanding(view) });
     } catch (err) {
       // A half-built view is worse than an honest error with Retry.
       logger.error('data', 'Trip re-render failed', { tripId, error: err?.message, stack: err?.stack });
@@ -966,15 +958,6 @@ function showUpdateNotice(view) {
     refreshTripInPlace({ force: true });
   });
   wrap.prepend(bar);
-}
-
-function findActivity(trip, id) {
-  for (const day of trip.itinerary_days || []) {
-    const acts = day.activities || [];
-    const idx = acts.findIndex(a => a.id === id);
-    if (idx >= 0) return { day, acts, idx, activity: acts[idx] };
-  }
-  return null;
 }
 
 // A realtime row change for this trip. Our own writes are ignored, photo and
@@ -1098,7 +1081,7 @@ function flightDetailValueHtml(key, value) {
 
 function flightDetailsHtml(leg) {
   const rows = FLIGHT_DETAILS
-    .map(([key, label, lead, icon]) => [key, label, icon, to12h(plainText(leg[key]).replace(lead, '').trim())])
+    .map(([key, label, lead, icon]) => [key, label, icon, formatClock(plainText(leg[key]).replace(lead, '').trim())])
     .filter(([, , , value]) => value);
   if (!rows.length) return '';
   return `
@@ -1352,38 +1335,15 @@ function renderAccommodationContent(extras, trip) {
   return `<div class="td-accom-grid">${accom.map(renderOption).join('')}</div>${disclosure}`;
 }
 
-// Ticks live in localStorage; a corrupted entry must not stop the trip opening.
-function readStoredJson(key) {
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || '{}');
-    return value && typeof value === 'object' ? value : {};
-  } catch {
-    return {};
-  }
-}
-
-// Stable per-item key: group, label and deadline hashed together, so items with
-// the same (or non-Latin) labels in different groups don't share a tick.
-function checklistKey(group, item) {
-  const text = `${group || ''}|${item?.label || ''}|${item?.by || ''}`;
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return `ck-${(h >>> 0).toString(36)}`;
-}
-
-// Keys saved before checklistKey existed (label slug only). Still honoured
-// until the item is ticked or unticked again.
-function legacyChecklistKey(item) {
-  return (item?.label || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
+// Every writer of a tick says so, and a landing recounts (TICKS_EVENT, js/data/tick-store.js).
+function announceTick(input, tripId, store, key) {
+  input.dispatchEvent(new CustomEvent(TICKS_EVENT, { bubbles: true, detail: { tripId, store, key, checked: input.checked } }));
 }
 
 function renderBookingChecklist(extras, tripId) {
   const groups = extras?.bookingChecklist;
   if (!Array.isArray(groups) || groups.length === 0) return '';
-  const stored = readStoredJson(`checklist-${tripId}`);
+  const stored = readTicks(tripId).checklist;
   return `
     <div class="td-section-card" data-section="checklist">
       <div class="td-section-header">
@@ -1424,28 +1384,29 @@ function bindChecklist(container, tripId) {
   container.querySelectorAll('.td-check-item input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', () => {
       const key = cb.dataset.checkKey;
-      const stored = readStoredJson(`checklist-${tripId}`);
+      const stored = readTicks(tripId).checklist;
       // Store false explicitly so an old label-slug tick can't re-check it.
       stored[key] = cb.checked;
       localStorage.setItem(`checklist-${tripId}`, JSON.stringify(stored));
       cb.closest('.td-check-item').classList.toggle('td-check-item--done', cb.checked);
+      announceTick(cb, tripId, 'checklist', key);
     });
   });
 }
 
 function renderTripQuickChecklist(extras, tripId) {
-  const stored = readStoredJson(`trip-quick-${tripId}`);
+  const stored = readTicks(tripId).quick;
   const items = [];
   if (extras?.flights && !groundJourney(extras)) {
-    items.push({ key: 'flights', label: 'Flights', icon: MD.flightTakeoff, target: 'flights' });
+    items.push({ key: QUICK_KEYS.flights, label: 'Flights', icon: MD.flightTakeoff, target: 'flights' });
   } else if (groundJourney(extras)) {
-    items.push({ key: 'transport', label: 'Transport', icon: MD.tram, target: 'transport' });
+    items.push({ key: QUICK_KEYS.transport, label: 'Transport', icon: MD.tram, target: 'transport' });
   }
   if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) {
-    items.push({ key: 'accommodation', label: 'Accommodation', icon: MD.hotel, target: 'accommodation' });
+    items.push({ key: QUICK_KEYS.accommodation, label: 'Accommodation', icon: MD.hotel, target: 'accommodation' });
   }
   if (Array.isArray(extras?.bookingChecklist) && extras.bookingChecklist.length > 0) {
-    items.push({ key: 'reservations', label: 'Reservations', icon: MD.ticket, target: 'checklist' });
+    items.push({ key: QUICK_KEYS.reservations, label: 'Reservations', icon: MD.ticket, target: 'checklist' });
   }
   if (items.length === 0) return '';
   const doneCount = items.filter(i => stored[i.key]).length;
@@ -1480,7 +1441,7 @@ function bindQuickChecklist(container, tripId) {
     const checkbox = row.querySelector('input[type="checkbox"]');
     checkbox.addEventListener('change', () => {
       const key = checkbox.dataset.quickKey;
-      const stored = readStoredJson(`trip-quick-${tripId}`);
+      const stored = readTicks(tripId).quick;
       if (checkbox.checked) stored[key] = true;
       else delete stored[key];
       localStorage.setItem(`trip-quick-${tripId}`, JSON.stringify(stored));
@@ -1488,7 +1449,7 @@ function bindQuickChecklist(container, tripId) {
       const iconEl = row.querySelector('.td-quick-check-icon');
       iconEl.classList.toggle('td-quick-check-icon--done', checkbox.checked);
       if (checkbox.checked) iconEl.innerHTML = mdIcon(MD.checkCircle, 20);
-      else iconEl.innerHTML = mdIcon(MD[{ flights: 'flightTakeoff', transport: 'tram', accommodation: 'hotel', reservations: 'ticket' }[key]] || 'place', 20);
+      else iconEl.innerHTML = mdIcon(MD[{ [QUICK_KEYS.flights]: 'flightTakeoff', [QUICK_KEYS.transport]: 'tram', [QUICK_KEYS.accommodation]: 'hotel', [QUICK_KEYS.reservations]: 'ticket' }[key]] || 'place', 20);
       if (checklist) {
         const total = checklist.querySelectorAll('.td-quick-check').length;
         const done = checklist.querySelectorAll('.td-quick-check--done').length;
@@ -1497,36 +1458,72 @@ function bindQuickChecklist(container, tripId) {
         if (prog) prog.textContent = `${done}/${total}`;
         if (fill) fill.style.width = `${total > 0 ? (done / total * 100) : 0}%`;
       }
+      announceTick(checkbox, tripId, 'trip-quick', key);
     });
     row.addEventListener('click', (e) => {
-      if (e.target === checkbox) return;
-      dayCardManualSwitch = true;
-      setTimeout(() => { dayCardManualSwitch = false; }, 600);
-      const target = row.dataset.scrollTo;
-      if (['flights', 'transport', 'accommodation'].includes(target)) {
-        const planTab = container.querySelector('[data-tab="plan"]');
-        if (planTab) planTab.click();
-      }
-      setTimeout(() => {
-        const section = container.querySelector(`[data-section="${target}"]`);
-        if (!section) return;
-        if (section.classList.contains('td-day-card')) {
-          openDayCard(section.closest('.td-day-grid'), section);
-        } else {
-          section.classList.remove('td-section-card--collapsed');
-        }
-        setTimeout(() => {
-          (section.querySelector('.td-day-card-header') || section).scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      }, 50);
+      if (e.target !== checkbox) jumpToSection(container, row.dataset.scrollTo);
     });
   });
+}
+
+// The scroll spy must not open or mark days while a jump or a tap is moving the page.
+function holdScrollSpy() {
+  dayCardManualSwitch = true;
+  setTimeout(() => { dayCardManualSwitch = false; }, 600);
+}
+
+// Which control opened a section card, so focus can go back to it when the card is closed again.
+const sectionOpeners = new WeakMap();
+
+// Opens a section card (or the booking checklist in Prep) and scrolls to it. A quick-checklist row,
+// a data-section-jump control of a landing and open=<section> in the address all end here. `from` is
+// the landing control that asked: focus moves to the card it opened.
+function jumpToSection(container, target, from = null) {
+  if (!SECTION_TARGETS.includes(target)) return;
+  holdScrollSpy();
+  const tab = target === 'checklist' ? 'prep' : 'plan';
+  if (!container.querySelector(`.td-tab--active[data-tab="${tab}"]`)) container.querySelector(`.td-tab[data-tab="${tab}"]`)?.click();
+  setTimeout(() => {
+    const section = container.querySelector(`[data-section="${target}"]`);
+    if (!section) return;
+    if (section.classList.contains('td-day-card')) {
+      openDayCard(section.closest('.td-day-grid'), section);
+    } else {
+      section.classList.remove('td-section-card--collapsed');
+    }
+    setTimeout(() => {
+      const header = section.querySelector('.td-day-card-header') || section;
+      scrollCardToTop(section);
+      if (!from) return;
+      sectionOpeners.set(section, from);
+      if (!header.hasAttribute('tabindex')) header.setAttribute('tabindex', '-1');
+      header.focus({ preventScroll: true });
+    }, 100);
+  }, 50);
+}
+
+// Opens a day card and scrolls to it: a row of the classic sidebar, or a data-day-jump control. `from`
+// is the landing control that asked: focus follows to the card's header, so it is not left off screen.
+function jumpToDay(container, dayIndex, from = null) {
+  const grid = container.querySelector('.td-day-grid');
+  const card = /^\d+$/.test(dayIndex) ? grid?.querySelector(`.td-day-card[data-day-index="${dayIndex}"]`) : null;
+  if (!card || !grid) return;
+  if (!container.querySelector('.td-tab--active[data-tab="plan"]')) container.querySelector('.td-tab[data-tab="plan"]')?.click();
+  holdScrollSpy();
+  openDayCard(grid, card);
+  updateSidebarActive(container, dayIndex);
+  setTimeout(() => {
+    scrollCardToTop(card);
+    injectNowKnob(card);
+    if (from) card.querySelector('.td-day-card-header')?.focus({ preventScroll: true });
+  }, 100);
 }
 
 // Entry requirements (visas, arrival cards, travel authorisations) for every
 // passport in the group, in the plan right after Flights / Transport and in the
 // Prep tab. Loads after render: it needs the profile and per-passport data.
-async function mountEntryCards(container, trip) {
+async function mountEntryCards(container, view) {
+  const { trip } = view;
   const slots = [container.querySelector('[data-entry-slot]'), container.querySelector('#td-visa-slot')].filter(Boolean);
   if (!slots.length) return;
   let profile = null;
@@ -1549,12 +1546,15 @@ async function mountEntryCards(container, trip) {
     // The traveller's own passport, if the profile has none yet.
     if (!profile?.nationality && data[0]) {
       profile = { ...(profile || {}), nationality: data[0] };
-      import('../data/profile-repository.js').then(({ updateProfile }) => updateProfile({ nationality: data[0] })).catch(() => {});
+      // The saved summary takes it too, so the other plans stop asking for a passport in this session.
+      import('../data/profile-repository.js').then(({ updateProfile }) => updateProfile({ nationality: data[0] }))
+        .then((result) => { if (!result?.error) mergeProfileSummary({ nationality: data[0] }); }).catch(() => {});
     }
     cards.forEach(c => c?.refresh());
   };
   cards = await Promise.all(slots.map(slot => mountEntryCard(slot, {
-    trip, homeFlag: profile?.home_flag, getPassports: () => passports, savePassports,
+    trip, homeFlag: profile?.home_flag, getPassports: () => passports, savePassports, haveTick: Boolean(view.landing),
+    onPlan: (plan, reason) => { view.entry = { plan, reason }; landingChanged(view, 'entry'); },
     onEmpty: () => {
       const card = slot.closest('.td-day-card--section');
       if (card) card.hidden = true; else slot.hidden = true;
@@ -1570,21 +1570,6 @@ function bindCollapsibleSections(container) {
       card.classList.toggle('td-section-card--collapsed');
     });
   });
-}
-
-// Shown for every trip with a destination; mountEntryCards hides it when no
-// passport in the group needs anything.
-function hasEntryCard(trip) {
-  const ws = trip?.wizard_state;
-  return !!(ws?.multiCity ? ws?.destinations?.length : ws?.destination);
-}
-
-function countSectionCards(extras, trip) {
-  let n = 0;
-  if (extras?.flights || extras?.transport) n++;
-  if (hasEntryCard(trip)) n++;
-  if (Array.isArray(extras?.accommodation) && extras.accommodation.length > 0) n++;
-  return n;
 }
 
 function calendarIcon(dayNum) {
@@ -1603,19 +1588,7 @@ function cardAnimStyle(n, animate) {
   return animate ? `animation-delay: ${Math.min(Math.max(n, 0), 5) * 40}ms` : 'animation: none';
 }
 
-// "12 to 18° Sunny" from day weather, using only the values that are present.
-function weatherText(w) {
-  if (!w || typeof w !== 'object') return '';
-  const temps = [w.lowC, w.highC]
-    .filter(v => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)))
-    .map(v => Math.round(Number(v)));
-  if (!temps.length) return '';
-  const range = temps.length === 2 && temps[0] !== temps[1] ? `${temps[0]} to ${temps[1]}°` : `${temps[temps.length - 1]}°`;
-  const label = weatherLabel(typeof w.condition === 'string' ? w.condition : '');
-  return label ? `${range} ${label}` : range;
-}
-
-function buildSectionCards(extras, totalCards, trip, animate = true) {
+function buildSectionCards(extras, totalCards, trip, animate = true, inView = false) {
   const cards = [];
   let i = 0;
   // Ground or sea journeys (including older trips whose bus legs were stored
@@ -1679,7 +1652,7 @@ function buildSectionCards(extras, totalCards, trip, animate = true) {
         <div class="td-day-card-header">
           <div class="td-day-num td-day-num--section td-day-num--accommodation">${SECTION_ICONS.accommodation}</div>
           <div class="td-day-info">
-            <h3 class="td-day-card-title">Where to Stay</h3>
+            <h3 class="td-day-card-title">${inView ? 'Where to stay' : 'Where to Stay'}</h3>
           </div>
           <span class="td-day-chevron">›</span>
         </div>
@@ -1756,29 +1729,6 @@ function renderSidebar(trip, days, sym, totalCost, tripCode = tripCurrencyCode(t
 
 // SVG donut showing spent (activity total) against the planned budget
 // (budget_daily x travelers x days). Degrades to just the total when no budget.
-function renderBudgetRing(spent, budget, sym, homeLine) {
-  const R = 52;
-  const C = 2 * Math.PI * R;
-  const pct = budget > 0 ? Math.min(spent / budget, 1) : 0;
-  const dash = C * pct;
-  const over = budget > 0 && spent > budget;
-  const ringColor = over ? 'var(--error)' : 'var(--terracotta)';
-  return `
-    <div class="td-budget-ring">
-      <svg class="td-budget-ring-svg" viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
-        <circle cx="60" cy="60" r="${R}" fill="none" stroke="var(--surface-inset)" stroke-width="10"></circle>
-        <circle cx="60" cy="60" r="${R}" fill="none" stroke="${ringColor}" stroke-width="10"
-          stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${C.toFixed(1)}"
-          transform="rotate(-90 60 60)"></circle>
-      </svg>
-      <div class="td-budget-ring-center">
-        <span class="td-budget-ring-spent">${formatCost(spent, sym)}</span>
-        ${budget > 0 ? `<span class="td-budget-ring-of">of ${formatCost(budget, sym)}</span>` : ''}
-        ${homeLine ? `<span class="td-budget-ring-home">${homeLine}</span>` : ''}
-      </div>
-    </div>`;
-}
-
 // Per-day burn-rate mini bar chart, bars colored by the 7-day sequence.
 function renderBurnChart(dayRows, sym) {
   const max = Math.max(1, ...dayRows.map(r => r.cost));
@@ -1803,7 +1753,8 @@ function renderBurnChart(dayRows, sym) {
     </div>`;
 }
 
-function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts = 0) {
+function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts = 0, cost = null) {
+  const fig = cost ? spendingFigures(cost) : null; // a landing: home currency first, "about", per person (js/lib/money.js)
   const ws = trip.wizard_state;
   const wsDest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
   const destCode = tripCurrencyCode(trip);
@@ -1869,18 +1820,18 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
   return `
     ${totalCost > 0 ? `
       <div class="td-budget-hero">
-        ${renderBudgetRing(totalCost, plannedBudget, sym, ringHomeLine)}
+        ${budgetRingHtml(fig?.ring ?? { spent: totalCost, budget: plannedBudget, spentHtml: formatCost(totalCost, sym), budgetHtml: formatCost(plannedBudget, sym), homeHtml: ringHomeLine })}
         ${dayRows.length > 0 ? renderBurnChart(dayRows, sym) : ''}
       </div>
     ` : ''}
     ${totalCost > 0 ? `
       <div class="td-total">
-        <div class="td-total-label">Estimated Trip Total</div>
-        <div class="td-total-amount">${formatCost(totalCost, sym)}</div>
-        <div class="td-total-sub">${dayCount} days, ${totalActivities} activities</div>
+        <div class="td-total-label">${fig ? 'Estimated trip total' : 'Estimated Trip Total'}</div>
+        <div class="td-total-amount">${fig ? esc(fig.lead) : formatCost(totalCost, sym)}</div>
+        <div class="td-total-sub">${fig ? `${esc(fig.basis)}. ` : ''}${dayCount} days, ${totalActivities} activities</div>
         ${excludedNote}
         ${showConversion ? `
-          <div class="td-total-home">≈ ${homeSymHtml}${formatNumber(homeTotal)} ${esc(homeCode)}</div>
+          <div class="td-total-home">${fig ? esc(fig.other) : `≈ ${homeSymHtml}${formatNumber(homeTotal)} ${esc(homeCode)}`}</div>
           <div class="td-exchange">
             <div class="td-exchange-label">${mdIcon(MD.info, 14)} Exchange Rate</div>
             <div class="td-exchange-hero">
@@ -1994,13 +1945,14 @@ function renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities
 }
 
 function updateSidebarActive(container, dayIndex) {
+  if (markActiveDay(container, dayIndex)) return; // a landing marks its own day rows and never scrolls
   const sidebar = container.querySelector('.td-sidebar');
   if (!sidebar) return;
   sidebar.querySelectorAll('.td-sidebar-item--active').forEach(el => el.classList.remove('td-sidebar-item--active'));
   const item = sidebar.querySelector(`[data-sidebar-day="${dayIndex}"]`);
   if (item) {
     item.classList.add('td-sidebar-item--active');
-    item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    item.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
   }
 }
 
@@ -2009,23 +1961,7 @@ function bindSidebar(container) {
   if (!sidebar) return;
 
   sidebar.querySelectorAll('[data-sidebar-day]').forEach(item => {
-    item.addEventListener('click', () => {
-      const dayIndex = item.dataset.sidebarDay;
-      const grid = container.querySelector('.td-day-grid');
-      const card = grid?.querySelector(`.td-day-card[data-day-index="${dayIndex}"]`);
-      if (!card || !grid) return;
-
-      dayCardManualSwitch = true;
-      setTimeout(() => { dayCardManualSwitch = false; }, 600);
-
-      openDayCard(grid, card);
-      updateSidebarActive(container, dayIndex);
-
-      setTimeout(() => {
-        card.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        injectNowKnob(card);
-      }, 100);
-    });
+    item.addEventListener('click', () => jumpToDay(container, item.dataset.sidebarDay));
   });
 
   sidebar.querySelectorAll('[data-sidebar-section]').forEach(item => {
@@ -2034,13 +1970,11 @@ function bindSidebar(container) {
       const section = container.querySelector(`[data-section="${sectionName}"]`);
       if (!section) return;
 
-      dayCardManualSwitch = true;
-      setTimeout(() => { dayCardManualSwitch = false; }, 600);
-
+      holdScrollSpy();
       openDayCard(section.closest('.td-day-grid'), section);
 
       setTimeout(() => {
-        (section.querySelector('.td-day-card-header') || section).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollCardToTop(section);
       }, 100);
     });
   });
@@ -2305,41 +2239,9 @@ async function showShareModal(trip, opener = document.activeElement) {
 }
 
 // Generating / failed / empty trips get an explanation instead of a blank plan.
+// Only the owner can restart planning (the status update is owner-only).
 function renderStatusCard(trip) {
-  const hasDays = (trip.itinerary_days || []).length > 0;
-  if (trip.status === 'generating') {
-    return `
-      <div class="td-status-card" role="status" data-trip-status="generating">
-        <span class="td-status-spinner" aria-hidden="true"></span>
-        <div class="td-status-text">
-          <strong>${hasDays ? 'Building a new itinerary' : 'Building your itinerary'}</strong>
-          <p>${hasDays ? "You're seeing your current plan until the new one is ready." : 'This usually takes 1 to 2 minutes. You can leave this page and come back.'}</p>
-        </div>
-      </div>`;
-  }
-  if (trip.status === 'failed') {
-    // Only the owner can restart planning (the status update is owner-only).
-    const canRetry = Boolean(trip.user_id) && trip.user_id === getUser()?.id;
-    return `
-      <div class="td-status-card td-status-card--failed" role="alert" data-trip-status="failed">
-        <div class="td-status-text">
-          <strong>${hasDays ? "We couldn't build a new itinerary" : "We couldn't build this itinerary"}</strong>
-          <p>${hasDays ? 'Your current plan is unchanged.' : 'Something went wrong while planning this trip.'}</p>
-        </div>
-        ${canRetry ? '<button type="button" class="btn btn--primary btn--pill btn--sm" data-action="retry-generation">Try again</button>' : ''}
-      </div>`;
-  }
-  if (!hasDays) {
-    return `
-      <div class="td-status-card" data-trip-status="empty">
-        <div class="td-status-text">
-          <strong>No days planned yet</strong>
-          <p>${trip.wizard_state?.imported ? 'This trip was imported without any days.' : 'Regenerate the itinerary to fill in your days.'}</p>
-        </div>
-        ${trip.wizard_state?.imported ? '' : '<button type="button" class="btn btn--primary btn--pill btn--sm" data-action="regenerate-empty">Edit and regenerate</button>'}
-      </div>`;
-  }
-  return '';
+  return statusCardHtml(trip, { canRetry: Boolean(trip.user_id) && trip.user_id === getUser()?.id });
 }
 
 // Watch a generating trip: refresh when the new itinerary lands, switch to the
@@ -2357,6 +2259,7 @@ function bindTripStatus(view) {
         else if (status.status === 'failed') {
           trip.status = 'failed';
           if (slot) slot.innerHTML = renderStatusCard(trip);
+          landingChanged(view, 'failed');
         }
       });
       view.cleanups.push(off);
@@ -2383,6 +2286,7 @@ function bindTripStatus(view) {
       if (error) throw new Error(error);
       trip.status = 'generating';
       if (slot) slot.innerHTML = renderStatusCard(trip);
+      landingChanged(view, 'status');
       watch();
       startGeneration(trip.id, trip.wizard_state);
     } catch (err) {
@@ -2394,21 +2298,159 @@ function bindTripStatus(view) {
   }, { signal: view.controller.signal });
 }
 
+// ===== Actions =====
+// Named functions that read the live view, behind one delegated listener on .td-wrap (see
+// renderDayPicker). An action therefore works from every control that names it: the classic icon
+// buttons, a landing's bar, and the items of its More menu, whose <dialog> stays inside the wrap.
+
+function openShare(view, el) {
+  showShareModal(view.trip, menuTriggerFor(view.wrap, el));
+}
+
+function openReader(view) {
+  navigate(`/trip/${view.tripId}/read`);
+}
+
+function exportPdf(view) {
+  return pdfProgress(view, async (onProgress) => {
+    try {
+      const { exportTripPdf } = await import('../lib/pdf-export.js');
+      await exportTripPdf(view.trip, { onProgress });
+      showToast('PDF exported');
+    } catch (err) {
+      showToast('PDF export failed', 'error'); logger.error('data', 'PDF export failed', { error: err.message, stack: err.stack });
+    }
+  });
+}
+
+async function leaveEditMode(view) {
+  const { wrap } = view;
+  const { exitEditMode } = await import('./activity-editor.js');
+  exitEditMode(wrap);
+  if (wrap._editClickHandler) { wrap.removeEventListener('click', wrap._editClickHandler); wrap._editClickHandler = null; }
+  if (wrap._editSavedHandler) { wrap.removeEventListener('activity-saved', wrap._editSavedHandler); wrap._editSavedHandler = null; }
+  wrap.querySelector('.td-edit-bar')?.remove();
+  wrap.querySelectorAll('[data-action="edit"]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+}
+
+async function toggleEdit(view) {
+  const { wrap, trip } = view;
+  if (wrap.classList.contains('td-edit-mode')) { await leaveEditMode(view); return; }
+
+  const { enterEditMode, makeActivityEditable } = await import('./activity-editor.js');
+  if (wrap.querySelector('.td-edit-bar')) return; // a second tap while the editor was loading
+
+  const editBar = document.createElement('div');
+  editBar.className = 'td-edit-bar';
+  editBar.innerHTML = `
+      <span>Editing itinerary</span>
+      <div class="td-edit-bar-actions">
+        <button type="button" class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" data-action="done-edit">Done</button>
+      </div>
+    `;
+  const firstDay = wrap.querySelector('.td-day-grid, .td-day-card');
+  if (firstDay) firstDay.parentNode.insertBefore(editBar, firstDay);
+  else wrap.appendChild(editBar);
+
+  editBar.querySelector('[data-action="done-edit"]').addEventListener('click', () => leaveEditMode(view));
+
+  const wsDest = trip.wizard_state?.multiCity
+    ? trip.wizard_state?.destinations?.[0]
+    : trip.wizard_state?.destination;
+  const tripLocation = wsDest?.lat && wsDest?.lng ? { lat: wsDest.lat, lng: wsDest.lng } : null;
+
+  enterEditMode(wrap, trip);
+  wrap.querySelectorAll('[data-action="edit"]').forEach(b => b.setAttribute('aria-pressed', 'true'));
+  // With a landing the bar sits a screen or two below the control that started it.
+  if (view.landing) editBar.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
+
+  wrap._editClickHandler = async (e) => {
+    if (!wrap.classList.contains('td-edit-mode')) return;
+
+    const delBtnEl = e.target.closest('.ae-delete-btn');
+    if (delBtnEl) {
+      const card = delBtnEl.closest('.td-activity-card');
+      const actId = card?.dataset.activityId;
+      if (!actId) return;
+      if (!confirm('Delete this activity?')) return;
+      await deleteActivityInPlace(wrap, trip, actId, card);
+      return;
+    }
+
+    const editBtnEl = e.target.closest('.ae-edit-btn');
+    const card = editBtnEl ? editBtnEl.closest('.td-activity-card') : null;
+    if (!card) return;
+
+    const actId = card.dataset.activityId;
+    if (!actId) return;
+
+    const matchedActivity = findActivity(trip, actId)?.activity;
+    if (!matchedActivity) return;
+
+    makeActivityEditable(card, matchedActivity, tripLocation);
+  };
+  wrap.addEventListener('click', wrap._editClickHandler);
+
+  wrap._editSavedHandler = async (e) => {
+    const { activity: savedActivity, venueChanged } = e.detail;
+    const found = findActivity(trip, savedActivity.id);
+    if (!found) return;
+    // Show the saved card straight away; directions follow if the venue moved.
+    rebuildActivityCard(wrap, trip, savedActivity, found.idx === 0);
+    if (isPendingPhoto(savedActivity)) restartPhotoResolution(trip);
+    refreshTotals(wrap, trip);
+    if (venueChanged) await refreshDirectionsAround(wrap, trip, savedActivity);
+  };
+  wrap.addEventListener('activity-saved', wrap._editSavedHandler);
+}
+
+async function openRegenerate(view) {
+  const { showEditModal } = await import('./trip-edit.js');
+  showEditModal(view.trip);
+}
+
+async function deleteThisTrip(view) {
+  const sure = await confirmDialog({ title: 'Delete this trip?', body: 'This cannot be undone.', confirmLabel: 'Delete trip', danger: true });
+  if (!sure) return;
+  const { error } = await deleteTrip(view.tripId);
+  if (error) {
+    showToast('Failed to delete trip', 'error'); logger.error('data', 'Trip delete failed from detail', { error });
+    return;
+  }
+  navigate('/');
+}
+
+const ACTIONS = {
+  back: () => navigate('/'), share: openShare, 'read-view': openReader, pdf: exportPdf,
+  edit: toggleEdit, regenerate: openRegenerate, delete: deleteThisTrip,
+};
+
+// A landing draws only the actions its model offers; the classic buttons are always there.
+const actionOffered = (view, key) => key === 'back' || !view.landing || view.landing.model.actions.some(a => a.key === key);
+
 /**
  * Render a loaded trip into #app.
  * @param {HTMLElement} app
- * @param {object} trip
- * @param {{ jumpToToday?: boolean, stale?: boolean, restore?: object, chat?: object }} [opts]
+ * @param {object} loaded the trip as fetched
+ * @param {{ query?: URLSearchParams, reload?: boolean, stale?: boolean, cachedAt?: string, viewMod?: object|null,
+ *   restore?: object, resume?: object|null, chat?: object, carry?: object|null }} [opts]
+ *   viewMod: the view whose landing is drawn around the cards; without one the page is classic
  *   restore: view state from captureViewState (silent refresh, no entry animation)
+ *   resume: the view state and the place of the page this render rebuilds (reload), or null
  *   chat: an existing chat drawer controller to carry over
+ *   carry: what holdLanding() took from the page this render replaces (the map, the hero photo, the role)
  */
-function renderDayPicker(app, trip, opts = {}) {
-  const { jumpToToday = false, stale = false, restore = null, chat = null } = opts;
+function renderDayPicker(app, loaded, opts = {}) {
+  const { query = null, reload = false, stale = false, cachedAt = null, restore = null, resume = null, chat = null, carry = null } = opts;
+  const viewMod = isSquareMode() ? null : opts.viewMod || null;
   teardownView();
   ensureLeaveHandler();
+  // Older trips stored ground transport under extras.flights; show it as transport.
+  const extras = normaliseTransportExtras(loaded.extras, loaded.wizard_state?.transport?.mode);
+  const trip = extras === loaded.extras ? loaded : { ...loaded, extras };
   const view = {
     tripId: trip.id, trip, wrap: null, chat: null, refreshTimer: null,
-    cleanups: [], controller: new AbortController(),
+    cleanups: [], controller: new AbortController(), viewMod, landing: null, entry: carry?.entry ?? null,
   };
   _view = view;
   const { signal } = view.controller;
@@ -2423,8 +2465,82 @@ function renderDayPicker(app, trip, opts = {}) {
     datesHtml: dateRange ? `<div class="td-hero-dates">${mdIcon(MD.calendarToday, 13)} ${esc(dateRange)}</div>` : '',
   };
 
-  app.innerHTML = `
-    <div class="td-wrap${animate ? ' td-fade-in' : ''}" data-trip-id="${esc(trip.id)}">
+  // The landing of the view, or null: then everything below is the classic page, byte for byte.
+  const userId = getUser()?.id || null;
+  const statusHtml = renderStatusCard(trip);
+  const prefs = getPrefs();
+  const landing = buildLanding(view, trip, {
+    prefs, theme: effectiveTheme(), reducedMotion: prefersReducedMotion(), animate, baseUrl: import.meta.env.BASE_URL,
+    notes: notesHtml({ stale, cachedAt, statusHtml }), userId, role: carry ? carry.role : cachedListRole(trip.id),
+    profile: getProfileSummary(), ticks: readTicks(trip.id), countryName: nationalityName,
+    now: new Date(), stale, cachedAt, onError: (err) => viewFellBack(viewMod.id, err),
+  });
+  setTripViewFlag(landing ? viewMod.id : null);
+  if (landing) view.cleanups.push(() => setTripViewFlag(null));
+
+  const offset = countSectionCards(trip.extras, trip);
+  const total = days.length + offset;
+  const townCells = collectTownCells(trip.extras);
+  const dayCardsHtml = days.map((d, i) => {
+    const acts = d.activities || [];
+    const dayCost = sumCosts(acts, tripCode).total;
+    const dateStr = d.date ? formatDate(d.date) : '';
+    const weather = weatherText(d.weather);
+    // View mode only: the day colour, and the inert block of this day's row (one .tv-day-extras
+    // element, hidden by trip-detail.css until the view's reset shows it).
+    const row = view.landing?.model.days[i];
+    const extrasHtml = view.landing?.dayExtras[i] || '';
+    return `
+              <div class="td-day-card" data-day-index="${i}" data-day-date="${esc(d.date || '')}" style="--i: ${i + offset + 1}; --total: ${total}; ${cardAnimStyle(i + offset, animate)}${row ? `; --day-color: var(--day-${Math.min(7, Math.max(1, Math.trunc(row.colorIndex) || 1))})` : ''}">
+                <div class="td-day-card-header">
+                  ${calendarIcon(esc(d.day_number))}
+                  <div class="td-day-info">
+                    <h3 class="td-day-card-title">${esc(d.title || `Day ${d.day_number}`)}</h3>
+                    ${dateStr ? `<span class="td-day-date">${esc(dateStr)}${weather ? ` <span class="td-day-weather">${esc(weather)}</span>` : ''}</span>` : ''}
+                  </div>${extrasHtml}
+                  <span class="td-day-chevron">›</span>
+                </div>
+                <div class="td-day-card-body">
+                  <div class="td-timeline">
+                    ${(() => {
+                      let prevLocality = null;
+                      return acts.map((a, ai) => {
+                        const locality = localityForActivity(a, townCells);
+                        let waypoint = '';
+                        if (locality && locality !== prevLocality) {
+                          waypoint = `<div class="td-locality-waypoint">${mdIcon(MD.place, 12)}<span>${esc(locality)}</span><i></i></div>`;
+                          prevLocality = locality;
+                        }
+                        return waypoint + renderActivity(a, sym, ai === 0, tripCode);
+                      }).join('');
+                    })()}
+                  </div>
+                  <div class="td-day-footer">
+                    <span class="td-day-footer-meta">${acts.length} activities</span>
+                    <span class="td-day-footer-cost">${formatCost(dayCost, sym)}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+  }).join('');
+  const planPanel = assemblePlanPanel({
+    landing, sectionCardsHtml: buildSectionCards(trip.extras, total, trip, animate, Boolean(landing)), dayCardsHtml,
+    tz: trip.timezone || trip.wizard_state?.destination?.timezone || '',
+    sidebarHtml: landing ? '' : renderSidebar(trip, days, sym, totalCost, tripCode),
+    backButtonHtml: `<button class="td-back-inline" data-action="back">${ICONS.arrowBack} Back to Trips</button>`,
+    deleteButtonHtml: trip.user_id && trip.user_id === userId ? `<button class="td-delete td-delete--inline" data-action="delete" data-trip-id="${esc(trip.id)}">${ICONS.delete} Delete Trip</button>` : '',
+  });
+  const sidePanels = assembleSidePanels({
+    landing, spendingHtml: renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts, view.landing?.model.cost),
+    quickChecklistHtml: landing ? view.landing.prepHtml : renderTripQuickChecklist(trip.extras, trip.id), bookingChecklistHtml: renderBookingChecklist(trip.extras, trip.id),
+  });
+  const wrapOpen = `<div class="td-wrap${animate ? ' td-fade-in' : ''}${prefs.showVenuePhotos === false ? ' td-photos-off' : ''}" data-trip-id="${esc(trip.id)}"`;
+
+  app.innerHTML = landing ? `
+    ${wrapOpen} data-view="${esc(viewMod.id)}" data-active-tab="plan">
+      ${assembleLandingWrap({ landing, planPanelHtml: planPanel, sidePanelsHtml: sidePanels, footHtml: view.landing.footHtml })}
+    </div>` : `
+    ${wrapOpen}>
       <div class="td-topbar">
         <button class="td-back" data-action="back">${ICONS.arrowBack} Trips</button>
         <nav class="td-tabs" role="tablist">
@@ -2462,80 +2578,11 @@ function renderDayPicker(app, trip, opts = {}) {
         ${dateRange ? `<span class="td-stickybar-dates">${esc(dateRange)}</span>` : ''}
       </div>
 
-      ${stale ? '<div class="td-stale-note" role="status">Offline, showing your last saved copy</div>' : ''}
-      <div class="td-status-slot">${renderStatusCard(trip)}</div>
-      <div class="td-photo-status" role="status" hidden></div>
+      ${notesHtml({ stale, statusHtml })}
 
-      <div class="td-tab-panel td-tab-panel--active" data-panel="plan">
-        <div class="td-square-itinerary square-only" id="td-square-itinerary"></div>
-        <div class="td-body scroll-only">
-          ${renderSidebar(trip, days, sym, totalCost, tripCode)}
-          <div class="td-main">
-            <div class="td-day-grid" data-tz="${esc(trip.timezone || trip.wizard_state?.destination?.timezone || '')}">
-          ${(() => { const offset = countSectionCards(trip.extras, trip); const total = days.length + offset; const townCells = collectTownCells(trip.extras); return buildSectionCards(trip.extras, total, trip, animate) + days.map((d, i) => {
-            const acts = d.activities || [];
-            const dayCost = sumCosts(acts, tripCode).total;
-            const dateStr = d.date ? formatDate(d.date) : '';
-            const weather = weatherText(d.weather);
-            return `
-              <div class="td-day-card" data-day-index="${i}" data-day-date="${esc(d.date || '')}" style="--i: ${i + offset + 1}; --total: ${total}; ${cardAnimStyle(i + offset, animate)}">
-                <div class="td-day-card-header">
-                  ${calendarIcon(esc(d.day_number))}
-                  <div class="td-day-info">
-                    <h3 class="td-day-card-title">${esc(d.title || `Day ${d.day_number}`)}</h3>
-                    ${dateStr ? `<span class="td-day-date">${esc(dateStr)}${weather ? ` <span class="td-day-weather">${esc(weather)}</span>` : ''}</span>` : ''}
-                  </div>
-                  <span class="td-day-chevron">›</span>
-                </div>
-                <div class="td-day-card-body">
-                  <div class="td-timeline">
-                    ${(() => {
-                      let prevLocality = null;
-                      return acts.map((a, ai) => {
-                        const locality = localityForActivity(a, townCells);
-                        let waypoint = '';
-                        if (locality && locality !== prevLocality) {
-                          waypoint = `<div class="td-locality-waypoint">${mdIcon(MD.place, 12)}<span>${esc(locality)}</span><i></i></div>`;
-                          prevLocality = locality;
-                        }
-                        return waypoint + renderActivity(a, sym, ai === 0, tripCode);
-                      }).join('');
-                    })()}
-                  </div>
-                  <div class="td-day-footer">
-                    <span class="td-day-footer-meta">${acts.length} activities</span>
-                    <span class="td-day-footer-cost">${formatCost(dayCost, sym)}</span>
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join(''); })()}
-            </div>
-          </div>
-        </div>
-        <div class="td-plan-footer">
-          <button class="td-back-inline" data-action="back">${ICONS.arrowBack} Back to Trips</button>
-          ${trip.user_id && trip.user_id === getUser()?.id ? `<button class="td-delete td-delete--inline" data-action="delete" data-trip-id="${esc(trip.id)}">${ICONS.delete} Delete Trip</button>` : ''}
-        </div>
-      </div>
+      ${planPanel}
 
-      <div class="td-tab-panel" data-panel="spending">
-        <div class="td-spending-grid">
-          ${renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts)}
-        </div>
-      </div>
-
-      <div class="td-tab-panel" data-panel="prep">
-        <div class="td-prep-grid">
-          <div id="td-visa-slot"></div>
-          ${renderTripQuickChecklist(trip.extras, trip.id)}
-          ${renderBookingChecklist(trip.extras, trip.id)}
-        </div>
-      </div>
-
-      <div class="td-tab-panel" data-panel="towns">
-        <div class="td-towns" id="td-towns"></div>
-      </div>
+      ${sidePanels}
     </div>
     ${renderTripFooter(trip)}
   `;
@@ -2546,122 +2593,22 @@ function renderDayPicker(app, trip, opts = {}) {
   const unpublishFooter = publishFooterHeight(app);
   if (unpublishFooter) view.cleanups.push(unpublishFooter);
 
-  app.querySelectorAll('[data-action="back"]').forEach(el => el.addEventListener('click', () => navigate('/')));
+  // One listener for every action, day jump and section jump, wherever its control is drawn.
+  wrap.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action], [data-day-jump], [data-section-jump]');
+    if (!el) return;
+    if (el.dataset.dayJump !== undefined) { jumpToDay(app, el.dataset.dayJump, el); focusLandingDay(view, el.dataset.dayJump); }
+    else if (el.dataset.sectionJump !== undefined) jumpToSection(app, el.dataset.sectionJump, el);
+    else if (Object.hasOwn(ACTIONS, el.dataset.action) && actionOffered(view, el.dataset.action)) ACTIONS[el.dataset.action](view, el);
+  }, { signal });
+  if (landing) wrap.querySelectorAll('[data-section]').forEach((card) => { card.id = `td-section-${card.dataset.section}`; });
 
-  app.querySelector('[data-action="share"]')?.addEventListener('click', (e) => showShareModal(trip, e.currentTarget));
-  app.querySelector('[data-action="read-view"]')?.addEventListener('click', () => navigate(`/trip/${trip.id}/read`));
-
-  app.querySelector('[data-action="pdf"]')?.addEventListener('click', async () => {
-    const btn = app.querySelector('[data-action="pdf"]');
-    const origHtml = btn.innerHTML;
-    btn.disabled = true;
-    btn.classList.add('td-action-btn--exporting');
-    btn.innerHTML = '<span class="td-pdf-progress"><span class="td-pdf-spinner"></span>Photos...</span>';
-    try {
-      const { exportTripPdf } = await import('../lib/pdf-export.js');
-      await exportTripPdf(trip, {
-        onProgress: (stage, pct) => {
-          const label = stage === 'photos' ? 'Photos'
-            : stage === 'render' ? 'Building'
-            : 'Saving';
-          btn.innerHTML = `<span class="td-pdf-progress"><span class="td-pdf-spinner"></span>${label}... ${pct}%</span>`;
-        }
-      });
-      showToast('PDF exported');
-    } catch (err) {
-      showToast('PDF export failed', 'error'); logger.error('data', 'PDF export failed', { error: err.message, stack: err.stack });
-    }
-    btn.classList.remove('td-action-btn--exporting');
-    btn.innerHTML = origHtml;
-    btn.disabled = false;
-  });
-
-  const leaveEditMode = async () => {
-    const { exitEditMode } = await import('./activity-editor.js');
-    exitEditMode(wrap);
-    if (wrap._editClickHandler) { wrap.removeEventListener('click', wrap._editClickHandler); wrap._editClickHandler = null; }
-    if (wrap._editSavedHandler) { wrap.removeEventListener('activity-saved', wrap._editSavedHandler); wrap._editSavedHandler = null; }
-    wrap.querySelector('.td-edit-bar')?.remove();
-  };
-
-  app.querySelector('[data-action="edit"]')?.addEventListener('click', async () => {
-    if (wrap.classList.contains('td-edit-mode')) { await leaveEditMode(); return; }
-
-    const { enterEditMode, makeActivityEditable } = await import('./activity-editor.js');
-
-    const editBar = document.createElement('div');
-    editBar.className = 'td-edit-bar';
-    editBar.innerHTML = `
-      <span>Editing Itinerary</span>
-      <div class="td-edit-bar-actions">
-        <button type="button" class="btn btn--ghost btn--sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" data-action="done-edit">Done</button>
-      </div>
-    `;
-    const firstDay = wrap.querySelector('.td-day-grid, .td-day-card');
-    if (firstDay) firstDay.parentNode.insertBefore(editBar, firstDay);
-    else wrap.appendChild(editBar);
-
-    editBar.querySelector('[data-action="done-edit"]').addEventListener('click', leaveEditMode);
-
-    const wsDest = trip.wizard_state?.multiCity
-      ? trip.wizard_state?.destinations?.[0]
-      : trip.wizard_state?.destination;
-    const tripLocation = wsDest?.lat && wsDest?.lng ? { lat: wsDest.lat, lng: wsDest.lng } : null;
-
-    enterEditMode(wrap, trip);
-
-    wrap._editClickHandler = async (e) => {
-      if (!wrap.classList.contains('td-edit-mode')) return;
-
-      const delBtnEl = e.target.closest('.ae-delete-btn');
-      if (delBtnEl) {
-        const card = delBtnEl.closest('.td-activity-card');
-        const actId = card?.dataset.activityId;
-        if (!actId) return;
-        if (!confirm('Delete this activity?')) return;
-        await deleteActivityInPlace(wrap, trip, actId, card);
-        return;
-      }
-
-      const editBtnEl = e.target.closest('.ae-edit-btn');
-      const card = editBtnEl ? editBtnEl.closest('.td-activity-card') : null;
-      if (!card) return;
-
-      const actId = card.dataset.activityId;
-      if (!actId) return;
-
-      const matchedActivity = findActivity(trip, actId)?.activity;
-      if (!matchedActivity) return;
-
-      makeActivityEditable(card, matchedActivity, tripLocation);
-    };
-    wrap.addEventListener('click', wrap._editClickHandler);
-
-    wrap._editSavedHandler = async (e) => {
-      const { activity: savedActivity, venueChanged } = e.detail;
-      const found = findActivity(trip, savedActivity.id);
-      if (!found) return;
-      // Show the saved card straight away; directions follow if the venue moved.
-      rebuildActivityCard(wrap, trip, savedActivity, found.idx === 0);
-      if (isPendingPhoto(savedActivity)) restartPhotoResolution(trip);
-      refreshTotals(wrap, trip);
-      if (venueChanged) await refreshDirectionsAround(wrap, trip, savedActivity);
-    };
-    wrap.addEventListener('activity-saved', wrap._editSavedHandler);
-  });
-
-  app.querySelector('[data-action="regenerate"]')?.addEventListener('click', async () => {
-    const { showEditModal } = await import('./trip-edit.js');
-    showEditModal(trip);
-  });
-
-  bindDelete(app);
   _townsLoaded = false; // new trip render = fresh towns panel
-  bindTabs(app, trip);
+  bindTabs(app, trip, signal);
   bindDayCards(app, animate);
   bindChecklist(app, trip.id);
   bindQuickChecklist(app, trip.id);
-  mountEntryCards(app, trip);
+  mountEntryCards(app, view);
   bindTripStatus(view);
 
   // Affiliate click telemetry (links open in a new tab; no navigation race).
@@ -2690,9 +2637,11 @@ function renderDayPicker(app, trip, opts = {}) {
   // Collaboration + photo worker: realtime activity changes. Our own writes are
   // ignored, photo fills are patched in place, collaborator edits refresh
   // silently (see handleActivityChange).
-  import('../data/collab-repository.js').then(({ claimInvitations, onRemoteActivityChanges, isLocalWrite }) => {
+  import('../data/collab-repository.js').then(({ claimInvitations, onRemoteActivityChanges, isLocalWrite, fetchMyRole }) => {
     if (_view !== view) return;
     if (!restore) claimInvitations().catch(err => logger.warn('data', 'Claim invitations failed', { error: err?.message }));
+    // The role on someone else's plan, asked once per opening; on an error the cached role (or viewer) stands.
+    if (landing && !carry?.roleKnown && trip.user_id !== userId) fetchMyRole(trip.id).then(({ data, error }) => { if (!error && _view === view) setLandingRole(view, data); });
     const dayIds = (trip.itinerary_days || []).map(d => d.id).filter(Boolean);
     const unsub = onRemoteActivityChanges(dayIds, (payload) => handleActivityChange(view, payload, isLocalWrite));
     view.cleanups.push(unsub);
@@ -2731,8 +2680,10 @@ function renderDayPicker(app, trip, opts = {}) {
     });
     view.cleanups.push(squareItinCleanup);
 
-    // Spending panel: page through its sections instead of scrolling.
-    import('../lib/card-deck.js').then(({ wrapChildrenIntoDeck }) => {
+    // Spending panel: page through its sections instead of scrolling, once this render has finished.
+    // card-deck.js is a static import: named by a dynamic import only, wrapChildrenIntoDeck was left
+    // out of the build by the bundler, so a built app never paged this panel or the Discover tab.
+    Promise.resolve().then(() => {
       if (_view !== view) return;
       const spendingGrid = app.querySelector('[data-panel="spending"] .td-spending-grid');
       if (spendingGrid && !spendingGrid.querySelector('.card-deck')) {
@@ -2742,25 +2693,45 @@ function renderDayPicker(app, trip, opts = {}) {
     }).catch(err => logger.warn('ui', 'Spending deck unavailable', { error: err?.message }));
   }
 
-  if (restore) {
-    restoreViewState(app, trip, restore);
+  if (landing) {
+    try { mountLanding(view, carry); } catch (err) { logger.warn('ui', 'Trip landing mount failed', { view: viewMod.id, error: err?.message }); }
+    // The summary came late: the landing takes it, then the Spending tab prints the cost of the same model.
+    if (!view.landing.facts.profile) profileSummaryReady().then((profile) => { if (_view === view && profile) { setLandingProfile(view, profile); refreshTotals(view.wrap, view.trip); } });
+  }
+
+  // An untouched page (at the top, no day open, the Plan tab) takes the new layout's own first render below.
+  _openedTripId = trip.id;
+  const kept = restore || (resume && (resume.place || resume.openDays.length || resume.tab !== 'plan') ? resume : null);
+  if (kept) {
+    restoreViewState(app, trip, kept);
     return;
   }
 
-  if (jumpToToday && trip.start_date) {
+  // First render: open=<section> comes first, else the today jump, else the sections the view opens.
+  const grid = app.querySelector('.td-day-grid');
+  const open = reload ? '' : openSectionFrom(query);
+  let dayCard = null;
+  if (open) {
+    jumpToSection(app, open);
+  } else if (trip.start_date && shouldJumpToToday(query, prefs, tripPhase(trip, new Date()), { reload })) {
     const tripTz = trip.timezone || trip.wizard_state?.destination?.timezone;
     const now = nowInTz(tripTz || undefined);
     const start = new Date(trip.start_date + 'T00:00:00');
     const todayDayNum = Math.floor((now - start) / 86400000) + 1;
-    const dayCard = app.querySelector(`.td-day-card[data-day-index="${todayDayNum - 1}"]`);
+    const todayIndex = landing ? view.landing.model.days.find(row => row.isToday)?.index ?? -1 : todayDayNum - 1;
+    dayCard = app.querySelector(`.td-day-card[data-day-index="${todayIndex}"]`);
     if (dayCard) {
-      const grid = app.querySelector('.td-day-grid');
       openDayCard(grid, dayCard);
       setTimeout(() => {
         if (!dayCard.isConnected) return;
-        dayCard.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollCardToTop(dayCard);
         injectNowKnob(dayCard);
       }, 500);
+    }
+  }
+  if (!open && !dayCard && landing?.openSections.length && window.innerWidth >= (landing.openSectionsMinWidth || 0)) {
+    for (const name of landing.openSections) {
+      if (SECTION_TARGETS.includes(name)) openDayCard(grid, grid?.querySelector(`.td-day-card--section[data-section="${name}"]`));
     }
   }
 }
@@ -2875,6 +2846,8 @@ async function deleteActivityInPlace(wrap, trip, actId, card) {
 // after an edit, delete or swap: day footers, sidebar, and the Spending tab.
 function refreshTotals(wrap, trip) {
   if (!wrap?.isConnected) return;
+  const view = _view?.wrap === wrap ? _view : null;
+  landingChanged(view, 'totals'); // first, so the Spending tab below prints the cost of the same model
   const { days, sym, tripCode, totalCost, totalActivities, excludedCosts, dayCount } = tripHeader(trip);
   days.forEach((d, i) => {
     const acts = d.activities || [];
@@ -2895,7 +2868,7 @@ function refreshTotals(wrap, trip) {
   // The square-mode spending deck owns its markup; it picks up totals on the next render.
   const spending = wrap.querySelector('[data-panel="spending"] .td-spending-grid');
   if (spending && !spending.querySelector('.card-deck')) {
-    spending.innerHTML = renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts);
+    spending.innerHTML = renderSpendingTab(trip, days, sym, totalCost, dayCount, totalActivities, excludedCosts, view?.landing?.model.cost);
   }
 }
 
@@ -2992,6 +2965,7 @@ function cardForActivity(root, id) {
 // Realtime photo/coordinate update for one activity: model + card, no reload.
 function patchActivityPhoto(view, activity, row) {
   for (const key of PHOTO_FIELDS) if (key in row) activity[key] = row[key];
+  if ('latitude' in row || 'longitude' in row || 'photo_url' in row) landingChanged(view, 'photos', { settle: true });
   const card = cardForActivity(view.wrap, activity.id);
   if (!card) return;
   if ('latitude' in row || 'longitude' in row) patchActivityCoords(card, activity);
@@ -3016,6 +2990,7 @@ function applyPhotoSnapshot(view, { credits, activities }) {
     const photoEl = card.querySelector('.td-activity-photo');
     if (photoEl) applyActivityPhoto(photoEl, found.activity, creditText(_photoCredits[row.id]));
   }
+  landingChanged(view, 'photos');
 }
 
 // Resolution is over: a slot still waiting has no photo coming, so it gets
@@ -3061,10 +3036,12 @@ function bindPhotoStatus(view) {
     // run started meanwhile).
     if (!isResolvingPhotos(view.tripId)) collapsePendingPhotos(view.wrap);
     const n = Number(d.added) || 0;
+    clearTimeout(hideTimer);
+    // A view landing shows its own placeholders: "nothing found" is the classic page's notice only.
+    if (view.landing && d.ok && n === 0) { el.hidden = true; return; }
     show(!d.ok ? "We couldn't add photos right now. We'll try again next time you open this trip."
       : n > 0 ? `Photos added for ${n} place${n === 1 ? '' : 's'}`
       : "We couldn't find photos for these places.");
-    clearTimeout(hideTimer);
     hideTimer = setTimeout(() => { el.hidden = true; }, 4000);
   };
   window.addEventListener('trippy:photos', onPhotos);
@@ -3107,6 +3084,7 @@ async function applyCover(view, { coverImage, cover }) {
   trip.extras = { ...(trip.extras || {}), cover };
   const hero = heroCover(trip);
   if (!hero?.v2) return;
+  if (view.landing) { swapLandingCover(view).catch(err => logger.warn('ui', 'Cover swap failed', { tripId: view.tripId, error: err?.message })); return; }
   try {
     const inserted = await swapHeroCover(view.wrap, hero, view.heroParts);
     if (inserted && _view === view) observeHeroStrip(inserted);
@@ -3179,7 +3157,7 @@ function restartPhotoResolution(trip) {
 // viewer who is not the owner) they show the placeholder.
 function loadActivityPhotos(container, trip) {
   const photoEls = container.querySelectorAll('.td-activity-photo[data-venue]');
-  if (!photoEls.length) return null;
+  if (!photoEls.length || photoEls[0].closest('.td-photos-off')) return null; // venue photos are turned off
   const resolving = Boolean(trip && isResolvingPhotos(trip.id));
   for (const el of photoEls) {
     if (el.dataset.photo) attachActivityImg(el, el.dataset.photo, el.dataset.venue, el.dataset.photoSource, el.dataset.photoCredit);
@@ -3247,11 +3225,7 @@ function injectNowKnob(card) {
 
   const label = document.createElement('span');
   label.className = 'td-now-label';
-  const hh = today.getHours();
-  const mm = today.getMinutes();
-  const ampm = hh >= 12 ? 'PM' : 'AM';
-  const h12 = hh % 12 || 12;
-  label.textContent = `${h12}:${String(mm).padStart(2, '0')} ${ampm}`;
+  label.textContent = formatClock(`${today.getHours()}:${String(today.getMinutes()).padStart(2, '0')}`);
   knob.appendChild(label);
 
   timeline.style.position = 'relative';
@@ -3297,13 +3271,16 @@ function setupDayScrollSpy(container) {
 
     const dayCards = [...grid.querySelectorAll('.td-day-card:not(.td-day-card--section)')];
     let activeIdx = null;
+    // The line a day has passed to be the one being read: 100 px, or under what a landing keeps pinned
+    // (its day cards carry that height as their scroll margin), so the day just jumped to stays marked.
+    const line = Math.max(100, (parseFloat(getComputedStyle(dayCards[0] ?? grid).scrollMarginTop) || 0) + 48);
     for (const card of dayCards) {
       const rect = card.getBoundingClientRect();
-      if (rect.top <= 100) activeIdx = card.dataset.dayIndex;
+      if (rect.top <= line) activeIdx = card.dataset.dayIndex;
     }
     if (activeIdx !== null) updateSidebarActive(container, activeIdx);
 
-    if (!goingDown) return;
+    if (!goingDown || getPrefs().autoOpenNextDay === false) return;
     const next = nextDayToAutoOpen(dayCards, window.innerHeight);
     if (!next) return;
     openDayCard(grid, next);
@@ -3332,6 +3309,7 @@ function syncDayHeaderExpanded(grid) {
   grid.querySelectorAll('.td-day-card').forEach(card => {
     card.querySelector('.td-day-card-header')?.setAttribute('aria-expanded', String(card.classList.contains('td-day-card--open')));
   });
+  syncSectionJumps(grid.closest('.td-wrap'));
 }
 
 // Un-stack the wallet and open just this card (plus any already open), so a
@@ -3362,11 +3340,14 @@ function bindDayCards(container, animate = true) {
     header.setAttribute('aria-expanded', 'false');
 
     const toggle = () => {
-      dayCardManualSwitch = true;
-      setTimeout(() => { dayCardManualSwitch = false; }, 600);
+      holdScrollSpy();
       const card = header.closest('.td-day-card');
 
       if (card.classList.contains('td-day-card--open')) {
+        // A landing may hide a closed section card: focus goes back to the control that opened it.
+        const opener = sectionOpeners.get(card);
+        sectionOpeners.delete(card);
+        if (opener) (opener.isConnected ? opener : container.querySelector(`[data-section-jump="${card.dataset.section}"]`))?.focus();
         // Close this day; restack the wallet once nothing is open. Closed by
         // hand, so scrolling past the day before never reopens it.
         card.classList.remove('td-day-card--open');
@@ -3383,7 +3364,7 @@ function bindDayCards(container, animate = true) {
       if (dayIdx != null) updateSidebarActive(container, dayIdx);
       setTimeout(() => {
         if (!card.isConnected) return;
-        card.querySelector('.td-day-card-header').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollCardToTop(card);
         injectNowKnob(card);
       }, wasStacked ? 380 : 60);
     };
@@ -3396,18 +3377,14 @@ function bindDayCards(container, animate = true) {
 }
 
 function activateTab(container, trip, target) {
-  const tab = container.querySelector(`.td-tab[data-tab="${target}"]`);
-  if (!tab) return;
-  container.querySelectorAll('.td-tab').forEach(t => { t.classList.remove('td-tab--active'); t.setAttribute('aria-selected', 'false'); });
-  container.querySelectorAll('.td-tab-panel').forEach(p => p.classList.remove('td-tab-panel--active'));
-  tab.classList.add('td-tab--active');
-  tab.setAttribute('aria-selected', 'true');
-  container.querySelector(`[data-panel="${target}"]`)?.classList.add('td-tab-panel--active');
+  if (!showTab(container, target)) return;
   // Towns geocode lazily on first open (network cost), then cache.
   if (target === 'towns' && trip) loadTownsTab(container, trip);
 }
 
-function bindTabs(container, trip) {
+function bindTabs(container, trip, signal) {
+  // Square mode keeps its tab row as it was: no roving tabindex and no arrow keys (gate G2).
+  if (!isSquareMode()) bindTabKeys(container, { signal });
   container.querySelectorAll('.td-tab').forEach(tab => {
     tab.addEventListener('click', () => activateTab(container, trip, tab.dataset.tab));
   });
@@ -3458,7 +3435,7 @@ function applyTownPhoto(card, url) {
 // use them directly; legacy trips lazily resolve via the places-photo function.
 function loadTownPhotos(host) {
   const cards = host.querySelectorAll('.td-town-card[data-town-photo]');
-  if (!cards.length) return;
+  if (!cards.length || host.closest('.td-photos-off')) return;
   const legacy = [];
   for (const card of cards) {
     if (card.dataset.townStored) applyTownPhoto(card, card.dataset.townStored);
@@ -3661,8 +3638,7 @@ async function loadTownsTab(container, trip) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const dayIndex = btn.dataset.townDayIndex;
-      dayCardManualSwitch = true;
-      setTimeout(() => { dayCardManualSwitch = false; }, 600);
+      holdScrollSpy();
       container.querySelector('[data-tab="plan"]')?.click();
       // Double rAF: the plan panel flips from display:none on the click above;
       // scrolling must wait for the layout that follows it.
@@ -3670,27 +3646,13 @@ async function loadTownsTab(container, trip) {
         const card = container.querySelector(`.td-day-card[data-day-index="${dayIndex}"]`);
         if (!card) return;
         openDayCard(card.closest('.td-day-grid'), card);
-        (card.querySelector('.td-day-card-header') || card).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollCardToTop(card);
       }));
     });
   });
 
   // Square mode: page through town cards one at a time instead of scrolling.
   if (isSquareMode()) {
-    const { wrapChildrenIntoDeck } = await import('../lib/card-deck.js');
     wrapChildrenIntoDeck(host, { slideSelector: '.td-town-card', deckClass: 'td-towns-deck', label: 'Neighbourhoods' });
   }
-}
-
-function bindDelete(container) {
-  container.querySelector('[data-action="delete"]')?.addEventListener('click', async (e) => {
-    const tripId = e.currentTarget.dataset.tripId;
-    if (!confirm('Delete this trip? This cannot be undone.')) return;
-    const { error } = await deleteTrip(tripId);
-    if (error) {
-      showToast('Failed to delete trip', 'error'); logger.error('data', 'Trip delete failed from detail', { error });
-      return;
-    }
-    navigate('/');
-  });
 }

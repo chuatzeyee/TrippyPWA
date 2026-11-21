@@ -39,6 +39,27 @@ export async function claimInvitations() {
     .is('user_id', null);
 }
 
+/**
+ * The signed-in user's role on a trip they do not own. Row security shows a
+ * collaborator only their own invitation ("Invitee sees own invitations",
+ * migration 018), so the one row that comes back is theirs. Ask only when
+ * trip.user_id is not the signed-in user: an owner can read every row.
+ * @param {string} tripId
+ * @returns {Promise<{ data: 'viewer'|'editor'|null, error: string|null }>}
+ *   data null when there is no invitation (or the request failed, with error set)
+ */
+export async function fetchMyRole(tripId) {
+  if (!tripId) return { data: null, error: null };
+  const { data, error } = await supabase
+    .from('trip_collaborators')
+    .select('role')
+    .eq('trip_id', tripId)
+    .limit(1)
+    .maybeSingle();
+  const role = error ? null : data?.role;
+  return { data: role === 'viewer' || role === 'editor' ? role : null, error: error?.message || null };
+}
+
 // ---- Local-write echo suppression ------------------------------------------
 // Realtime echoes every activities write back to the writer too. The trip page
 // must not reload for the user's own saves, so writers mark the rows they touch

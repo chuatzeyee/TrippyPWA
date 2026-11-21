@@ -88,3 +88,62 @@
   color: var(--error);
 }
 .trip-edit-error[hidden] { display: none; }
+
+/* ===== Confirm dialog (js/views/shared/confirm-dialog.js) =====
+   Mounted on <body>, outside any view root, so these are global rules with the modal- prefix. The
+   dialog is used from the views, from Settings and from the classic pages, and looks the same in all
+   three. Colours are tokens, so the light theme needs no rule of its own. */
+.modal--confirm { max-width: 400px; }
+.modal--confirm .modal-header { padding-bottom: 0; }
+.modal--confirm .modal-title { color: var(--ink); overflow-wrap: anywhere; }
+.modal--confirm .modal-footer { flex-wrap: wrap; }
+
+.modal-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  font: var(--text-small);
+  font-weight: 400;
+  color: var(--ink-secondary);
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.modal-text + .modal-field { margin-top: var(--sp-4); }
+
+.modal-field-label {
+  font: var(--text-small);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.modal-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-inset);
+  color: var(--ink);
+  font: 500 1rem/1.2 var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.modal-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+.modal-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* White on var(--error) is under 4.5 to 1, so the destructive button uses a deeper red. */
+.modal-btn--danger {
+  background: #B23B3B;
+  color: #FFFFFF;
+}
+.modal-btn--danger:hover:not([disabled]) { background: #9A3030; }
+.modal-btn--danger:focus-visible { outline-color: var(--ink); }

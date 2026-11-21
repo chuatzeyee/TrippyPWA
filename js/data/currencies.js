@@ -7,7 +7,13 @@ const RATES_FROM_USD = {
   QAR: 3.64, OMR: 0.385, JOD: 0.71, SAR: 3.75, TRY: 32, CZK: 23,
   CHF: 0.88, SEK: 10.5, DKK: 6.9, PLN: 4, HUF: 370, ISK: 140,
   MAD: 10, ZAR: 18.5, BRL: 5, MXN: 17, CAD: 1.36, COP: 4000,
-  PEN: 3.75, ARS: 900, CUP: 24
+  PEN: 3.75, ARS: 900, CUP: 24,
+  // Added for the redesign so that every home currency on offer, and every
+  // currency in the destination catalogue, has a rate. Mid-market rates as
+  // published by open.er-api.com on 2026-11-20 (9.73, 3,605 and 22,369 to the
+  // US dollar), rounded. Like the rest of this table they are static
+  // approximations: converted amounts are always shown as approximate.
+  NOK: 9.7, MNT: 3600, LAK: 22400
 };
 
 export function canConvert(code) {

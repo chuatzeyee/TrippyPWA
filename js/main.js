@@ -1,12 +1,17 @@
 import { addRoute, start, navigate, onNotFound, reloadCurrentRoute } from './router.js';
-import { renderNav } from './components/nav.js';
+import { renderNav, updateNavLinks } from './components/nav.js';
 import { renderDashboard } from './components/dashboard.js';
 import { logger } from './lib/logger.js';
 import { supabase, getUser, hasLocalSession } from './lib/supabase.js';
 import { setHomeCurrency } from './data/user-prefs.js';
 import { setLocaleFromFlag } from './lib/locale.js';
-import { initSquareMode, onSquareModeChange } from './lib/square-mode.js';
+import { initSquareMode, onSquareModeChange, isSquareMode } from './lib/square-mode.js';
 import { escapeHtml } from './data/day-builder.js';
+import { shouldReloadForRemotePrefs } from './lib/prefs.js';
+import { scrollBehavior } from './lib/motion.js';
+import { initPrefs, onPrefsChange, syncPrefs, adoptUser } from './data/prefs-store.js';
+import { preloadActiveView, activeViewId } from './views/registry.js';
+import { saveProfileSummary, clearProfileSummary, trackProfileFetch } from './data/profile-cache.js';
 
 // How long the first screen waits for the stored session to be restored. Online
 // that takes well under a second, but offline with an expired access token
@@ -19,6 +24,11 @@ const AUTH_BOOT_TIMEOUT_OFFLINE_MS = 300;
 // Captured before supabase-js strips the OAuth callback from the URL.
 const isOAuthReturn = /(?:^|[#&?])(?:access_token|code)=/.test(location.hash + location.search);
 
+// The route in the address bar, without its query.
+function currentPath() {
+  return (location.hash.slice(1) || '/').split('?')[0];
+}
+
 // A trip deep link (#/trip/<id>, not /read): start downloading the trip view and
 // its data right away, in parallel with restoring the session.
 const deepLinkTripId = (/^#\/trip\/([^/?&]+)(?:[?&]|$)/.exec(location.hash) || [])[1];
@@ -29,10 +39,33 @@ if (deepLinkTripId && hasLocalSession()) {
     .catch(() => {});
 }
 
+// A signed-in start: fetch the active view (its code and both of its
+// stylesheets) while the session is restored. It never rejects: a view that
+// cannot load resolves to null and the page is drawn in the standard layout.
+// Square mode never draws a view, so a square phone does not download one.
+if (hasLocalSession() && !isSquareMode()) preloadActiveView();
+// On the dashboard route the controller that draws a view is fetched as well,
+// so it is on its way before the list of trips returns.
+if (hasLocalSession() && currentPath() === '/' && !isSquareMode()) {
+  import('./components/dashboard-views.js').catch(() => {});
+}
+
 initSquareMode();
+// Synchronous: reads the prefs kept on this device and applies the theme, the
+// motion setting and the time and temperature formats before anything renders.
+initPrefs();
+onPrefsChange(handlePrefsChange);
 // When the viewport crosses the square threshold (rotate/resize), the effective
-// mode flips, so rebuild the active view so its card decks mount (or unmount).
-onSquareModeChange(() => reloadCurrentRoute());
+// mode flips, so rebuild the nav (its links and its square control follow the
+// mode) and the active view, so its card decks mount (or unmount).
+onSquareModeChange(() => {
+  const focused = document.activeElement;
+  const focusedId = focused?.closest?.('#app-nav') ? focused.id : '';
+  renderNav();
+  // The square control itself may have caused the flip: keep the focus on it.
+  if (focusedId) document.getElementById(focusedId)?.focus();
+  reloadCurrentRoute();
+});
 
 window.addEventListener('error', (event) => {
   logger.error('system', 'Unhandled error', {
@@ -44,15 +77,28 @@ window.addEventListener('error', (event) => {
   });
 });
 
+// A chunk that will not load usually means a new release replaced the files
+// this page was built from, so the page reloads once to pick it up. Once per
+// burst of failures: imports can fail in pairs, and treating the second one as
+// a new case made the page reload in a loop. Never without a connection, where
+// a reload cannot bring a file the device does not already have.
+const CHUNK_RELOAD_KEY = 'chunk-reload'; // js/views/registry.js marks its own reload under the same key
+const CHUNK_BURST_MS = 10_000;
+let lastChunkFailureAt = -Infinity;
+
 window.addEventListener('unhandledrejection', (event) => {
   const msg = event.reason?.message || String(event.reason);
   if (/Failed to fetch dynamically imported module|Loading chunk .* failed|Importing a module script failed/i.test(msg)) {
-    if (!sessionStorage.getItem('chunk-reload')) {
-      sessionStorage.setItem('chunk-reload', '1');
-      window.location.reload();
-      return;
+    const sameBurst = performance.now() - lastChunkFailureAt < CHUNK_BURST_MS;
+    lastChunkFailureAt = performance.now();
+    if (!sameBurst) {
+      if (navigator.onLine && !sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, '1');
+        window.location.reload();
+        return;
+      }
+      sessionStorage.removeItem(CHUNK_RELOAD_KEY);
     }
-    sessionStorage.removeItem('chunk-reload');
   }
   logger.error('system', 'Unhandled promise rejection', {
     message: msg,
@@ -151,17 +197,69 @@ function applyProfilePrefs(profile) {
   if (profile?.home_flag) setLocaleFromFlag(profile.home_flag);
 }
 
+// What the device keeps of the profile. Every column exists since migrations
+// 001, 005 and 015. `prefs` is never named here or in checkProfile(): until
+// migration 022 is applied that column does not exist and asking for it would
+// fail the whole read. The prefs store asks for it by itself.
+const PROFILE_COLUMNS = 'onboarding_complete, home_currency, home_currency_symbol, home_flag, home_city, home_country, display_name, is_nomad, nationality';
+
+// Fetches the signed-in user's profile, applies the home currency and locale
+// and saves the summary the views read (js/data/profile-cache.js). checkProfile()
+// answers from its memo after the first call, so it cannot feed that copy: this
+// one always fetches. Resolves with the row, or with null when there is no row
+// or it could not be read; a null is never saved. Never rejects.
+function hydrateProfile() {
+  const userId = getUser()?.id;
+  if (!userId || !supabase) return Promise.resolve(null);
+  const fetched = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(PROFILE_COLUMNS)
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) {
+        logger.warn('profile', 'Profile hydration failed', { error: error.message });
+        return null;
+      }
+      // Signed out, or another account signed in, while the request was out.
+      if (!data || getUser()?.id !== userId) return null;
+      applyProfilePrefs(data);
+      saveProfileSummary(userId, data);
+      return data;
+    } catch (e) {
+      logger.warn('profile', 'Profile hydration failed', { error: e?.message });
+      return null;
+    }
+  })();
+  // Tracked while the user is known: profileSummaryReady() waits for this fetch.
+  return trackProfileFetch(fetched);
+}
+
+// Every signed-in start (the normal boot, a session restored after the boot
+// wait, a sign-in): refresh the saved profile summary, make the prefs on this
+// device this account's, and merge them with the account's copy.
+function startUserSession(userId) {
+  hydrateProfile();
+  adoptUser(userId);
+  syncPrefs(); // never rejects
+}
+
 // Runs when the signed-in user differs from the one the screen was built for:
 // a fresh sign-in, a session restored late (slow or offline start), or a
 // sign-in/out in another tab.
 async function onUserChanged(userId, { fromSignIn }) {
   renderNav();
   if (!userId) {
+    clearProfileSummary();
     const { clearOfflineTripCache } = await import('./data/trip-repository.js');
     clearOfflineTripCache();
     reloadCurrentRoute();
     return;
   }
+  // Before the route is rebuilt: adopting the account can reset another
+  // account's prefs, and the view is chosen from them.
+  startUserSession(userId);
   if (fromSignIn) {
     const state = await checkProfile();
     if (state && !state.onboarded) { navigate('/profile'); return; }
@@ -192,6 +290,7 @@ function handleAuthEvent(event, session) {
 const OFFLINE_COPY_KEY_PREFIX = 'trippy-offline-trip'; // the keys trip-repository.js writes
 function clearOfflineCopiesIfSignedOut(auth) {
   if (currentUserId(auth) || hasLocalSession()) return;
+  clearProfileSummary(); // the name, home and passport of whoever was signed in
   let saved = false;
   try { saved = Object.keys(localStorage).some(k => k.startsWith(OFFLINE_COPY_KEY_PREFIX)); } catch { /* no storage */ }
   if (!saved) return;
@@ -204,6 +303,59 @@ function prefetchTripView() {
   const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
   idle(() => { import('./components/trip-detail.js').catch(() => {}); });
 }
+
+// ===== Preferences =====
+
+// Whether the user has pressed, typed or scrolled since the route was drawn. A
+// navigation starts a fresh page; a rebuild in place keeps the mark.
+let pageTouched = false;
+for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart']) {
+  window.addEventListener(type, () => { pageTouched = true; }, { capture: true, passive: true });
+}
+window.addEventListener('hashchange', () => { pageTouched = false; });
+
+// What a rebuild would close or throw away: a dialog, menu or sheet, the sign-in
+// prompt, edit mode, the chat panel or a draft in it, the full-screen map, a
+// text field with the caret in it. The trip page keeps the same list for its
+// own refresh (isEditorOpen() in js/components/trip-detail.js).
+const OPEN_UI = 'dialog[open], [aria-modal="true"], .modal-backdrop, .td-edit-mode, .td-activity-card--editing, .td-chat-drawer--open, .td-alt-panel, [data-map-full="on"]';
+const TEXT_FIELD = 'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"]), textarea, select, [contenteditable]:not([contenteditable="false"])';
+
+function pageIsBusy() {
+  if (document.querySelector(OPEN_UI)) return true;
+  if (document.querySelector('.td-chat-input')?.value.trim()) return true;
+  return Boolean(document.activeElement?.matches?.(TEXT_FIELD));
+}
+
+// A change made on this device has already been drawn by the code that made it
+// (the chooser swaps the view, Settings patches itself, the menu applies the
+// theme), so the route is never rebuilt for it. A change that arrives from
+// another device is already applied to the document by the store; the dashboard
+// or a trip page is rebuilt for it only when what it prints changed, the user
+// has not touched the page and nothing is open. Otherwise the next navigation
+// shows the new values.
+function handlePrefsChange(prefs, changedKeys, { origin } = {}) {
+  // Only the links are replaced, so the avatar does not blink.
+  if (changedKeys.includes('view')) updateNavLinks();
+  if (origin !== 'remote') return;
+  const rebuild = shouldReloadForRemotePrefs({
+    path: location.hash,
+    changedKeys,
+    touched: pageTouched,
+    busy: pageIsBusy(),
+  });
+  if (rebuild) reloadCurrentRoute();
+}
+
+// Prefs changed on another device arrive at a signed-in start (startUserSession),
+// when the connection returns and when the app is brought back: installed apps
+// stay open for days, so that last one runs at most once a minute. Signed out,
+// syncPrefs() does nothing.
+const PREFS_VISIBLE_SYNC_MIN_MS = 60_000;
+window.addEventListener('online', () => { syncPrefs(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') syncPrefs({ minIntervalMs: PREFS_VISIBLE_SYNC_MIN_MS });
+});
 
 // ===== Offline screens =====
 
@@ -273,6 +425,52 @@ addRoute('/profile', async () => {
   await renderProfileWizard();
 }, { title: 'Your profile' });
 
+// The Settings code could not be fetched, or its page threw: say so instead of
+// leaving the skeleton up. Online, a fresh page load also picks up a new
+// release; offline, only the import can be tried again.
+function renderSettingsLoadError() {
+  const app = document.getElementById('app');
+  if (!app) return;
+  app.innerHTML = `
+    <div class="container offline-view">
+      <h1 class="text-h1">Settings</h1>
+      <p class="offline-view-text" role="alert">Settings could not load. Check your connection and try again.</p>
+      <button type="button" class="btn btn--primary btn--pill" data-action="retry-settings">Try again</button>
+    </div>
+  `;
+  app.querySelector('[data-action="retry-settings"]').addEventListener('click', () => {
+    if (navigator.onLine) window.location.reload();
+    else reloadCurrentRoute();
+  });
+}
+
+addRoute('/settings', async (params, { reload }) => {
+  // Settings opens offline too: the prefs it shows are kept on this device.
+  if (!(await ensureSignedIn({ requireOnline: false }))) return;
+  try {
+    const mod = await import('./settings/settings-page.js');
+    if (currentPath() !== '/settings') return; // left while the code was loading
+    await mod.renderSettings({ reload });
+  } catch (e) {
+    logger.error('ui', 'Settings could not open', { error: e?.message });
+    if (currentPath() === '/settings') renderSettingsLoadError();
+  }
+}, { title: 'Settings' });
+
+addRoute('/atlas', async () => {
+  if (!(await ensureSignedIn())) return;
+  // The page belongs to the atlas view, and square mode never draws a view.
+  if (isSquareMode() || activeViewId() !== 'atlas') { navigate('/'); return; }
+  try {
+    const mod = await import('./components/dashboard-views.js');
+    if (currentPath() !== '/atlas') return; // left while the code was loading
+    await mod.renderAtlasRoute();
+  } catch (e) {
+    logger.error('ui', 'The atlas page could not open', { error: e?.message });
+    if (currentPath() === '/atlas') navigate('/');
+  }
+}, { title: 'Atlas' });
+
 addRoute('/wizard', async (params, { reload }) => {
   if (!(await ensureSignedIn())) return;
   if (await redirectIfNotOnboarded()) return;
@@ -289,7 +487,7 @@ addRoute('/wizard/:step', async (params) => {
   await m.renderWizard(parseInt(params.step, 10));
 }, { title: 'Plan a trip' });
 
-addRoute('/trip/:id', async (params) => {
+addRoute('/trip/:id', async (params, { reload }) => {
   // Offline (or while a slow session restore runs) the trip view can still show
   // the copy saved on this device, so it doesn't need a confirmed session.
   if (!(await ensureSignedIn({ requireOnline: false }))) return;
@@ -297,7 +495,9 @@ addRoute('/trip/:id', async (params) => {
   // Fetch the data while the view's code downloads; renderTripDetail picks it up.
   import('./data/trip-repository.js').then(m => m.prefetchTripById(tripId)).catch(() => {});
   const { renderTripDetail } = await import('./components/trip-detail.js');
-  await renderTripDetail(params.id);
+  // reload: a rebuild in place (square mode switched, prefs arrived from another
+  // device), which must not jump to today or to a section again.
+  await renderTripDetail(params.id, { reload });
 }, { title: 'Trip', titleFromHeading: true });
 
 addRoute('/admin', async () => {
@@ -360,6 +560,8 @@ async function boot() {
     logger.error('auth', 'Auth bootstrap failed; starting routes anyway', { error: e?.message });
   }
   renderedUserId = auth ? currentUserId(auth) : null;
+  // Before the first route renders, for the reason given in onUserChanged().
+  if (renderedUserId) startUserSession(renderedUserId);
   routesStarted = true;
   renderNav();
   start();
@@ -497,7 +699,7 @@ btt.className = 'back-to-top';
 btt.setAttribute('aria-label', 'Back to top');
 btt.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>';
 document.body.appendChild(btt);
-btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: scrollBehavior() }));
 window.addEventListener('scroll', () => {
   btt.classList.toggle('back-to-top--visible', window.scrollY > 400);
 }, { passive: true });

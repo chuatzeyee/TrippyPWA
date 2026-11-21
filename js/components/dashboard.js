@@ -8,6 +8,8 @@ import { formatNumber, formatWeekdayDate, formatCityList } from '../lib/locale.j
 import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
 import { isSquareMode, onSquareModeChange } from '../lib/square-mode.js';
+import { prefersReducedMotion } from '../lib/motion.js';
+import { activeViewId } from '../views/registry.js';
 import { buildDeckHtml, mountCardDeck } from '../lib/card-deck.js';
 import { listCoverCopies } from '../lib/trip-cover.js';
 import { estimateGenerationMinutes } from '../lib/trip-extras.js';
@@ -435,7 +437,9 @@ function renderEmpty() {
   `;
 }
 
-function renderSkeleton() {
+// Two shapes, as the static copy in index.html: its inline rules show the view
+// block when a view will draw the page, and the classic block in square mode.
+export function renderSkeleton() {
   const card = `
     <div class="skel-card">
       <div class="skel-card-hero skel-shimmer"></div>
@@ -445,8 +449,9 @@ function renderSkeleton() {
         <div class="skel-line skel-line--budget skel-shimmer"></div>
       </div>
     </div>`;
+  const row = '<div class="app-skel-row skel-shimmer"></div>';
   return `
-    <div class="dashboard container">
+    <div class="dashboard container app-skel--classic">
       <div class="dashboard-merged">
         <div class="dashboard-merged-body">
           <div class="dashboard-header">
@@ -458,10 +463,16 @@ function renderSkeleton() {
           </div>
         </div>
       </div>
+    </div>
+    <div class="app-skel--view">
+      <div class="app-skel-head skel-shimmer"></div>
+      <div class="app-skel-lead skel-shimmer"></div>
+      ${row}${row}${row}
     </div>`;
 }
 
 let _dashboardTrips = [];
+let _viewsMod = null; // dashboard-views.js, once a view has been asked for
 let _clickHandlerBound = false;
 let _genListenerBound = false;
 let _elapsedTimer = null;
@@ -480,16 +491,17 @@ function startElapsedTicker(app, trips) {
     if (!root) return;
     let anyVisible = false;
     for (const t of generating) {
-      const card = root.querySelector(`[data-trip-id="${t.id}"]`);
-      const span = card?.querySelector('[data-gen-elapsed]');
-      if (!span) continue;
-      if (!card.classList.contains('trip-card--generating')) continue;
-      anyVisible = true;
-      const start = _genStartTimes.get(t.id) || Date.now();
-      const secs = Math.floor((Date.now() - start) / 1000);
-      const mm = Math.floor(secs / 60);
-      const ss = String(secs % 60).padStart(2, '0');
-      span.textContent = `(${mm}:${ss})`;
+      for (const card of root.querySelectorAll(`[data-trip-id="${t.id}"]`)) {
+        const span = card.querySelector('[data-gen-elapsed]');
+        if (!span) continue;
+        if (!card.classList.contains('trip-card--generating')) continue;
+        anyVisible = true;
+        const start = _genStartTimes.get(t.id) || Date.now();
+        const secs = Math.floor((Date.now() - start) / 1000);
+        const mm = Math.floor(secs / 60);
+        const ss = String(secs % 60).padStart(2, '0');
+        span.textContent = `(${mm}:${ss})`;
+      }
     }
     if (!anyVisible) { clearInterval(_elapsedTimer); _elapsedTimer = null; }
   };
@@ -540,20 +552,24 @@ function toCardTrip(t) {
   };
 }
 
-// { trips, loadError, stale }. A failed fetch is reported as an error, never
-// as "no trips". `stale` means fetchAllTrips served the copy saved on this device.
-async function loadTrips() {
+// { rows, trips, loadError, stale, cachedAt }. A failed fetch is reported as an
+// error, never as "no trips". `stale` means fetchAllTrips served the copy saved
+// on this device at `cachedAt`. `rows` are the list rows as fetched (the views
+// build their model from them); `trips` are the classic cards.
+export async function loadTrips() {
+  const failed = { rows: [], trips: [], loadError: true, stale: false, cachedAt: null };
   try {
     const { fetchAllTrips } = await import('../data/trip-repository.js');
-    const { data, error, stale } = await fetchAllTrips();
+    const { data, error, stale, cachedAt } = await fetchAllTrips();
     if (error) {
       logger.warn('data', 'Dashboard trips failed to load', { error });
-      return { trips: [], loadError: true, stale: false };
+      return failed;
     }
-    return { trips: (data || []).map(toCardTrip), loadError: false, stale: Boolean(stale) };
+    const rows = data || [];
+    return { rows, trips: rows.map(toCardTrip), loadError: false, stale: Boolean(stale), cachedAt: cachedAt ?? null };
   } catch (err) {
     logger.error('data', 'Dashboard trips failed to load', { error: err?.message });
-    return { trips: [], loadError: true, stale: false };
+    return failed;
   }
 }
 
@@ -579,6 +595,7 @@ function waitForSession() {
     const app = document.getElementById('app');
     if (_sessionWait !== wait || !isDashboardRoute() || !app?.querySelector('.skel-card')) return;
     app.innerHTML = renderReconnect();
+    releaseView();
   }, SESSION_WAIT_MS);
   getAuth().then((auth) => {
     if (_sessionWait !== wait) return;
@@ -601,8 +618,39 @@ function waitForSession() {
 // True for elements inside dashboard markup (main view, reconnect card and the
 // pre-rendered landing all use the .dashboard root).
 const inDashboard = (el) => Boolean(el?.closest?.('.dashboard'));
+// A destination shortcut: a view's button, or a circle of the classic page.
+const DEST_SHORTCUT = '[data-action="plan-city"][data-city], .dest-circle[data-city]';
+/**
+ * What a handler draws again when its request returns. The #/atlas page binds these handlers too
+ * and is rebuilt through the router. Any other route was opened while the request ran and is left
+ * alone: a trip page, the wizard or Settings is never rebuilt from here.
+ * @param {string} hash   location.hash
+ * @returns {'dashboard'|'atlas'|null}
+ */
+export function rerenderTarget(hash) {
+  const path = String(hash ?? '').replace(/^#/, '').split('?')[0];
+  if (path === '' || path === '/') return 'dashboard';
+  return path === '/atlas' ? 'atlas' : null;
+}
+const rerender = () => {
+  const target = rerenderTarget(location.hash);
+  if (target === 'dashboard') renderDashboard();
+  else if (target === 'atlas') reloadCurrentRoute();
+};
+/**
+ * Whether a [data-now-trip] control is a real link. The views draw "Open today" as a link, which
+ * the browser follows by itself (also into a new tab); only the button of the classic card needs
+ * navigate().
+ * @param {{ matches: (selector: string) => boolean }|null} el
+ * @returns {boolean}
+ */
+export function followsOwnLink(el) {
+  return Boolean(el?.matches?.('a[href]'));
+}
+// A write into #app that is not a view: a view root it replaced is torn down (its cleanups, its chooser).
+const releaseView = () => _viewsMod?.releaseDashboardView?.();
 
-function bindDashboardHandlers(app) {
+export function bindDashboardHandlers(app) {
   if (_clickHandlerBound) return;
   _clickHandlerBound = true;
   // Keyboard activation for the destination circles (divs with role="button").
@@ -613,14 +661,14 @@ function bindDashboardHandlers(app) {
   app.addEventListener('keydown', (e) => {
     if (!inDashboard(e.target)) return;
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const destCard = e.target.closest('.dest-circle[data-city]');
-    if (!destCard) return;
+    const destCard = e.target.closest(DEST_SHORTCUT);
+    if (!destCard || destCard.matches('button, a[href]')) return; // those activate natively
     e.preventDefault();
     destCard.click();
   });
   app.addEventListener('click', async (e) => {
     if (!inDashboard(e.target)) return;
-    const destCard = e.target.closest('.dest-circle[data-city]');
+    const destCard = e.target.closest(DEST_SHORTCUT);
     if (destCard) {
       const auth = await getAuth();
       if (!auth.isAuthenticated()) { const { showAuthGate } = await import('../auth/auth-ui.js'); showAuthGate(); return; }
@@ -640,11 +688,11 @@ function bindDashboardHandlers(app) {
       const auth = await getAuth();
       if (!auth.isAuthenticated()) { const { showAuthGate } = await import('../auth/auth-ui.js'); showAuthGate(); return; }
       const { showImportModal } = await import('./trip-import-modal.js');
-      showImportModal({ returnFocus: importBtn, onChange: () => renderDashboard() });
+      showImportModal({ returnFocus: importBtn, onChange: () => rerender() });
       return;
     }
     if (e.target.closest('[data-action="retry-trips"]')) {
-      renderDashboard();
+      rerender();
       return;
     }
     const retrySession = e.target.closest('[data-action="retry-session"]');
@@ -689,8 +737,11 @@ function bindDashboardHandlers(app) {
       const tripId = retryBtn.dataset.retryTrip;
       const trip = _dashboardTrips.find(t => t.id === tripId);
       if (trip) {
-        retryBtn.disabled = true;
-        retryBtn.textContent = 'Retrying…';
+        if (retryBtn.getAttribute('aria-disabled') === 'true') return;
+        // In a view the button keeps the keyboard focus (a disabled one drops it), so the paint can hand it on.
+        if (retryBtn.closest('.dv-root')) retryBtn.setAttribute('aria-disabled', 'true');
+        else retryBtn.disabled = true;
+        retryBtn.textContent = 'Trying again';
         const { updateTripStatus } = await import('../data/trip-repository.js');
         await updateTripStatus(tripId, 'generating');
         const { startGeneration } = await import('../services/generation-manager.js');
@@ -699,7 +750,7 @@ function bindDashboardHandlers(app) {
         if (fullTrip?.wizard_state) {
           startGeneration(tripId, fullTrip.wizard_state);
         }
-        renderDashboard();
+        rerender();
       }
       return;
     }
@@ -707,7 +758,11 @@ function bindDashboardHandlers(app) {
     if (deleteBtn) {
       e.stopPropagation();
       const tripId = deleteBtn.dataset.deleteTrip;
-      if (!confirm('Delete this trip? This cannot be undone.')) return;
+      const dialog = await import('../views/shared/confirm-dialog.js').catch(() => null);
+      const sure = dialog
+        ? await dialog.confirmDialog({ title: 'Delete this trip?', body: 'This cannot be undone.', confirmLabel: 'Delete trip', danger: true })
+        : confirm('Delete this trip? This cannot be undone.');
+      if (!sure) return;
       const { deleteTrip } = await import('../data/trip-repository.js');
       const { error } = await deleteTrip(tripId);
       const { showToast } = await import('./toast.js');
@@ -717,21 +772,22 @@ function bindDashboardHandlers(app) {
         return;
       }
       showToast('Trip deleted.', 'success');
-      renderDashboard();
+      rerender();
       return;
     }
     const nowBtn = e.target.closest('[data-now-trip]');
-    if (nowBtn) {
+    if (nowBtn && !followsOwnLink(nowBtn)) {
       e.stopPropagation();
       navigate(`/trip/${nowBtn.dataset.nowTrip}?today=1`);
       return;
     }
     // The card link handles its own navigation (and Enter); other clicks on a
     // ready card open it too.
-    if (e.target.closest('.trip-card-link')) return;
+    if (e.target.closest('.trip-card-link, .dv-root a[href], .dv-root button')) return;
     const card = e.target.closest('[data-trip-id]');
     if (card) {
       if (card.classList.contains('trip-card--generating') || card.classList.contains('trip-card--failed')) return;
+      if (['generating', 'failed'].includes(card.dataset.tripState)) return;
       navigate(`/trip/${card.dataset.tripId}`);
     }
   });
@@ -740,6 +796,8 @@ function bindDashboardHandlers(app) {
   app.addEventListener('error', (e) => {
     const img = e.target;
     if (!(img instanceof HTMLImageElement) || !img.dataset.fallback || !inDashboard(img)) return;
+    // A view's photo frame swaps its own image and shows its placeholder when none is left.
+    if (img.classList.contains('ui-frame-img')) return;
     const fallback = img.dataset.fallback;
     delete img.dataset.fallback;
     img.removeAttribute('srcset');
@@ -747,74 +805,21 @@ function bindDashboardHandlers(app) {
   }, true);
 }
 
-let _renderToken = 0;
-
-export async function renderDashboard() {
-  const app = document.getElementById('app');
-  if (!app || !isDashboardRoute()) return;
-  // A newer render, or leaving the dashboard, makes this one stale: it must not
-  // write into #app after any await.
-  const token = ++_renderToken;
-  const isCurrent = () => token === _renderToken && isDashboardRoute();
-  bindDashboardHandlers(app);
-  let trips = [];
-  let skipRender = false;
-
-  const preRendered = app.querySelector('[data-prerendered]');
-  if (preRendered && !hasLocalSession()) {
-    preRendered.removeAttribute('data-prerendered');
-    const skel = app.querySelector('.app-skel');
-    if (skel) skel.remove();
-    skipRender = true;
-  }
-
-  if (!skipRender) {
-    let loggedIn = false;
-    const hasSession = hasLocalSession();
-    if (hasSession) {
-      try { loggedIn = (await getAuth()).isAuthenticated(); } catch { /* treated as not confirmed */ }
-      if (!isCurrent()) return;
-    }
-    if (!loggedIn && hasSession) {
-      app.innerHTML = renderSkeleton();
-      waitForSession();
-      return;
-    }
-    stopWaitingForSession();
-
-    let content;
-    if (loggedIn) {
-      if (!app.querySelector('.dashboard-merged')) app.innerHTML = renderSkeleton();
-      const loaded = await loadTrips();
-      if (!isCurrent()) return;
-      trips = loaded.trips;
-      content = renderAuthDashboard(trips, loaded);
-    } else {
-      trips = getAllTrips();
-      content = trips.length === 0 ? renderEmpty() : `
-        <div class="dashboard-header">
-          <h1 class="dashboard-greeting">Where to next?</h1>
-          <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">
-            + Plan a Trip
-          </button>
-        </div>
-        ${renderTripsSection(trips)}
-      `;
-    }
-
-    app.innerHTML = `<div class="dashboard container">${content}</div>`;
-  }
-
-  _dashboardTrips = trips;
-
-  if (trips.some(t => t.status === 'generating')) {
-    import('../services/generation-manager.js').then(({ onGenerationUpdate, resumeStaleGenerations }) => {
-      resumeStaleGenerations(trips);
-      if (_genListenerBound) return;
-      _genListenerBound = true;
-      onGenerationUpdate((tripId, genStatus) => {
-        const el = document.getElementById('app')?.querySelector(`[data-trip-id="${tripId}"]`);
-        if (!el || !genStatus) return;
+// One subscription for the whole session, bound by the first render that has a
+// plan in progress. A view's page hands the update to its controller; the
+// classic page changes every copy of the card (square mode draws each plan
+// twice: the hidden scroll copy and the visible deck card).
+function watchGenerations(trips) {
+  if (!trips.some(t => t.status === 'generating')) return;
+  import('../services/generation-manager.js').then(({ onGenerationUpdate, resumeStaleGenerations }) => {
+    resumeStaleGenerations(trips);
+    if (_genListenerBound) return;
+    _genListenerBound = true;
+    onGenerationUpdate((tripId, genStatus) => {
+      const app = document.getElementById('app');
+      if (app?.querySelector('.dv-root')) { _viewsMod?.onGenerationUpdateForView(tripId, genStatus); return; }
+      if (!genStatus) return;
+      for (const el of app?.querySelectorAll(`[data-trip-id="${tripId}"]`) ?? []) {
         if (genStatus.status === 'done') {
           el.classList.remove('trip-card--generating');
           el.classList.add('trip-card--just-generated');
@@ -848,10 +853,88 @@ export async function renderDashboard() {
           const eta = el.querySelector('.trip-card-gen-eta');
           if (eta) eta.innerHTML = 'Taking longer than usual, hang tight <span class="trip-card-gen-elapsed" data-gen-elapsed></span>';
         }
-      });
+      }
     });
+  });
+}
+
+let _renderToken = 0;
+
+export async function renderDashboard() {
+  const app = document.getElementById('app');
+  if (!app || !isDashboardRoute()) return;
+  // A newer render, or leaving the dashboard, makes this one stale: it must not
+  // write into #app after any await.
+  const token = ++_renderToken;
+  const isCurrent = () => token === _renderToken && isDashboardRoute();
+  bindDashboardHandlers(app);
+  let trips = [];
+  let skipRender = false;
+
+  const preRendered = app.querySelector('[data-prerendered]');
+  if (preRendered && !hasLocalSession()) {
+    preRendered.removeAttribute('data-prerendered');
+    const skel = app.querySelector('.app-skel');
+    if (skel) skel.remove();
+    skipRender = true;
   }
 
+  if (!skipRender) {
+    let loggedIn = false;
+    const hasSession = hasLocalSession();
+    if (hasSession) {
+      try { loggedIn = (await getAuth()).isAuthenticated(); } catch { /* treated as not confirmed */ }
+      if (!isCurrent()) return;
+    }
+    if (!loggedIn && hasSession) {
+      app.innerHTML = renderSkeleton();
+      releaseView();
+      waitForSession();
+      return;
+    }
+    stopWaitingForSession();
+
+    let content;
+    if (loggedIn) {
+      // Keep what is on screen during a re-render: classic or a view's dashboard.
+      if (!app.querySelector('.dashboard-merged, .dv-root:not([data-page])')) { app.innerHTML = renderSkeleton(); releaseView(); }
+      const viewId = isSquareMode() ? null : activeViewId();
+      const [loaded, viewsMod] = await Promise.all([
+        loadTrips(),
+        viewId ? import('./dashboard-views.js').catch(() => null) : null, // starts with the list, not after it
+      ]);
+      if (!isCurrent()) return;
+      if (viewId && viewsMod) {
+        _viewsMod = viewsMod;
+        const shown = await viewsMod.renderDashboardView(app, viewId, loaded, { isCurrent }).catch((err) => {
+          logger.error('ui', 'Dashboard view failed', { view: viewId, error: err?.message });
+          return false;
+        });
+        if (!isCurrent()) return;
+        if (shown) { _dashboardTrips = loaded.trips; watchGenerations(loaded.trips); return; }
+      }
+      trips = loaded.trips;
+      content = renderAuthDashboard(trips, loaded);
+    } else {
+      trips = getAllTrips();
+      content = trips.length === 0 ? renderEmpty() : `
+        <div class="dashboard-header">
+          <h1 class="dashboard-greeting">Where to next?</h1>
+          <button class="btn btn--primary btn--lg btn--pill dashboard-new-trip-btn" data-action="new-trip">
+            + Plan a Trip
+          </button>
+        </div>
+        ${renderTripsSection(trips)}
+      `;
+    }
+
+    app.innerHTML = `<div class="dashboard container">${content}</div>`;
+    releaseView();
+  }
+
+  _dashboardTrips = trips;
+
+  watchGenerations(trips);
   startElapsedTicker(app, trips);
 
   // Mount the square-mode trip deck (if present) so it pages between trips.
@@ -939,9 +1022,8 @@ export async function renderDashboard() {
     deferWork(() => {
       const cycleNames = ['Tokyo', 'Paris', 'Bali', 'Barcelona', 'Seoul', 'New York', 'Bangkok', 'Kyoto', 'next'];
       let cycleIdx = 0;
-      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       const startCycle = () => {
-        if (reduceMotion) return; // leave the static headline, no auto-cycling
+        if (prefersReducedMotion()) return; // leave the static headline, no auto-cycling
         clearInterval(cycleTimer);
         cycleTimer = setInterval(() => {
           if (!citySpan.isConnected) { clearInterval(cycleTimer); return; } // left the page

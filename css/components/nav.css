@@ -7,6 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--sp-2);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -16,7 +17,9 @@
 .nav-logo {
   display: flex;
   align-items: center;
+  flex: none;
   gap: var(--sp-2);
+  min-height: 44px;
   font: var(--text-h2);
   color: var(--ink);
   text-decoration: none;
@@ -41,79 +44,96 @@
   transition: font-size 0.3s ease;
 }
 
-.nav-actions {
+/* The labelled links after the wordmark (nav.js navLinksHtml). They fill the bar's height, so the
+   mark of the open page sits on the bar's bottom edge. */
+.nav-links {
   display: flex;
-  align-items: center;
-  gap: var(--sp-2);
+  align-items: stretch;
+  align-self: stretch;
+  min-width: 0;
 }
 
-.nav-theme-toggle {
-  width: 36px;
-  height: 36px;
-  display: flex;
+.nav-link {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  font-size: 1.125rem;
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  font: var(--text-small);
   color: var(--ink-secondary);
-  transition: background var(--duration-fast);
-}
-
-.nav-theme-toggle:hover { background: var(--border); }
-
-.nav-user-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--border);
-  background: var(--surface-solid);
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--ink-secondary);
-  transition: border-color var(--duration-fast);
-}
-
-.nav-user-btn:hover { border-color: var(--terracotta); }
-
-.nav-theme-toggle {
-  background: none;
-  border: none;
-  color: var(--ink-secondary);
-  cursor: pointer;
-  padding: var(--sp-1);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
+  text-decoration: none;
+  white-space: nowrap;
   transition: color var(--duration-fast);
 }
 
-.nav-theme-toggle:hover { color: var(--terracotta); }
+.nav-link:hover {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nav-link:focus-visible { outline-offset: -2px; }
+
+.nav-link[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.nav-link[aria-current="page"]::after {
+  content: '';
+  position: absolute;
+  left: var(--sp-3);
+  right: var(--sp-3);
+  bottom: 0;
+  height: 2px;
+  background: var(--terracotta);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--sp-1);
+  margin-left: auto;
+}
+
+/* Bare controls, drawn only when there is no avatar menu to hold them (nav.js navActionsHtml).
+   Both are 44 px targets around an 18 px icon. */
+.nav-theme-toggle {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--ink-secondary);
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.nav-theme-toggle:hover {
+  background: var(--border);
+  color: var(--terracotta);
+}
+
+/* The toggle's look is in square-display.css; the bar only gives it the same 44 px target. */
+.app-nav .nav-square-toggle {
+  width: 44px;
+  height: 44px;
+  flex: none;
+}
+
+.app-nav .nav-square-toggle .nav-square-dot {
+  right: 9px;
+  bottom: 9px;
+}
 
 .nav-theme-icon--moon { display: none; }
 [data-theme="light"] .nav-theme-icon--sun { display: none; }
 [data-theme="light"] .nav-theme-icon--moon { display: block; }
-
-.nav-admin-link {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--terracotta);
-  cursor: pointer;
-  border-radius: var(--r-md);
-  transition: background var(--duration-fast);
-}
-
-.nav-admin-link:hover {
-  background: var(--terracotta-light);
-}
 
 .td-topbar-actions {
   display: flex;
@@ -190,4 +210,110 @@
   .app-nav {
     position: relative;
   }
+}
+
+/* On a narrow screen the bare controls and Sign in need the room: someone signed out has no trips
+   to go to, and the wordmark is the way home. */
+@media (max-width: 479px) {
+  .app-nav--bare .nav-links { display: none; }
+}
+
+/* The smallest phones: the plane alone is the wordmark, still a 44 px target. */
+@media (max-width: 359px) {
+  .nav-logo-flaps { display: none; }
+  .nav-logo {
+    min-width: 44px;
+    justify-content: center;
+    margin-left: -11px;
+  }
+}
+
+/* ===== A trip page drawn by a view (html[data-trip-view], set by trip-landing.js) =====
+   The trip bar is the only pinned chrome there (blueprint 4.3). Below 1024 px the app bar is not
+   displayed: Trips and Settings are in the trip bar. From 1024 px it sits at the top of the page
+   with the wordmark and the avatar and scrolls away, and its links are not drawn, because the trip
+   bar has Trips. Without the attribute (classic, square layout, an error screen) nothing changes. */
+@media (max-width: 1023px) {
+  html[data-trip-view] .app-nav { display: none; }
+}
+
+@media (min-width: 1024px) {
+  html[data-trip-view] .app-nav { position: relative; }
+  html[data-trip-view] .app-nav .nav-links { display: none; }
+}
+
+/* ===== Menus opened from the bar (js/views/shared/menu.js) =====
+   The shared component opens a <dialog> in the top layer and places it inline: a panel under its
+   trigger, a bottom sheet below 640 px. Its look in css/views/shared/common.css is scoped to a
+   view root, which the bar is not inside, so the same look is given here. base.css resets margin
+   and padding on every element, the dialog included. */
+.app-nav dialog.ui-menu {
+  min-width: 280px;
+  max-width: min(340px, calc(100vw - 16px));
+  padding: var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.app-nav dialog.ui-menu::backdrop { background: transparent; }
+
+/* The sheet may grow to the screen less a strip to tap outside it, so that on a short screen (the
+   square phone) the account menu shows whole. */
+.app-nav dialog.ui-menu[data-menu-mode="sheet"] {
+  max-height: calc(100dvh - var(--sp-8));
+  padding: var(--sp-3) var(--sp-3) calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  border-bottom: 0;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+}
+
+.app-nav dialog.ui-menu[data-menu-mode="sheet"]::backdrop { background: rgba(0, 0, 0, 0.45); }
+[data-theme="light"] .app-nav dialog.ui-menu[data-menu-mode="sheet"]::backdrop { background: rgba(44, 42, 37, 0.32); }
+
+.app-nav .ui-menu [role="menu"] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-nav .ui-menu [role="menuitem"] {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-small);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.app-nav .ui-menu [role="menuitem"]:hover,
+.app-nav .ui-menu [role="menuitem"]:focus-visible {
+  background: var(--border);
+  text-decoration: none;
+}
+
+.app-nav .ui-menu [role="menuitem"]:focus-visible,
+.app-nav .ui-menu [role="menuitemradio"]:focus-visible {
+  outline-offset: -2px;
+  border-radius: var(--r-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-nav dialog.ui-menu[open] { animation: nav-menu-in var(--duration-fast) var(--ease-out); }
+  .app-nav .ui-menu [role="menuitem"] { transition: background-color var(--duration-fast); }
+}
+
+@keyframes nav-menu-in {
+  from { opacity: 0; transform: translateY(6px); }
 }

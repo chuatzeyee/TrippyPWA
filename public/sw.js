@@ -17,6 +17,11 @@ const RUNTIME_CACHE = 'trippy-runtime';
 const RUNTIME_MAX_ENTRIES = 120;
 const NAV_TIMEOUT_MS = 3000;
 const IS_DEV = BUILD_ID === 'dev';
+// Lookups of content-hashed files go by URL alone. A host that answers with
+// `Vary: Origin` would otherwise hide a precached file (stored by a request
+// with no Origin header) from the page's own module and stylesheet requests,
+// which carry one, and the app could not open offline.
+const HASHED_MATCH = { ignoreVary: true };
 
 self.addEventListener('install', (event) => {
   // Precache this release's shell and core files. Best effort per file: one
@@ -29,7 +34,7 @@ self.addEventListener('install', (event) => {
     caches.open(ASSET_CACHE).then(c => Promise.all(
       PRECACHE_ASSETS.map((path) => {
         const url = new URL(path, SCOPE).href;
-        return c.match(url).then(hit => hit || c.add(url)).catch(() => {});
+        return c.match(url, HASHED_MATCH).then(hit => hit || c.add(url)).catch(() => {});
       })
     )),
   ]));
@@ -120,7 +125,7 @@ async function handleNavigation(event) {
 
 // Content-hashed files: cache first; the name changes whenever the content does.
 async function handleAsset(event) {
-  const cached = await caches.match(event.request);
+  const cached = await caches.match(event.request, HASHED_MATCH);
   if (cached) return cached;
   const response = await fetch(event.request);
   event.waitUntil(putIfOk(ASSET_CACHE, event.request, response.clone()));

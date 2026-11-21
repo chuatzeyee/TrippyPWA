@@ -1,0 +1,481 @@
+/* The Settings page (blueprint 6 and 8.1). Owner: F12.
+   Scope: prefix st-. Every selector starts with .st-page and one more class or attribute and weighs
+   at least 0,2,0, so it beats the shared component sheet (0,1,0) in any load order. The page root is
+   <div class="st-page" data-view="settings">, so the shared component styles apply to it and no skin
+   does. Checked by css/views/css-rules.test.js.
+
+   Phone first. Colours are tokens (css/tokens.css), so the light theme needs only the few values
+   below. Controls are native radio buttons, checkboxes, selects and text fields; this sheet draws
+   radios as segmented controls and checkboxes as switches. Every target is at least 44 px. Motion
+   sits in the prefers-reduced-motion: no-preference block at the end; the motion pref is handled by
+   the global switch in css/base.css. */
+
+/* ---- Root, tokens ---- */
+.st-page[data-view] {
+  --st-ok-ink: #8CC79B;
+  --st-error-ink: #F0A29B;
+  --st-danger: #D06A64;
+  --st-knob: #FDFBF7;
+  --st-track-off: rgba(229, 225, 216, 0.22);
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: var(--sp-5) 0 var(--sp-16);
+  color: var(--ink);
+}
+[data-theme="light"] .st-page[data-view] {
+  --st-ok-ink: #2F6B42;
+  --st-error-ink: #A93232;
+  --st-danger: #B23B3B;
+  --st-track-off: rgba(44, 42, 37, 0.3);
+}
+
+/* ---- Head: title, Done, where things are saved ---- */
+.st-page .st-head { margin-bottom: var(--sp-5); }
+.st-page .st-head-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); }
+.st-page .st-title { font: var(--text-hero); color: var(--ink); }
+.st-page .st-done { flex: none; min-width: 88px; border-radius: var(--r-pill); }
+.st-page .st-sync {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  font: var(--text-small);
+  color: var(--ink-secondary);
+}
+.st-page .st-sync > .ui-icon { margin-top: 2px; color: var(--teal); }
+
+/* ---- Layout: the chips above the sections on small screens, a rail beside them on wide ones ---- */
+.st-page .st-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); }
+.st-page .st-toc { min-width: 0; }
+.st-page .st-toc-title { margin-bottom: var(--sp-2); font: var(--text-caption); font-weight: 600; color: var(--ink-secondary); }
+.st-page .st-toc-list {
+  display: flex;
+  gap: var(--sp-2);
+  margin: -4px calc(var(--sp-3) * -1);
+  padding: 4px var(--sp-3);
+  overflow-x: auto;
+  scroll-padding: 0 var(--sp-3);
+  scrollbar-width: none;
+}
+/* The row scrolls sideways on a narrow screen. Where chips are cut it fades, so the cut reads as
+   "more this way": js/settings/toc.js writes which edge is cut (data-st-cut) from the scroll position. */
+.st-page .st-toc-list[data-st-cut="end"] {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+}
+.st-page .st-toc-list[data-st-cut="start"] {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 48px);
+  mask-image: linear-gradient(to right, transparent, #000 48px);
+}
+.st-page .st-toc-list[data-st-cut="both"] {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+}
+.st-page .st-toc-list::-webkit-scrollbar { display: none; }
+.st-page .st-toc-chip { background: var(--surface-solid); }
+.st-page .st-toc-chip:hover { background: var(--border); }
+.st-page .st-sections { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-10); min-width: 0; }
+
+/* ---- Sections ---- */
+.st-page .st-section { min-width: 0; scroll-margin-top: calc(var(--nav-h) + var(--sp-4)); }
+/* As wide as its words, so the focus ring a jump leaves on it hugs the title and not the whole column. */
+.st-page .st-section-title { width: fit-content; max-width: 100%; font: var(--text-h1); color: var(--ink); }
+.st-page .st-section-title:focus { outline: none; }
+.st-page .st-section-title:focus-visible { outline: 2px solid var(--terracotta); outline-offset: 4px; border-radius: var(--r-sm); }
+.st-page .st-section-intro { margin-top: var(--sp-1); font: var(--text-small); color: var(--ink-secondary); text-wrap: pretty; }
+.st-page .st-card {
+  margin-top: var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+.st-page .st-part { padding: var(--sp-4); }
+.st-page .st-part:empty { display: none; }
+.st-page .st-part + .st-part { border-top: 1px solid var(--border); }
+/* A live region is in the page before it has anything to say: empty, it takes no room. */
+.st-page .st-part--status { padding-top: var(--sp-3); padding-bottom: var(--sp-3); }
+.st-page .st-part--status:empty { display: block; padding: 0; border: 0; }
+.st-page .st-status-text { font: var(--text-small); color: var(--ink); }
+.st-page .st-lead { font: var(--text-body); color: var(--ink-secondary); text-wrap: pretty; }
+
+/* ---- Rows: a label, what it means, the control ---- */
+.st-page .st-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-1) var(--sp-5);
+  min-width: 0;
+  border: 0;
+}
+.st-page .st-row + .st-row { margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border); }
+/* A floated legend is laid out like any other child, so it can take a grid cell. */
+.st-page .st-row > legend { float: left; width: 100%; padding: 0; }
+.st-page .st-label { font: var(--text-body); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.st-page .st-row-text { display: grid; gap: 2px; min-width: 0; }
+.st-page .st-row-text:empty { display: none; }
+.st-page .st-help { display: block; font: var(--text-small); font-weight: 400; color: var(--ink-secondary); }
+.st-page .st-example { font: var(--text-small); font-weight: 400; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+/* A field: the label wraps its control, so the words and the control are one target. */
+.st-page .st-field { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-1) var(--sp-5); min-width: 0; cursor: pointer; }
+.st-page .st-field > .st-input,
+.st-page .st-field > .st-select-wrap { margin-top: var(--sp-2); }
+.st-page .st-status { font: var(--text-small); color: var(--ink-secondary); }
+.st-page .st-status:empty { display: none; }
+.st-page .st-status[data-kind="saved"] { color: var(--st-ok-ink); }
+.st-page .st-status[data-kind="error"] { color: var(--st-error-ink); }
+
+/* Groups inside a part: a fieldset with a quiet legend. */
+.st-page .st-group { min-width: 0; border: 0; }
+.st-page .st-group-legend { margin-bottom: var(--sp-3); padding: 0; font: var(--text-caption); font-weight: 600; color: var(--ink-secondary); }
+
+/* ---- Segmented control: native radios under their faces ---- */
+.st-page .st-seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin-top: var(--sp-2);
+  padding: 3px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-inset);
+}
+.st-page .st-seg-option { position: relative; display: flex; min-width: 0; }
+.st-page .st-seg-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.st-page .st-seg-face {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: 6px;
+  color: var(--ink-secondary);
+  font: var(--text-small);
+  font-weight: 600;
+  text-align: center;
+}
+.st-page .st-seg-input:hover + .st-seg-face { color: var(--ink); }
+.st-page .st-seg-input:checked + .st-seg-face {
+  background: var(--terracotta-light);
+  box-shadow: inset 0 0 0 1.5px var(--terracotta);
+  color: var(--ink);
+}
+.st-page .st-seg-input:focus-visible + .st-seg-face { outline: 2px solid var(--terracotta); outline-offset: 2px; }
+
+/* ---- Switch: a native checkbox under its track ---- */
+.st-page .st-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  min-height: 44px;
+  cursor: pointer;
+}
+.st-page .st-switch-input {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 52px;
+  height: 44px;
+  margin: 0;
+  opacity: 0;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+.st-page .st-switch-track {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 32px;
+  border: 1px solid var(--ink-ghost);
+  border-radius: var(--r-pill);
+  background: var(--st-track-off);
+}
+.st-page .st-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--st-knob);
+  box-shadow: var(--shadow-sm);
+}
+.st-page .st-switch-input:checked + .st-switch-track { border-color: var(--terracotta); background: var(--terracotta); }
+.st-page .st-switch-input:checked + .st-switch-track::after { transform: translateX(20px); }
+.st-page .st-switch-input:focus-visible + .st-switch-track { outline: 2px solid var(--terracotta); outline-offset: 3px; }
+.st-page .st-row--switch > .st-help,
+.st-page .st-row--switch > .st-example,
+.st-page .st-row--switch > .st-status { padding-right: calc(52px + var(--sp-4)); }
+
+/* ---- Text field, select, the city search ---- */
+.st-page .st-input,
+.st-page .st-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-inset);
+  color: var(--ink);
+  font: var(--text-body);
+}
+/* --ink-ghost is 3.7 to 1 on the field background in the light theme: the placeholder is words to read. */
+.st-page .st-input::placeholder { color: var(--ink-secondary); opacity: 1; }
+.st-page .st-input:focus-visible,
+.st-page .st-select:focus-visible { border-color: var(--terracotta); outline-offset: 1px; }
+.st-page .st-input[aria-invalid="true"] { border-color: var(--st-danger); }
+.st-page .st-select-wrap { position: relative; display: block; }
+.st-page .st-select { padding-right: calc(var(--sp-3) + 24px); appearance: none; -webkit-appearance: none; cursor: pointer; }
+.st-page .st-select-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--ink-secondary);
+  border-bottom: 2px solid var(--ink-secondary);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.st-page .st-select option { background: var(--surface-solid); color: var(--ink); }
+.st-page .st-combo { position: relative; min-width: 0; }
+.st-page .st-combo-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: var(--z-card);
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+}
+.st-page .st-combo-list[hidden] { display: none; }
+.st-page .st-combo-option {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.st-page .st-combo-option:hover { background: var(--border); }
+.st-page .st-combo-option.is-active { background: var(--terracotta-light); box-shadow: inset 0 0 0 1.5px var(--terracotta); }
+.st-page .st-combo-flag { display: flex; flex: none; align-items: center; width: 20px; }
+.st-page .st-combo-city { font: var(--text-body); color: var(--ink); overflow-wrap: anywhere; }
+.st-page .st-combo-country { font: var(--text-small); font-weight: 400; color: var(--ink-secondary); overflow-wrap: anywhere; }
+.st-page .st-combo-note { font: var(--text-small); color: var(--ink-secondary); }
+.st-page .st-combo-note:empty { display: none; }
+
+/* ---- Notices, actions, notes ---- */
+.st-page .st-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-4); }
+.st-page .st-notice-text { font: var(--text-body); color: var(--ink); }
+.st-page .st-notice--loading { display: flex; min-height: 44px; color: var(--ink-secondary); font: var(--text-small); }
+.st-page .st-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  font: var(--text-small);
+  color: var(--ink-secondary);
+}
+.st-page .st-note > .ui-icon { margin-top: 2px; color: var(--amber); }
+.st-page .st-row--action > .ui-btn { justify-self: start; margin-top: var(--sp-2); }
+.st-page .st-row--action > .st-status { margin-top: var(--sp-1); }
+.st-page .st-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
+.st-page .st-btn--danger { border-color: var(--st-danger); color: var(--st-error-ink); }
+.st-page .st-btn--danger:hover:not([disabled]) { background: rgba(200, 82, 82, 0.14); }
+.st-page .st-btn--danger:focus-visible { outline-color: var(--st-danger); }
+
+/* ---- Data: the trips saved on this device ---- */
+.st-page .st-saved-list { display: grid; margin-top: var(--sp-2); }
+.st-page .st-saved-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px var(--sp-4);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+}
+.st-page .st-saved-item:last-child { border-bottom: 1px solid var(--border); }
+.st-page .st-saved-title { min-width: 0; font: var(--text-body); color: var(--ink); overflow-wrap: anywhere; }
+.st-page .st-saved-when { font: var(--text-small); font-weight: 400; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+.st-page .st-empty { margin-top: var(--sp-1); font: var(--text-small); font-weight: 400; color: var(--ink-secondary); }
+.st-page .st-saved-list + .st-help,
+.st-page .st-empty + .st-help { margin-top: var(--sp-3); }
+
+/* ---- Account, About ---- */
+.st-page .st-account-line { font: var(--text-body); color: var(--ink-secondary); overflow-wrap: anywhere; }
+.st-page .st-account-email { color: var(--ink); font-weight: 600; }
+.st-page .st-about-build { font: var(--text-body); color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.st-page .st-about-line { font: var(--text-small); font-weight: 400; color: var(--ink-secondary); }
+.st-page .st-about-line a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.st-page .st-row--about { gap: var(--sp-2); }
+
+/* ---- The view picker, the centrepiece: straight on the page, no card around the cards ---- */
+.st-page .st-card--picker { border: 0; background: transparent; }
+.st-page .st-card--picker > .st-part { padding: 0; border: 0; }
+.st-page .st-card--picker > .st-part[data-st-part="picker"] { margin-top: var(--sp-4); }
+.st-page .st-card--picker > .st-part[data-st-part="square-note"] { margin-top: var(--sp-2); }
+.st-page .ui-picker-legend { font: var(--text-caption); font-weight: 600; color: var(--ink-secondary); }
+.st-page .ui-picker-card { padding: var(--sp-3); gap: var(--sp-3); }
+.st-page .ui-picker-card:hover { border-color: var(--ink-ghost); }
+.st-page .ui-picker-card:has(.ui-picker-radio:checked) { border-color: var(--terracotta); background: var(--surface-solid); }
+.st-page .ui-picker-name { font: var(--text-h2); }
+.st-page .ui-picker-sentence { font: var(--text-small); font-weight: 400; }
+.st-page .ui-picker-status { color: var(--ink); }
+/* The radio is drawn here, so it is a ring in both themes (the native one is a white disc on a dark
+   card): empty for a view that can be picked, filled for the one that is on. */
+.st-page .ui-picker-radio {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  border: 2px solid var(--ink-ghost);
+  border-radius: 50%;
+  background-color: transparent;
+  cursor: pointer;
+}
+.st-page .ui-picker-radio:checked {
+  border-color: var(--terracotta);
+  background-image: radial-gradient(circle, var(--terracotta) 0 5px, transparent 5.5px);
+}
+.st-page .ui-picker-card:hover .ui-picker-radio:not(:checked) { border-color: var(--ink-secondary); }
+/* The card carries the focus ring of its radio, so the radio draws none of its own. */
+.st-page .ui-picker-radio:focus-visible { outline: none; }
+/* Until the preview images exist (gate G3), each card draws a sketch of its view in the reserved box:
+   board rows, a column of text, a map with a route. An image, once there, covers it. */
+.st-page .ui-picker-none > .ui-icon { display: none; }
+.st-page .ui-picker-none {
+  --st-sketch: rgba(229, 225, 216, 0.16);
+  --st-sketch-strong: rgba(229, 225, 216, 0.34);
+  background-color: var(--surface-inset);
+  background-repeat: no-repeat;
+}
+[data-theme="light"] .st-page .ui-picker-none {
+  --st-sketch: rgba(44, 42, 37, 0.14);
+  --st-sketch-strong: rgba(44, 42, 37, 0.3);
+}
+.st-page .ui-picker-card[data-key="departures"] .ui-picker-none {
+  background-image:
+    linear-gradient(var(--terracotta), var(--terracotta)),
+    linear-gradient(var(--st-sketch-strong), var(--st-sketch-strong)),
+    repeating-linear-gradient(to bottom, var(--st-sketch) 0 9%, transparent 9% 15%);
+  background-size: 22% 3%, 46% 5%, 80% 62%;
+  background-position: 10% 10%, 10% 19%, 50% 82%;
+}
+.st-page .ui-picker-card[data-key="concierge"] .ui-picker-none {
+  background-image:
+    linear-gradient(var(--st-sketch-strong), var(--st-sketch-strong)),
+    linear-gradient(var(--st-sketch-strong), var(--st-sketch-strong)),
+    repeating-linear-gradient(to bottom, var(--st-sketch) 0 4%, transparent 4% 11%),
+    linear-gradient(var(--teal-light), var(--teal-light));
+  background-size: 62% 6%, 44% 6%, 80% 30%, 80% 26%;
+  background-position: 10% 10%, 10% 20%, 50% 48%, 50% 90%;
+}
+.st-page .ui-picker-card[data-key="atlas"] .ui-picker-none {
+  background-image:
+    radial-gradient(circle, var(--terracotta) 0 3px, transparent 4px),
+    radial-gradient(circle, var(--terracotta) 0 3px, transparent 4px),
+    radial-gradient(circle, var(--teal) 0 3px, transparent 4px),
+    radial-gradient(ellipse at 50% 100%, transparent 0 62%, var(--st-sketch-strong) 63% 65%, transparent 66%),
+    radial-gradient(circle, var(--st-sketch) 0 1px, transparent 1.5px),
+    linear-gradient(var(--st-sketch), var(--st-sketch));
+  background-size: 12px 12px, 12px 12px, 12px 12px, 64% 34%, 12px 12px, 80% 20%;
+  background-position: 18% 42%, 82% 42%, 50% 26%, 50% 30%, 0 0, 50% 88%;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat;
+}
+
+/* ---- From 640 px: label left, control right; the picker in three columns ---- */
+@media (min-width: 640px) {
+  .st-page .st-part { padding: var(--sp-5); }
+  .st-page .st-part--status { padding-top: var(--sp-3); padding-bottom: var(--sp-3); }
+  .st-page .st-row--seg,
+  .st-page .st-field { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); align-items: center; }
+  .st-page .st-row--seg > legend,
+  .st-page .st-field > .st-label { grid-column: 1; grid-row: 1; }
+  .st-page .st-row--seg > .st-row-text,
+  .st-page .st-field > .st-help { grid-column: 1; grid-row: 2; }
+  .st-page .st-row--seg > .st-seg,
+  .st-page .st-field > .st-input,
+  .st-page .st-field > .st-select-wrap { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
+  .st-page .st-row--seg > .st-row-text:empty + .st-seg { grid-row: 1; }
+  /* A label with no helper line under it is centred on its control. */
+  .st-page .st-field > .st-label:has(+ .st-input),
+  .st-page .st-field > .st-label:has(+ .st-select-wrap) { grid-row: 1 / span 2; }
+  .st-page .st-row--field > .st-status,
+  .st-page .st-row--field > .st-combo-note { justify-self: end; width: min(340px, 100%); }
+  .st-page .st-combo-list { left: auto; width: min(340px, 100%); }
+  .st-page .st-seg-face { padding: var(--sp-1) var(--sp-2); }
+  /* The preview fills the top of the card, so the radio sits beside the name and not over the picture. */
+  .st-page .ui-picker-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto 1fr;
+    padding: var(--sp-4);
+  }
+  .st-page .ui-picker-shot { grid-column: 1 / -1; grid-row: 1; max-width: none; }
+  .st-page .ui-picker-text { grid-column: 1; grid-row: 2; }
+  .st-page .ui-picker-radio { position: static; grid-column: 2; grid-row: 2; margin-top: 4px; }
+  .st-page .ui-picker-current { grid-column: 1 / -1; grid-row: 3; align-self: start; justify-self: start; }
+}
+
+/* ---- From 1024 px: the chips become a rail that stays in sight ---- */
+@media (min-width: 1024px) {
+  .st-page[data-view] { padding-top: var(--sp-8); }
+  .st-page .st-head { margin-bottom: var(--sp-8); }
+  .st-page .st-layout { grid-template-columns: 200px minmax(0, 1fr); gap: var(--sp-10); align-items: start; }
+  .st-page .st-toc { position: sticky; top: calc(var(--nav-h) + var(--sp-6)); }
+  .st-page .st-toc-list { flex-direction: column; gap: 2px; margin: 0; padding: 0; overflow: visible; }
+  .st-page .st-toc-chip {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0 var(--sp-3);
+    border-color: transparent;
+    border-radius: var(--r-md);
+    background: transparent;
+    white-space: normal;
+    text-align: left;
+  }
+  .st-page .st-toc-chip:hover { background: var(--border); }
+  /* The words of the rail line up with the page title; the hover and the mark hang out to the left. */
+  .st-page .st-toc-list { margin-left: calc((var(--sp-3) + 1px) * -1); }
+  /* The section the page is on (js/settings/toc.js): a bar, heavier words and full ink, not colour alone.
+     Only here, where the rail stays in sight; the chips of a narrow screen scroll away with the page. */
+  .st-page .st-toc-chip[aria-current="true"] {
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+    background: var(--surface-solid);
+    box-shadow: inset 2px 0 0 var(--terracotta);
+    color: var(--ink);
+    font-weight: 600;
+  }
+}
+
+/* ---- Forced colours: the system draws the radio, so its state never depends on a background ---- */
+@media (forced-colors: active) {
+  .st-page .ui-picker-radio { appearance: auto; -webkit-appearance: auto; border: 0; }
+}
+
+/* ---- Motion: only for people who have not asked for less ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .st-page .st-seg-face,
+  .st-page .st-switch-track,
+  .st-page .st-combo-option { transition: background-color var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast), box-shadow var(--duration-fast); }
+  .st-page .st-switch-track::after { transition: transform var(--duration-normal) var(--ease-out); }
+}

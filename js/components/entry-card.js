@@ -3,13 +3,18 @@
 // the Flights / Transport card. Items can be ticked off (kept on this device).
 import { escapeHtml as esc } from '../data/day-builder.js';
 import { NATIONALITIES, nationalityName } from '../data/nationalities.js';
+import { TICKS_EVENT } from '../data/tick-store.js';
 import { safeUrl } from '../lib/trip-extras.js';
 import { logger } from '../lib/logger.js';
+import { groundJourney, journeyMode } from '../lib/journey.js';
+import { visaLine, timingLine, mergeRows, entryDoneKey, entryHaveKey, needsHaveTick } from '../lib/entry-rules.js';
 import { entryPlan } from '../services/entry-advisor.js';
 import { VISA_DISCLAIMER } from '../services/visa-advisor.js';
-import { groundJourney, journeyMode } from './transport-card.js';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// These three live in js/lib/entry-rules.js now; they are still exported from
+// here for the modules that import them from this path.
+export { visaLine, timingLine, mergeRows };
+
 const KIND_LABELS = {
   'arrival-card': 'Arrival card', eta: 'Travel authorisation', evisa: 'eVisa',
   'voa-online': 'Visa on arrival, online', levy: 'Tourist levy', registration: 'Online registration',
@@ -26,32 +31,6 @@ const flag = (iso2) => {
   return /^[a-z]{2}$/.test(c) ? `<img class="ec-flag" src="https://flagcdn.com/w40/${c}.png" alt="" width="20" height="15" loading="lazy">` : '';
 };
 const countryName = (iso2) => COUNTRY_NAMES.get(String(iso2).toUpperCase()) || String(iso2).toUpperCase();
-const shortDate = (iso) => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
-  return m ? `${+m[3]} ${MONTHS[+m[2] - 1]}` : '';
-};
-
-/** One line on the visa status for a passport. Exported for tests. */
-export function visaLine(visa) {
-  if (!visa) return '';
-  if (visa.code === 'vf') return visa.stayDays ? `Visa-free, up to ${visa.stayDays} days` : 'Visa-free';
-  if (visa.code === 'voa') return 'Visa on arrival';
-  if (visa.code === 'eta') return 'Travel authorisation needed before you fly';
-  if (visa.code === 'ev') return 'eVisa needed before you travel';
-  if (visa.code === 'vr') return 'Visa needed. Apply at an embassy or consulate well ahead';
-  if (visa.code === 'na') return 'Entry is restricted for this passport';
-  return visa.label || '';
-}
-
-/** "Do from 10 Jan, by 10 Jan" style timing. Exported for tests. */
-export function timingLine(item) {
-  const { from, by } = item.dates || {};
-  if (from && by && from === by) return `Do it on ${shortDate(from)}, it can't be done earlier`;
-  if (from && by) return `Do it between ${shortDate(from)} and ${shortDate(by)}`;
-  if (from) return `Opens ${shortDate(from)}, do it before you arrive`;
-  if (by) return `Do it by ${shortDate(by)}`;
-  return '';
-}
 
 function itemHtml(item, key, done) {
   const url = safeUrl(item.url);
@@ -78,28 +57,24 @@ function itemHtml(item, key, done) {
     </li>`;
 }
 
-/**
- * Rows with the same visa status and the same paperwork become one row naming
- * every passport it covers. Exported for tests.
- */
-export function mergeRows(rows) {
-  const groups = [];
-  for (const row of rows) {
-    const sig = `${row.visa?.code || ''}|${row.visa?.stayDays || ''}|${row.items.map(i => i.id).join(',')}`;
-    const same = groups.find(g => g.sig === sig);
-    if (same) same.passports.push(row.passport);
-    else groups.push({ sig, ...row, passports: [row.passport] });
-  }
-  return groups;
-}
-
 function passportsLabel(list) {
   const names = list.map(nationalityName);
   const joined = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
   return `${joined} passport${names.length > 1 ? 's' : ''}`;
 }
 
-function countryHtml(country, { many, done, tripId, groupSize }) {
+// "I have this": the tick for a visa line that asks for something the row
+// has no required item for (a visa from an embassy, an authorisation with no
+// item). Kept with the item ticks, under entryHaveKey.
+function haveTickHtml(key, done, about) {
+  return `
+        <label class="ec-check ec-have">
+          <input type="checkbox" data-entry-done="${esc(key)}" ${done ? 'checked' : ''}>
+          <span class="ec-item-name">I have this<span class="ec-sr"> for ${esc(about)}</span></span>
+        </label>`;
+}
+
+function countryHtml(country, { many, done, tripId, groupSize, haveTick }) {
   const sub = country.role === 'transit' ? 'Connection only'
     : country.role === 'home' ? 'Coming home' : '';
   const merged = mergeRows(country.rows);
@@ -108,12 +83,16 @@ function countryHtml(country, { many, done, tripId, groupSize }) {
   const rows = merged.map(row => {
     const tone = VISA_TONE[row.visa?.code] || 'ok';
     const line = country.role === 'transit' ? '' : visaLine(row.visa);
+    const haveKey = haveTick && line && needsHaveTick(row) ? entryHaveKey(tripId, country.iso2, row.passports) : '';
+    const have = haveKey
+      ? haveTickHtml(haveKey, !!done[haveKey], `${countryName(country.iso2)}${label ? `, ${passportsLabel(row.passports)}` : ''}`)
+      : '';
     return `
       <div class="ec-row">
         ${label ? `<p class="ec-passport">${row.passports.map(flag).join('')}${esc(passportsLabel(row.passports))}</p>` : ''}
-        ${line ? `<p class="ec-visa ec-visa--${tone}"><span class="ec-dot" aria-hidden="true"></span>${esc(line)}</p>` : ''}
+        ${line ? `<p class="ec-visa ec-visa--${tone}"><span class="ec-dot" aria-hidden="true"></span>${esc(line)}</p>${have}` : ''}
         ${row.items.length ? `<ul class="ec-items">${row.items.map(item => {
-          const key = `${tripId}:${country.iso2}:${row.passports.join('+')}:${item.id}`;
+          const key = entryDoneKey(tripId, country.iso2, row.passports, item.id);
           return itemHtml(item, key, !!done[key]);
         }).join('')}</ul>` : ''}
       </div>`;
@@ -172,9 +151,26 @@ function readDone(tripId) {
  * `savePassports` read and write the group's passports (lowercase ISO2);
  * savePassports is expected to refresh every mounted card afterwards.
  * `homeFlag` is the profile's home country.
+ *
+ * Optional, and without them the card is as it always was:
+ * - `onPlan(plan, reason)` is called once at the end of every render: with
+ *   (plan, null) when the card drew the plan, and also just before `onEmpty`
+ *   hides the card; with (null, 'no-passport') when it asks for a passport;
+ *   with (null, 'failed') when the plan could not be worked out. `plan` is
+ *   what entryPlan returned, `checked` included.
+ * - `haveTick: true` adds an "I have this" checkbox under a visa line that
+ *   needs action and has no required item to tick.
+ * Every tick, with or without these, also dispatches a bubbling `trippy:ticks`
+ * event from `slot` once it is stored.
  */
-export async function mountEntryCard(slot, { trip, homeFlag, getPassports, savePassports, onEmpty }) {
+export async function mountEntryCard(slot, { trip, homeFlag, getPassports, savePassports, onEmpty, onPlan, haveTick = false }) {
   if (!slot) return;
+  const report = (plan, reason) => {
+    if (!onPlan) return;
+    try { onPlan(plan, reason); } catch (e) {
+      logger.warn('data', 'Entry plan listener failed', { error: e?.message });
+    }
+  };
   const render = async () => {
     const passports = getPassports().map(p => p.toUpperCase());
     if (!passports.length) {
@@ -183,6 +179,7 @@ export async function mountEntryCard(slot, { trip, homeFlag, getPassports, saveP
           <p class="ec-ask">Which passport are you travelling on? Trippy will list the visas and arrival cards each country on this trip needs.</p>
           ${passportsBarHtml([])}
         </div>`;
+      report(null, 'no-passport');
       return;
     }
     slot.innerHTML = '<p class="ec-loading">Checking entry requirements</p>';
@@ -196,10 +193,15 @@ export async function mountEntryCard(slot, { trip, homeFlag, getPassports, saveP
     } catch (e) {
       logger.warn('data', 'Entry plan failed', { error: e?.message });
       slot.innerHTML = '<p class="ec-loading">Entry requirements could not be loaded. Check the official immigration sites for each country.</p>';
+      report(null, 'failed');
       return;
     }
     if (!plan.countries.length) {
-      if (onEmpty && !passports.some(p => p !== String(homeFlag || '').toUpperCase())) { onEmpty(); return; }
+      if (onEmpty && !passports.some(p => p !== String(homeFlag || '').toUpperCase())) {
+        report(plan, null);
+        onEmpty();
+        return;
+      }
     }
     const done = readDone(trip.id);
     const many = passports.length > 1;
@@ -207,19 +209,24 @@ export async function mountEntryCard(slot, { trip, homeFlag, getPassports, saveP
       <div class="ec">
         ${passportsBarHtml(passports)}
         ${plan.countries.length
-          ? plan.countries.map(c => countryHtml(c, { many, done, tripId: trip.id, groupSize: passports.length })).join('')
+          ? plan.countries.map(c => countryHtml(c, { many, done, tripId: trip.id, groupSize: passports.length, haveTick })).join('')
           : '<p class="ec-ask">Nothing to prepare for entry with these passports.</p>'}
         <p class="ec-disclaimer">${esc(VISA_DISCLAIMER)}</p>
       </div>`;
+    report(plan, null);
   };
 
   slot.addEventListener('change', async (e) => {
     const box = e.target.closest('[data-entry-done]');
     if (box) {
+      const key = box.dataset.entryDone;
       const all = readDone(trip.id);
-      const next = { ...all, [box.dataset.entryDone]: box.checked };
+      const next = { ...all, [key]: box.checked };
       try { localStorage.setItem(DONE_KEY(trip.id), JSON.stringify(next)); } catch { /* private mode */ }
       box.closest('.ec-item')?.classList.toggle('is-done', box.checked);
+      slot.dispatchEvent(new CustomEvent(TICKS_EVENT, {
+        bubbles: true, detail: { tripId: trip.id, store: 'entry-done', key, checked: box.checked },
+      }));
       return;
     }
     const add = e.target.closest('[data-add-passport]');

@@ -1,0 +1,692 @@
+/* Shared components: common and dashboard (tier 1, blueprint 8.1). Owner: F5.
+   Scope: prefixes ui- and dv-. Every selector is [data-view] :where(<rest>) or
+   [data-view]:where(<root class>) :where(<rest>) and weighs exactly 0,1,0, so any skin rule beats it
+   in any load order. A theme or motion qualifier is wrapped: :where([data-theme="light"]) [data-view] ...
+   Checked by css/views/css-rules.test.js.
+
+   These are neutral looks: a component is usable as it comes, and a skin restyles it through its own
+   scope. Colours are tokens, so the light theme needs few rules of its own. Every transition and
+   animation sits in the prefers-reduced-motion: no-preference block at the end; the motion pref is
+   handled by the global switch in css/base.css. Controls are at least 44 by 44 px. */
+
+/* The cascade probe. It stays for good: the harness reads the computed outline-style of a .ui-probe
+   element to prove that a skin beats this sheet whichever file loaded first. */
+[data-view] :where(.ui-probe) { outline-style: dotted; outline-width: 0; }
+
+/* ---- Tokens the views share (blueprint 8.3, 8.4) ---- */
+[data-view] {
+  --on-photo: #FDFBF7;
+  --on-photo-soft: rgba(253, 251, 247, 0.82);
+  --scrim: linear-gradient(to top, rgba(18, 16, 14, 0.72), rgba(18, 16, 14, 0) 55%);
+  --live: var(--teal);
+  --plate: #201F1C;
+  --ui-hairline: rgba(255, 255, 255, 0.06);
+  --ui-on-accent: #1B1A17;
+  --ui-target: 44px;
+  --dv-max: 1180px;
+  --gutter: 16px;
+}
+:where([data-theme="light"]) [data-view] {
+  --plate: #E7E2D8;
+  --ui-hairline: rgba(44, 42, 37, 0.08);
+}
+@media (min-width: 768px) {
+  [data-view] { --gutter: 24px; }
+}
+
+/* ---- Basics: hidden text, icons, flags ---- */
+/* left: 0 matters inside a sideways scroller: an absolutely placed box with no placed ancestor in the
+   scroller is not clipped by it, and at its static place it would add the scrolled distance to the
+   width of the page. top stays auto, so the text keeps its own line. */
+[data-view] :where(.ui-vh) {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+[data-view] :where(.ui-icon) { display: inline-block; flex: none; vertical-align: -0.15em; }
+[data-view] :where(.ui-flag) {
+  display: inline-block;
+  flex: none;
+  border-radius: 2px;
+  object-fit: cover;
+  vertical-align: -0.1em;
+  box-shadow: 0 0 0 1px var(--ui-hairline);
+}
+
+/* ---- Buttons and chips ---- */
+[data-view] :where(.ui-btn, .ui-menu-btn) {
+  position: relative;
+  z-index: 3; /* above a stretched .trip-card-link */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-width: var(--ui-target);
+  min-height: var(--ui-target);
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-small);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+[data-view] :where(.ui-btn:hover, .ui-menu-btn:hover) { background: var(--border); text-decoration: none; }
+[data-view] :where(.ui-btn--small) { padding: var(--sp-1) var(--sp-3); }
+[data-view] :where(.ui-btn--primary) { border-color: var(--terracotta); background: var(--terracotta); color: var(--ui-on-accent); }
+[data-view] :where(.ui-btn--primary:hover) { background: var(--terracotta); filter: brightness(1.08); }
+[data-view] :where(.ui-btn--primary:focus-visible) { outline-color: var(--ink); }
+[data-view] :where(.ui-btn--danger) { border-color: var(--error); }
+[data-view] :where(.ui-btn[disabled]) { opacity: 0.5; cursor: default; }
+[data-view] :where(.ui-btn[hidden], .ui-menu-btn[hidden]) { display: none; }
+[data-view] :where(.ui-menu-btn) { padding: 0 var(--sp-3); }
+
+[data-view] :where(.ui-chip) {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: var(--sp-2);
+  min-height: var(--ui-target);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-secondary);
+  font: var(--text-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+[data-view] :where(.ui-chip:hover) { background: var(--border); color: var(--ink); }
+[data-view] :where(.ui-chip.is-active) { border-color: var(--ink); background: var(--ink); color: var(--parchment); }
+[data-view] :where(.ui-chip[hidden]) { display: none; }
+/* No opacity on the count: at 12 px it fell under 4.5 to 1 on a light chip. */
+[data-view] :where(.ui-chip-count) { font-family: var(--font-mono); font-size: 0.75rem; }
+
+/* ---- Filter bar ---- */
+[data-view] :where(.dv-filter) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+[data-view] :where(.dv-search) {
+  position: relative;
+  display: flex;
+  flex: 1 1 220px;
+  align-items: center;
+  min-width: 0;
+  max-width: 360px;
+  color: var(--ink-secondary);
+}
+[data-view] :where(.dv-search > .ui-icon) { position: absolute; left: var(--sp-3); pointer-events: none; }
+[data-view] :where(.dv-search-input) {
+  width: 100%;
+  min-height: var(--ui-target);
+  padding: 0 var(--sp-3) 0 calc(var(--sp-3) + 26px);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-inset);
+  color: var(--ink);
+  font: var(--text-small);
+}
+/* --ink-secondary: the ghost ink is under 4.5 to 1 on the inset surface in the light theme. */
+[data-view] :where(.dv-search-input)::placeholder { color: var(--ink-secondary); opacity: 1; }
+[data-view] :where(.dv-chips) {
+  display: flex;
+  gap: var(--sp-2);
+  min-width: 0;
+  max-width: 100%;
+  margin: -4px;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* ---- A row that scrolls sideways fades at the edge where it is cut ----
+   The fade follows the scroll position (a scroll timeline on the row itself): at the start only the
+   right edge fades, in between both, at the end only the left. A row with nothing cut has no active
+   timeline, so it gets no mask at all, and neither does a row a skin wraps instead of scrolling. It is
+   a picture of the scroll position, not motion, so it is not held back for reduced motion. Any view
+   can put .ui-scroll-fade on a sideways scroller of its own. Browsers without scroll timelines show
+   the row as before. */
+@supports (animation-timeline: scroll()) {
+  [data-view] :where(.ui-scroll-fade, .dv-chips, .tv-days--strip, .tv-map-days, .ui-picker--compact .ui-picker-cards) {
+    animation: ui-scroll-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+@keyframes ui-scroll-fade {
+  0% { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+  1%, 99% { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
+  100% { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px); mask-image: linear-gradient(to right, transparent, #000 32px); }
+}
+
+/* ---- Photo frame (blueprint 8.5) ---- */
+[data-view] :where(.ui-frame) {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--surface-inset);
+}
+[data-view] :where(.ui-frame)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--ui-hairline);
+  pointer-events: none;
+}
+[data-view] :where(.ui-frame--16x9) { aspect-ratio: 16 / 9; }
+[data-view] :where(.ui-frame--3x2) { aspect-ratio: 3 / 2; }
+[data-view] :where(.ui-frame--4x5) { aspect-ratio: 4 / 5; }
+[data-view] :where(.ui-frame--1x1) { aspect-ratio: 1; }
+[data-view] :where(.ui-frame-img) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% var(--focus-y, 50%);
+}
+[data-view] :where(.ui-frame-img.is-loading) { opacity: 0; }
+/* The placeholder waits behind the photo and shows only when there is none: loading is a plain box. */
+[data-view] :where(.ui-frame-none) {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tone, var(--day-5)) 16%, transparent), transparent 72%);
+  color: var(--ink-secondary);
+  text-align: center;
+}
+[data-view] :where(.ui-frame[data-frame="none"] > .ui-frame-none) { display: flex; }
+[data-view] :where(.ui-frame-none > .ui-icon) { opacity: 0.6; }
+[data-view] :where(.ui-frame-name) { font: var(--text-h2); color: var(--ink); overflow-wrap: anywhere; }
+[data-view] :where(.ui-frame-over) {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--sp-4);
+  color: var(--on-photo);
+}
+[data-view] :where(.ui-frame--scrim > .ui-frame-over) { background: var(--scrim); }
+[data-view] :where(.ui-frame--credited > .ui-frame-over) { padding-bottom: calc(var(--sp-2) + 24px); }
+[data-view] :where(.ui-credit) {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 3; /* above a stretched .trip-card-link */
+  padding: 2px 6px;
+  border-radius: var(--ui-credit-radius, var(--r-sm));
+  background: var(--ui-credit-face, rgba(0, 0, 0, 0.45));
+  color: var(--on-photo-soft);
+  font: 400 0.625rem/1.4 var(--font-body);
+  text-decoration: none;
+  white-space: nowrap;
+}
+/* The chip is small on purpose, so a linked chip is a 44 px box of its own that ends at the corner of
+   the frame: all of it is inside the frame, and overflow: hidden clips nothing of the target. Its pill
+   is drawn by ::before where the plain chip sits (6 px in, 2 px and 6 px around the text), so both
+   chips look the same. Keyboard focus is shown on the pill, not around the larger box.
+   A skin changes the pill of both chips through --ui-credit-face and --ui-credit-radius on .ui-credit
+   (and the ink and the font as usual). It does not set background, border-radius, padding, right or
+   bottom on .ui-credit: those would land on the 44 px box of the linked chip. */
+[data-view] :where(a.ui-credit) {
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  min-width: var(--ui-target);
+  min-height: var(--ui-target);
+  padding: 0 12px 8px 24px;
+  border-radius: 0;
+  background: none;
+}
+[data-view] :where(a.ui-credit)::before {
+  content: '';
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  left: 18px;
+  z-index: -1; /* under the text, inside the stacking context of the chip */
+  height: calc(0.875rem + 4px);
+  height: calc(1lh + 4px);
+  border-radius: var(--ui-credit-radius, var(--r-sm));
+  background: var(--ui-credit-face, rgba(0, 0, 0, 0.45));
+}
+/* creditAt: 'top' on the frame builders: the same chip in the top right corner. */
+[data-view] :where(.ui-frame--credit-top > .ui-credit) { top: 6px; bottom: auto; }
+[data-view] :where(.ui-frame--credit-top > a.ui-credit) { top: 0; align-items: flex-start; padding: 8px 12px 0 24px; }
+[data-view] :where(.ui-frame--credit-top > a.ui-credit)::before { top: 6px; bottom: auto; }
+[data-view] :where(.ui-frame--credit-top.ui-frame--credited > .ui-frame-over) { padding-bottom: var(--sp-4); }
+/* The full credit ("Photo: Nextvoyage, Pexels", data-full on the chip) takes the place of the short
+   source where the frame has room for one line of it: from 320 px of frame width. The frame is a
+   size container only when its chip carries a full credit; everything in a frame is placed absolutely,
+   so the frame never took its width from its content. */
+[data-view] :where(.ui-frame:has(> .ui-credit[data-full])) { container: ui-frame / inline-size; }
+@container ui-frame (min-width: 320px) {
+  [data-view] :where(.ui-credit[data-full] > .ui-credit-short) { display: none; }
+  [data-view] :where(.ui-credit[data-full])::after { content: attr(data-full); }
+}
+/* A chip a view hangs on its trip hero itself (outside a frame) has no frame to measure: it goes by the
+   container around it (the landing, or a narrower one of the skin). From 480 px every full credit has
+   its line. On a phone the landing is 358 px (390 less the gutters) and a countdown of about 140 px
+   may share the row, so only a full credit the chip marks as short (data-full-size="s", at most
+   FULL_CREDIT_SHORT letters in photo-frame.js: "Photo: Nextvoyage, Pexels") is shown, from 340 px;
+   a longer one, and a narrower hero, keep the short source. */
+@container (min-width: 340px) {
+  [data-view]:where(.td-wrap) :where(.tv-landing .ui-credit[data-full-size="s"]:not(.ui-frame > .ui-credit) > .ui-credit-short) { display: none; }
+  [data-view]:where(.td-wrap) :where(.tv-landing .ui-credit[data-full-size="s"]:not(.ui-frame > .ui-credit))::after { content: attr(data-full); }
+}
+@container (min-width: 480px) {
+  [data-view]:where(.td-wrap) :where(.tv-landing .ui-credit[data-full]:not(.ui-frame > .ui-credit) > .ui-credit-short) { display: none; }
+  [data-view]:where(.td-wrap) :where(.tv-landing .ui-credit[data-full]:not(.ui-frame > .ui-credit))::after { content: attr(data-full); }
+}
+[data-view] :where(a.ui-credit:hover) { color: var(--on-photo); text-decoration: underline; }
+[data-view] :where(a.ui-credit:focus-visible) { outline: none; }
+[data-view] :where(a.ui-credit:focus-visible)::before { outline: 2px solid var(--terracotta); outline-offset: 2px; }
+[data-view] :where(.ui-thumb) { display: inline-block; flex: none; width: 56px; border-radius: var(--r-md); }
+[data-view] :where(.ui-thumb > .ui-frame-img) { filter: saturate(0.92) contrast(1.03); }
+
+/* ---- Split-flap digits: the classic cells on a board that is dark in both themes ---- */
+[data-view] :where(.ui-flap) { display: inline-flex; font-size: 1.5rem; line-height: 1; }
+[data-view] :where(.ui-flap-cells) { display: inline-flex; gap: 0.08em; --ink: #E5E1D8; }
+
+/* ---- Segments bar ---- */
+[data-view] :where(.ui-segs) { display: flex; gap: 3px; width: 100%; }
+[data-view] :where(.ui-seg) { flex: 1 1 0; min-width: 2px; height: 4px; border-radius: 2px; background: var(--border-strong); }
+[data-view] :where(.ui-seg[data-seg="done"]) { background: var(--live); }
+[data-view] :where(.ui-seg[data-seg="now"]) { background: var(--terracotta); }
+
+/* ---- Dashboard states ---- */
+[data-view] :where(.dv-state) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-6);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+[data-view] :where(.dv-state-title) { font: var(--text-h2); color: var(--ink); }
+[data-view] :where(.dv-state-text) { max-width: 52ch; color: var(--ink-secondary); }
+[data-view] :where(.dv-state-actions, .dv-card-actions) { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
+[data-view] :where(.dv-error) { border-color: var(--error); }
+[data-view] :where(.dv-error > .ui-icon, .dv-failed .dv-card-status > .ui-icon) { color: var(--error); }
+[data-view] :where(.dv-stale) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--r-md);
+  background: var(--amber-light);
+  color: var(--ink);
+  font: var(--text-small);
+}
+[data-view] :where(.dv-stale-text) { flex: 1 1 200px; }
+[data-view] :where(.dv-card) {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+[data-view] :where(.dv-card-title) { font: var(--text-h3); color: var(--ink); overflow-wrap: anywhere; }
+[data-view] :where(.dv-card-status) { display: flex; align-items: center; gap: var(--sp-2); font: var(--text-small); color: var(--ink-secondary); }
+[data-view] :where(.dv-gen-progress) { font: var(--text-small); color: var(--ink); }
+[data-view] :where(.dv-card-note) { font: var(--text-small); color: var(--ink-secondary); }
+[data-view] :where(.dv-card-sub) { font: var(--text-small); color: var(--ink-secondary); }
+[data-view] :where(.dv-past-toggle) { align-self: flex-start; }
+
+/* ---- Route line ---- */
+[data-view] :where(.ui-route) {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(48px, 1fr) minmax(0, auto);
+  align-items: start;
+  gap: var(--sp-3);
+  color: var(--ink);
+}
+[data-view] :where(.ui-route-end) { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+[data-view] :where(.ui-route-end--to) { align-items: flex-end; text-align: right; }
+[data-view] :where(.ui-route-code) { font: 600 1.5rem/1.1 var(--font-mono); letter-spacing: 0.02em; }
+[data-view] :where(.ui-route-name) { font: var(--text-small); overflow-wrap: anywhere; }
+[data-view] :where(.ui-route-name--lead) { font: var(--text-h3); }
+[data-view] :where(.ui-route-note, .ui-route-detail) { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view] :where(.ui-route-time) { font: 500 0.75rem/1.4 var(--font-mono); }
+[data-view] :where(.ui-route-mid) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  padding-top: 4px;
+  text-align: center;
+}
+[data-view] :where(.ui-route-track) { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 20px; color: var(--ink-secondary); }
+[data-view] :where(.ui-route-track)::before,
+[data-view] :where(.ui-route-track)::after { content: ''; flex: 1; border-top: 1px dashed var(--border-strong); }
+[data-view] :where(.ui-route[data-booked] .ui-route-track) { color: var(--live); }
+[data-view] :where(.ui-route[data-booked] .ui-route-track)::before,
+[data-view] :where(.ui-route[data-booked] .ui-route-track)::after { border-top-style: solid; border-top-color: var(--live); }
+[data-view] :where(.ui-route[data-kind="home"]) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+[data-view] :where(.ui-route[data-kind="home"] > .ui-route-end) { flex-direction: row; align-items: center; gap: var(--sp-2); }
+
+/* ---- Before you go: list, chip, meter, Prep card ---- */
+[data-view] :where(.ui-ready, .ui-prep) { display: flex; flex-direction: column; gap: var(--sp-3); }
+[data-view] :where(.ui-ready-head, .ui-prep-head) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+[data-view] :where(.ui-ready-intro) { margin-top: var(--sp-1); font: var(--text-small); color: var(--ink-secondary); }
+[data-view] :where(.ui-ready-title, .ui-prep-title) { margin-right: auto; font: var(--text-h2); color: var(--ink); }
+[data-view] :where(.ui-ready-count, .ui-prep-count) { font: var(--text-small); color: var(--ink-secondary); }
+[data-view] :where(.ui-ready-list, .ui-prep-list) { display: flex; flex-direction: column; }
+[data-view] :where(.ui-ready-row) {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--border);
+}
+[data-view] :where(.ui-ready-mark) {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--parchment);
+}
+[data-view] :where(.ui-ready-row[data-state="done"] > .ui-ready-mark) { border-color: var(--live); background: var(--live); }
+[data-view] :where(.ui-ready-row[data-state="checking"] > .ui-ready-mark) { border-style: dashed; color: var(--ink-secondary); }
+[data-view] :where(.ui-ready-main) { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+[data-view] :where(.ui-ready-label) { font: var(--text-small); font-weight: 600; color: var(--ink); }
+[data-view] :where(.ui-ready-status) { font: var(--text-small); color: var(--ink); }
+[data-view] :where(.ui-ready-row[data-state="done"] .ui-ready-status) { color: var(--ink-secondary); }
+[data-view] :where(.ui-ready-detail) { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view] :where(.ui-ready-due) {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--border);
+  color: var(--ink);
+  font: var(--text-caption);
+}
+[data-view] :where(.ui-ready-due[data-due="soon"]) { background: var(--amber-light); }
+[data-view] :where(.ui-ready-due[data-due="overdue"]) { background: transparent; box-shadow: inset 0 0 0 1px var(--error); }
+[data-view] :where(.ui-ready-action) {
+  position: relative;
+  z-index: 3; /* above a stretched .trip-card-link */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-width: var(--ui-target);
+  min-height: var(--ui-target);
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-small);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+[data-view] :where(.ui-ready-action:hover) { background: var(--border); text-decoration: none; }
+[data-view] :where(.ui-ready-action[hidden]) { display: none; }
+[data-view] :where(.ui-ready-note, .ui-prep-note) { display: flex; align-items: center; gap: var(--sp-2); font: var(--text-caption); color: var(--ink-secondary); }
+[data-view] :where(.ui-ready.is-collapsed) { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+[data-view] :where(.ui-ready-line) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); font: var(--text-small); color: var(--ink-secondary); }
+[data-view] :where(.ui-ready-line > .ui-ready-title) { margin-right: 0; font: var(--text-small); font-weight: 600; }
+[data-view] :where(.ui-ready-chip) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  background: var(--border);
+  color: var(--ink);
+  font: var(--text-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+[data-view] :where(.ui-ready-chip[data-ready="ready"]) { background: var(--teal-light); }
+[data-view] :where(.ui-meter) { display: inline-flex; flex: none; gap: 3px; vertical-align: middle; }
+[data-view] :where(.ui-meter-cell) { width: 10px; height: 4px; border-radius: 2px; background: var(--border-strong); }
+[data-view] :where(.ui-meter-cell[data-on]) { background: var(--live); }
+[data-view] :where(.ui-prep-row) {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 0 var(--sp-3);
+  min-height: var(--ui-target);
+  padding: var(--sp-1) 0;
+  border-top: 1px solid var(--border);
+}
+[data-view] :where(.ui-prep-check) { display: inline-flex; align-items: center; gap: var(--sp-3); min-height: var(--ui-target); cursor: pointer; }
+[data-view] :where(.ui-prep-check > input) { flex: none; width: 20px; height: 20px; accent-color: var(--live); }
+[data-view] :where(.ui-prep-check > input[disabled]) { cursor: default; }
+[data-view] :where(.ui-prep-label) { font: var(--text-small); font-weight: 600; color: var(--ink); }
+[data-view] :where(.ui-prep-row > .ui-prep-label) { padding-left: calc(20px + var(--sp-3)); }
+[data-view] :where(.ui-prep-status) { font: var(--text-small); color: var(--ink-secondary); text-align: right; }
+[data-view] :where(.ui-prep-row > .ui-ready-action) { grid-column: 1 / -1; justify-self: start; margin: var(--sp-1) 0 var(--sp-2) calc(20px + var(--sp-3)); }
+
+/* ---- Menus: a <dialog> in the top layer; menu.js places it, this is only the look ---- */
+[data-view] :where(.ui-menu) {
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+[data-view] :where(.ui-menu)::backdrop { background: transparent; }
+[data-view] :where(.ui-menu[data-menu-mode="sheet"]) {
+  max-height: 80dvh;
+  padding: var(--sp-3) var(--sp-3) calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  border-bottom: 0;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+}
+[data-view] :where(.ui-menu[data-menu-mode="sheet"])::backdrop { background: rgba(0, 0, 0, 0.45); }
+:where([data-theme="light"]) [data-view] :where(.ui-menu[data-menu-mode="sheet"])::backdrop { background: rgba(44, 42, 37, 0.32); }
+[data-view] :where(.ui-menu [role="menu"]) { display: flex; flex-direction: column; gap: 2px; }
+[data-view] :where(.ui-menu [role="menuitem"]) {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: var(--ui-target);
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-small);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+[data-view] :where(.ui-menu [role="menuitem"]:hover, .ui-menu [role="menuitem"]:focus-visible) { background: var(--border); text-decoration: none; }
+[data-view] :where(.ui-menu [role="menuitem"]:focus-visible) { outline-offset: -2px; }
+[data-view] :where(.ui-menu-item.is-danger > .ui-icon) { color: var(--error); }
+[data-view] :where(.ui-menu-hint) { display: block; font: var(--text-caption); color: var(--ink-secondary); }
+
+/* ---- Credits and the foot lines ---- */
+[data-view] :where(.ui-credits) { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view] :where(.ui-credits > summary) { display: inline-flex; align-items: center; min-height: var(--ui-target); font: var(--text-small); cursor: pointer; }
+[data-view] :where(.ui-credits-list) { display: flex; flex-direction: column; padding-bottom: var(--sp-3); }
+[data-view] :where(.ui-credits-list > li) { display: flex; align-items: center; min-height: var(--ui-target); }
+[data-view] :where(.ui-credits-list a, .ui-foot-line a) { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+[data-view] :where(.ui-credits-list a) { display: inline-flex; align-items: center; min-height: var(--ui-target); }
+[data-view] :where(.ui-foot-line) { font: var(--text-caption); color: var(--ink-secondary); }
+
+/* ---- View picker and the one-time chooser (blueprint 6.8) ---- */
+[data-view] :where(.ui-picker) { min-width: 0; border: 0; }
+[data-view] :where(.ui-picker-legend) { margin-bottom: var(--sp-3); font: var(--text-small); font-weight: 600; color: var(--ink); }
+[data-view] :where(.ui-picker-cards) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+[data-view] :where(.ui-picker-card) {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding: var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  cursor: pointer;
+}
+[data-view] :where(.ui-picker-card:has(.ui-picker-radio:checked)) { border-color: var(--terracotta); box-shadow: 0 0 0 1px var(--terracotta); }
+[data-view] :where(.ui-picker-card:has(.ui-picker-radio:focus-visible)) { outline: 2px solid var(--terracotta); outline-offset: 2px; }
+/* One ring, on the card: where :has() works the radio's own ring is left out. */
+[data-view] :where(.ui-picker-card:has(.ui-picker-radio:focus-visible) .ui-picker-radio) { outline: none; }
+[data-view] :where(.ui-picker-radio) {
+  position: absolute;
+  top: var(--sp-4);
+  right: var(--sp-4);
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  /* Drawn here, not native: the native radio is a white disc on a dark card and reads as selected.
+     An empty ring for a view that can be picked, a filled one for the view that is on. */
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  border: 2px solid var(--ink-secondary);
+  border-radius: 50%;
+  background-color: transparent;
+  accent-color: var(--terracotta);
+}
+[data-view] :where(.ui-picker-radio:checked) {
+  border-color: var(--terracotta);
+  background-image: radial-gradient(circle, var(--terracotta) 0 5px, transparent 5.5px);
+}
+@media (forced-colors: active) {
+  [data-view] :where(.ui-picker-radio) { appearance: auto; -webkit-appearance: auto; }
+}
+[data-view] :where(.ui-picker-shot) {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--surface-inset);
+}
+[data-view] :where(.ui-picker-none) {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--terracotta-light), var(--teal-light));
+  color: var(--ink-ghost);
+}
+[data-view] :where(.ui-picker-img) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
+[data-view] :where(.ui-picker-text) { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+[data-view] :where(.ui-picker-name) { font: var(--text-h3); color: var(--ink); }
+[data-view] :where(.ui-picker-sentence) { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view] :where(.ui-picker-current) {
+  align-self: flex-start;
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--terracotta-light);
+  color: var(--ink);
+  font: var(--text-caption);
+  font-weight: 600;
+}
+[data-view] :where(.ui-picker-after) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); min-height: var(--ui-target); margin-top: var(--sp-2); }
+[data-view] :where(.ui-picker-status) { font: var(--text-small); color: var(--ink-secondary); }
+/* Compact: one scroll-snap row of small cards, for the chooser on the dashboard. */
+[data-view] :where(.ui-picker--compact .ui-picker-legend) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+[data-view] :where(.ui-picker--compact .ui-picker-cards) {
+  display: flex;
+  gap: var(--sp-2);
+  margin: -4px;
+  padding: 4px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+[data-view] :where(.ui-picker--compact .ui-picker-card) {
+  flex: 1 0 min(76%, 250px);
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) calc(var(--sp-3) + 24px) var(--sp-2) var(--sp-2);
+  scroll-snap-align: start;
+}
+[data-view] :where(.ui-picker--compact .ui-picker-shot) { flex: none; width: 64px; }
+[data-view] :where(.ui-picker--compact .ui-picker-radio) { top: var(--sp-3); right: var(--sp-3); }
+[data-view] :where(.ui-picker--compact .ui-picker-current) { position: absolute; right: var(--sp-2); bottom: var(--sp-2); }
+[data-view] :where(.ui-picker-wrap:has(.ui-picker--compact) > .ui-picker-after) { min-height: 0; }
+[data-view] :where(.ui-chooser) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+[data-view] :where(.ui-chooser-title) { font: var(--text-h2); color: var(--ink); }
+[data-view] :where(.ui-chooser-foot) { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+[data-view] :where(.ui-chooser-note) { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view] :where(.ui-chooser-foot > .ui-btn) { flex: none; }
+
+/* ---- Phones ---- */
+@media (max-width: 639px) {
+  [data-view] :where(.ui-ready-row) { grid-template-columns: 24px minmax(0, 1fr); }
+  [data-view] :where(.ui-ready-row > .ui-ready-action) { grid-column: 2; justify-self: start; }
+  [data-view] :where(.dv-search) { flex-basis: 100%; max-width: none; }
+  [data-view] :where(.ui-picker--full .ui-picker-cards) { grid-template-columns: minmax(0, 1fr); }
+  [data-view] :where(.ui-picker--full .ui-picker-card) { flex-direction: row; align-items: center; gap: var(--sp-3); padding-right: calc(var(--sp-3) + 28px); }
+  [data-view] :where(.ui-picker--full .ui-picker-shot) { flex: none; width: 96px; }
+  [data-view] :where(.ui-picker--full .ui-picker-current) { position: absolute; right: var(--sp-3); bottom: var(--sp-3); }
+}
+
+/* ---- Motion: only for people who have not asked for less (blueprint 8.4) ---- */
+@media (prefers-reduced-motion: no-preference) {
+  [data-view] :where(.ui-btn, .ui-menu-btn, .ui-chip, .ui-ready-action, .ui-picker-card, .ui-menu [role="menuitem"]) {
+    transition: background-color var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
+  }
+  [data-view] :where(.ui-frame-img[data-fade]) { transition: opacity 200ms ease; }
+  [data-view] :where(.dv-gen .ui-seg[data-seg="now"]) { animation: ui-pulse 1.6s ease-in-out infinite; }
+  [data-view] :where(.ui-menu[open]) { animation: ui-menu-in var(--duration-fast) var(--ease-out); }
+}
+@keyframes ui-pulse {
+  50% { opacity: 0.35; }
+}
+@keyframes ui-menu-in {
+  from { opacity: 0; transform: translateY(6px); }
+}

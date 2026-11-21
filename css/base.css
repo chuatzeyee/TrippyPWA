@@ -377,6 +377,24 @@ textarea.input {
   }
 }
 
+/* The same switch for the Settings choice "Reduce motion": html[data-motion="reduce"]
+   is set by js/lib/motion.js (and by the boot script before first paint). It must
+   behave exactly like the OS setting above, on every screen, so the two blocks
+   hold the same declarations. JS-driven motion asks js/lib/motion.js instead. */
+html[data-motion="reduce"],
+html[data-motion="reduce"] *,
+html[data-motion="reduce"]::before,
+html[data-motion="reduce"]::after,
+html[data-motion="reduce"] *::before,
+html[data-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}
+
 /* Route changes move focus to the view's heading (or #app) so screen readers
    announce the new screen; those targets are not controls, so no ring. */
 #app:focus,
