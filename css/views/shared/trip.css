@@ -518,7 +518,8 @@
   color: var(--ink-secondary);
 }
 [data-view]:where(.td-wrap) :where(.tv-day-aside-plate) {
-  aspect-ratio: 16 / 10;
+  --tv-map-ratio: 4 / 3;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--r-md);
   background: var(--plate);

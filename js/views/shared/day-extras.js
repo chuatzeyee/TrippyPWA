@@ -12,7 +12,7 @@ import { icon } from './icons.js';
 import { thumbHtml } from './photo-frame.js';
 import { COST_BASIS_TEXT, costFigures } from '../../lib/money.js';
 import { stopsText, typicalText } from './day-index.js';
-import { mapFallbackSvg } from './trip-map.js';
+import { tripMapHtml } from './trip-map.js';
 
 const MAX_PHOTOS = 4;
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -77,15 +77,27 @@ export function dayCardExtrasHtml(row, { animate = false } = {}) {
 const listOf = (value) => (Array.isArray(value) ? value.filter((entry) => entry && typeof entry === 'object') : []);
 const heading = (words) => `<h4 class="tv-day-aside-h">${esc(words)}</h4>`;
 
-/** The stops of the day drawn to scale, numbered as in the list below; a line under it when some have no place. */
+/** What the live map of the day needs of a point. */
+const mapPoint = ({ lat, lng, dayNumber, dayIndex, order, title, colorIndex }) => ({ lat, lng, dayNumber, dayIndex, order, title: text(title), colorIndex });
+
+/**
+ * The map of the day: the same map node as the trip map, with this day's stops only and the day
+ * selected, so its stops are numbered as in the list below and joined in order. The controller
+ * mounts it (data-day-map carries the points); until then, and whenever the tiles cannot load, it
+ * shows the drawing. A line under it says so when some stops have no place.
+ */
 function asideMapHtml(model) {
-  const points = listOf(model.map?.points);
-  const svg = points.length ? mapFallbackSvg(points, { day: points[0].dayNumber, byOrder: true }) : '';
-  if (!svg) return '';
+  const points = listOf(model.map?.points).map(mapPoint);
+  if (!points.length) return '';
+  // The trip map's node is carried across a re-render of the landing; this one belongs to its day card.
+  // The caption id names no element on purpose: the map writes its day caption and buttons into the element
+  // with that id, and this panel says the same in its own rows.
+  const map = tripMapHtml({ points }, { fullButton: false, byOrder: true, day: points[0].dayNumber, label: `Map of day ${model.dayNumber}`, captionId: `tv-day-${model.index}-map-words` })
+    .replace(' data-carry="map"', '');
   const { placed, total } = model.map;
   const note = Number.isFinite(placed) && Number.isFinite(total) && placed < total
     ? `<p class="tv-day-aside-note">${esc(placed)} of ${esc(stopsText(total))} on the map</p>` : '';
-  return `<div class="tv-day-aside-map"><div class="tv-day-aside-plate">${svg}</div>${note}</div>`;
+  return `<div class="tv-day-aside-map"${attr('data-day-map', JSON.stringify(points))}><div class="tv-day-aside-plate">${map}</div>${note}</div>`;
 }
 
 function asideFactsHtml(model) {

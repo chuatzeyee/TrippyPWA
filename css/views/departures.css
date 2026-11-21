@@ -1068,7 +1068,7 @@
   border-bottom: 2px dashed var(--dep-hair-strong);
   border-radius: 0;
   background: var(--dep-panel-hi);
-  box-shadow: 0 calc(-1 * var(--sp-2)) 0 var(--parchment);
+  box-shadow: 0 calc(-1 * var(--sp-2)) 0 var(--dep-panel);
 }
 [data-view="departures"][data-view] .td-day-card.td-day-card--open > .td-day-card-body { padding: var(--sp-4) var(--sp-3); background: var(--parchment); }
 [data-view="departures"][data-view] .td-day-card[data-day-index]:last-child > .td-day-card-body { border-radius: 0 0 var(--r-lg) var(--r-lg); }
