@@ -680,7 +680,7 @@
 [data-view="atlas"][data-view] .tv-bar {
   gap: var(--sp-2);
   padding-block: 6px;
-  border-bottom-color: var(--atl-rule);
+  border-bottom-color: transparent;
   background: var(--glass-bg);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
@@ -699,7 +699,7 @@
 [data-view="atlas"][data-view] .ui-menu [role="menuitem"] { font: 500 15px/1.2 var(--font-body); }
 [data-view="atlas"][data-view] .ui-menu-item.is-danger { color: var(--atl-error-ink); }
 
-/* The tab list: a segmented control between two rules. */
+/* The tab list: a segmented control with air round it, no rules. */
 [data-view="atlas"][data-view] > .td-tabs { position: static; margin-block: var(--sp-2); box-shadow: inset 0 0 0 1px var(--atl-rule); }
 [data-view="atlas"][data-view] .td-tabs {
   display: grid;
@@ -716,8 +716,8 @@
 [data-view="atlas"][data-view] .td-tab.td-tab--active { background: var(--surface-solid); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--border-strong); }
 [data-view="atlas"][data-view] .td-tab > .ui-icon { color: var(--ink-ghost); opacity: 1; }
 [data-view="atlas"][data-view] .td-tab.td-tab--active > .ui-icon { color: var(--atl-up-ink); }
-[data-view="atlas"][data-view] .tv-landing--hero { margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); border-bottom: 1px solid var(--atl-rule); }
-[data-view="atlas"][data-view] .td-tab-panel { margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); border-top: 1px solid var(--atl-rule); }
+[data-view="atlas"][data-view] .tv-landing--hero { margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); }
+[data-view="atlas"][data-view] .td-tab-panel { margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); }
 [data-view="atlas"][data-view] .tv-landing--intro { margin-block: 0 var(--sp-10); }
 [data-view="atlas"][data-view] .tv-landing--outro { margin-block: var(--sp-6) 0; }
 
@@ -979,28 +979,57 @@
   [data-view="atlas"][data-view] .tv-landing--hero,
   [data-view="atlas"][data-view] .td-tab-panel { margin-inline: 0; padding-inline: 0; }
   [data-view="atlas"][data-view] .tv-between { margin-top: var(--sp-16); }
-  [data-view="atlas"][data-view] .tv-landing--intro { margin-bottom: var(--sp-16); }
+  /* The essentials row ends the intro: a panel it opens sits right under it, and the trip map keeps its own distance. */
+  [data-view="atlas"][data-view] .tv-landing--intro { margin-bottom: var(--sp-3); }
   [data-view="atlas"][data-view] .td-day-card.td-day-card--section .td-day-card-title { font-size: 32px; }
   [data-view="atlas"][data-view] .td-day-card.td-day-card--section { --tv-day-gap: var(--sp-16); }
 }
 
-/* ---- Flights, entry requirements and where to stay: one row of cards that open in place ----
-   The plan column answers the landing queries, so the row follows the room the page has, not the
-   window. From 960 px each section is a card in its own column (two sections make two columns, one
-   is a full row). A card opens downwards inside its own column and never changes place; the cards
-   beside it keep their own height. */
+/* ---- The facts of the trip: one ruled panel with all four sides, a hairline between the cells ----
+   The panel clips the last column's and the last row's hairline, so any number of columns works. */
+[data-view="atlas"][data-view] .atl-glance { margin-top: var(--sp-5); border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--surface-solid); overflow: hidden; }
+[data-view="atlas"][data-view] .atl-glance > .tv-fact:nth-child(n) { margin: 0 -1px -1px 0; padding: var(--sp-3) var(--sp-4); border: 0 solid var(--atl-rule); border-width: 0 1px 1px 0; }
+
+/* ---- Flights, entry requirements and where to stay on a wide page: a row of cards, one panel under it ----
+   Each card says where that part of the plan stands and opens its section as a panel directly under
+   the row; the row itself never moves, and one panel is open at a time (trip.js). The plan column
+   answers the landing queries, so the row follows the room the page has, not the window. Below
+   960 px the row is not drawn and the sections are the stacked titled sections they were. */
+[data-view="atlas"][data-view] .atl-ess { display: none; }
 [data-view="atlas"][data-view] .td-main { container: tv-landing / inline-size; }
 @container tv-landing (min-width: 960px) {
-  [data-view="atlas"][data-view] .td-day-grid { display: grid; grid-template-columns: repeat(var(--atl-secs, 1), minmax(0, 1fr)); column-gap: var(--sp-4); align-items: start; }
-  [data-view="atlas"][data-view] .td-day-grid:has(> .td-day-card--section:nth-child(2)) { --atl-secs: 2; }
-  [data-view="atlas"][data-view] .td-day-grid:has(> .td-day-card--section:nth-child(3)) { --atl-secs: 3; }
-  [data-view="atlas"][data-view] .td-day-grid > :nth-child(n) { grid-column: 1 / -1; }
-  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section { --tv-day-gap: 0px; grid-column: auto; min-width: 0; border: 1px solid var(--atl-rule); border-radius: var(--r-md); background: var(--surface-solid); }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--section:hover { border-color: var(--border-strong); }
-  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section > .td-day-card-header { min-height: 56px; margin: 0; padding: 0 var(--sp-4); }
-  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section .td-day-card-title { font-size: 20px; }
-  [data-view="atlas"][data-view] .td-day-grid > .td-day-card.td-day-card--section > .td-day-card-body { padding: var(--sp-4); border-top: 1px solid var(--atl-rule); }
-  [data-view="atlas"][data-view] .td-day-card.td-day-card--section .td-flight-legs { grid-template-columns: minmax(0, 1fr); }
+  /* "Before you go" keeps its count and sentence as one line; the cards under it carry the rows. */
+  [data-view="atlas"][data-view] .atl-before:not(.atl-before--live) { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  [data-view="atlas"][data-view] .atl-before:not(.atl-before--live) > .atl-checks { display: none; }
+  [data-view="atlas"][data-view] .atl-before:not(.atl-before--live) > .atl-before-sum { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-5); }
+  [data-view="atlas"][data-view] .atl-before:not(.atl-before--live) .atl-sec-title { font-size: 26px; }
+  [data-view="atlas"][data-view] .atl-before:not(.atl-before--live) .atl-before-n > b { font-size: 22px; }
+  [data-view="atlas"][data-view] .atl-before:not(.atl-before--live) .ui-meter { flex: 0 0 120px; }
+  [data-view="atlas"][data-view] .atl-before:not(.atl-before--live) .atl-before-text { flex: 1 1 320px; }
+
+  [data-view="atlas"][data-view] .atl-ess { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--sp-4); margin: var(--sp-5) 0 0; }
+  [data-view="atlas"][data-view] .atl-ess-card { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); min-height: 132px; padding: var(--sp-4); border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--surface-solid); color: var(--ink); font: 400 14px/1.45 var(--font-body); text-align: left; cursor: pointer; }
+  [data-view="atlas"][data-view] .atl-ess-card[hidden] { display: none; }
+  [data-view="atlas"][data-view] .atl-ess-card:hover { border-color: var(--border-strong); }
+  [data-view="atlas"][data-view] .atl-ess-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  [data-view="atlas"][data-view] .atl-ess-card[aria-expanded="true"] { border-color: var(--ink-secondary); background: color-mix(in srgb, var(--ink) 5%, var(--surface-solid)); }
+  [data-view="atlas"][data-view] .atl-ess-name { font: 400 21px/1.2 var(--font-heading); }
+  [data-view="atlas"][data-view] .atl-ess-status { padding: 2px var(--sp-2); border-radius: var(--r-sm); background: color-mix(in srgb, var(--amber) 16%, transparent); color: var(--atl-amber-ink); font: 600 12px/1.4 var(--font-body); }
+  [data-view="atlas"][data-view] .atl-ess-card[data-state="done"] > .atl-ess-status { background: color-mix(in srgb, var(--sage) 16%, transparent); color: var(--atl-sage-ink); }
+  [data-view="atlas"][data-view] .atl-ess-card[data-state="checking"] > .atl-ess-status { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+  [data-view="atlas"][data-view] .atl-ess-detail { color: var(--ink-secondary); }
+  [data-view="atlas"][data-view] .atl-ess-go { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); align-self: stretch; margin-top: auto; padding-top: var(--sp-3); border-top: 1px solid var(--atl-rule); font-weight: 600; }
+  [data-view="atlas"][data-view] .atl-ess-hide { display: none; }
+  [data-view="atlas"][data-view] .atl-ess-card[aria-expanded="true"] .atl-ess-show { display: none; }
+  [data-view="atlas"][data-view] .atl-ess-card[aria-expanded="true"] .atl-ess-hide { display: inline; }
+  [data-view="atlas"][data-view] .atl-ess-card[aria-expanded="true"] .ui-icon { transform: rotate(180deg); }
+
+  /* A closed section has its card in the row; the open one is the panel under the row, at the full width its contents were made for. */
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card--section:not(.td-day-card--open) { display: none; }
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card--section.td-day-card--open { --tv-day-gap: var(--sp-3); border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--surface-solid); }
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card--section.td-day-card--open > .td-day-card-header { min-height: 52px; margin: 0; padding: 0 var(--sp-4); }
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card--section .td-day-card-title { font-size: 20px; }
+  [data-view="atlas"][data-view] .td-day-grid > .td-day-card--section > .td-day-card-body { padding: var(--sp-4); border-top: 1px solid var(--atl-rule); }
 }
 
 /* ---- The day panel beside the stops of an open day (the layout is in the shared trip.css) ----

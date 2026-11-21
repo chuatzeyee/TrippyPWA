@@ -95,7 +95,7 @@ describe.each(KEYS)('fixture %s', (key) => {
     expect(attr(one(tabs, '.td-tab--active'), 'data-tab')).toBe('plan');
   });
   it('opens the section cards on first render, at every width', () => {
-    expect(parts.openSections).toEqual(['flights', 'transport', 'entry', 'accommodation']);
+    expect(parts.openSections).toEqual([]);
     expect(parts.openSectionsMinWidth).toBe(0);
   });
   it('asks for the day panel beside the stops of an open day', () => {
