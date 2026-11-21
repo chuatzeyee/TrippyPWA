@@ -698,11 +698,17 @@
   [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--next)) { grid-template-columns: minmax(0, 1fr); }
   [data-view="departures"][data-view] .dep-live,
   [data-view="departures"][data-view] .dep-next-slot { display: flex; flex: 1 1 auto; flex-direction: column; }
-  [data-view="departures"][data-view] .dep-pass--live,
   [data-view="departures"][data-view] .dep-pass--next { flex: 1 1 auto; }
-  /* The photo keeps one height and the stub takes what is left, so nothing on the photo moves when
-     the other pass or the stub grows. */
-  [data-view="departures"][data-view] .dep-pass--live { grid-template-rows: auto minmax(0, 1fr); }
+  /* The live pass ends where its content ends. When the pass beside it is the taller one, the live
+     pass is not stretched to match: its photo is already as tall as the first screen allows with
+     today's next stop still on it, so more height could only open an empty band inside the stub. */
+  [data-view="departures"][data-view] .dep-pass--live { flex: 0 0 auto; grid-template-rows: auto auto; }
+  /* The two buttons follow today's next stop. Pinned to the foot they stood under an empty band when
+     the column beside them was the taller one, and moved when a late briefing filled that column. */
+  [data-view="departures"][data-view] .dep-pass--live .dep-pass-actions { margin-top: 0; }
+  /* Room for a next stop whose line wraps to three, so the buttons under it keep their place when
+     the briefing is late. */
+  [data-view="departures"][data-view] .dep-pass--live .dep-today { min-height: 8.25rem; }
   /* On a short screen the photo gives way, so today's next stop is on the first screen with it. */
   [data-view="departures"][data-view] .dep-pass--live .ui-frame { aspect-ratio: auto; min-height: clamp(15rem, 100vh - 36rem, 24rem); }
   /* When the pass beside it is the taller one, the spare height goes above the facts at the foot,
