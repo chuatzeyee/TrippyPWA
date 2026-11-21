@@ -5,7 +5,6 @@ import { attr, cls, esc } from '../shared/html.js';
 import { dayIndexHtml } from '../shared/day-index.js';
 import { readinessListHtml, readinessMeterHtml } from '../shared/readiness-list.js';
 import { mapCaptionHtml } from '../shared/trip-map.js';
-import { enterClass } from './parts.js';
 import { MAP_SPLIT } from './trip-hero.js';
 import { essentialsHtml } from './trip-essentials.js';
 import { jumpItems, readySentence } from './trip-words.js';
@@ -53,41 +52,25 @@ export function planIntroHtml(model) {
 
 const boardTop = (id, title, after, extra) => `<div class="${cls('atl-board-top', extra)}"><h2 class="atl-board-title"${attr('id', id)}>${title}</h2>${after}</div>`;
 
-/** The row of day chips. With a map they also pick the day on it and start with "All". */
-function chipsHtml(model, mapped) {
-  return `<div class="atl-daychips">${dayIndexHtml(model.days, { variant: 'chips', mapDays: mapped, label: mapped ? 'Go to a day and show it on the map' : 'Go to a day' })}</div>`;
-}
-
 /**
- * The trip map board: the day chips, the slot the controller fills below 1024 px (from there the map
- * sits beside the cover) and the caption. Without a stop to place it is the bare slot, so points
- * that arrive later have a place.
- */
-function mapBoardHtml(model, mapped) {
-  const slot = `<div class="atl-map" data-map-slot data-map-below="${MAP_SPLIT}"></div>`;
-  if (!mapped) return slot;
-  const stops = model.map.points.length;
-  return `<section class="atl-board atl-mapboard" aria-labelledby="atl-map-h">
-    ${boardTop('atl-map-h', 'Trip map', `<span class="atl-board-n">${esc(count(stops, 'stop', 'stops'))} on the map</span>`, 'atl-mapboard-top')}
-    ${chipsHtml(model, true)}
-    ${slot}
-    <div class="atl-map-foot">${mapCaptionHtml(model.map, { areas: model.areas, days: model.days })}</div>
-  </section>`;
-}
-
-/**
- * The `between` part: the trip map board, then the heading of the day cards, which follow it as the
- * rows of one board (the column heads show where a row is wide enough to be a table row).
+ * The `between` part: the day bar (All, then a chip for each day; with a map they also pick the day
+ * on it), which stays under the top bar while the days scroll; the slot the controller fills with
+ * the map below 1024 px (from there the map sits beside the cover); the words that describe the map,
+ * which are not shown (the chips say it, and the map is described by them); then the heading of the day
+ * cards, which follow it as the rows of one board (the column heads show where a row is wide enough
+ * to be a table row).
  */
 export function betweenHtml(model, ctx) {
+  void ctx;
   const days = model.days.length;
   if (!days) return '';
   const mapped = model.map.points.length > 0;
-  return `<div class="${cls('atl-between', enterClass(ctx))}" data-atl-target="days" tabindex="-1">
-    ${mapBoardHtml(model, mapped)}
-    <div class="atl-board atl-dayboard">
+  return `<div class="atl-between">
+    <div class="atl-daybar" data-keep-scroll="daybar">${dayIndexHtml(model.days, { variant: 'chips', mapDays: mapped, region: true, label: mapped ? 'Go to a day and show it on the map' : 'Go to a day' })}</div>
+    <div class="atl-map" data-map-slot data-map-below="${MAP_SPLIT}"></div>
+    ${mapped ? `<div class="atl-map-words">${mapCaptionHtml(model.map, { areas: model.areas, days: model.days })}</div>` : ''}
+    <div class="atl-board atl-dayboard" data-atl-target="days" tabindex="-1">
       ${boardTop('atl-days-h', 'Day by day', `<span class="atl-board-n">${esc(count(days, 'day', 'days'))}</span><span class="atl-board-note">${DAY_NOTE}</span>`, 'atl-dayboard-top')}
-      ${mapped ? '' : chipsHtml(model, false)}
       <div class="atl-day-head" aria-hidden="true">${DAY_COLUMNS.map((label) => `<span>${label}</span>`).join('')}</div>
     </div>
   </div>`;

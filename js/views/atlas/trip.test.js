@@ -120,20 +120,20 @@ describe.each(WITH_DAYS)('fixture %s, a plan with days', (key) => {
     expect(one(one(hero, '[id="td-hero"]'), '[data-map-slot]')).toBe(wide);
     expect(all(intro, '[data-map-slot]')).toHaveLength(0);
   });
-  it('Trip map: the heading with the stop count, the day chips, the slot, then the caption', () => {
-    const board = one(between, '.atl-mapboard');
-    // Without a stop to place there is no board, only the slot, so points that arrive later have a place.
-    expect(Boolean(board)).toBe(mapped);
-    if (!mapped) return;
-    expect(textOf(one(board, 'h2'))).toBe('Trip map');
-    expect(textOf(one(board, '.atl-board-n'))).toBe(`${model.map.points.length} ${model.map.points.length === 1 ? 'stop' : 'stops'} on the map`);
-    const chips = region(board, 'dayindex');
+  it('the day bar: All and a chip for each day, nothing else, before the map slot and the day board', () => {
+    const bar = one(between, '.atl-daybar');
+    const chips = region(bar, 'dayindex');
     expect(classesOf(chips)).toContain('tv-days--chips');
-    expect(texts(chips, 'button')).toEqual(['All', ...model.days.map((day) => String(day.dayNumber))]);
-    expect(all(chips, '[data-map-day]')).toHaveLength(model.days.length + 1);
+    expect(texts(chips, 'button')).toEqual([...(mapped ? ['All'] : []), ...model.days.map((day) => String(day.dayNumber))]);
+    expect(all(chips, '[data-map-day]')).toHaveLength(mapped ? model.days.length + 1 : 0);
     expect(all(chips, '[data-day-jump]')).toHaveLength(model.days.length);
-    const order = all(board, 'h2, [data-map-slot], [data-region]').map((el) => attr(el, 'data-region') ?? (attr(el, 'data-map-slot') !== null ? 'slot' : 'h2'));
-    expect(order).toEqual(['h2', 'dayindex', 'slot', 'map-caption']);
+    // The sentence about stops and areas and the "Trip map" heading are gone: the bar is the chips alone.
+    expect(textOf(bar)).toBe(texts(chips, 'button').join(' '));
+    // The words that describe the map stay in the markup for the map to point at, in a box that is not shown.
+    const words = one(between, '.atl-map-words');
+    expect(Boolean(words && region(words, 'map-caption'))).toBe(mapped);
+    const order = all(between, '.atl-daybar, [data-map-slot], .atl-dayboard').map((el) => (attr(el, 'data-map-slot') !== null ? 'slot' : classesOf(el).includes('atl-daybar') ? 'bar' : 'board'));
+    expect(order).toEqual(['bar', 'slot', 'board']);
   });
   it('Day by day: the heading, the day count, the typical weather note and the column heads of the rows', () => {
     const board = one(between, '.atl-dayboard');
@@ -142,13 +142,6 @@ describe.each(WITH_DAYS)('fixture %s, a plan with days', (key) => {
     expect(textOf(one(board, '.atl-board-note'))).toBe('Costs are per person, activities only. Weather is typical for the dates, not a forecast.');
     expect(texts(one(board, '.atl-day-head'), 'span')).toEqual(['Day', 'Date', 'Plan', 'Typical weather', 'Stops', 'Activities estimated']);
     expect(attr(one(board, '.atl-day-head'), 'aria-hidden')).toBe('true');
-    // Without a map the chips sit under this heading and only go to the day.
-    const chips = region(board, 'dayindex');
-    expect(Boolean(chips)).toBe(!mapped);
-    if (chips) {
-      expect(all(chips, '[data-map-day]')).toHaveLength(0);
-      expect(all(chips, '[data-day-jump]')).toHaveLength(model.days.length);
-    }
   });
   it('one day index and one target for the "Day by day" link, and the day strip is gone', () => {
     expect(all(between, '[data-region="dayindex"]')).toHaveLength(1);
@@ -156,7 +149,7 @@ describe.each(WITH_DAYS)('fixture %s, a plan with days', (key) => {
     expect(all(between, '[data-atl-target="days"]')).toHaveLength(1);
     expect(attr(one(between, '[data-atl-target="days"]'), 'tabindex')).toBe('-1');
     expect(whole).not.toContain('tv-days--strip');
-    expect(all(between, 'h2').map(textOf)).toEqual(mapped ? ['Trip map', 'Day by day'] : ['Day by day']);
+    expect(all(between, 'h2').map(textOf)).toEqual(['Day by day']);
   });
   it('Before you go: the count, the meter, one sentence and a row per area, unless the plan is past', () => {
     const before = region(intro, 'readiness');
