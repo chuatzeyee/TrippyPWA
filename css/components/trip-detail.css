@@ -2858,9 +2858,6 @@ body:has(.td-chat-drawer--open) #toast-container {
   border: 1px solid var(--border);
   font: var(--text-caption);
 }
-.td-chat-edit--add { border-left: 3px solid var(--success); }
-.td-chat-edit--remove { border-left: 3px solid var(--error); }
-.td-chat-edit--modify { border-left: 3px solid var(--amber); }
 .td-chat-edit-reason { color: var(--ink-ghost); }
 .td-chat-apply-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
 .td-chat-apply-row .btn { height: auto; min-height: 44px; padding: 0 var(--sp-4); }

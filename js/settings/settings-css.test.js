@@ -89,7 +89,7 @@ describe('the "On this page" list', () => {
   it('marks the section the page is on in the rail, with more than colour', () => {
     const mark = declared('.st-page .st-toc-chip[aria-current="true"]', WIDE);
     expect(mark.color).toBe('var(--ink)');
-    expect(mark['box-shadow']).toMatch(/inset .*var\(--terracotta\)/);
+    expect(mark.background).toBe('var(--surface-solid)');
     expect(mark['font-weight']).toBe('600');
   });
   it.each([['end', /to right, #000 .*transparent\)$/], ['start', /to right, transparent, #000 [^,]*\)$/], ['both', /to right, transparent, #000 .*#000 .*transparent\)$/]])('fades the %s of the chip row where chips are cut', (edge, shape) => {

@@ -320,7 +320,7 @@
 }
 [data-view] :where(.tv-day-row:has(> .ui-thumb)) { grid-template-columns: [thumb] auto [num] auto [main] minmax(0, 1fr) [chev] auto; }
 [data-view] :where(.tv-day-row:hover) { background: var(--border); }
-[data-view] :where(.tv-day-row.is-active) { box-shadow: inset 3px 0 0 var(--day-color, var(--terracotta)); }
+[data-view] :where(.tv-day-row.is-active) { background: color-mix(in srgb, var(--ink) 6%, transparent); }
 [data-view] :where(.tv-day-row > .ui-thumb) { grid-column: thumb; grid-row: 1 / span 2; }
 [data-view] :where(.tv-day-row > .tv-day-num) { grid-column: num; grid-row: 1 / span 2; }
 [data-view] :where(.tv-day-main) { display: flex; flex-direction: column; grid-column: main; grid-row: 1; gap: 2px; min-width: 0; }

@@ -304,7 +304,6 @@
   margin-bottom: var(--sp-4);
   padding: var(--sp-3);
   border: 1px solid var(--dep-hair-strong);
-  border-left: 3px solid var(--amber);
   border-radius: var(--r-md);
   background: var(--dep-panel);
   color: var(--ink-secondary);
@@ -312,7 +311,6 @@
 }
 [data-view="departures"][data-view] .dv-stale > .ui-icon { color: var(--dep-todo); }
 [data-view="departures"][data-view] :is(.dv-stale, .dv-error) > :not(.ui-icon) { grid-column: 2; justify-self: start; }
-[data-view="departures"][data-view] .dv-error { border-left-color: var(--error); }
 [data-view="departures"][data-view] .dv-error > .ui-icon { grid-row: 1 / span 3; color: var(--dep-stop); }
 [data-view="departures"][data-view] .dv-error .dv-state-title { font: 600 var(--dep-fz-16)/1.3 var(--font-body); color: var(--ink); }
 [data-view="departures"][data-view] .dv-error .dv-state-text { font: inherit; color: inherit; }

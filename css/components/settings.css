@@ -459,9 +459,8 @@
   /* The section the page is on (js/settings/toc.js): a bar, heavier words and full ink, not colour alone.
      Only here, where the rail stays in sight; the chips of a narrow screen scroll away with the page. */
   .st-page .st-toc-chip[aria-current="true"] {
-    border-radius: 0 var(--r-md) var(--r-md) 0;
+    border-radius: var(--r-md);
     background: var(--surface-solid);
-    box-shadow: inset 2px 0 0 var(--terracotta);
     color: var(--ink);
     font-weight: 600;
   }
