@@ -7,6 +7,7 @@ import { readinessListHtml, readinessMeterHtml } from '../shared/readiness-list.
 import { mapCaptionHtml } from '../shared/trip-map.js';
 import { enterClass } from './parts.js';
 import { MAP_SPLIT } from './trip-hero.js';
+import { essentialsHtml } from './trip-essentials.js';
 import { jumpItems, readySentence } from './trip-words.js';
 
 const DAY_NOTE = 'Costs are per person, activities only. Weather is typical for the dates, not a forecast.';
@@ -47,7 +48,7 @@ function beforeHtml(model) {
 /** The `planIntro` part: '' for a plan without days. */
 export function planIntroHtml(model) {
   if (!model.days.length) return '';
-  return `${jumpHtml(model)}${beforeHtml(model)}`;
+  return `${jumpHtml(model)}${beforeHtml(model)}${essentialsHtml(model)}`;
 }
 
 const boardTop = (id, title, after, extra) => `<div class="${cls('atl-board-top', extra)}"><h2 class="atl-board-title"${attr('id', id)}>${title}</h2>${after}</div>`;
