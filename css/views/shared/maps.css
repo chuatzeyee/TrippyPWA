@@ -1,0 +1,330 @@
+/* Shared components: maps (tier 1, blueprint 8.1, 8.3 and 8.4). Owner: F7.
+   Scope: tv-map- (the trip map of js/views/shared/trip-map.js), wm- (the plates of world-map.js) and
+   the Leaflet overrides (leaflet- classes are allowed in this file only, and only they take !important,
+   because Leaflet's own sheet arrives later and weighs the same).
+   Every selector is [data-view] :where(<rest>) and weighs exactly 0,1,0, so any skin rule beats it in
+   any load order. A theme qualifier is wrapped: :where([data-theme="light"]) [data-view] ...
+   No rule here competes with common.css: the map's own controls use tv-map- classes, not ui-btn.
+   Checked by css/views/css-rules.test.js. Motion sits in the no-preference block at the end. */
+
+/* ---- Tokens ---- */
+[data-view] {
+  /* OpenStreetMap's light tiles, turned dark and made calm: almost no colour, low contrast, and let
+     through to the plate behind them, so the labels and symbols of the base map recede behind the day
+     markers and the route. trip-map.js reads the value again on trippy:theme. */
+  --tv-map-tile-filter: invert(1) hue-rotate(180deg) saturate(0.18) brightness(0.9) contrast(0.7) opacity(0.82);
+  --tv-map-ratio: 16 / 10;
+  --tv-map-max-h: 560px;
+}
+:where([data-theme="light"]) [data-view] {
+  --tv-map-tile-filter: saturate(0.3) sepia(0.16) contrast(0.78) brightness(1.05) opacity(0.86);
+}
+
+/* ---- The trip map: a box that reserves its height, and the stage that moves into the dialog ---- */
+[data-view] :where(.tv-map) { display: block; min-width: 0; }
+[data-view] :where(.tv-map-box) {
+  position: relative;
+  isolation: isolate; /* Leaflet's panes use z-index 200 to 1000: they stay inside this box */
+  container-type: inline-size; /* for the compact "Open full map" below; the dialog is not inside this box */
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--plate);
+}
+/* The box reserves its height before anything is in it, and keeps it while the stage is in the dialog:
+   the ratio of its width, but never under 260 px (a phone-width box would be too short at the ratio
+   alone) and never over --tv-map-max-h (a page-wide box would be taller than the screen). Written as
+   padding because min-height beside aspect-ratio would widen the box instead. A skin sets the two
+   variables for its own layout. */
+[data-view] :where(.tv-map-box)::before {
+  content: "";
+  display: block;
+  min-height: 260px;
+  padding-top: min(calc(100% / (var(--tv-map-ratio))), var(--tv-map-max-h));
+}
+[data-view] :where(.tv-map-stage) {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--plate);
+}
+[data-view] :where(.tv-map-fallback, .tv-map-canvas) { position: absolute; inset: 0; }
+[data-view] :where(.tv-map-canvas) { z-index: 0; }
+
+/* A day's colour (--tone, set inline on what carries a day), lightened so the dark numerals on it pass
+   AA for every day colour. Declared on the elements that carry --tone: a custom property is resolved
+   where it is declared. */
+[data-view] :where(.tv-map-fsvg, .tv-map-fdot, .tv-map-fbadge, .tv-map-pin-face, .tv-map-day--tone) {
+  --tv-map-face: color-mix(in srgb, var(--tone, var(--ink-secondary)) 80%, #fff);
+}
+
+/* The drawn fallback */
+[data-view] :where(.tv-map-fsvg) { display: block; width: 100%; height: 100%; }
+[data-view] :where(.tv-map-fgrid) { fill: none; stroke: var(--ui-hairline); stroke-width: 1; vector-effect: non-scaling-stroke; }
+[data-view] :where(.tv-map-fdot) { fill: var(--tv-map-face); stroke: var(--plate); stroke-width: 1; }
+[data-view] :where(.tv-map-fbadge circle, .tv-map-fmark circle) { fill: var(--tv-map-face); stroke: var(--plate); stroke-width: 2; }
+[data-view] :where(.tv-map-fbadge text, .tv-map-fstop) {
+  fill: var(--ui-on-accent);
+  font: 600 11px/1 var(--font-mono);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+[data-view] :where(.tv-map-froute) {
+  fill: none;
+  stroke: color-mix(in srgb, var(--tone, var(--ink)) 82%, var(--ink));
+  stroke-width: 2;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Markers and the route of the selected day (inside Leaflet's panes) */
+[data-view] :where(.tv-map-pin-face) {
+  position: absolute;
+  inset: 7px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--plate);
+  border-radius: 50%;
+  background: var(--tv-map-face);
+  color: var(--ui-on-accent);
+  font: 600 13px/1 var(--font-mono);
+  /* a thin ink ring, so a pale day colour still stands off light tiles */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent), var(--shadow-sm);
+}
+[data-view] :where(.tv-map-pin--stop .tv-map-pin-face) { inset: 8px; font-size: 12px; }
+[data-view] :where(.tv-map-pin--dot .tv-map-pin-face) { inset: 1px; border-width: 1.5px; box-shadow: none; }
+[data-view] :where(.tv-map-pin--day:hover .tv-map-pin-face) { border-color: var(--ink); }
+[data-view] :where(.tv-map-route) {
+  fill: none;
+  stroke: color-mix(in srgb, var(--tv-map-tone, var(--ink)) 82%, var(--ink)); /* towards the ink: readable on both tile tones */
+  stroke-width: 2.5;
+  stroke-dasharray: 2 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Leaflet overrides */
+[data-view] :where(.leaflet-container) { background: var(--plate) !important; font: inherit !important; }
+[data-view] :where(.leaflet-tile-pane) { filter: var(--tv-map-tile-filter); }
+[data-view] :where(.leaflet-marker-icon.tv-map-pin) { border: 0 !important; background: none !important; }
+[data-view] :where(.leaflet-marker-icon.tv-map-pin--stop) { cursor: default !important; }
+
+/* Controls on the map */
+[data-view] :where(.tv-map-btn, .tv-map-zoom-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-width: var(--ui-target);
+  min-height: var(--ui-target);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-solid);
+  color: var(--ink);
+  font: var(--text-small);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+[data-view] :where(.tv-map-btn:hover, .tv-map-zoom-btn:hover) { background: var(--surface-inset); }
+[data-view] :where(.tv-map-full) { position: absolute; top: var(--sp-3); left: var(--sp-3); z-index: 2; }
+@container (max-width: 419px) {
+  /* In a narrow box the button is its icon; its words stay for assistive technology. */
+  [data-view] :where(.tv-map-full) { padding: 0; }
+  [data-view] :where(.tv-map-full > span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+[data-view] :where(.tv-map-zoom) {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  z-index: 1100; /* above Leaflet's panes, inside the stage's own stacking context */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+[data-view] :where(.tv-map-zoom-btn) { width: var(--ui-target); height: var(--ui-target); padding: 0; }
+[data-view] :where(.tv-map-zoom-btn[disabled]) { opacity: 0.45; cursor: default; }
+[data-view] :where(.tv-map-attr) { position: absolute; right: 0; bottom: 0; z-index: 1100; margin: 0; }
+[data-view] :where(.tv-map-attr-link) {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  min-width: var(--ui-target);
+  min-height: var(--ui-target);
+  color: var(--ink);
+  font: 400 0.6875rem/1.35 var(--font-body);
+  text-decoration: none;
+}
+[data-view] :where(.tv-map-attr-link > span) {
+  padding: 2px var(--sp-2);
+  border-top-left-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
+}
+[data-view] :where(.tv-map-attr-link:hover > span) { text-decoration: underline; }
+[data-view] :where(.tv-map-note) {
+  position: absolute;
+  right: var(--sp-3);
+  bottom: var(--sp-3);
+  left: var(--sp-3);
+  z-index: 1100;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-solid);
+  color: var(--ink);
+  font: var(--text-caption);
+}
+[data-view] :where(.tv-map-note:empty) { display: none; }
+
+/* The caption (a view places it near its map slot) */
+[data-view] :where(.tv-map-caption, .tv-map-dialog-caption) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  color: var(--ink-secondary);
+  font: var(--text-small);
+}
+[data-view] :where(.tv-map-caption) { margin-top: var(--sp-3); }
+[data-view] :where(.tv-map-caption-text) { flex: 1 1 220px; min-width: 0; }
+
+/* Full screen: a <dialog> in the top layer, opened with showModal() */
+[data-view] :where(.tv-map-dialog) {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--parchment);
+  color: var(--ink);
+}
+[data-view] :where(.tv-map-dialog[open]) { display: flex; flex-direction: column; }
+[data-view] :where(.tv-map-dialog)::backdrop { background: var(--parchment); }
+[data-view] :where(.tv-map-dialog-bar) {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: calc(var(--sp-3) + env(safe-area-inset-top, 0px)) calc(var(--sp-3) + env(safe-area-inset-right, 0px)) var(--sp-3) calc(var(--sp-3) + env(safe-area-inset-left, 0px));
+  border-bottom: 1px solid var(--border);
+}
+[data-view] :where(.tv-map-close) { flex: none; box-shadow: none; }
+[data-view] :where(.tv-map-days) {
+  position: relative; /* the offset parent of its chips: the map scrolls the pressed one into sight */
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+[data-view] :where(.tv-map-day) {
+  flex: none;
+  min-width: var(--ui-target);
+  min-height: var(--ui-target);
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  font: 600 0.875rem/1 var(--font-mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+[data-view] :where(.tv-map-day:hover) { background: var(--border); }
+[data-view] :where(.tv-map-day[aria-pressed="true"]) { border-color: var(--ink); background: var(--ink); color: var(--parchment); }
+[data-view] :where(.tv-map-day--tone[aria-pressed="true"]) { border-color: var(--tv-map-face); background: var(--tv-map-face); color: var(--ui-on-accent); }
+[data-view] :where(.tv-map-dialog-stage) { position: relative; flex: 1 1 auto; min-height: 0; }
+[data-view] :where(.tv-map-dialog-caption) {
+  flex: none;
+  min-height: calc(var(--ui-target) + 2 * var(--sp-2));
+  padding: var(--sp-2) calc(var(--sp-4) + env(safe-area-inset-right, 0px)) calc(var(--sp-2) + env(safe-area-inset-bottom, 0px)) calc(var(--sp-4) + env(safe-area-inset-left, 0px));
+  border-top: 1px solid var(--border);
+}
+
+/* ---- The Atlas plates (inline SVG, world units; ported from previews/c-atlas/build/world.mjs) ---- */
+/* The plate fills its frame and cuts off what lies beyond its own box: the land and the grid run past
+   the view on every side. In a frame of the view's shape that is the edge of the view; a taller or wider
+   frame shows more of the world around it. A frame with no height gets the height of the view. */
+[data-view] :where(.wm-plate) { display: block; width: 100%; height: 100%; overflow: hidden; }
+[data-view] :where(.wm-defs) { position: absolute; width: 0; height: 0; overflow: hidden; }
+/* The land is styled on the <use> that draws it: a rule with an ancestor in it does not reach the copy
+   inside the <use>, but what the <use> itself has is inherited by it. --u is world units per CSS px
+   (set inline on each plate), so the coast is one CSS px wide at any plate size. */
+[data-view] :where(.wm-land-use) {
+  fill: color-mix(in srgb, var(--ink) 11%, var(--plate));
+  stroke: color-mix(in srgb, var(--ink) 24%, var(--plate));
+  stroke-width: calc(var(--u, 1) * 1px);
+  stroke-linejoin: round;
+}
+[data-view] :where(.wm-grat) { fill: none; stroke: color-mix(in srgb, var(--ink) 6%, transparent); stroke-width: 1; vector-effect: non-scaling-stroke; }
+[data-view] :where(.wm-arc) { fill: none; vector-effect: non-scaling-stroke; }
+[data-view] :where(.wm-arc--past) { stroke: color-mix(in srgb, var(--ink) 20%, transparent); stroke-width: 1; }
+[data-view] :where(.wm-arc--up) { stroke: color-mix(in srgb, var(--terracotta) 88%, transparent); stroke-width: 1.5; stroke-dasharray: 2 5; stroke-linecap: round; }
+[data-view] :where(.wm-arc--live) { stroke: color-mix(in srgb, var(--live) 92%, transparent); stroke-width: 1.5; }
+[data-view] :where(.wm-dot, .wm-ring, .wm-ping, .wm-hit) { vector-effect: non-scaling-stroke; }
+[data-view] :where(.wm-mark--past .wm-dot) { fill: color-mix(in srgb, var(--ink) 55%, var(--plate)); stroke: var(--plate); stroke-width: 1.5; }
+[data-view] :where(.wm-mark--up .wm-dot) { fill: var(--terracotta); stroke: var(--plate); stroke-width: 2; }
+[data-view] :where(.wm-mark--up .wm-ring) { fill: none; stroke: color-mix(in srgb, var(--terracotta) 55%, transparent); stroke-width: 1.5; }
+[data-view] :where(.wm-mark--live .wm-dot) { fill: var(--live); stroke: var(--plate); stroke-width: 2; }
+[data-view] :where(.wm-mark--live .wm-ring) { fill: none; stroke: color-mix(in srgb, var(--live) 60%, transparent); stroke-width: 1.5; }
+[data-view] :where(.wm-mark--home .wm-dot) { fill: var(--plate); stroke: var(--ink); stroke-width: 2; }
+[data-view] :where(.wm-mark--home .wm-ring) { fill: none; stroke: none; }
+[data-view] :where(.wm-ping) { fill: none; stroke: var(--live); stroke-width: 1.5; opacity: 0.5; transform-box: fill-box; transform-origin: center; }
+[data-view] :where(.wm-hit) { fill: transparent; }
+[data-view] :where(.wm-pin) { cursor: pointer; outline: none; }
+[data-view] :where(.wm-pin:hover .wm-dot) { stroke: var(--ink); }
+[data-view] :where(.wm-pin.is-sel .wm-hit) { stroke: var(--ink); stroke-width: 1.5; }
+/* The ink, not amber: amber is about 2.2 to 1 on the light plate. */
+[data-view] :where(.wm-pin:focus-visible .wm-hit) { stroke: var(--ink); stroke-width: 2.5; }
+[data-view] :where(.wm-tag rect) { fill: var(--surface-solid); stroke: var(--border-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
+[data-view] :where(.wm-tag text) { fill: var(--ink); font-family: var(--font-mono); font-weight: 500; letter-spacing: -0.01em; }
+[data-view] :where(.wm-tag--live rect) { stroke: color-mix(in srgb, var(--live) 70%, transparent); }
+[data-view] :where(.wm-tag--up rect) { stroke: color-mix(in srgb, var(--terracotta) 70%, transparent); }
+[data-view] :where(.wm-tag--quiet rect) { fill: none; stroke: none; }
+[data-view] :where(.wm-tag--quiet text) { fill: var(--ink-secondary); font-weight: 400; }
+
+/* The places list: the keyboard and touch path to every pin */
+[data-view] :where(.wm-places) { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+[data-view] :where(.wm-place) {
+  position: relative; /* holds its visually hidden words, so a list that scrolls takes them along */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--ui-target);
+  padding: var(--sp-1) var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  font: var(--text-small);
+  text-align: left;
+  cursor: pointer;
+}
+[data-view] :where(.wm-place:hover) { background: var(--border); }
+[data-view] :where(.wm-place[aria-pressed="true"]) { border-color: var(--ink); background: var(--border); }
+[data-view] :where(.wm-place-dot) { flex: none; width: 10px; height: 10px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 55%, var(--plate)); }
+[data-view] :where(.wm-place[data-kind="live"] .wm-place-dot) { background: var(--live); }
+[data-view] :where(.wm-place[data-kind="up"] .wm-place-dot) { background: var(--terracotta); }
+[data-view] :where(.wm-place[data-kind="home"] .wm-place-dot) { background: var(--plate); box-shadow: inset 0 0 0 2px var(--ink); }
+
+/* ---- Hidden parts stay hidden whatever display a rule above gave them ---- */
+[data-view] :where(.tv-map[hidden], .tv-map [hidden]) { display: none; }
+
+/* ---- Motion ---- */
+@media (prefers-reduced-motion: no-preference) {
+  [data-view] :where(.tv-map-btn, .tv-map-zoom-btn, .tv-map-day, .wm-place) { transition: var(--transition-interactive); }
+  [data-view] :where(.wm-ping) { animation: wm-ping 2.4s var(--ease-out) infinite; }
+}
+@keyframes wm-ping {
+  from { transform: scale(0.55); opacity: 0.7; }
+  to { transform: scale(1.5); opacity: 0; }
+}

@@ -1,0 +1,1216 @@
+/* The departures skin (tier 2, blueprint 8.1). Owner: VA.
+   A departures board: mono type for dates, times, counts and money, split-flap digits for countdowns,
+   and the boarding-pass shape (perforation and notches) for the two lead cards and the trip hero only.
+   Scope: prefix dep-. Every selector starts with [data-view="departures"][data-view] and weighs 0,2,0 to
+   0,6,0, so it beats every shared rule and never ties with a reset. No bare element right after the
+   scope, no position: fixed. Checked by css/views/css-rules.test.js.
+   Widths: the dashboard uses viewport queries (640, 1024, 1440). Inside the trip page the landing
+   uses container queries on the .tv-landing wrappers and on this skin's own boxes; the only viewport
+   queries there follow the bar, which the controller itself switches by viewport width at 1024 px. */
+
+/* The cascade probe: this must win over the shared sheet's probe rule in every load order. */
+[data-view="departures"][data-view] .ui-probe { outline-style: dashed; }
+
+/* ---- Tokens: every colour is a design token or a mix of tokens ---- */
+[data-view="departures"][data-view] {
+  --dv-max: 1120px;
+  --tv-max: 1120px;
+  --dep-app-pad: var(--sp-3);
+  --dep-fz-12: 0.75rem;
+  --dep-fz-14: 0.875rem;
+  --dep-fz-16: 1rem;
+  --dep-fz-18: 1.125rem;
+  --dep-fz-20: 1.25rem;
+  --dep-fz-24: 1.5rem;
+  --dep-fz-32: 2rem;
+  --dep-fz-44: 2.75rem;
+  /* Text on photos and the wash under it do not follow the theme: light ink on charcoal in both. */
+  --dep-photo-ink: var(--ink);
+  --dep-shade: var(--parchment);
+  --dep-scrim:
+    linear-gradient(to top, color-mix(in srgb, var(--dep-shade) 90%, transparent) 0%, color-mix(in srgb, var(--dep-shade) 62%, transparent) 30%, color-mix(in srgb, var(--dep-shade) 0%, transparent) 64%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--dep-shade) 46%, transparent) 0%, color-mix(in srgb, var(--dep-shade) 0%, transparent) 28%);
+  --dep-panel: var(--surface-solid);
+  --dep-panel-hi: color-mix(in srgb, var(--ink) 5%, var(--surface-solid));
+  --dep-hair: var(--border);
+  --dep-hair-strong: var(--border-strong);
+  --dep-accent: color-mix(in srgb, var(--terracotta) 74%, var(--ink));
+  --dep-teal: color-mix(in srgb, var(--teal) 62%, var(--ink));
+  --dep-ready: var(--sage);
+  --dep-todo: var(--amber);
+  --dep-plan: var(--steel);
+  --dep-stop: color-mix(in srgb, var(--error) 66%, var(--ink));
+  --dep-btn: var(--terracotta);
+  --dep-btn-hover: color-mix(in srgb, var(--terracotta) 86%, var(--ink));
+  --dep-btn-ink: var(--parchment);
+  --dep-tile: color-mix(in srgb, var(--dep-photo-ink) 12%, var(--dep-shade));
+  --dep-tile-lo: color-mix(in srgb, var(--dep-photo-ink) 7%, var(--dep-shade));
+  --dep-tile-edge: color-mix(in srgb, var(--dep-photo-ink) 20%, var(--dep-shade));
+}
+[data-theme="light"] [data-view="departures"][data-view] {
+  --dep-photo-ink: var(--parchment);
+  --dep-shade: var(--ink);
+  --dep-accent: color-mix(in srgb, var(--terracotta) 60%, var(--ink));
+  --dep-teal: color-mix(in srgb, var(--teal) 58%, var(--ink));
+  --dep-ready: color-mix(in srgb, var(--sage) 58%, var(--ink));
+  --dep-todo: color-mix(in srgb, var(--amber) 48%, var(--ink));
+  --dep-plan: color-mix(in srgb, var(--steel) 58%, var(--ink));
+  --dep-stop: color-mix(in srgb, var(--error) 70%, var(--ink));
+  --dep-btn: var(--terracotta-hover);
+  --dep-btn-hover: color-mix(in srgb, var(--terracotta-hover) 88%, var(--ink));
+  --dep-btn-ink: var(--surface-solid);
+}
+@media (min-width: 768px) {
+  [data-view="departures"][data-view] { --dep-app-pad: var(--sp-6); }
+}
+
+/* ---- The dashboard page box: #app already pads the page, the root adds the rest of the gutter ---- */
+[data-view="departures"][data-view].dv-root {
+  max-width: var(--dv-max);
+  padding: 0 max(0px, calc(var(--gutter) - var(--dep-app-pad))) var(--sp-12);
+}
+
+/* ---- Type: mono for figures only ---- */
+[data-view="departures"][data-view] .dep-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+[data-view="departures"][data-view] .dep-lbl { font: 500 var(--dep-fz-14)/1.3 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-note { font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-count { font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-sec-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin: 0 0 var(--sp-3); }
+[data-view="departures"][data-view] .dep-sec-h > h2 { font: var(--text-h1); color: var(--ink); }
+[data-view="departures"][data-view] .dep-sec-h > .dep-mono { font-size: var(--dep-fz-14); line-height: 1; color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-flags { display: inline-flex; gap: var(--sp-1); margin-left: var(--sp-2); vertical-align: baseline; }
+/* The last word of a title and its flags stay on one line (titleHtml). */
+[data-view="departures"][data-view] .dep-tie { white-space: nowrap; }
+[data-view="departures"][data-view] .dep-flags > .ui-flag { box-shadow: 0 0 0 1px var(--dep-hair-strong); }
+[data-view="departures"][data-view] .dep-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  margin-left: var(--sp-2);
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--terracotta-light);
+  color: var(--dep-accent);
+  font: 600 var(--dep-fz-12)/1 var(--font-body);
+  vertical-align: middle;
+}
+
+/* ---- Status: a lamp at full colour, a label that meets AA in both themes ---- */
+[data-view="departures"][data-view] .dep-st { display: inline-flex; align-items: center; gap: var(--sp-2); font: 600 var(--dep-fz-14)/1.25 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-lamp {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dep-lampc, currentColor);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dep-lampc, currentColor) 24%, transparent);
+}
+[data-view="departures"][data-view] .dep-st--live,
+[data-view="departures"][data-view] .dep-st--ready { color: var(--dep-ready); --dep-lampc: var(--sage); }
+[data-view="departures"][data-view] .dep-st--todo { color: var(--dep-todo); --dep-lampc: var(--amber); }
+[data-view="departures"][data-view] .dep-st--plan { color: var(--dep-plan); --dep-lampc: var(--steel); }
+[data-view="departures"][data-view] .dep-st--stop { color: var(--dep-stop); --dep-lampc: var(--error); }
+[data-view="departures"][data-view] .dep-chip-glass,
+[data-view="departures"][data-view] .dep-photo-over .ui-ready-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 28px;
+  padding: 0 var(--sp-3);
+  border: 1px solid color-mix(in srgb, var(--dep-photo-ink) 16%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--dep-shade) 92%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+/* The readiness chip as a status: the lamp says it, the meter is left to "Before you go". */
+[data-view="departures"][data-view] .ui-ready-chip { gap: var(--sp-2); padding: 0; background: none; color: var(--dep-todo); font: 600 var(--dep-fz-14)/1.25 var(--font-body); --dep-lampc: var(--amber); }
+[data-view="departures"][data-view] .ui-ready-chip > .ui-meter { display: none; }
+[data-view="departures"][data-view] .ui-ready-chip::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dep-lampc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dep-lampc) 24%, transparent);
+}
+[data-view="departures"][data-view] .ui-ready-chip[data-ready="ready"] { color: var(--dep-ready); --dep-lampc: var(--sage); }
+[data-view="departures"][data-view] .ui-ready-chip[data-ready="checking"] { color: var(--ink-secondary); --dep-lampc: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-photo-over .ui-ready-chip { padding: 0 var(--sp-3); }
+
+/* ---- Buttons ---- */
+[data-view="departures"][data-view] .ui-btn,
+[data-view="departures"][data-view] .ui-menu-btn { padding: 0 var(--sp-4); font: 600 var(--dep-fz-14)/1 var(--font-body); }
+[data-view="departures"][data-view] .ui-btn:hover,
+[data-view="departures"][data-view] .ui-menu-btn:hover { border-color: color-mix(in srgb, var(--ink) 30%, transparent); background: var(--dep-panel-hi); }
+[data-view="departures"][data-view] .ui-btn--primary,
+[data-view="departures"][data-view] .ui-btn--primary:hover { border-color: transparent; background: var(--dep-btn); color: var(--dep-btn-ink); filter: none; }
+[data-view="departures"][data-view] .ui-btn--primary:hover { background: var(--dep-btn-hover); }
+[data-view="departures"][data-view] .ui-btn--primary:focus-visible { outline-color: var(--ink); }
+[data-view="departures"][data-view] .ui-btn--danger { border-color: color-mix(in srgb, var(--error) 45%, transparent); color: var(--dep-stop); }
+[data-view="departures"][data-view] .ui-btn--small { padding: 0 var(--sp-3); }
+
+/* ---- Split-flap tiles: countdowns, the live day and the clocks, nothing else ---- */
+[data-view="departures"][data-view] .ui-flap { font: 600 var(--dep-fz-20)/1 'Figtree', var(--font-body); font-variant-numeric: tabular-nums; vertical-align: middle; }
+[data-view="departures"][data-view] .ui-flap > .ui-flap-cells { gap: 2px; }
+[data-view="departures"][data-view] .ui-flap .flap-cell {
+  width: 1.3em;
+  height: 1.7em;
+  overflow: hidden;
+  border: 1px solid var(--dep-tile-edge);
+  border-radius: var(--r-sm);
+  background: var(--dep-tile);
+  font-family: inherit;
+}
+[data-view="departures"][data-view] .ui-flap .flap-face,
+[data-view="departures"][data-view] .ui-flap .flap-top,
+[data-view="departures"][data-view] .ui-flap .flap-bottom { border-radius: 0; background: var(--dep-tile); box-shadow: none; }
+[data-view="departures"][data-view] .ui-flap .flap-face::after { content: none; }
+[data-view="departures"][data-view] .ui-flap .flap-face,
+[data-view="departures"][data-view] .ui-flap .flap-top-text,
+[data-view="departures"][data-view] .ui-flap .flap-bottom-text { color: var(--dep-photo-ink); }
+/* The seam is part of the tile behind the digit, and only on the large sizes. */
+[data-view="departures"][data-view] .dep-flap--lg { font-size: var(--dep-fz-24); }
+[data-view="departures"][data-view] .dep-flap--xl { font-size: var(--dep-fz-32); }
+[data-view="departures"][data-view] .dep-flap--xl > .ui-flap-cells { gap: var(--sp-1); }
+[data-view="departures"][data-view] :is(.dep-flap--lg, .dep-flap--xl) .flap-top { box-shadow: inset 0 -1px 0 var(--dep-shade); }
+[data-view="departures"][data-view] :is(.dep-flap--lg, .dep-flap--xl) .flap-bottom { background: var(--dep-tile-lo); }
+/* The countdown that is next in line is orange: full strength on the large tiles, a lighter mix on
+   the small ones of a board row, where the digit has to meet 4.5 to 1 in both themes. */
+[data-view="departures"][data-view] .dep-flap--hot :is(.flap-face, .flap-top-text, .flap-bottom-text) { color: color-mix(in srgb, var(--terracotta) 55%, var(--dep-photo-ink)); }
+[data-view="departures"][data-view] .dep-flap--xl.dep-flap--hot :is(.flap-face, .flap-top-text, .flap-bottom-text) { color: color-mix(in srgb, var(--terracotta) 78%, var(--dep-photo-ink)); }
+
+/* ---- The pass: a photo, a perforation with two notches, a stub ---- */
+[data-view="departures"][data-view] .dep-pass {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--dep-hair-strong);
+  border-radius: var(--r-lg);
+  background: var(--dep-panel);
+  box-shadow: var(--shadow-md);
+}
+/* The frame and the words over it share one grid cell, so a long title makes the photo taller
+   instead of running out of it. */
+[data-view="departures"][data-view] .dep-pass-photo { display: grid; min-width: 0; container-type: inline-size; }
+[data-view="departures"][data-view] .dep-pass-photo > .ui-frame { grid-area: 1 / 1; align-self: stretch; width: 100%; aspect-ratio: 2 / 1; border-radius: 0; }
+[data-view="departures"][data-view] .dep-pass-photo > .ui-frame::after { background: var(--dep-scrim); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dep-photo-ink) 8%, transparent); }
+/* Without a photo the title over the tint is the label: the placeholder's own mark would sit under it. */
+[data-view="departures"][data-view] .dep-pass-photo .ui-frame-none > .ui-icon { display: none; }
+[data-view="departures"][data-view] .dep-photo-over {
+  position: relative;
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-width: 0;
+  color: var(--dep-photo-ink);
+  pointer-events: none;
+  /* On the photo the status colours stay at full strength in both themes. */
+  --dep-ready: var(--sage);
+  --dep-todo: var(--amber);
+  --dep-plan: var(--steel);
+}
+[data-view="departures"][data-view] .dep-over-top { display: flex; flex-wrap: wrap; gap: var(--sp-2); padding: var(--sp-3) var(--sp-3) 0; }
+[data-view="departures"][data-view] .dep-over-bot { min-width: 0; margin-top: auto; padding: 0 var(--sp-4) var(--sp-3); }
+/* The credit chip sits in the bottom right corner of the frame: the title keeps clear of it. */
+[data-view="departures"][data-view] .dep-pass-photo:has(.ui-credit) .dep-over-bot { padding-bottom: calc(var(--sp-2) + 26px); }
+@container (min-width: 520px) {
+  [data-view="departures"][data-view] .dep-pass-photo:has(.ui-credit) .dep-over-bot { padding-right: 10.5rem; padding-bottom: var(--sp-3); }
+}
+[data-view="departures"][data-view] .dep-pass-title {
+  font: var(--text-h1);
+  line-height: 1.12;
+  color: var(--dep-photo-ink);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  text-shadow: 0 1px 12px color-mix(in srgb, var(--dep-shade) 70%, transparent);
+}
+[data-view="departures"][data-view] .dep-pass-title .ui-flag { box-shadow: 0 0 0 1px color-mix(in srgb, var(--dep-photo-ink) 40%, transparent); }
+[data-view="departures"][data-view] .dep-pass-place { margin-top: var(--sp-1); font: 500 var(--dep-fz-14)/1.3 var(--font-body); color: color-mix(in srgb, var(--dep-photo-ink) 86%, transparent); }
+[data-view="departures"][data-view] .dep-pass-photo .ui-credit { --ui-credit-face: color-mix(in srgb, var(--dep-shade) 80%, transparent); color: color-mix(in srgb, var(--dep-photo-ink) 92%, transparent); font-size: 0.6875rem; }
+[data-view="departures"][data-view] .dep-pass-stub { position: relative; min-width: 0; padding: var(--sp-4); border-top: 2px dashed var(--dep-hair-strong); }
+[data-view="departures"][data-view] .dep-perf { position: relative; height: 0; border-top: 2px dashed var(--dep-hair-strong); }
+[data-view="departures"][data-view] :is(.dep-pass-stub, .dep-perf, .dep-strip)::before,
+[data-view="departures"][data-view] :is(.dep-pass-stub, .dep-perf, .dep-strip)::after {
+  content: '';
+  position: absolute;
+  top: -9px;
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--dep-hair-strong);
+  border-radius: 50%;
+  background: var(--parchment);
+}
+[data-view="departures"][data-view] :is(.dep-pass-stub, .dep-perf, .dep-strip)::before { left: -9px; }
+[data-view="departures"][data-view] :is(.dep-pass-stub, .dep-perf, .dep-strip)::after { right: -9px; }
+[data-view="departures"][data-view] .dep-countline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+[data-view="departures"][data-view] .dep-countline-l { font: 500 var(--dep-fz-14)/1.25 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-of { font: 500 var(--dep-fz-16)/1 var(--font-body); color: var(--ink-secondary); white-space: nowrap; }
+[data-view="departures"][data-view] .dep-facts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3) var(--sp-4); margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--dep-hair); }
+[data-view="departures"][data-view] .dep-facts .dep-wide { grid-column: 1 / -1; }
+[data-view="departures"][data-view] .dep-facts dt { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-facts dd { font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink); }
+[data-view="departures"][data-view] .dep-facts small { display: block; font: var(--text-caption); color: var(--ink-secondary); }
+
+/* ---- Route line: airport codes when the plan has them, city names when it does not ---- */
+[data-view="departures"][data-view] .ui-route { grid-template-columns: auto minmax(var(--sp-12), 1fr) auto; margin-top: var(--sp-4); }
+[data-view="departures"][data-view] .ui-route-code { font: 600 var(--dep-fz-24)/1.75rem var(--font-mono); letter-spacing: 0.02em; }
+[data-view="departures"][data-view] .ui-route-name { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .ui-route-name--lead { font: 400 var(--dep-fz-20)/1.75rem var(--font-heading); color: var(--ink); }
+[data-view="departures"][data-view] .ui-route-mid { padding-top: 0; }
+[data-view="departures"][data-view] .ui-route-track { min-height: 1.75rem; gap: var(--sp-2); }
+[data-view="departures"][data-view] .ui-route-track::before,
+[data-view="departures"][data-view] .ui-route-track::after { border-top: 2px dashed var(--dep-hair-strong); }
+[data-view="departures"][data-view] .ui-route[data-booked] .ui-route-track::before,
+[data-view="departures"][data-view] .ui-route[data-booked] .ui-route-track::after { border-top: 2px solid var(--dep-ready); }
+[data-view="departures"][data-view] .ui-route[data-mode="plane"] .ui-route-track > .ui-icon { rotate: 90deg; }
+[data-view="departures"][data-view] .ui-route-time { font: 500 var(--dep-fz-12)/1.4 var(--font-mono); color: var(--ink); }
+[data-view="departures"][data-view] .ui-route[data-kind="home"] { justify-content: space-between; }
+[data-view="departures"][data-view] .ui-route[data-kind="home"] .ui-icon { color: var(--ink-secondary); }
+
+/* ============================ Dashboard ============================ */
+
+/* ---- 1. The greeting row ---- */
+/* On a phone the greeting and the date share one line and the two buttons the next, so the first
+   plan starts within 150 px of the app bar. */
+[data-view="departures"][data-view] .dep-hello { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) 0; }
+[data-view="departures"][data-view] .dep-hello-main { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--sp-3); min-width: 0; }
+[data-view="departures"][data-view] .dep-hello-h { font: var(--text-h1); line-height: 1.15; color: var(--ink); overflow-wrap: anywhere; }
+[data-view="departures"][data-view] .dep-hello-sub { font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-hello-sum { display: none; }
+[data-view="departures"][data-view] .dep-clocks { display: none; }
+[data-view="departures"][data-view] .dep-hello-actions { display: flex; flex: 1 1 100%; gap: var(--sp-2); }
+[data-view="departures"][data-view] .dep-hello-actions > .ui-btn { flex: 1 1 0; padding: 0 var(--sp-3); }
+[data-view="departures"][data-view] .dep-clock { display: grid; justify-items: start; gap: var(--sp-2); }
+[data-view="departures"][data-view] .dep-clock-t { display: inline-flex; align-items: center; gap: var(--sp-1); }
+[data-view="departures"][data-view] .dep-clock-sep { font: 600 var(--dep-fz-18)/1 var(--font-mono); font-style: normal; color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-clock-m { margin-left: var(--sp-1); font-size: var(--dep-fz-14); color: var(--ink-secondary); }
+
+/* The one-time chooser, which the controller puts in the slot under the greeting. */
+[data-view="departures"][data-view] .ui-chooser { margin-bottom: var(--sp-5); border-color: var(--dep-hair-strong); background: var(--dep-panel); }
+
+/* ---- Banners: the saved list, the load error ---- */
+[data-view="departures"][data-view] .dv-stale,
+[data-view="departures"][data-view] .dv-error {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--sp-2) var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-3);
+  border: 1px solid var(--dep-hair-strong);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--r-md);
+  background: var(--dep-panel);
+  color: var(--ink-secondary);
+  font: 400 var(--dep-fz-14)/1.45 var(--font-body);
+}
+[data-view="departures"][data-view] .dv-stale > .ui-icon { color: var(--dep-todo); }
+[data-view="departures"][data-view] :is(.dv-stale, .dv-error) > :not(.ui-icon) { grid-column: 2; justify-self: start; }
+[data-view="departures"][data-view] .dv-error { border-left-color: var(--error); }
+[data-view="departures"][data-view] .dv-error > .ui-icon { grid-row: 1 / span 3; color: var(--dep-stop); }
+[data-view="departures"][data-view] .dv-error .dv-state-title { font: 600 var(--dep-fz-16)/1.3 var(--font-body); color: var(--ink); }
+[data-view="departures"][data-view] .dv-error .dv-state-text { font: inherit; color: inherit; }
+[data-view="departures"][data-view] .dv-error .dv-state-actions { margin-top: 0; }
+
+/* ---- 2 and 3. Happening now beside Next departure ---- */
+[data-view="departures"][data-view] .dep-brief { display: grid; gap: var(--sp-8); }
+[data-view="departures"][data-view] .dep-brief > section { min-width: 0; }
+/* A side with no plan is not drawn; its region stays in the page for the next patch. */
+[data-view="departures"][data-view] .dep-brief > section:not(:has([data-trip-id])) { display: none; }
+[data-view="departures"][data-view] .dep-brief:not(:has([data-trip-id])) { display: none; }
+
+[data-view="departures"][data-view] .dep-dayline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+[data-view="departures"][data-view] .dep-wx { display: inline-flex; align-items: flex-start; gap: var(--sp-2); font: 400 var(--dep-fz-14)/1.3 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-wx--line { display: flex; align-items: center; min-height: 1.3em; margin-top: var(--sp-2); }
+[data-view="departures"][data-view] .ui-segs { gap: var(--sp-1); }
+[data-view="departures"][data-view] .ui-seg { height: 6px; background: color-mix(in srgb, var(--ink) 16%, var(--dep-panel)); }
+[data-view="departures"][data-view] .ui-seg[data-seg="done"] { background: var(--sage); }
+[data-view="departures"][data-view] .ui-seg[data-seg="now"] { background: var(--terracotta); }
+[data-view="departures"][data-view] .dep-stub-main > .ui-segs { margin-top: var(--sp-3); }
+[data-view="departures"][data-view] .dep-ticks-ends { display: flex; justify-content: space-between; gap: var(--sp-2); margin-top: var(--sp-2); font: var(--text-caption); color: var(--ink-secondary); }
+/* The same least height with and without its briefing, so "Open today" keeps its place. */
+[data-view="departures"][data-view] .dep-today { min-height: 7rem; margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--dep-hair); }
+[data-view="departures"][data-view] .dep-nextstop { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: var(--sp-3); margin-top: var(--sp-2); }
+[data-view="departures"][data-view] .dep-nextstop > time { font-size: var(--dep-fz-16); font-weight: 600; color: var(--dep-accent); white-space: nowrap; }
+[data-view="departures"][data-view] .dep-nextstop strong { display: block; font: 600 var(--dep-fz-16)/1.3 var(--font-body); color: var(--ink); }
+[data-view="departures"][data-view] .dep-nextstop strong + span,
+[data-view="departures"][data-view] .dep-nostop { display: block; margin-top: var(--sp-1); font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-pass-actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); }
+[data-view="departures"][data-view] .dep-pass-actions > .ui-btn--primary { flex: 1; }
+[data-view="departures"][data-view] .dep-stub-side { display: none; }
+[data-view="departures"][data-view] .dep-stops { margin-top: var(--sp-1); }
+[data-view="departures"][data-view] .dep-stops > li { display: grid; grid-template-columns: 5.25rem minmax(0, 1fr); align-items: baseline; gap: var(--sp-3); padding: var(--sp-2) 0; border-bottom: 1px solid var(--dep-hair); font: 400 var(--dep-fz-14)/1.4 var(--font-body); }
+[data-view="departures"][data-view] .dep-stops time { color: var(--ink-secondary); white-space: nowrap; }
+[data-view="departures"][data-view] .dep-tomorrow-l { margin-top: var(--sp-4); }
+[data-view="departures"][data-view] .dep-tomorrow { margin-top: var(--sp-1); font: 400 var(--dep-fz-14)/1.45 var(--font-body); }
+[data-view="departures"][data-view] .dep-stubfacts { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-6); margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--dep-hair); }
+[data-view="departures"][data-view] .dep-stubfacts dt { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-stubfacts dd { font-size: var(--dep-fz-14); line-height: 1.4; }
+[data-view="departures"][data-view] .dep-stubfacts small { font: var(--text-caption); color: var(--ink-secondary); }
+/* Space held for a briefing that has not arrived (blueprint 3.3). */
+[data-view="departures"][data-view] .dep-reserve--side { min-height: 15rem; }
+[data-view="departures"][data-view] .dep-reserve--chip { display: inline-block; width: 4.5rem; height: calc(var(--dep-fz-14) * 1.25); vertical-align: middle; }
+[data-view="departures"][data-view] .dep-over-top > .dep-reserve--chip { height: 30px; }
+[data-view="departures"][data-view] .dep-facts > .dep-wide { min-height: 3.4rem; }
+[data-view="departures"][data-view] .dep-reserve--todo { min-height: 12.75rem; }
+/* The route line of the next departure holds the height of its tallest form (a code, a name, a time). */
+[data-view="departures"][data-view] .dep-pass--next .ui-route { min-height: 4.1rem; }
+@media (max-width: 359px) {
+  [data-view="departures"][data-view] .dep-nextstop { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+
+/* Another live plan: one compact row */
+[data-view="departures"][data-view] .dep-liverow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  grid-template-areas: "ph title title" "ph meta go";
+  align-items: center;
+  gap: var(--sp-1) var(--sp-3);
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--dep-hair-strong);
+  border-radius: var(--r-lg);
+  background: var(--dep-panel);
+}
+[data-view="departures"][data-view] .dep-liverow:hover { background: var(--dep-panel-hi); }
+[data-view="departures"][data-view] .dep-liverow > .ui-thumb { grid-area: ph; }
+[data-view="departures"][data-view] .dep-liverow-title { grid-area: title; font: 400 var(--dep-fz-18)/1.25 var(--font-heading); color: var(--ink); overflow-wrap: anywhere; }
+[data-view="departures"][data-view] .dep-liverow-meta { grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--sp-3); font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-liverow-ends { display: none; }
+[data-view="departures"][data-view] .dep-go {
+  position: relative;
+  z-index: 3; /* above the stretched card link */
+  grid-area: go;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: 44px;
+  color: var(--dep-accent);
+  font: 600 var(--dep-fz-14)/1 var(--font-body);
+  white-space: nowrap;
+}
+/* On a 320 px screen the day count and "Open today" share the line under the photo and the title. */
+@media (max-width: 359px) {
+  [data-view="departures"][data-view] .dep-liverow { grid-template-areas: "ph title title" "meta meta go"; }
+}
+
+/* The next departure: what is left to do, and the way in */
+[data-view="departures"][data-view] .dep-pass-todo { min-width: 0; padding: var(--sp-4); }
+[data-view="departures"][data-view] .dep-pass-todo > .dep-lbl { margin-bottom: var(--sp-2); }
+[data-view="departures"][data-view] .dep-todo { gap: 0; }
+[data-view="departures"][data-view] .dep-todo > .ui-ready-head { display: none; }
+[data-view="departures"][data-view] .dep-todo .ui-ready-row {
+  position: relative;
+  z-index: 3; /* above the stretched card link: the row has its own */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--sp-3);
+  min-height: 56px;
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--dep-hair);
+}
+[data-view="departures"][data-view] .dep-todo .ui-ready-mark { width: 8px; height: 8px; border: 0; background: var(--amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 24%, transparent); }
+[data-view="departures"][data-view] .dep-todo .ui-ready-label { font: 600 var(--dep-fz-16)/1.3 var(--font-body); }
+[data-view="departures"][data-view] .dep-todo .ui-ready-status { font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-todo .ui-ready-detail { display: none; }
+[data-view="departures"][data-view] .dep-todo .ui-ready-action { position: static; grid-column: auto; justify-self: end; min-width: 44px; padding: 0; border: 0; color: var(--ink-ghost); }
+[data-view="departures"][data-view] .dep-todo .ui-ready-action::after { content: ''; position: absolute; inset: 0; }
+[data-view="departures"][data-view] .dep-todo .ui-ready-action > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+[data-view="departures"][data-view] .dep-todo .ui-ready-row:hover .ui-ready-label { color: var(--dep-accent); }
+/* "Open <title>" is the card link itself: the button is what you see, its ::after is the stretched part. */
+[data-view="departures"][data-view] .dep-pass-open { position: static; display: flex; width: 100%; margin-top: var(--sp-3); border-radius: var(--r-md); text-align: center; overflow-wrap: anywhere; }
+[data-view="departures"][data-view] .dep-pass-open::after { content: ''; position: absolute; inset: 0; z-index: 1; }
+[data-view="departures"][data-view] .dep-pass-open:focus-visible { outline-offset: 2px; }
+
+/* ---- 4. Your trips: search, filters, boards ---- */
+[data-view="departures"][data-view] .dep-trips { margin-top: var(--sp-12); }
+[data-view="departures"][data-view] .dep-toolbar { display: grid; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-4); }
+[data-view="departures"][data-view] .dep-toolbar > .dep-sec-h { margin: 0; }
+[data-view="departures"][data-view] .dep-toolbar > .dv-filter { display: grid; gap: var(--sp-2); }
+[data-view="departures"][data-view] .dv-search { flex: none; max-width: none; }
+[data-view="departures"][data-view] .dv-search-input { height: 44px; padding-left: var(--sp-10); border-color: var(--dep-hair-strong); border-radius: var(--r-md); background: var(--surface-inset); font: var(--text-body); }
+[data-view="departures"][data-view] .dv-search-input::placeholder { color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dv-search-input:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; border-color: var(--ink); box-shadow: none; }
+/* The four time filters read as one segmented control; "Shared with me" stands beside it. */
+[data-view="departures"][data-view] .dv-chips { flex-wrap: wrap; gap: var(--sp-2) 0; margin: 0; padding: 0; overflow: visible; }
+[data-view="departures"][data-view] .dv-chips > .ui-chip {
+  position: relative;
+  flex: 1 1 auto;
+  justify-content: center;
+  margin-left: -1px;
+  padding: 0 var(--sp-3);
+  border-color: var(--dep-hair-strong);
+  border-radius: 0;
+  background: var(--surface-inset);
+  color: var(--ink-secondary);
+  font: 600 var(--dep-fz-14)/1 var(--font-body);
+}
+[data-view="departures"][data-view] .dv-chips > .ui-chip:first-child { margin-left: 0; border-radius: var(--r-md) 0 0 var(--r-md); }
+[data-view="departures"][data-view] .dv-chips > .ui-chip:nth-child(4) { border-radius: 0 var(--r-md) var(--r-md) 0; }
+[data-view="departures"][data-view] .dv-chips > .ui-chip[data-filter="shared"] { flex: 0 0 auto; margin-left: 0; border-radius: var(--r-md); background: transparent; }
+[data-view="departures"][data-view] .dv-chips > .ui-chip:hover { color: var(--ink); }
+[data-view="departures"][data-view] .dv-chips > .ui-chip.is-active { z-index: 1; background: var(--dep-panel-hi); color: var(--ink); box-shadow: inset 0 -2px 0 var(--terracotta); }
+[data-view="departures"][data-view] .ui-chip-count { font-size: var(--dep-fz-14); font-weight: 400; opacity: 1; color: var(--ink-secondary); }
+/* On the narrowest phones the four time filters still share one row and read as one control. */
+@media (max-width: 359px) {
+  [data-view="departures"][data-view] .dv-chips > .ui-chip:not([data-filter="shared"]) { gap: var(--sp-1); padding: 0 var(--sp-1); }
+}
+
+[data-view="departures"][data-view] .dep-boards { display: grid; gap: var(--sp-5); }
+[data-view="departures"][data-view] .dep-board { min-width: 0; overflow: hidden; border: 1px solid var(--dep-hair-strong); border-radius: var(--r-lg); background: var(--dep-panel); }
+[data-view="departures"][data-view] .dep-board-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); padding: var(--sp-3); border-bottom: 1px solid var(--dep-hair-strong); background: var(--surface-inset); }
+[data-view="departures"][data-view] .dep-board-title { font: var(--text-h2); color: var(--ink); }
+[data-view="departures"][data-view] .dep-board-ic { display: inline-flex; color: var(--terracotta); }
+[data-view="departures"][data-view] .dep-board-top > .dep-mono { font-size: var(--dep-fz-14); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-board-top > .dep-note { flex-basis: 100%; }
+[data-view="departures"][data-view] .dep-board-head { display: none; }
+[data-view="departures"][data-view] .dep-empty-line { padding: var(--sp-4) var(--sp-3); font: 400 var(--dep-fz-14)/1.45 var(--font-body); color: var(--ink-secondary); }
+
+/* Board rows: stacked blocks on phones, table rows from 1024 px */
+[data-view="departures"][data-view] .dep-drow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  grid-template-areas: "thumb dest in" "thumb date date" "thumb status cost";
+  align-items: start;
+  gap: var(--sp-1) var(--sp-3);
+  padding: var(--sp-3);
+  border-top: 1px solid var(--dep-hair);
+}
+[data-view="departures"][data-view] .dep-board-head + .dep-drow { border-top: 0; }
+[data-view="departures"][data-view] .dep-drow:hover,
+[data-view="departures"][data-view] .dep-lrow:hover { background: var(--dep-panel-hi); }
+[data-view="departures"][data-view] .dep-d-thumb { grid-area: thumb; }
+[data-view="departures"][data-view] .dep-d-dest { grid-area: dest; min-width: 0; }
+[data-view="departures"][data-view] .dep-d-name { font: 400 var(--dep-fz-18)/1.25 var(--font-heading); color: var(--ink); overflow-wrap: anywhere; }
+[data-view="departures"][data-view] .dep-d-sub { display: none; }
+[data-view="departures"][data-view] .dep-d-date { grid-area: date; font-size: var(--dep-fz-14); line-height: 1.4; color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-d-in { grid-area: in; display: flex; align-items: center; justify-self: end; gap: var(--sp-2); }
+[data-view="departures"][data-view] .dep-d-in > .ui-flap { font-size: var(--dep-fz-16); }
+[data-view="departures"][data-view] .dep-d-in-l { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-d-len,
+[data-view="departures"][data-view] .dep-d-go,
+[data-view="departures"][data-view] .dep-st-note,
+[data-view="departures"][data-view] .dep-only-desk { display: none; }
+[data-view="departures"][data-view] .dep-d-cost { grid-area: cost; justify-self: end; font-size: var(--dep-fz-14); line-height: 1.4; white-space: nowrap; }
+[data-view="departures"][data-view] .dep-d-cost > small { display: none; }
+[data-view="departures"][data-view] .dep-d-status { grid-area: status; min-width: 0; }
+[data-view="departures"][data-view] .dep-drow--now { grid-template-areas: "thumb dest dest" "thumb date date" "thumb status cost"; }
+[data-view="departures"][data-view] .dep-drow--now > .dep-d-in { display: none; }
+/* On a 320 px screen the countdown takes a line of its own under the title. Beside it, three flap
+   digits left the title 84 px, and a long word broke in the middle. */
+@media (max-width: 359px) {
+  [data-view="departures"][data-view] .dep-drow:not(.dep-drow--now) { grid-template-areas: "thumb dest dest" "thumb in in" "thumb date date" "thumb status status" "thumb cost cost"; }
+  [data-view="departures"][data-view] .dep-drow > .dep-d-in { justify-self: start; }
+  /* The status and the estimate each keep a whole line: side by side, "Live, day 10 of 12" broke in two. */
+  [data-view="departures"][data-view] .dep-drow--now { grid-template-areas: "thumb dest dest" "thumb date date" "thumb status status" "thumb cost cost"; }
+  [data-view="departures"][data-view] .dep-drow > .dep-d-cost { justify-self: start; }
+}
+[data-view="departures"][data-view] .dep-shared { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); font: 500 var(--dep-fz-14)/1.4 var(--font-body); color: var(--dep-teal); }
+
+/* Past plans and plans with no dates: a compact log */
+[data-view="departures"][data-view] .dep-log { margin-top: -1px; }
+[data-view="departures"][data-view] .dep-lrow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 64px;
+  padding: var(--sp-2) var(--sp-3);
+  border-top: 1px solid var(--dep-hair);
+  break-inside: avoid;
+}
+[data-view="departures"][data-view] .dep-lrow > .ui-thumb { width: 44px; border-radius: var(--r-sm); }
+[data-view="departures"][data-view] .dep-l-main { min-width: 0; }
+[data-view="departures"][data-view] .dep-l-name { font: 400 var(--dep-fz-16)/1.3 var(--font-heading); color: var(--ink); overflow-wrap: anywhere; }
+[data-view="departures"][data-view] .dep-l-meta { display: block; font-size: var(--dep-fz-14); line-height: 1.4; color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-l-cost { font-size: var(--dep-fz-14); line-height: 1.4; text-align: right; white-space: nowrap; }
+[data-view="departures"][data-view] .dep-l-cost > span { display: block; }
+[data-view="departures"][data-view] .dep-l-cost > small { display: block; font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+/* On a 320 px screen the estimate and the length go under the dates, so the name keeps the row's width. */
+@media (max-width: 359px) {
+  [data-view="departures"][data-view] .dep-lrow { grid-template-columns: 44px minmax(0, 1fr); gap: 0 var(--sp-3); align-items: start; }
+  [data-view="departures"][data-view] .dep-lrow > .ui-thumb { grid-row: 1 / span 2; }
+  [data-view="departures"][data-view] .dep-l-cost { grid-column: 2; display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: var(--sp-3); text-align: left; }
+}
+/* A phone shows the latest six until "Show all"; from desktop width every row is drawn. */
+@media (max-width: 1023px) {
+  [data-view="departures"][data-view] .dep-log:not(.dep-log--all) > .dep-lrow:nth-child(n+7) { display: none; }
+}
+[data-view="departures"][data-view] .dv-past-toggle { display: flex; width: 100%; min-height: 48px; border: 0; border-top: 1px solid var(--dep-hair); border-radius: 0; color: var(--dep-accent); }
+
+/* Still being planned, and planning stopped: the shared cards beside a thumbnail */
+[data-view="departures"][data-view] .dep-progress { display: grid; gap: var(--sp-3); }
+[data-view="departures"][data-view] .dep-srow { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--sp-3); padding: var(--sp-3); border: 1px solid var(--dep-hair-strong); border-radius: var(--r-lg); background: var(--dep-panel); }
+/* The title and the status share the first line only where both fit on it whole. Where they do not
+   (a 320 px screen, a long title), the status wraps under the title and the title keeps the full
+   width, so it never breaks inside a word. Every other part takes a line of its own. */
+[data-view="departures"][data-view] .dep-srow > .dv-card { display: flex; flex-flow: row wrap; align-items: center; justify-content: space-between; gap: var(--sp-1) var(--sp-3); min-width: 0; padding: 0; border: 0; background: none; }
+[data-view="departures"][data-view] .dep-srow > .dv-card > * { flex: 0 0 100%; min-width: 0; }
+[data-view="departures"][data-view] .dep-srow .dv-card-title { flex: 0 1 auto; font: 400 var(--dep-fz-18)/1.25 var(--font-heading); }
+[data-view="departures"][data-view] .dep-srow .dv-card-status { flex: 0 0 auto; min-height: 1.4rem; color: var(--dep-plan); font: 600 var(--dep-fz-14)/1.25 var(--font-body); --dep-lampc: var(--steel); }
+[data-view="departures"][data-view] .dep-srow .dv-card-status::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--dep-lampc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dep-lampc) 24%, transparent); }
+[data-view="departures"][data-view] .dep-srow[data-state="failed"] .dv-card-status { color: var(--dep-stop); --dep-lampc: var(--error); }
+[data-view="departures"][data-view] .dep-srow .dv-card-status > .ui-icon { display: none; }
+[data-view="departures"][data-view] .dep-card-meta { font-size: var(--dep-fz-14); line-height: 1.4; color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-srow .dv-gen-progress { margin-top: var(--sp-2); font: 600 var(--dep-fz-14)/1.4 var(--font-body); }
+[data-view="departures"][data-view] .dep-srow .dv-card-note { font: 400 var(--dep-fz-14)/1.45 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-srow .ui-seg[data-seg="done"] { background: var(--steel); }
+[data-view="departures"][data-view] .dep-srow .ui-seg[data-seg="now"] { background: color-mix(in srgb, var(--steel) 45%, var(--dep-panel)); }
+[data-view="departures"][data-view] .dep-srow .dv-card-actions { margin-top: var(--sp-2); }
+/* On a 320 px screen the words of this button are a pixel wider than its room: less side padding
+   keeps them on one line. */
+@media (max-width: 359px) {
+  [data-view="departures"][data-view] .dep-srow [data-action="notify-ready"] { padding: 0 var(--sp-2); }
+}
+
+/* ---- 6. Travel stats ---- */
+[data-view="departures"][data-view] .dep-travel,
+[data-view="departures"][data-view] .dep-ideas { margin-top: var(--sp-12); }
+[data-view="departures"][data-view] .dep-logbook { display: grid; gap: var(--sp-5); padding: var(--sp-5) var(--sp-4); border: 1px solid var(--dep-hair-strong); border-radius: var(--r-lg); background: var(--dep-panel); }
+[data-view="departures"][data-view] .dep-figs { display: flex; justify-content: space-between; gap: var(--sp-3); }
+[data-view="departures"][data-view] .dep-fig-n { display: block; font-size: var(--dep-fz-32); font-weight: 600; line-height: 1.1; }
+[data-view="departures"][data-view] .dep-fig-l { display: block; margin-top: var(--sp-1); font: 500 var(--dep-fz-14)/1.25 var(--font-body); color: var(--ink-secondary); }
+@media (max-width: 359px) {
+  [data-view="departures"][data-view] .dep-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4) var(--sp-3); }
+}
+[data-view="departures"][data-view] .dep-splits { display: grid; gap: 0 var(--sp-10); border-top: 1px solid var(--dep-hair); }
+[data-view="departures"][data-view] .dep-splits > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--dep-hair); }
+[data-view="departures"][data-view] .dep-splits dt { flex: none; font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-splits dd { font: 400 var(--dep-fz-14)/1.4 var(--font-body); text-align: right; }
+[data-view="departures"][data-view] .dep-splits small { display: block; font: var(--text-caption); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-stamps { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+[data-view="departures"][data-view] .dep-stamp { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 32px; padding: 0 var(--sp-2); border: 1px solid var(--dep-hair-strong); border-radius: var(--r-sm); font: 500 var(--dep-fz-14)/1 var(--font-body); }
+[data-view="departures"][data-view] .dep-stamp > .dep-mono { color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-stamp-n { display: none; }
+
+/* ---- 7. Short hops: a rail of 4:5 tiles ---- */
+[data-view="departures"][data-view] .dep-hops {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - var(--gutter)) / 2);
+  /* Photo, name, country, distance, note: the five rows of a tile are the rail's own (subgrid). */
+  grid-template-rows: repeat(5, auto);
+  gap: 0 var(--gutter);
+  margin: 0 calc(var(--gutter) * -1);
+  padding: 0 var(--gutter) var(--sp-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+[data-view="departures"][data-view] .dep-hop { position: relative; display: grid; grid-row: 1 / span 5; grid-template-rows: subgrid; align-content: start; min-width: 0; scroll-snap-align: start; scroll-margin-left: var(--gutter); }
+[data-view="departures"][data-view] .dep-hop-link { display: flex; align-items: flex-start; width: 100%; min-height: 44px; padding: var(--sp-2) 0 var(--sp-1); border: 0; background: none; color: var(--ink); text-align: left; cursor: pointer; }
+[data-view="departures"][data-view] .dep-hop-link::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: var(--r-lg); }
+[data-view="departures"][data-view] .dep-hop-link:focus-visible { outline: none; }
+[data-view="departures"][data-view] .dep-hop-link:focus-visible::after { outline: 2px solid var(--terracotta); outline-offset: 2px; }
+[data-view="departures"][data-view] .dep-hop-name { font: 400 var(--dep-fz-18)/1.25 var(--font-heading); overflow-wrap: anywhere; }
+[data-view="departures"][data-view] .dep-hop:hover .dep-hop-name { color: var(--dep-accent); }
+[data-view="departures"][data-view] .dep-hop-sub,
+[data-view="departures"][data-view] .dep-hop-mode { display: flex; align-items: center; gap: var(--sp-2); font: 400 var(--dep-fz-14)/1.4 var(--font-body); }
+[data-view="departures"][data-view] .dep-hop-mode { margin-top: var(--sp-1); }
+[data-view="departures"][data-view] .dep-hop-sub { color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-hop-mode > .ui-icon { color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-hop-note { display: block; margin-top: var(--sp-1); font: var(--text-caption); color: var(--ink-secondary); }
+
+/* ---- 8. The foot ---- */
+[data-view="departures"][data-view] .dep-foot { display: grid; gap: var(--sp-2); margin-top: var(--sp-12); padding-top: var(--sp-4); border-top: 1px solid var(--dep-hair); }
+[data-view="departures"][data-view] .dep-foot-note { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-foot-credits:empty { display: none; }
+[data-view="departures"][data-view] .ui-credits > summary { color: var(--dep-accent); font: 600 var(--dep-fz-12)/1.4 var(--font-body); }
+
+/* ---- A new account ---- */
+[data-view="departures"][data-view] .dep-empty { max-width: 30rem; }
+[data-view="departures"][data-view] .dep-empty > .dv-state { gap: 0; padding: 0; border: 0; background: none; }
+[data-view="departures"][data-view] .dep-empty .dv-state-title,
+[data-view="departures"][data-view] .dep-empty .dv-state-text { max-width: none; font: 400 var(--dep-fz-16)/1.5 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-empty .dv-state-actions { display: grid; align-self: stretch; gap: var(--sp-2); margin-top: var(--sp-4); }
+[data-view="departures"][data-view] .dep-empty-hint { margin-top: var(--sp-3); font: 400 var(--dep-fz-14)/1.45 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-empty-board { margin-top: var(--sp-5); }
+[data-view="departures"][data-view] .dep-starts { margin-top: var(--sp-5); }
+[data-view="departures"][data-view] .dep-hoprow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-bottom: 1px solid var(--dep-hair);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+[data-view="departures"][data-view] .dep-hoprow > .dep-hop-mode { margin-top: 0; color: var(--ink-secondary); }
+
+/* ---------------------------- Dashboard from 640 px ---------------------------- */
+@media (min-width: 640px) {
+  [data-view="departures"][data-view] .dep-hello { padding-bottom: var(--sp-4); }
+  [data-view="departures"][data-view] .dep-hello-main { display: block; flex: 1 1 20rem; }
+  [data-view="departures"][data-view] .dep-hello-sum { display: inline; margin-left: var(--sp-3); }
+  [data-view="departures"][data-view] .dep-hello-actions { flex: none; }
+  [data-view="departures"][data-view] .dep-hello-actions > .ui-btn { flex: none; padding: 0 var(--sp-4); }
+  [data-view="departures"][data-view] .dep-pass--live .ui-frame { aspect-ratio: 2.3 / 1; }
+  [data-view="departures"][data-view] .dep-pass--live .dep-pass-title { font-size: var(--dep-fz-32); }
+  [data-view="departures"][data-view] .dep-pass--live > .dep-pass-stub { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); padding: var(--sp-5); }
+  /* The two buttons stand at the foot of the stub, also when the column beside them is the taller one. */
+  [data-view="departures"][data-view] .dep-stub-main { display: flex; flex-direction: column; min-width: 0; padding-right: var(--sp-5); }
+  [data-view="departures"][data-view] .dep-stub-main > .dep-pass-actions { margin-top: auto; padding-top: var(--sp-4); }
+  [data-view="departures"][data-view] .dep-stub-side { display: block; min-width: 0; padding-left: var(--sp-5); border-left: 2px dashed var(--dep-hair-strong); }
+  [data-view="departures"][data-view] .dep-liverow { grid-template-areas: "ph title go" "ph meta go"; }
+  [data-view="departures"][data-view] .dep-liverow-ends { display: inline; }
+  [data-view="departures"][data-view] .dep-stamp-n { display: inline; }
+  [data-view="departures"][data-view] .dep-hops { grid-auto-columns: 184px; gap: 0 var(--sp-3); }
+  [data-view="departures"][data-view] .dep-progress { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+}
+/* A tablet draws the next departure on its side: photo left, stub right, what is left to do below. */
+@media (min-width: 640px) and (max-width: 1023px) {
+  [data-view="departures"][data-view] .dep-pass--next { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+  [data-view="departures"][data-view] .dep-pass--next .ui-frame { aspect-ratio: auto; height: 100%; }
+  [data-view="departures"][data-view] .dep-pass--next > .dep-pass-stub { border-top: 0; border-left: 2px dashed var(--dep-hair-strong); }
+  [data-view="departures"][data-view] .dep-pass--next > .dep-pass-stub::before,
+  [data-view="departures"][data-view] .dep-pass--next > .dep-pass-stub::after { content: none; }
+  [data-view="departures"][data-view] .dep-pass--next > :is(.dep-perf, .dep-pass-todo) { grid-column: 1 / -1; }
+}
+
+/* ---------------------------- Dashboard from 1024 px: desktop ---------------------------- */
+@media (min-width: 1024px) {
+  [data-view="departures"][data-view] .dep-sec-h { margin-bottom: var(--sp-4); }
+  [data-view="departures"][data-view] .dep-hello { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--sp-3) var(--sp-8); padding: var(--sp-10) 0 var(--sp-8); }
+  [data-view="departures"][data-view] .dep-hello-main { display: contents; }
+  [data-view="departures"][data-view] .dep-hello-h { grid-column: 1; grid-row: 1; font-size: var(--dep-fz-44); line-height: 1.05; }
+  [data-view="departures"][data-view] .dep-hello-sub { grid-column: 1; grid-row: 2; font: 400 var(--dep-fz-16)/1.5 var(--font-body); }
+  [data-view="departures"][data-view] .dep-hello-actions { grid-column: 2; grid-row: 1; justify-self: end; }
+  [data-view="departures"][data-view] .dep-clocks { grid-column: 2; grid-row: 2; display: flex; justify-self: end; gap: var(--sp-8); }
+
+  [data-view="departures"][data-view] .dep-brief { grid-template-columns: minmax(0, 1.72fr) minmax(0, 1fr); align-items: stretch; gap: var(--sp-6); }
+  [data-view="departures"][data-view] .dep-brief > section { display: flex; flex-direction: column; }
+  [data-view="departures"][data-view] .dep-brief > section:not(:has([data-trip-id])) { display: none; }
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass)) { display: none; }
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--live)),
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--next)) { grid-template-columns: minmax(0, 1fr); }
+  [data-view="departures"][data-view] .dep-live,
+  [data-view="departures"][data-view] .dep-next-slot { display: flex; flex: 1 1 auto; flex-direction: column; }
+  [data-view="departures"][data-view] .dep-pass--live,
+  [data-view="departures"][data-view] .dep-pass--next { flex: 1 1 auto; }
+  /* The photo keeps one height and the stub takes what is left, so nothing on the photo moves when
+     the other pass or the stub grows. */
+  [data-view="departures"][data-view] .dep-pass--live { grid-template-rows: auto minmax(0, 1fr); }
+  /* On a short screen the photo gives way, so today's next stop is on the first screen with it. */
+  [data-view="departures"][data-view] .dep-pass--live .ui-frame { aspect-ratio: auto; min-height: clamp(15rem, 100vh - 36rem, 24rem); }
+  /* When the pass beside it is the taller one, the spare height goes above the facts at the foot,
+     level with the two buttons, not under them. */
+  [data-view="departures"][data-view] .dep-stub-side { display: flex; flex-direction: column; }
+  [data-view="departures"][data-view] .dep-stub-side > .dep-stubfacts { margin-top: auto; }
+  [data-view="departures"][data-view] .dep-stub-side > :nth-last-child(2) { margin-bottom: var(--sp-4); }
+  /* Photo, stub, perforation, then what is left to do, which takes the height that is left over. */
+  [data-view="departures"][data-view] .dep-pass--next { grid-template-rows: auto auto auto minmax(0, 1fr); }
+  [data-view="departures"][data-view] .dep-pass-stub { padding: var(--sp-5); }
+  [data-view="departures"][data-view] .dep-pass-todo { display: flex; flex-direction: column; min-height: 18.5rem; padding: var(--sp-5); }
+  [data-view="departures"][data-view] .dep-reserve--todo { min-height: 0; }
+  [data-view="departures"][data-view] .dep-pass-open { margin-top: auto; }
+  [data-view="departures"][data-view] .dep-pass-todo > .dep-todo { margin-bottom: var(--sp-3); }
+  /* With nothing live the next departure has the row to itself: photo, stub and to-do side by side. */
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--live)) .dep-pass--next { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--live)) .dep-pass--next .ui-frame { aspect-ratio: auto; min-height: 22rem; }
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--live)) .dep-pass--next > .dep-perf { display: none; }
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--live)) .dep-pass--next > :is(.dep-pass-stub, .dep-pass-todo) { border-top: 0; border-left: 2px dashed var(--dep-hair-strong); }
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--live)) .dep-pass-stub::before { top: -9px; left: -9px; }
+  [data-view="departures"][data-view] .dep-brief:not(:has(.dep-pass--live)) .dep-pass-stub::after { top: auto; right: auto; bottom: -9px; left: -9px; }
+
+  [data-view="departures"][data-view] .dep-trips { margin-top: var(--sp-16); }
+  [data-view="departures"][data-view] .dep-toolbar { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+  [data-view="departures"][data-view] .dep-toolbar > .dv-filter { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: var(--sp-4); }
+  [data-view="departures"][data-view] .dv-search { flex: 1 1 14rem; max-width: 24rem; }
+  [data-view="departures"][data-view] .dv-chips { flex: none; flex-wrap: nowrap; }
+  [data-view="departures"][data-view] .dv-chips > .ui-chip[data-filter="shared"] { margin-left: var(--sp-4); }
+
+  [data-view="departures"][data-view] .dep-board-top { padding: var(--sp-3) var(--sp-5); }
+  [data-view="departures"][data-view] .dep-board-top > .dep-note { flex-basis: auto; margin-left: auto; }
+  [data-view="departures"][data-view] .dep-table > .dep-board-head,
+  [data-view="departures"][data-view] .dep-table > .dep-drow {
+    display: grid;
+    grid-template-columns: 8.25rem 3.5rem minmax(0, 1fr) 7.25rem 8rem 10rem;
+    grid-template-areas: none;
+    align-items: center;
+    gap: 0 var(--sp-4);
+    padding: var(--sp-3) var(--sp-5);
+  }
+  [data-view="departures"][data-view] .dep-table > .dep-board-head { padding-block: var(--sp-2); border-bottom: 1px solid var(--dep-hair); font: var(--text-caption); color: var(--ink-secondary); }
+  [data-view="departures"][data-view] .dep-table > .dep-drow { min-height: 80px; }
+  [data-view="departures"][data-view] .dep-drow > [role="cell"] { grid-area: auto; }
+  [data-view="departures"][data-view] .dep-d-date { color: var(--ink); }
+  [data-view="departures"][data-view] .dep-d-sub { display: block; margin-top: var(--sp-1); font: 400 var(--dep-fz-14)/1.3 var(--font-body); color: var(--ink-secondary); }
+  [data-view="departures"][data-view] .dep-drow > .dep-d-in { display: flex; justify-self: start; }
+  [data-view="departures"][data-view] .dep-d-in > .ui-flap { font-size: var(--dep-fz-18); }
+  [data-view="departures"][data-view] .dep-d-cost { justify-self: start; }
+  [data-view="departures"][data-view] .dep-d-cost > span { display: block; }
+  [data-view="departures"][data-view] .dep-d-cost > small { display: block; font-size: var(--dep-fz-12); line-height: 1.4; color: var(--ink-secondary); }
+  [data-view="departures"][data-view] .dep-d-status { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+  [data-view="departures"][data-view] .dep-st-note { display: block; margin-top: var(--sp-1); font: var(--text-caption); color: var(--ink-secondary); }
+  [data-view="departures"][data-view] .dep-d-go { display: inline-flex; flex: none; color: var(--ink-ghost); }
+  [data-view="departures"][data-view] .dep-only-desk { display: inline; }
+  [data-view="departures"][data-view] .dep-only-phone { display: none; }
+
+  /* All past plans, in two columns; "Show all" is a phone control. */
+  [data-view="departures"][data-view] .dep-log { columns: 2; column-gap: 0; column-rule: 1px solid var(--dep-hair); }
+  [data-view="departures"][data-view] .dep-log > .dep-lrow { padding: var(--sp-2) var(--sp-5); }
+  [data-view="departures"][data-view] .dep-l-cost { display: flex; flex-direction: row-reverse; align-items: baseline; gap: var(--sp-5); }
+  [data-view="departures"][data-view] .dep-l-cost > span { min-width: 7.5rem; }
+  [data-view="departures"][data-view] .dv-past-toggle { display: none; }
+
+  [data-view="departures"][data-view] .dep-travel,
+  [data-view="departures"][data-view] .dep-ideas { margin-top: var(--sp-16); }
+  [data-view="departures"][data-view] .dep-logbook { grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-6) var(--sp-12); padding: var(--sp-6); }
+  [data-view="departures"][data-view] .dep-figs { align-items: start; justify-content: flex-start; gap: var(--sp-10); }
+  [data-view="departures"][data-view] .dep-fig-n { font-size: var(--dep-fz-44); }
+  [data-view="departures"][data-view] .dep-splits { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr); align-content: center; border-top: 0; }
+  [data-view="departures"][data-view] .dep-splits > div:nth-child(-n+2) { border-top: 1px solid var(--dep-hair); }
+  [data-view="departures"][data-view] .dep-stamps-wrap { grid-column: 1 / -1; padding-top: var(--sp-5); border-top: 1px solid var(--dep-hair); }
+  [data-view="departures"][data-view] .dep-hops { grid-auto-flow: row; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: none; gap: 0 var(--sp-3); margin: 0; padding: 0; overflow: visible; }
+  [data-view="departures"][data-view] .dep-hop { grid-row: span 5; }
+  [data-view="departures"][data-view] .dep-hop:nth-child(n+8) { margin-top: var(--sp-4); }
+}
+/* The length column joins once the destination column has room for it. */
+@media (min-width: 1200px) {
+  [data-view="departures"][data-view] .dep-table > .dep-board-head,
+  [data-view="departures"][data-view] .dep-table > .dep-drow { grid-template-columns: 8.25rem 3.5rem minmax(0, 1fr) 7.25rem 4.25rem 8rem 10rem; }
+  [data-view="departures"][data-view] .dep-table .dep-d-len,
+  [data-view="departures"][data-view] .dep-table > .dep-board-head > :nth-child(5) { display: block; }
+}
+@media (min-width: 1024px) and (max-width: 1199px) {
+  [data-view="departures"][data-view] .dep-table > .dep-board-head > :nth-child(5) { display: none; }
+}
+
+/* ============================ Trip page ============================ */
+
+/* ---- Layout variables: what stays pinned (blueprint 8.3) ----
+   On phones and tablets the bar scrolls away and the tab row pins alone. From 1024 px the controller
+   docks the tab list in the bar and the bar pins. */
+.td-wrap[data-view="departures"][data-view] {
+  --tv-tabs-h: 50px;
+  --tv-pinned-h: var(--tv-tabs-h);
+  --tv-day-gap: 0px;
+  --tv-day-shadow: none;
+  --tv-day-extras-display: contents;
+  --tv-map-max-h: 26rem;
+}
+@media (max-width: 1023px) {
+  [data-view="departures"][data-view] > .tv-bar { position: static; }
+}
+@media (min-width: 1024px) {
+  .td-wrap[data-view="departures"][data-view] { --tv-pinned-h: var(--tv-bar-h); }
+}
+
+/* ---- bar: Trips, the name with its dates in mono, More ----
+   The bar is the page colour at full strength: pinned, no day row reads through it. */
+[data-view="departures"][data-view] .tv-bar { border-bottom-color: var(--dep-hair-strong); background: var(--parchment); }
+[data-view="departures"][data-view] .tv-bar-title { display: grid; gap: 0; margin-left: var(--sp-1); font: 600 var(--dep-fz-16)/1.25 var(--font-body); }
+[data-view="departures"][data-view] .tv-bar-flags { display: none; }
+[data-view="departures"][data-view] .tv-bar-dates { font: 400 var(--dep-fz-12)/1.3 var(--font-mono); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .tv-back { padding: 0 var(--sp-3) 0 var(--sp-2); font: 600 var(--dep-fz-14)/1 var(--font-body); }
+[data-view="departures"][data-view] .tv-back:hover { background: var(--dep-panel-hi); }
+[data-view="departures"][data-view] .tv-bar-actions > :is(.ui-btn, .ui-menu-btn) { padding: 0 var(--sp-3); }
+/* The dates stay under the name on a phone: this bar scrolls away, so a second line costs nothing.
+   A 320 px screen has no room for them beside Trips and More. */
+@media (min-width: 360px) and (max-width: 639px) {
+  [data-view="departures"][data-view] .tv-bar-dates { display: block; }
+}
+
+/* From 1024 px the bar is pinned and holds the tabs and three labelled buttons: the name gives up a
+   size and the tabs and buttons a little padding, so a common three-city name stays on one line and
+   the bar keeps its height. A longer name still wraps and is never cut. */
+@media (min-width: 1024px) {
+  [data-view="departures"][data-view] .tv-bar { column-gap: var(--sp-2); }
+  [data-view="departures"][data-view] .tv-bar-title { font-size: var(--dep-fz-14); }
+  [data-view="departures"][data-view] .tv-bar-name { text-wrap: balance; }
+  [data-view="departures"][data-view] .tv-tabs-slot > .td-tabs > .td-tab { padding: 0 10px; }
+  [data-view="departures"][data-view] .tv-bar-actions > :is(.ui-btn, .ui-menu-btn) { padding: 0 10px; }
+}
+
+/* The More menu: each action with its one-line hint under it. */
+[data-view="departures"][data-view] .ui-menu { border-color: var(--dep-hair-strong); background: var(--dep-panel); }
+[data-view="departures"][data-view] .ui-menu [role="menuitem"] { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 var(--sp-3); font: 500 var(--dep-fz-14)/1.25 var(--font-body); }
+[data-view="departures"][data-view] .ui-menu [role="menuitem"]:hover { background: var(--dep-panel-hi); }
+[data-view="departures"][data-view] .ui-menu [role="menuitem"] > .ui-icon { grid-row: 1 / span 2; color: var(--ink-secondary); }
+[data-view="departures"][data-view] .ui-menu-item.is-danger,
+[data-view="departures"][data-view] .ui-menu-item.is-danger > .ui-icon { color: var(--dep-stop); }
+[data-view="departures"][data-view] .ui-menu-label { font-weight: 600; }
+[data-view="departures"][data-view] .ui-menu-hint { grid-column: 2; }
+
+/* ---- tabs: one segmented row ---- */
+[data-view="departures"][data-view] .td-tabs { gap: 2px; padding: 2px; border: 1px solid var(--dep-hair-strong); border-radius: var(--r-md); background: var(--surface-inset); }
+[data-view="departures"][data-view] .td-tab { min-width: 0; padding: 0 var(--sp-1); gap: var(--sp-1); border-radius: var(--r-sm); color: var(--ink-secondary); font: 600 var(--dep-fz-14)/1 var(--font-body); }
+[data-view="departures"][data-view] .td-tab:hover { background: transparent; color: var(--ink); }
+[data-view="departures"][data-view] .td-tab.td-tab--active { background: var(--dep-panel-hi); color: var(--ink); box-shadow: var(--shadow-sm), inset 0 -2px 0 var(--terracotta); }
+[data-view="departures"][data-view] .td-tab.td-tab--active > .ui-icon { color: var(--terracotta); }
+[data-view="departures"][data-view] .tv-tabs-back { border: 1px solid var(--dep-hair-strong); border-radius: var(--r-sm); }
+@media (min-width: 360px) and (max-width: 639px) {
+  [data-view="departures"][data-view] .td-tabs:not([data-stuck]) > .td-tab > .ui-icon { display: block; }
+}
+/* Docked in the bar from 1024 px: the same row, as wide as its words. */
+[data-view="departures"][data-view] .tv-tabs-slot > .td-tabs { width: auto; margin: 0; }
+[data-view="departures"][data-view] .tv-tabs-slot > .td-tabs > .td-tab { flex: none; padding: 0 var(--sp-3); gap: var(--sp-2); }
+
+/* ---- hero: the boarding pass ---- */
+[data-view="departures"][data-view] .dep-hero { margin-top: var(--sp-3); }
+[data-view="departures"][data-view] .dep-pass--trip { grid-template-columns: minmax(0, 1fr); }
+[data-view="departures"][data-view] .dep-pass--trip > .dep-pass-photo { grid-area: 1 / 1; }
+[data-view="departures"][data-view] .dep-pass--trip .ui-frame { aspect-ratio: 16 / 10; }
+[data-view="departures"][data-view] .dep-pass--trip .dep-pass-title { font-size: clamp(1.75rem, 9cqi, var(--dep-fz-44)); line-height: 1.05; }
+[data-view="departures"][data-view] .dep-pass--trip .dep-over-bot { padding-top: calc(var(--sp-3) + 40px); }
+/* One region, two places: the pill lies on the photo, the countdown opens the stub. */
+[data-view="departures"][data-view] .dep-hero-status { display: contents; }
+[data-view="departures"][data-view] .dep-hero-pill { grid-area: 1 / 1; align-self: start; justify-self: start; z-index: 1; margin: var(--sp-3); --dep-ready: var(--sage); --dep-todo: var(--amber); --dep-plan: var(--steel); --dep-stop: color-mix(in srgb, var(--error) 60%, var(--dep-photo-ink)); }
+[data-view="departures"][data-view] .dep-hero-pill .dep-st { color: var(--dep-photo-ink); }
+[data-view="departures"][data-view] .dep-hero-pill .dep-st--live,
+[data-view="departures"][data-view] .dep-hero-pill .dep-st--ready { color: var(--dep-ready); }
+[data-view="departures"][data-view] .dep-hero-pill .dep-st--todo { color: var(--dep-todo); }
+[data-view="departures"][data-view] .dep-hero-pill .dep-st--plan { color: var(--dep-plan); }
+[data-view="departures"][data-view] .dep-hero-pill .dep-st--stop { color: var(--dep-stop); }
+[data-view="departures"][data-view] .dep-hero-status > .dep-countline { position: relative; grid-area: 2 / 1; padding: var(--sp-4) var(--sp-4) 0; border-top: 2px dashed var(--dep-hair-strong); }
+[data-view="departures"][data-view] .dep-hero-status > .dep-countline::before,
+[data-view="departures"][data-view] .dep-hero-status > .dep-countline::after {
+  content: '';
+  position: absolute;
+  top: -9px;
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--dep-hair-strong);
+  border-radius: 50%;
+  background: var(--parchment);
+}
+[data-view="departures"][data-view] .dep-hero-status > .dep-countline::before { left: -9px; }
+[data-view="departures"][data-view] .dep-hero-status > .dep-countline::after { right: -9px; }
+[data-view="departures"][data-view] .dep-today-btn { margin-left: auto; }
+[data-view="departures"][data-view] .dep-hero-status > .dep-today { grid-area: 3 / 1; min-height: 0; margin: var(--sp-4) var(--sp-4) 0; }
+/* The route line is drawn inside the status region (it follows the profile), in a row of its own. */
+[data-view="departures"][data-view] .dep-hero-status > .dep-hero-route { grid-area: 4 / 1; min-width: 0; padding: var(--sp-4) var(--sp-4) 0; }
+[data-view="departures"][data-view] .dep-hero-status > .dep-hero-route:empty { display: none; }
+[data-view="departures"][data-view] .dep-hero-route > .ui-route { margin-top: 0; }
+[data-view="departures"][data-view] .dep-pass--trip > .dep-pass-stub { grid-area: 5 / 1; padding-top: 0; border-top: 0; }
+[data-view="departures"][data-view] .dep-pass--trip > .dep-pass-stub::before,
+[data-view="departures"][data-view] .dep-pass--trip > .dep-pass-stub::after { content: none; }
+[data-view="departures"][data-view] .dep-strip { position: relative; grid-area: 6 / 1; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border-top: 2px dashed var(--dep-hair-strong); }
+[data-view="departures"][data-view] .dep-strip > :is(.ui-btn, .ui-menu-btn) {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--sp-1);
+  min-height: 64px;
+  padding: var(--sp-2) var(--sp-1);
+  border: 0;
+  border-left: 1px solid var(--dep-hair);
+  border-radius: 0;
+  font: 600 var(--dep-fz-14)/1.2 var(--font-body);
+  text-align: center;
+}
+[data-view="departures"][data-view] .dep-strip > :first-child { border-left: 0; }
+[data-view="departures"][data-view] .dep-strip .ui-icon { color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-strip > .tv-action[aria-pressed="true"] { color: var(--dep-accent); }
+@media (min-width: 1024px) {
+  /* The bar shows the same actions from this width (the controller's own switch). */
+  [data-view="departures"][data-view] .dep-strip { display: none; }
+}
+
+/* ---- hero: the facts card ---- */
+[data-view="departures"][data-view] .tv-glance {
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: var(--sp-4) 0 0;
+  overflow: hidden;
+  border: 1px solid var(--dep-hair-strong);
+  border-radius: var(--r-lg);
+  background: linear-gradient(var(--dep-hair), var(--dep-hair)), var(--dep-panel);
+}
+[data-view="departures"][data-view] .tv-fact { gap: 0; padding: var(--sp-3) var(--sp-4); background: var(--dep-panel); }
+[data-view="departures"][data-view] .tv-fact[data-fact="cost"] { grid-column: 1 / -1; }
+[data-view="departures"][data-view] .tv-glance:has(> [data-fact="cost"]) > :last-child:nth-child(even),
+[data-view="departures"][data-view] .tv-glance:not(:has(> [data-fact="cost"])) > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+[data-view="departures"][data-view] .tv-fact-label { font: 400 var(--dep-fz-14)/1.4 var(--font-body); }
+[data-view="departures"][data-view] .tv-fact-value { font: 600 var(--dep-fz-18)/1.3 var(--font-body); }
+[data-view="departures"][data-view] .tv-fact:is([data-fact="cost"], [data-fact="stops"], [data-fact="weather"]) .tv-fact-value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+[data-view="departures"][data-view] .tv-fact[data-fact="cost"] .tv-fact-value { font-size: var(--dep-fz-24); }
+[data-view="departures"][data-view] .tv-fact-value > .tv-fact-about { font: 400 var(--dep-fz-14)/1.3 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .tv-fact-note { font: 400 var(--dep-fz-14)/1.4 var(--font-body); }
+[data-view="departures"][data-view] .dep-notes > :not(:empty) { margin-top: var(--sp-4); }
+
+/* ---- planIntro: Before you go ---- */
+[data-view="departures"][data-view] .dep-board-top > .dep-count { color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-byg-prog { display: inline-flex; align-items: center; gap: var(--sp-3); margin-left: auto; font: 400 var(--dep-fz-14)/1 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .ui-meter { gap: var(--sp-1); }
+[data-view="departures"][data-view] .ui-meter-cell { width: 13px; height: 6px; background: color-mix(in srgb, var(--ink) 16%, var(--dep-panel)); }
+[data-view="departures"][data-view] .ui-meter-cell[data-on] { background: var(--sage); }
+[data-view="departures"][data-view] .dep-gate { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3); border-top: 1px solid var(--dep-hair); }
+[data-view="departures"][data-view] .dep-board-head + .dep-gate { border-top: 0; }
+[data-view="departures"][data-view] .dep-gate-item { grid-area: 1 / 1; display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+[data-view="departures"][data-view] .dep-gate-ic { display: grid; flex: none; place-items: center; width: 40px; height: 40px; border: 1px solid var(--dep-hair-strong); border-radius: var(--r-md); background: var(--surface-inset); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-gate-name { font: 400 var(--dep-fz-18)/1.25 var(--font-heading); color: var(--ink); overflow-wrap: anywhere; }
+[data-view="departures"][data-view] .dep-gate-act { grid-area: 1 / 2; }
+[data-view="departures"][data-view] .dep-gate-act > .ui-btn { width: 9.25rem; padding: 0 var(--sp-2); }
+[data-view="departures"][data-view] .dep-gate-st { grid-area: 2 / 1 / 3 / -1; display: grid; justify-items: start; gap: var(--sp-1); padding-left: calc(40px + var(--sp-3)); }
+[data-view="departures"][data-view] .dep-gate[data-state="checking"] .dep-lamp { background: none; box-shadow: inset 0 0 0 2px var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-gate-detail { font: 400 var(--dep-fz-14)/1.45 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-due { padding: 1px var(--sp-2); border-radius: var(--r-sm); background: var(--dep-hair); color: var(--ink); font: var(--text-caption); }
+[data-view="departures"][data-view] .dep-due[data-due="soon"] { background: var(--amber-light); }
+[data-view="departures"][data-view] .dep-due[data-due="overdue"] { background: none; box-shadow: inset 0 0 0 1px var(--error); }
+[data-view="departures"][data-view] .dep-byg-note { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3) var(--sp-3); border-top: 1px solid var(--dep-hair); font: var(--text-caption); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-byg--line > .ui-ready { padding: var(--sp-2) var(--sp-3); }
+[data-view="departures"][data-view] .ui-ready-action { border-color: var(--dep-hair-strong); border-radius: var(--r-md); font: 600 var(--dep-fz-14)/1 var(--font-body); }
+@container tv-landing (max-width: 327px) {
+  [data-view="departures"][data-view] .dep-gate { grid-template-columns: minmax(0, 1fr); }
+  [data-view="departures"][data-view] .dep-gate-act { grid-area: 3 / 1; padding-left: calc(40px + var(--sp-3)); }
+}
+
+/* ---- between: the trip map, then the heading of the day cards ---- */
+[data-view="departures"][data-view] .dep-between { container: dep-between / inline-size; }
+[data-view="departures"][data-view] .dep-daychips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); padding: var(--sp-3); border-bottom: 1px solid var(--dep-hair); }
+[data-view="departures"][data-view] .dep-daychips > .dep-lbl { display: none; }
+[data-view="departures"][data-view] .dep-daychips > .tv-days--chips { display: grid; flex: 1 1 100%; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--sp-1); }
+[data-view="departures"][data-view] .tv-day-chip {
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--dep-hair-strong);
+  border-radius: var(--r-md);
+  background: transparent;
+  box-shadow: inset 0 -3px 0 var(--day-color, transparent);
+  color: var(--ink);
+  font: 600 var(--dep-fz-14)/1 var(--font-body);
+}
+[data-view="departures"][data-view] .tv-day-chip:hover { background: var(--dep-panel-hi); }
+[data-view="departures"][data-view] .tv-day-chip:is([aria-pressed="true"], .is-active) {
+  border-color: color-mix(in srgb, var(--day-color, var(--terracotta)) 70%, transparent);
+  background: color-mix(in srgb, var(--day-color, var(--terracotta)) 24%, var(--dep-panel));
+  color: var(--ink);
+}
+[data-view="departures"][data-view] .tv-day-chip--all[aria-pressed="true"] { box-shadow: inset 0 -3px 0 var(--terracotta); color: var(--ink); }
+[data-view="departures"][data-view] .tv-day-chip[aria-current="date"] { box-shadow: inset 0 -3px 0 var(--day-color, transparent), 0 0 0 2px var(--dep-panel), 0 0 0 4px var(--sage); }
+[data-view="departures"][data-view] .dep-map .tv-map-box { border: 0; border-radius: 0; }
+[data-view="departures"][data-view] .dep-map-foot { padding: var(--sp-3); border-top: 1px solid var(--dep-hair); font: 400 var(--dep-fz-14)/1.45 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .dep-map-foot > .tv-map-caption { margin-top: 0; font: inherit; color: inherit; }
+[data-view="departures"][data-view] .dep-mapboard + .dep-dayboard { margin-top: var(--sp-6); }
+[data-view="departures"][data-view] .dep-dayboard { overflow: hidden; border: 1px solid var(--dep-hair-strong); border-bottom: 0; border-radius: var(--r-lg) var(--r-lg) 0 0; background: var(--dep-panel); }
+[data-view="departures"][data-view] .dep-dayboard > .dep-daychips { border-bottom: 0; border-top: 0; }
+/* A small phone: five chips to a row keeps every chip 44 px wide. */
+@container dep-between (max-width: 311px) {
+  [data-view="departures"][data-view] .dep-daychips > .tv-days--chips { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@container dep-between (min-width: 592px) {
+  [data-view="departures"][data-view] .dep-daychips > .dep-lbl { display: inline; margin-right: var(--sp-1); }
+  [data-view="departures"][data-view] .dep-daychips > .tv-days--chips { display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: var(--sp-2); }
+  [data-view="departures"][data-view] .dep-daychips .tv-day-chip { min-width: 44px; padding: 0 var(--sp-3); }
+}
+
+/* ---- The classic day cards as the rows of the "Day by day" board ----
+   The header's own boxes (.td-day-info, the block from day-extras) are opened up with display:
+   contents, so the number, the title, the date, the stops, the cost and the typical weather are
+   cells of one grid: three lines on a phone, one table-like row from desktop width. */
+.td-wrap[data-view="departures"][data-view] .td-day-card { container: dep-day / inline-size; border-radius: 0; box-shadow: none; }
+[data-view="departures"][data-view] .td-day-card[data-day-index] { border: 0; border-top: 1px solid var(--dep-hair); border-inline: 1px solid var(--dep-hair-strong); background: var(--dep-panel); }
+[data-view="departures"][data-view] .tv-between + .td-day-card[data-day-index] { border-top: 0; }
+[data-view="departures"][data-view] .td-day-card[data-day-index]:last-child { border-bottom: 1px solid var(--dep-hair-strong); border-radius: 0 0 var(--r-lg) var(--r-lg); }
+[data-view="departures"][data-view] .td-day-card[data-day-index] > .td-day-card-header {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr) 20px;
+  grid-template-areas: "n title title title go" "n date stops cost go" "n wx wx wx go";
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: 0;
+}
+[data-view="departures"][data-view] .td-day-card:last-child:not(.td-day-card--open) > .td-day-card-header { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+[data-view="departures"][data-view] .td-day-card[data-day-index] > .td-day-card-header:hover { background: var(--dep-panel-hi); }
+[data-view="departures"][data-view] .td-day-card-header > .td-day-info,
+[data-view="departures"][data-view] .td-day-card-header .tv-day-facts { display: contents; }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .td-day-num {
+  grid-area: n;
+  align-self: start;
+  width: auto;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 var(--sp-1);
+  border: 1px solid color-mix(in srgb, var(--day-color, var(--terracotta)) 62%, transparent);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--day-color, var(--terracotta)) 22%, var(--dep-panel));
+}
+[data-view="departures"][data-view] .td-day-card[data-day-index] .td-cal-svg { display: none; }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .td-cal-num { margin: 0; font: 600 var(--dep-fz-14)/1 var(--font-mono); color: var(--ink); }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .td-day-card-title { grid-area: title; font: 400 var(--dep-fz-18)/1.25 var(--font-heading); text-wrap: wrap; }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .td-day-date { grid-area: date; margin: 0; font: 400 var(--dep-fz-14)/1.4 var(--font-mono); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .td-day-weather,
+[data-view="departures"][data-view] .td-day-card[data-day-index] :is(.tv-day-theme, .tv-day-times, .tv-day-photos, .tv-day-more, .tv-cost-basis, .tv-cost-other) { display: none; }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .tv-day-stops { grid-area: stops; display: block; font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .tv-day-cost { grid-area: cost; display: block; font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); white-space: nowrap; }
+[data-view="departures"][data-view] .td-day-card[data-day-index] :is(.td-day-date, .tv-day-stops) { white-space: nowrap; }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .tv-cost-lead { font-weight: 400; color: inherit; }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .tv-day-weather { grid-area: wx; font: 400 var(--dep-fz-14)/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .td-day-card[data-day-index] .td-day-chevron { grid-area: go; justify-self: center; color: var(--ink-secondary); font-size: 1.25rem; line-height: 1; }
+/* An open day: the header stays in sight over the stops, flat, with the page colour above it. */
+[data-view="departures"][data-view] .td-day-card.td-day-card--open { padding-top: 0; box-shadow: none; }
+[data-view="departures"][data-view] .td-day-card[data-day-index].td-day-card--open > .td-day-card-header {
+  margin: 0;
+  border: 0;
+  border-bottom: 2px dashed var(--dep-hair-strong);
+  border-radius: 0;
+  background: var(--dep-panel-hi);
+  box-shadow: 0 calc(-1 * var(--sp-2)) 0 var(--parchment);
+}
+[data-view="departures"][data-view] .td-day-card.td-day-card--open > .td-day-card-body { padding: var(--sp-4) var(--sp-3); background: var(--parchment); }
+[data-view="departures"][data-view] .td-day-card[data-day-index]:last-child > .td-day-card-body { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+/* A narrow card has no room for the date, the stops and the estimate on one line: the estimate takes the next. */
+@container dep-day (max-width: 351px) {
+  [data-view="departures"][data-view] .td-day-card[data-day-index] > .td-day-card-header {
+    grid-template-columns: auto auto minmax(0, 1fr) 20px;
+    grid-template-areas: "n title title go" "n date stops go" "n cost cost go" "n wx wx go";
+  }
+}
+@container dep-between (min-width: 860px) {
+  [data-view="departures"][data-view] .dep-day-head { display: grid; grid-template-columns: 2.5rem 6rem minmax(0, 1fr) 14.5rem 4.5rem 7.5rem 20px; gap: 0 var(--sp-4); padding: var(--sp-2) var(--sp-5); border-top: 1px solid var(--dep-hair); font: var(--text-caption); color: var(--ink-secondary); }
+}
+@container dep-day (min-width: 860px) {
+  [data-view="departures"][data-view] .td-day-card[data-day-index] > .td-day-card-header {
+    grid-template-columns: 2.5rem 6rem minmax(0, 1fr) 14.5rem 4.5rem 7.5rem 20px;
+    grid-template-areas: "n date title wx stops cost go";
+    gap: 0 var(--sp-4);
+    min-height: 60px;
+    padding: var(--sp-3) var(--sp-5);
+  }
+  [data-view="departures"][data-view] .td-day-card[data-day-index] .td-day-num { align-self: center; justify-self: start; }
+  [data-view="departures"][data-view] .td-day-card[data-day-index] .td-day-card-title { font-size: var(--dep-fz-20); }
+  [data-view="departures"][data-view] .td-day-card[data-day-index] :is(.td-day-date, .tv-day-stops, .tv-day-cost) { color: var(--ink); }
+  [data-view="departures"][data-view] .td-day-card.td-day-card--open > .td-day-card-body { padding: var(--sp-5); }
+}
+
+/* ---- The classic section cards (Flights, Entry, Stay): boards of their own ----
+   While "Before you go" holds a row that opens a card, the closed card is not drawn: the row is the
+   way in, and the card opens below the list (blueprint section 10, row 22). A card no row leads to
+   stays in sight. */
+[data-view="departures"][data-view]:has([data-section-jump="flights"]) .td-day-card[data-section="flights"]:not(.td-day-card--open),
+[data-view="departures"][data-view]:has([data-section-jump="transport"]) .td-day-card[data-section="transport"]:not(.td-day-card--open),
+[data-view="departures"][data-view]:has([data-section-jump="accommodation"]) .td-day-card[data-section="accommodation"]:not(.td-day-card--open),
+[data-view="departures"][data-view]:has([data-section-jump="entry"]) .td-day-card[data-section="entry"]:not(.td-day-card--open) { display: none; }
+[data-view="departures"][data-view] .td-day-card[data-section] { margin-bottom: var(--sp-4); border: 1px solid var(--dep-hair-strong); border-radius: var(--r-lg); background: var(--dep-panel); }
+[data-view="departures"][data-view] .td-day-card[data-section] > .td-day-card-header { gap: var(--sp-3); padding: var(--sp-3); border-radius: var(--r-lg); }
+[data-view="departures"][data-view] .td-day-card[data-section] > .td-day-card-body { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-day-num { width: 40px; height: 40px; border: 1px solid var(--dep-hair-strong); border-radius: var(--r-md); background: var(--surface-inset); color: var(--ink-secondary); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-day-num svg { width: 20px; height: 20px; }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-day-card-title { flex: 1 1 auto; font: 400 var(--dep-fz-18)/1.25 var(--font-heading); }
+[data-view="departures"][data-view] .td-day-card[data-section].td-day-card--open > .td-day-card-header { margin: 0; border: 0; border-bottom: 2px dashed var(--dep-hair-strong); border-radius: var(--r-lg) var(--r-lg) 0 0; background: var(--surface-inset); box-shadow: 0 calc(-1 * var(--sp-2)) 0 var(--parchment); }
+
+/* Inside Flights and Where to stay: the classic leg and stay blocks drawn as board panels (the entry
+   card's ec- blocks are not a view's to style: css-rules.test.js). Codes,
+   flight numbers, durations and prices are mono; frames are hairlines with the board's corners;
+   labels are sentence case. Looks only: no box changes its place or its size class. */
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-leg,
+[data-view="departures"][data-view] .td-day-card[data-section] .td-accom-option { border-color: var(--dep-hair-strong); border-radius: var(--r-md); background: var(--surface-inset); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-leg-header { border-bottom-color: var(--dep-hair); background: var(--dep-panel-hi); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-leg-label { font: 500 var(--dep-fz-14)/1.3 var(--font-body); letter-spacing: 0; text-transform: none; color: var(--ink-secondary); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-code,
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-stopover-code { font-family: var(--font-mono); font-weight: 600; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-number,
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-duration,
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-price,
+[data-view="departures"][data-view] .td-day-card[data-section] .td-accom-price { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-bottom { border-top: 2px dashed var(--dep-hair-strong); background: transparent; }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-flight-book { color: var(--dep-teal); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-accom-price { color: var(--dep-accent); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-accom-badge { padding: 3px var(--sp-2); border-radius: var(--r-sm); font: 600 var(--dep-fz-12)/1.2 var(--font-body); letter-spacing: 0; text-transform: none; }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-accom-city-heading { border-bottom-color: var(--dep-hair); font: 400 var(--dep-fz-18)/1.25 var(--font-heading); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-accom-link { border-color: var(--dep-hair-strong); border-radius: var(--r-md); color: var(--ink); }
+[data-view="departures"][data-view] .td-day-card[data-section] .td-accom-link:hover { background: var(--dep-panel-hi); }
+
+/* ---- planOutro ---- */
+[data-view="departures"][data-view] .tv-landing--outro > .dep-foot-note { margin-top: var(--sp-6); }
+
+/* ---------------------------- Trip page from tablet width ---------------------------- */
+@container tv-landing (min-width: 592px) {
+  [data-view="departures"][data-view] .dep-pass--trip .ui-frame { aspect-ratio: 2.4 / 1; }
+  [data-view="departures"][data-view] .tv-glance { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  [data-view="departures"][data-view] .tv-fact { padding: var(--sp-4); }
+  [data-view="departures"][data-view] .tv-glance > .tv-fact:not([data-fact="cost"]) { grid-column: auto; }
+}
+/* ---------------------------- Trip page from desktop width ---------------------------- */
+@container tv-landing (min-width: 900px) {
+  [data-view="departures"][data-view] .dep-hero { margin-top: var(--sp-6); }
+  /* Cover left, pass details right; the perforation runs down between them. */
+  [data-view="departures"][data-view] .dep-pass--trip { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto auto auto minmax(0, 1fr) auto; }
+  [data-view="departures"][data-view] .dep-pass--trip > .dep-pass-photo { grid-area: 1 / 1 / 7 / 2; border-right: 2px dashed var(--dep-hair-strong); }
+  [data-view="departures"][data-view] .dep-pass--trip .ui-frame { aspect-ratio: auto; min-height: 24rem; }
+  [data-view="departures"][data-view] .dep-pass--trip .dep-over-bot { padding: calc(var(--sp-4) + 40px) var(--sp-6) var(--sp-5); }
+  [data-view="departures"][data-view] .dep-hero-pill { margin: var(--sp-4); }
+  [data-view="departures"][data-view] .dep-hero-status > .dep-countline { grid-area: 2 / 2; padding: 0 var(--sp-8); border-top: 0; }
+  [data-view="departures"][data-view] .dep-hero-status > .dep-countline::before,
+  [data-view="departures"][data-view] .dep-hero-status > .dep-countline::after { content: none; }
+  [data-view="departures"][data-view] .dep-hero-status > .dep-today { grid-area: 3 / 2; margin: var(--sp-5) var(--sp-8) 0; }
+  [data-view="departures"][data-view] .dep-hero-status > .dep-hero-route { grid-area: 4 / 2; padding: var(--sp-6) var(--sp-8) 0; }
+  [data-view="departures"][data-view] .dep-pass--trip > .dep-pass-stub { grid-area: 5 / 2; padding: 0 var(--sp-8); }
+  [data-view="departures"][data-view] .dep-pass--trip .dep-facts { margin-top: var(--sp-6); padding-top: var(--sp-5); }
+  [data-view="departures"][data-view] .dep-strip { grid-area: 7 / 1 / 8 / 3; }
+  /* The two notches of the upright perforation, where it meets the edges of the pass. */
+  [data-view="departures"][data-view] .dep-pass--trip::before,
+  [data-view="departures"][data-view] .dep-pass--trip::after {
+    content: '';
+    position: absolute;
+    left: calc(100% * 1.45 / 2.45 - 9px);
+    z-index: 1;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--dep-hair-strong);
+    border-radius: 50%;
+    background: var(--parchment);
+  }
+  [data-view="departures"][data-view] .dep-pass--trip::before { top: -9px; }
+  [data-view="departures"][data-view] .dep-pass--trip::after { bottom: -9px; }
+
+  [data-view="departures"][data-view] .tv-glance { display: flex; margin-top: var(--sp-5); }
+  [data-view="departures"][data-view] .tv-fact { flex: 1 1 0; padding: var(--sp-4) var(--sp-5); }
+  [data-view="departures"][data-view] .tv-fact[data-fact="cost"] { flex-grow: 1.75; }
+
+  [data-view="departures"][data-view] .dep-board-top { padding: var(--sp-3) var(--sp-5); }
+  [data-view="departures"][data-view] .dep-board-top > .dep-note { flex-basis: auto; margin-left: auto; }
+  /* Before you go as a table: Item, Status, Next step. */
+  [data-view="departures"][data-view] .dep-gates > .dep-board-head,
+  [data-view="departures"][data-view] .dep-gates > .dep-gate { display: grid; grid-template-columns: 15rem minmax(0, 1fr) 10.5rem; align-items: center; gap: 0 var(--sp-5); padding: var(--sp-4) var(--sp-5); }
+  [data-view="departures"][data-view] .dep-gates > .dep-board-head { padding-block: var(--sp-2); border-bottom: 1px solid var(--dep-hair); font: var(--text-caption); color: var(--ink-secondary); }
+  [data-view="departures"][data-view] .dep-gates > .dep-board-head > :first-child { padding-left: calc(40px + var(--sp-3)); }
+  [data-view="departures"][data-view] .dep-gate-item { grid-area: auto; }
+  [data-view="departures"][data-view] .dep-gate-st { grid-area: 1 / 2; padding-left: 0; }
+  [data-view="departures"][data-view] .dep-gate-act { grid-area: 1 / 3; }
+  [data-view="departures"][data-view] .dep-gate-act > .ui-btn { width: 100%; }
+  [data-view="departures"][data-view] .dep-byg-note { padding-inline: var(--sp-5); }
+}
+@container dep-between (min-width: 900px) {
+  [data-view="departures"][data-view] .dep-board-top { padding: var(--sp-3) var(--sp-5); }
+  [data-view="departures"][data-view] .dep-board-top > .dep-note { flex-basis: auto; margin-left: auto; }
+  [data-view="departures"][data-view] .dep-daychips,
+  [data-view="departures"][data-view] .dep-map-foot { padding: var(--sp-3) var(--sp-5); }
+}
+
+/* ============================ Motion ============================ */
+/* Only for people who have not asked for less (blueprint 8.4); .dep-enter is written on a first
+   render only (ViewCtx.animate), so a refresh, a view switch and a patch never replay it. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-view="departures"][data-view] .dep-enter { animation: dep-rise 420ms var(--ease-out) both; }
+  [data-view="departures"][data-view] .dep-enter:nth-of-type(2) { animation-delay: 60ms; }
+  [data-view="departures"][data-view] .dep-enter:nth-of-type(n+3) { animation-delay: 120ms; }
+  [data-view="departures"][data-view] .dep-lamp--pulse { animation: dep-lamp 2.4s ease-in-out infinite; }
+  [data-view="departures"][data-view] .dep-srow .ui-seg[data-seg="now"] { animation: dep-fade 1.6s ease-in-out infinite; }
+  [data-view="departures"][data-view] :is(.dep-drow, .dep-lrow, .dep-liverow, .dep-hoprow, .td-tab, .tv-day-chip) { transition: background-color var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast); }
+}
+@keyframes dep-rise {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@keyframes dep-lamp {
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--dep-lampc, currentColor) 0%, transparent); }
+}
+@keyframes dep-fade {
+  50% { opacity: 0.35; }
+}

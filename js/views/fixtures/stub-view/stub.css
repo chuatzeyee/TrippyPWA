@@ -1,0 +1,57 @@
+/* Stub view. The one rule it cannot work without: dashboard.css stretches .trip-card-link over its
+   card, so the card has to be the containing block. Checked by css/views/css-rules.test.js as a skin. */
+[data-view="stub"][data-view] .stub-trip { position: relative; }
+
+/* Gate G2 (rulings R16 and R20). The stub's controls are plain <button>, <a>, <input> and <summary>
+   markup with no ui- class, so no shared rule reaches them. Each gets a box of at least 44 by 44 px
+   and a face that reads in both themes. Nothing else about the stub is styled. */
+[data-view="stub"][data-view] :is(.stub-actions, .stub-trip, .stub-trips, .stub-hops, .stub-banner, .stub-error, .stub-bar-actions, .stub-menu, .stub-glance, .stub-ready, .stub-days) :is(button, a[data-focus-key]) {
+  position: relative;
+  z-index: 3; /* above a stretched .trip-card-link */
+  display: inline-flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+[data-view="stub"][data-view] .stub-trips button[aria-pressed="true"] { border-color: var(--ink); }
+[data-view="stub"][data-view] .stub-credit { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; }
+[data-view="stub"][data-view] .stub-search { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); min-height: 44px; }
+[data-view="stub"][data-view] .stub-search input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+}
+[data-view="stub"][data-view] .stub-month > summary { min-height: 44px; padding-block: var(--sp-3); cursor: pointer; }
+
+/* The More menu: a <dialog> comes with the browser's own light canvas. */
+[data-view="stub"][data-view] .stub-menu { border: 1px solid var(--border-strong); border-radius: var(--r-md); background: var(--parchment); color: var(--ink); }
+[data-view="stub"][data-view] .stub-menu ul { display: grid; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+[data-view="stub"][data-view] .stub-menu [role="menuitem"] { width: 100%; }
+
+/* The bar keeps to one row, so the pinned chrome stays under the cap of blueprint 9.4 on a phone:
+   the title takes the room that is left and wraps, and below 640 px only More stays (its menu holds
+   every action at every width). */
+[data-view="stub"][data-view] .stub-bar-title { flex: 1 1 0; min-width: 96px; margin: 0; overflow-wrap: anywhere; }
+[data-view="stub"][data-view] .stub-bar-actions { display: flex; flex: none; align-items: center; gap: var(--sp-2); }
+[data-view="stub"][data-view] .stub-pdf-status:empty { display: none; }
+@media (max-width: 639px) {
+  [data-view="stub"][data-view] .stub-bar-actions > button[data-action] { display: none; }
+}
+
+/* The cover keeps a 16 to 9 box whatever the photo's own shape, with or without a source: the width
+   and height attributes alone would leave it 720 px tall. */
+[data-view="stub"][data-view] .stub-frame img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }

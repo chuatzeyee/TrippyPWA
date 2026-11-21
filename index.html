@@ -37,8 +37,11 @@
   <script>
     try{if(Object.keys(localStorage).some(function(k){return k.startsWith('sb-')&&k.endsWith('-auth-token')}))document.documentElement.className='has-session'}catch(e){}
     try{var t=localStorage.getItem('trippy-theme');if(!t&&window.matchMedia('(prefers-color-scheme:light)').matches)t='light';if(t)document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m&&t==='light')m.content='#F5F1EA'}catch(e){}
+    /* The view, the motion setting and square mode for the first paint, from the keys js/data/prefs-store.js mirrors.
+       The square rule (the stored override, else the media query) is a copy of STORAGE_KEY and QUERY in js/lib/square-mode.js: change both together. */
+    try{var h=document.documentElement,v=localStorage.getItem('trippy-view'),q=localStorage.getItem('trippy-square-mode');h.setAttribute('data-view-pref',v==='departures'||v==='concierge'||v==='atlas'?v:'atlas');if(localStorage.getItem('trippy-motion')==='reduce')h.setAttribute('data-motion','reduce');if(q==='on'||(q!=='off'&&window.matchMedia('(min-aspect-ratio: 0.72/1) and (max-aspect-ratio: 1.12/1) and (max-width: 768px)').matches))h.setAttribute('data-square-mode','on')}catch(e){}
   </script>
-  <style>.app-skel{display:none}.has-session .app-splash{display:none!important}.has-session .app-skel{display:block}[data-prerendered] .landing-hero,[data-prerendered] .landing-headline,[data-prerendered] .landing-tagline,[data-prerendered] .landing-cta,[data-prerendered] .landing-proof{animation:none!important;opacity:1!important;transform:none!important}[data-prerendered] .landing-reveal{opacity:1!important;transform:none!important}</style>
+  <style>.app-skel{display:none}.has-session .app-splash{display:none!important}.has-session .app-skel{display:block}.app-skel--view{display:none;max-width:1200px;margin:0 auto;padding:var(--sp-4,16px) 0}html[data-view-pref]:not([data-square-mode="on"]) .app-skel--view{display:block}html[data-view-pref]:not([data-square-mode="on"]) .app-skel--classic{display:none}.app-skel-head{width:min(280px,70%);height:36px;border-radius:var(--r-md,8px);margin-bottom:var(--sp-5,20px)}.app-skel-lead{height:240px;border-radius:var(--r-xl,20px);margin-bottom:var(--sp-5,20px)}.app-skel-row{height:76px;border-radius:var(--r-lg,14px);margin-bottom:var(--sp-3,12px)}@media (min-width:768px){.app-skel-lead{height:300px}}@media (min-width:1024px){.app-skel--view{max-width:80%}}[data-prerendered] .landing-hero,[data-prerendered] .landing-headline,[data-prerendered] .landing-tagline,[data-prerendered] .landing-cta,[data-prerendered] .landing-proof{animation:none!important;opacity:1!important;transform:none!important}[data-prerendered] .landing-reveal{opacity:1!important;transform:none!important}</style>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -200,19 +203,28 @@
         </section>
       </div>
     </div>
-    <div class="dashboard container app-skel" id="app-shell">
-      <div class="dashboard-merged">
-        <div class="dashboard-merged-body">
-          <div class="dashboard-header">
-            <div class="skel-line skel-line--heading skel-shimmer"></div>
-            <div class="skel-btn skel-shimmer"></div>
-          </div>
-          <div class="trip-grid">
-            <div class="skel-card"><div class="skel-card-hero skel-shimmer"></div><div class="skel-card-body"><div class="skel-line skel-line--title skel-shimmer"></div><div class="skel-line skel-line--meta skel-shimmer"></div><div class="skel-line skel-line--budget skel-shimmer"></div></div></div>
-            <div class="skel-card"><div class="skel-card-hero skel-shimmer"></div><div class="skel-card-body"><div class="skel-line skel-line--title skel-shimmer"></div><div class="skel-line skel-line--meta skel-shimmer"></div><div class="skel-line skel-line--budget skel-shimmer"></div></div></div>
-            <div class="skel-card"><div class="skel-card-hero skel-shimmer"></div><div class="skel-card-body"><div class="skel-line skel-line--title skel-shimmer"></div><div class="skel-line skel-line--meta skel-shimmer"></div><div class="skel-line skel-line--budget skel-shimmer"></div></div></div>
+    <div class="app-skel" id="app-shell">
+      <div class="dashboard container app-skel--classic">
+        <div class="dashboard-merged">
+          <div class="dashboard-merged-body">
+            <div class="dashboard-header">
+              <div class="skel-line skel-line--heading skel-shimmer"></div>
+              <div class="skel-btn skel-shimmer"></div>
+            </div>
+            <div class="trip-grid">
+              <div class="skel-card"><div class="skel-card-hero skel-shimmer"></div><div class="skel-card-body"><div class="skel-line skel-line--title skel-shimmer"></div><div class="skel-line skel-line--meta skel-shimmer"></div><div class="skel-line skel-line--budget skel-shimmer"></div></div></div>
+              <div class="skel-card"><div class="skel-card-hero skel-shimmer"></div><div class="skel-card-body"><div class="skel-line skel-line--title skel-shimmer"></div><div class="skel-line skel-line--meta skel-shimmer"></div><div class="skel-line skel-line--budget skel-shimmer"></div></div></div>
+              <div class="skel-card"><div class="skel-card-hero skel-shimmer"></div><div class="skel-card-body"><div class="skel-line skel-line--title skel-shimmer"></div><div class="skel-line skel-line--meta skel-shimmer"></div><div class="skel-line skel-line--budget skel-shimmer"></div></div></div>
+            </div>
           </div>
         </div>
+      </div>
+      <div class="app-skel--view">
+        <div class="app-skel-head skel-shimmer"></div>
+        <div class="app-skel-lead skel-shimmer"></div>
+        <div class="app-skel-row skel-shimmer"></div>
+        <div class="app-skel-row skel-shimmer"></div>
+        <div class="app-skel-row skel-shimmer"></div>
       </div>
     </div>
   </main>

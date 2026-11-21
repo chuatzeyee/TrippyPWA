@@ -475,3 +475,8 @@
   min-height: 320px;
   margin: auto 0;
 }
+
+/* ---- Trip page: a way back ------------------------------------------------ */
+/* Below 1024px trip-detail.css hides the top bar's Trips button in favour of the
+   one under the day list, which the square deck never shows. Bring it back here. */
+[data-square-mode="on"] .td-topbar .td-back { display: inline-flex; }

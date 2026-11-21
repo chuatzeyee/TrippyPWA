@@ -1,0 +1,1064 @@
+/* The Concierge skin (tier 2, blueprint 8.1). Owner: VB.
+   A calm morning briefing: one sentence leads, large photography, large serif numerals, thin rules
+   instead of boxes, generous space. Values follow previews/b-concierge/src (type scale 12, 13, 15, 17,
+   22, 28, 36, 48, 72, 112, 152 px; the 4 px spacing scale; colours from css/tokens.css).
+   Scope: prefix con-. Every selector starts with [data-view="concierge"][data-view] and weighs 0,2,0 to
+   0,6,0, so it beats every shared rule and never ties with a reset. No bare element right after the
+   scope, no position: fixed. Checked by css/views/css-rules.test.js. */
+
+/* The cascade probe: this must win over the shared sheet's probe rule in every load order. */
+[data-view="concierge"][data-view] .ui-probe { outline-style: double; }
+
+/* ---- Tokens ---- */
+[data-view="concierge"][data-view] {
+  --con-max: 1040px;
+  --con-app-pad: var(--sp-3);
+  --gutter: var(--sp-5);
+  --con-rule: color-mix(in srgb, var(--ink) 16%, transparent);
+  --con-rule-soft: color-mix(in srgb, var(--ink) 9%, transparent);
+  --con-line: color-mix(in srgb, var(--ink) 36%, transparent);
+  --con-cta: color-mix(in srgb, var(--terracotta) 80%, black);
+  --con-cta-hover: color-mix(in srgb, var(--terracotta) 68%, black);
+  --con-on-cta: color-mix(in srgb, white 96%, var(--terracotta));
+  --con-shade: color-mix(in srgb, black 92%, var(--amber));
+  --con-bar: color-mix(in srgb, var(--parchment) 96%, transparent);
+  --con-ok: var(--sage);
+  --con-todo: var(--amber);
+  --con-stop: color-mix(in srgb, var(--error) 70%, var(--ink));
+  --on-photo: color-mix(in srgb, white 93%, var(--amber));
+  --on-photo-soft: color-mix(in srgb, var(--on-photo) 86%, transparent);
+  --scrim: linear-gradient(to top, color-mix(in srgb, var(--con-shade) 82%, transparent) 0%, color-mix(in srgb, var(--con-shade) 58%, transparent) 28%, transparent 62%);
+  --ui-hairline: color-mix(in srgb, white 9%, transparent);
+  --ui-credit-face: color-mix(in srgb, var(--con-shade) 52%, transparent);
+  --ui-credit-radius: var(--r-sm);
+  --live: var(--sage);
+  --con-hero-fade: linear-gradient(to top, var(--parchment) 0%, color-mix(in srgb, var(--parchment) 88%, transparent) 22%, color-mix(in srgb, var(--parchment) 48%, transparent) 52%, transparent 82%);
+  --con-hero-halo: 0 1px 24px color-mix(in srgb, var(--parchment) 60%, transparent);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--font-body);
+}
+[data-theme="light"] [data-view="concierge"][data-view] {
+  --con-ok: color-mix(in srgb, var(--sage) 62%, black);
+  --con-todo: color-mix(in srgb, var(--amber) 58%, black);
+  /* Dark ink over a cover needs more of the page colour behind it than light ink does. */
+  --con-hero-fade: linear-gradient(to top, var(--parchment) 0%, color-mix(in srgb, var(--parchment) 90%, transparent) 18%, color-mix(in srgb, var(--parchment) 50%, transparent) 38%, color-mix(in srgb, var(--parchment) 14%, transparent) 60%, transparent 78%);
+  --con-hero-halo: 0 0 6px var(--parchment), 0 0 14px var(--parchment), 0 0 32px var(--parchment);
+}
+@media (min-width: 768px) {
+  [data-view="concierge"][data-view] { --gutter: var(--sp-10); --con-app-pad: var(--sp-6); }
+}
+
+/* ---- Buttons, links, chips ----
+   Terracotta is the one lead action of the moment, the ivory fill is an action, an outline is a
+   secondary action. A selected chip or tab is a raised surface with an ink edge, never the fill. */
+[data-view="concierge"][data-view] .ui-btn, [data-view="concierge"][data-view] .ui-menu-btn, [data-view="concierge"][data-view] .ui-ready-action {
+  min-height: 44px;
+  padding: 0 var(--sp-5);
+  border: 1px solid var(--con-line);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  font: 600 15px/1 var(--font-body);
+  white-space: nowrap;
+}
+[data-view="concierge"][data-view] .ui-btn:hover, [data-view="concierge"][data-view] .ui-menu-btn:hover, [data-view="concierge"][data-view] .ui-ready-action:hover { border-color: var(--ink); background: var(--con-rule-soft); filter: none; }
+[data-view="concierge"][data-view] .ui-btn:focus-visible, [data-view="concierge"][data-view] .ui-menu-btn:focus-visible, [data-view="concierge"][data-view] .ui-ready-action:focus-visible, [data-view="concierge"][data-view] .ui-chip:focus-visible { outline-offset: 3px; border-radius: var(--r-pill); }
+[data-view="concierge"][data-view] .ui-btn--small, [data-view="concierge"][data-view] .ui-ready-action { padding: 0 var(--sp-4); font-size: 13px; }
+[data-view="concierge"][data-view] .ui-btn--primary, [data-view="concierge"][data-view] .con-btn--cta { border-color: transparent; background: var(--con-cta); color: var(--con-on-cta); }
+[data-view="concierge"][data-view] .ui-btn--primary:hover, [data-view="concierge"][data-view] .con-btn--cta:hover { border-color: transparent; background: var(--con-cta-hover); }
+[data-view="concierge"][data-view] .ui-btn--primary:focus-visible, [data-view="concierge"][data-view] .con-btn--cta:focus-visible { outline-color: var(--terracotta); }
+[data-view="concierge"][data-view] .con-btn--ivory { border-color: transparent; background: var(--ink); color: var(--parchment); }
+[data-view="concierge"][data-view] .con-btn--ivory:hover { border-color: transparent; background: color-mix(in srgb, var(--ink) 86%, var(--parchment)); }
+[data-view="concierge"][data-view] .ui-ready-action > .ui-icon { display: none; }
+[data-view="concierge"][data-view] .con-link, [data-view="concierge"][data-view] .ui-credits > summary {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink);
+  font: 600 15px/1 var(--font-body);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+  text-decoration-color: color-mix(in srgb, var(--ink) 45%, transparent);
+  cursor: pointer;
+}
+[data-view="concierge"][data-view] .con-link:hover, [data-view="concierge"][data-view] .ui-credits > summary:hover { text-decoration-color: var(--ink); }
+[data-view="concierge"][data-view] .ui-chip {
+  padding: 0 var(--sp-4);
+  border-color: var(--con-rule);
+  color: var(--ink-secondary);
+  font: 500 15px/1 var(--font-body);
+}
+[data-view="concierge"][data-view] .ui-chip:hover { border-color: var(--con-line); background: none; color: var(--ink); }
+[data-view="concierge"][data-view] .ui-chip.is-active { border-color: var(--ink); background: var(--surface-solid); color: var(--ink); font-weight: 600; }
+[data-view="concierge"][data-view] .ui-chip-count { font: 400 12px/1 var(--font-mono); opacity: 1; }
+
+/* ---- Numerals, small parts ---- */
+[data-view="concierge"][data-view] .con-num { font-family: var(--font-heading); font-weight: 400; line-height: 0.9; }
+[data-view="concierge"][data-view] .con-mono, [data-view="concierge"][data-view] .con-time { font-family: var(--font-mono); font-size: 13px; letter-spacing: -0.01em; }
+[data-view="concierge"][data-view] .con-time { margin-right: var(--sp-1); font-weight: 600; white-space: nowrap; }
+[data-view="concierge"][data-view] .con-ghost { visibility: hidden; }
+[data-view="concierge"][data-view] .ui-flag { border-radius: 2px; box-shadow: 0 0 0 1px var(--con-rule); }
+[data-view="concierge"][data-view] .ui-segs { gap: var(--sp-1); }
+[data-view="concierge"][data-view] .ui-seg { height: 4px; background: var(--con-rule); }
+[data-view="concierge"][data-view] .ui-seg[data-seg="done"] { background: color-mix(in srgb, var(--ink) 60%, transparent); }
+[data-view="concierge"][data-view] .ui-seg[data-seg="now"] { background: var(--terracotta); }
+[data-view="concierge"][data-view] .ui-ready-chip { gap: var(--sp-2); padding: 0; background: none; color: var(--ink-secondary); font: 600 13px/1 var(--font-body); }
+[data-view="concierge"][data-view] .ui-ready-chip[data-ready="todo"] { color: var(--con-todo); }
+[data-view="concierge"][data-view] .ui-ready-chip[data-ready="ready"] { background: none; color: var(--con-ok); }
+[data-view="concierge"][data-view] .ui-meter { gap: var(--sp-1); }
+[data-view="concierge"][data-view] .ui-meter-cell { width: 12px; background: var(--con-rule); }
+[data-view="concierge"][data-view] .ui-meter-cell[data-on] { background: var(--sage); }
+[data-view="concierge"][data-view] .con-shared { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); color: var(--ink); font: 500 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-shared > .ui-icon { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .con-cost { color: var(--ink-secondary); font: 400 12px/1.4 var(--font-mono); }
+[data-view="concierge"][data-view] .con-kicker { color: var(--terracotta); font: 600 13px/1.3 var(--font-body); }
+[data-theme="light"] [data-view="concierge"][data-view] .con-kicker { color: var(--con-cta); }
+
+/* ---- Photo frames: a designed colour behind, one tone treatment, one scrim, the credit top right ---- */
+[data-view="concierge"][data-view] .ui-frame { background: color-mix(in srgb, var(--tone, var(--teal)) 24%, var(--surface-solid)); }
+[data-view="concierge"][data-view] .ui-frame-img { filter: saturate(0.92) contrast(1.03); }
+[data-view="concierge"][data-view] .ui-frame-none { background: none; color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .ui-frame-name { font: 400 22px/1.1 var(--font-heading); }
+[data-view="concierge"][data-view] .ui-frame-over { padding: var(--sp-4); text-shadow: 0 1px 12px color-mix(in srgb, var(--con-shade) 60%, transparent); }
+[data-view="concierge"][data-view] .ui-credit { color: color-mix(in srgb, white 88%, transparent); font: 400 11px/1.4 var(--font-body); text-shadow: none; }
+[data-view="concierge"][data-view] .con-credit { position: absolute; top: 0; right: 0; width: 100%; height: 44px; pointer-events: none; }
+[data-view="concierge"][data-view] .con-credit > .ui-credit { pointer-events: auto; }
+/* A photo that failed leaves the placeholder: its credit goes with it. */
+[data-view="concierge"][data-view] .ui-frame[data-frame="none"] .con-credit, [data-view="concierge"][data-view] .ui-frame[data-frame="none"] ~ .con-credit, [data-view="concierge"][data-view] .con-hop:has(.ui-frame[data-frame="none"]) > .con-credit { display: none; }
+
+/* ---- Section heads: a hairline, a serif title with its count, and one plain sentence ---- */
+[data-view="concierge"][data-view] .con-sec { margin-top: var(--sp-12); }
+[data-view="concierge"][data-view] .con-sec[hidden] { display: none; }
+[data-view="concierge"][data-view] .con-sec-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-6);
+  margin-bottom: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--con-rule);
+}
+[data-view="concierge"][data-view] .con-h2 { color: var(--ink); font: 400 28px/1.15 var(--font-heading); }
+[data-view="concierge"][data-view] .con-n { margin-left: var(--sp-2); color: var(--ink-secondary); font: 400 13px/1 var(--font-mono); vertical-align: 0.9em; }
+[data-view="concierge"][data-view] .con-sec-line { color: var(--ink-secondary); font: 400 15px/1.4 var(--font-body); }
+@media (min-width: 768px) {
+  [data-view="concierge"][data-view] .con-sec { margin-top: var(--sp-16); }
+  [data-view="concierge"][data-view] .con-sec-head { margin-bottom: var(--sp-8); }
+  [data-view="concierge"][data-view] .con-h2 { font-size: 36px; }
+}
+
+/* ===== Dashboard ===== */
+[data-view="concierge"][data-view].dv-root {
+  max-width: calc(var(--con-max) + 2 * (var(--gutter) - var(--con-app-pad)));
+  padding: var(--sp-5) calc(var(--gutter) - var(--con-app-pad)) var(--sp-10);
+}
+@media (min-width: 768px) {
+  [data-view="concierge"][data-view].dv-root { padding-top: var(--sp-8); }
+}
+
+/* The brief: the dateline, the two ways to start, and the sentence. */
+[data-view="concierge"][data-view] .con-brief-top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); }
+[data-view="concierge"][data-view] .con-dateline { color: var(--ink-secondary); font: 500 15px/1.3 var(--font-body); font-variant-caps: all-small-caps; letter-spacing: 0.09em; }
+[data-view="concierge"][data-view] .con-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+[data-view="concierge"][data-view] .con-actions--top { display: none; }
+[data-view="concierge"][data-view] .con-actions--below { margin-top: var(--sp-8); }
+[data-view="concierge"][data-view] .con-actions--below > .ui-btn { flex: 1 1 0; }
+[data-view="concierge"][data-view] .con-say-box { display: grid; margin-top: var(--sp-2); }
+[data-view="concierge"][data-view] .con-say { grid-area: 1 / 1; max-width: 21em; color: var(--ink); font: 400 28px/1.16 var(--font-heading); text-wrap: pretty; }
+[data-view="concierge"][data-view] .con-say-reserve { visibility: hidden; }
+[data-view="concierge"][data-view] .con-hi { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .con-say-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.14em;
+  text-decoration-color: color-mix(in srgb, var(--ink) 42%, transparent);
+}
+[data-view="concierge"][data-view] .con-say-link:hover { text-decoration-color: var(--terracotta); }
+@media (min-width: 768px) {
+  [data-view="concierge"][data-view] .con-actions--top { display: flex; }
+  [data-view="concierge"][data-view] .con-actions--below { display: none; }
+  [data-view="concierge"][data-view] .con-say-box { margin-top: var(--sp-4); }
+  [data-view="concierge"][data-view] .con-say { font-size: 48px; line-height: 1.1; }
+}
+
+/* States: a stale list is one quiet line, a load error one outlined panel. */
+[data-view="concierge"][data-view] .dv-stale {
+  gap: var(--sp-1) var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-secondary);
+  font: 400 13px/1.45 var(--font-body);
+}
+[data-view="concierge"][data-view] .dv-stale > .ui-btn { min-width: 0; padding: 0; border: 0; text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+[data-view="concierge"][data-view] .dv-stale > .ui-btn:hover { background: none; }
+[data-view="concierge"][data-view] .dv-error { gap: var(--sp-2); margin-top: var(--sp-8); padding: var(--sp-5); border-color: var(--con-rule); background: none; }
+[data-view="concierge"][data-view] .dv-error > .ui-icon { color: var(--con-stop); }
+[data-view="concierge"][data-view] .dv-error .dv-state-title { color: var(--con-stop); font: 600 15px/1.3 var(--font-body); }
+[data-view="concierge"][data-view] .dv-error .dv-state-text { color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .dv-error .dv-state-actions { margin-top: var(--sp-3); }
+
+/* Happening now: the lead. One grid item per part on phones (the day sits on the photo), a cover
+   beside a column on wide screens. */
+[data-view="concierge"][data-view] .con-now { margin-top: var(--sp-6); }
+[data-view="concierge"][data-view] .con-now > .con-sec-head { margin-bottom: var(--sp-4); }
+[data-view="concierge"][data-view] .con-lead { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+[data-view="concierge"][data-view] .con-lead-photo { position: relative; grid-area: 1 / 1; border-radius: var(--r-lg); }
+[data-view="concierge"][data-view] .con-lead-frame { height: 196px; aspect-ratio: auto; }
+[data-view="concierge"][data-view] .con-lead-over { padding-right: 84px; }
+[data-view="concierge"][data-view] .con-lead-title { color: var(--on-photo); font: 400 28px/1.06 var(--font-heading); text-wrap: balance; overflow-wrap: anywhere; }
+[data-view="concierge"][data-view] .con-lead-dates { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-2); font: 500 13px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .con-lead-brief { display: contents; }
+[data-view="concierge"][data-view] .con-lead-day {
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  grid-area: 1 / 1;
+  align-items: flex-end;
+  align-self: end;
+  justify-self: end;
+  padding: var(--sp-10) var(--sp-4) var(--sp-4) var(--sp-10);
+  /* The scrim is thin at the height of "Day": the block brings its own shade from the corner, gone
+     before its top and left edges, so no box shows. The padding above and beside is room for the fade. */
+  border-radius: 0 0 var(--r-lg);
+  background: radial-gradient(ellipse 100% 100% at 100% 100%, color-mix(in srgb, var(--con-shade) 74%, transparent) 0%, color-mix(in srgb, var(--con-shade) 64%, transparent) 62%, transparent 100%);
+  color: var(--on-photo);
+  font: 500 13px/1.2 var(--font-body);
+  text-shadow: 0 1px 12px color-mix(in srgb, var(--con-shade) 60%, transparent);
+  white-space: nowrap;
+  pointer-events: none;
+}
+[data-view="concierge"][data-view] .con-lead-day > .con-num { font-size: 48px; line-height: 0.95; }
+[data-view="concierge"][data-view] .con-bl-row { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--con-rule-soft); font: 400 15px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-bl-row > dt { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .con-bl--main { margin-top: var(--sp-1); }
+[data-view="concierge"][data-view] .con-lead-actions, [data-view="concierge"][data-view] .con-plan-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-5); margin-top: var(--sp-4); }
+[data-view="concierge"][data-view] .con-bl--more { margin-top: var(--sp-4); border-top: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .con-also {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: var(--sp-3) var(--sp-4);
+  align-items: center;
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--con-rule-soft);
+}
+[data-view="concierge"][data-view] .con-also-thumb { border-radius: var(--r-md); }
+[data-view="concierge"][data-view] .con-also-title { font: 400 22px/1.15 var(--font-heading); overflow-wrap: anywhere; }
+[data-view="concierge"][data-view] .con-also-line { margin-top: var(--sp-1); color: var(--ink-secondary); font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-also-line > .ui-flag { margin-right: var(--sp-2); }
+[data-view="concierge"][data-view] .con-also > .ui-btn { grid-column: 2; justify-self: start; }
+@media (min-width: 768px) {
+  [data-view="concierge"][data-view] .con-now { margin-top: var(--sp-8); }
+  [data-view="concierge"][data-view] .con-now > .con-sec-head { margin-bottom: var(--sp-6); }
+  [data-view="concierge"][data-view] .con-also { grid-template-columns: 88px minmax(0, 1fr) auto; margin-top: var(--sp-8); }
+  [data-view="concierge"][data-view] .con-also-title { font-size: 28px; }
+  [data-view="concierge"][data-view] .con-also-line { font-size: 15px; }
+  [data-view="concierge"][data-view] .con-also > .ui-btn { grid-column: 3; }
+}
+@media (min-width: 900px) {
+  [data-view="concierge"][data-view] .con-lead { grid-template-columns: 7fr 5fr; gap: var(--sp-12); align-items: stretch; }
+  [data-view="concierge"][data-view] .con-lead-photo { grid-area: auto; }
+  [data-view="concierge"][data-view] .con-lead-frame { height: 100%; min-height: 400px; }
+  [data-view="concierge"][data-view] .con-lead-frame > .ui-frame-over { padding: var(--sp-8); }
+  [data-view="concierge"][data-view] .con-lead-over { padding-right: 0; }
+  [data-view="concierge"][data-view] .con-lead-title { font-size: 48px; }
+  [data-view="concierge"][data-view] .con-lead-dates { font-size: 15px; }
+  [data-view="concierge"][data-view] .con-lead-brief { display: flex; flex-direction: column; justify-content: center; }
+  [data-view="concierge"][data-view] .con-lead-day {
+    flex-direction: row;
+    grid-area: auto;
+    align-items: baseline;
+    align-self: auto;
+    justify-self: auto;
+    gap: var(--sp-3);
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--ink-secondary);
+    font: 400 22px/1 var(--font-heading);
+    text-shadow: none;
+    pointer-events: auto;
+  }
+  [data-view="concierge"][data-view] .con-lead-day > .con-num { color: var(--ink); font-size: 112px; line-height: 0.9; }
+  [data-view="concierge"][data-view] .con-lead-brief > .ui-segs { margin-top: var(--sp-4); }
+  [data-view="concierge"][data-view] .con-bl--main { margin-top: var(--sp-4); border-top: 1px solid var(--con-rule-soft); }
+  [data-view="concierge"][data-view] .con-bl--more { margin-top: 0; border-top: 0; }
+  /* The two lines for later today come before the two links on a wide screen, as in the preview.
+     Neither holds a control, so the tab order is untouched. */
+  [data-view="concierge"][data-view] .con-lead-actions { order: 1; margin-top: var(--sp-5); }
+}
+
+/* The one-time chooser sits in the slot under the briefing: clear of the sentence above it. */
+[data-view="concierge"][data-view] .ui-chooser { margin-top: var(--sp-5); }
+
+/* The finder: an unboxed row that heads the lists below it. Chips never wrap; they scroll sideways. */
+[data-view="concierge"][data-view] .con-finder { margin-top: var(--sp-10); padding-top: var(--sp-3); border-top: 1px solid var(--con-rule); }
+[data-view="concierge"][data-view] .dv-filter { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+[data-view="concierge"][data-view] .dv-search { flex: none; max-width: none; }
+[data-view="concierge"][data-view] .dv-search > .ui-icon { left: 0; }
+[data-view="concierge"][data-view] .dv-search-input {
+  padding: 0 0 0 var(--sp-8);
+  border: 0;
+  border-bottom: 1px solid var(--con-rule);
+  border-radius: 0;
+  background: none;
+  font: 400 17px/1.2 var(--font-body);
+  appearance: none;
+}
+[data-view="concierge"][data-view] .dv-search-input::placeholder { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .dv-search-input:focus-visible { outline: none; border-bottom-color: var(--terracotta); box-shadow: 0 1px 0 var(--terracotta); }
+[data-view="concierge"][data-view] .dv-chips { gap: var(--sp-2); max-width: none; margin: -4px calc(-1 * var(--gutter)); padding: 4px var(--gutter); }
+@media (min-width: 900px) {
+  [data-view="concierge"][data-view] .con-finder { margin-top: var(--sp-16); padding-top: var(--sp-4); }
+  [data-view="concierge"][data-view] .dv-filter { grid-template-columns: 340px minmax(0, 1fr); align-items: center; gap: var(--sp-8); }
+  [data-view="concierge"][data-view] .dv-chips { justify-content: flex-end; margin: -4px; padding: 4px; }
+}
+
+/* Still being planned, and planning that stopped. */
+[data-view="concierge"][data-view] .con-planning { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--sp-6); margin-top: var(--sp-6); }
+[data-view="concierge"][data-view] .con-planning:empty, [data-view="concierge"][data-view] .con-ups:empty { display: none; }
+[data-view="concierge"][data-view] .con-plan-card { padding: var(--sp-5); border: 1px solid var(--con-rule); border-radius: var(--r-lg); }
+[data-view="concierge"][data-view] .con-plan-title, [data-view="concierge"][data-view] .con-up-title, [data-view="concierge"][data-view] .con-next-title { display: flex; align-items: baseline; gap: var(--sp-2); font: 400 22px/1.15 var(--font-heading); overflow-wrap: anywhere; }
+[data-view="concierge"][data-view] .con-plan-dates { color: var(--ink-secondary); font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-plan-status { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-4); font: 600 15px/1.3 var(--font-body); }
+[data-view="concierge"][data-view] .con-plan-status--stopped { color: var(--con-stop); }
+[data-view="concierge"][data-view] .con-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--terracotta); }
+[data-view="concierge"][data-view] .con-plan-big { margin-top: var(--sp-3); font: 400 22px/1.2 var(--font-heading); }
+[data-view="concierge"][data-view] .con-plan-big > .con-num { font-size: 48px; }
+[data-view="concierge"][data-view] .con-plan-card > .ui-segs { margin-top: var(--sp-4); }
+[data-view="concierge"][data-view] .con-plan-card .ui-seg { height: 6px; border-radius: 3px; }
+[data-view="concierge"][data-view] .con-plan-card .ui-seg[data-seg="done"] { background: var(--terracotta); }
+[data-view="concierge"][data-view] .con-plan-card .ui-seg[data-seg="now"] { background: color-mix(in srgb, var(--terracotta) 45%, transparent); }
+[data-view="concierge"][data-view] .con-plan-note { margin-top: var(--sp-3); color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .con-plan-actions { margin-top: var(--sp-5); }
+
+/* Upcoming: the next departure, then considered medium cards. */
+[data-view="concierge"][data-view] .con-up { margin-top: var(--sp-6); }
+[data-view="concierge"][data-view] .con-up > .con-sec-head { padding-top: 0; border-top: 0; }
+[data-view="concierge"][data-view] .con-next { display: grid; gap: var(--sp-4); }
+[data-view="concierge"][data-view] .con-next-photo { position: relative; border-radius: var(--r-lg); }
+[data-view="concierge"][data-view] .con-next-frame { aspect-ratio: 2 / 1; }
+[data-view="concierge"][data-view] .con-next-title { gap: var(--sp-3); align-items: baseline; margin-top: var(--sp-1); font-size: 36px; line-height: 1.05; }
+[data-view="concierge"][data-view] .con-next-dates { margin-top: var(--sp-1); color: var(--ink-secondary); font: 400 15px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-next-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-5); align-items: center; margin-top: var(--sp-4); }
+[data-view="concierge"][data-view] .con-count { display: flex; align-items: flex-end; gap: var(--sp-2); }
+[data-view="concierge"][data-view] .con-count > .con-num { font-size: 72px; }
+[data-view="concierge"][data-view] .con-unit { padding-bottom: var(--sp-1); color: var(--ink-secondary); font: 400 22px/1 var(--font-heading); }
+[data-view="concierge"][data-view] .con-unit > span { display: block; }
+[data-view="concierge"][data-view] .con-facts { display: grid; gap: var(--sp-2); padding-left: var(--sp-5); border-left: 1px solid var(--con-rule); font: 400 13px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .con-facts dt { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .con-facts .con-cost { color: var(--ink); font-size: 13px; }
+[data-view="concierge"][data-view] .con-todo-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-top: var(--sp-5); padding-bottom: var(--sp-2); border-bottom: 1px solid var(--con-rule); }
+[data-view="concierge"][data-view] .con-todo-title { font: 400 22px/1.2 var(--font-heading); }
+[data-view="concierge"][data-view] .con-todo--pending { min-height: 148px; }
+[data-view="concierge"][data-view] .con-todo-wait { padding: var(--sp-3) 0; color: var(--ink-secondary); font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-todo .ui-ready { gap: 0; }
+[data-view="concierge"][data-view] .con-todo .ui-ready-head { display: none; }
+[data-view="concierge"][data-view] .con-settled { display: flex; align-items: center; gap: var(--sp-3); min-height: 44px; padding: var(--sp-3) 0; color: var(--ink-secondary); font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-tick { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: color-mix(in srgb, var(--sage) 22%, transparent); color: var(--con-ok); }
+@media (max-width: 359px) {
+  [data-view="concierge"][data-view] .con-next-facts { grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+  [data-view="concierge"][data-view] .con-facts { padding-left: 0; border-left: 0; }
+}
+@media (min-width: 900px) {
+  [data-view="concierge"][data-view] .con-up { margin-top: var(--sp-10); }
+  [data-view="concierge"][data-view] .con-next { grid-template-columns: 5fr 7fr; gap: var(--sp-12); align-items: stretch; }
+  [data-view="concierge"][data-view] .con-next-frame { height: 100%; min-height: 480px; aspect-ratio: auto; }
+  [data-view="concierge"][data-view] .con-next-title { font-size: 48px; }
+  [data-view="concierge"][data-view] .con-next-facts { gap: var(--sp-8); margin-top: var(--sp-5); }
+  [data-view="concierge"][data-view] .con-next .con-count > .con-num { font-size: 112px; }
+  [data-view="concierge"][data-view] .con-facts { padding-left: var(--sp-8); font-size: 15px; }
+  [data-view="concierge"][data-view] .con-todo-head { margin-top: var(--sp-6); padding-bottom: var(--sp-3); }
+}
+
+/* Readiness rows, as the dashboard and the trip page share them: a ring or a tick, the area and its
+   status, one sentence, one action. */
+[data-view="concierge"][data-view] .ui-ready-row { grid-template-columns: 20px minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); min-height: 56px; padding: var(--sp-3) 0; border-top: 0; border-bottom: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .ui-ready-mark { width: 20px; height: 20px; border-color: var(--con-todo); color: transparent; }
+[data-view="concierge"][data-view] .ui-ready-row[data-state="done"] > .ui-ready-mark { border-color: transparent; background: color-mix(in srgb, var(--sage) 22%, transparent); color: var(--con-ok); }
+[data-view="concierge"][data-view] .ui-ready-row[data-state="checking"] > .ui-ready-mark { border-color: var(--con-line); color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .ui-ready-main { flex-flow: row wrap; align-items: baseline; gap: 0 var(--sp-2); }
+[data-view="concierge"][data-view] .ui-ready-label { font: 600 15px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .ui-ready-status { color: var(--con-todo); font: 600 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .ui-ready-row[data-state="done"] .ui-ready-status { color: var(--con-ok); }
+[data-view="concierge"][data-view] .ui-ready-row[data-state="checking"] .ui-ready-status { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .ui-ready-detail { flex: 1 0 100%; color: var(--ink-secondary); font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .ui-ready-due { background: none; padding: 0; color: var(--ink-secondary); font: 400 12px/1.5 var(--font-mono); }
+[data-view="concierge"][data-view] .ui-ready-due[data-due="soon"], [data-view="concierge"][data-view] .ui-ready-due[data-due="overdue"] { background: none; box-shadow: none; color: var(--con-todo); }
+[data-view="concierge"][data-view] .ui-ready-row > .ui-ready-action { grid-column: 2; justify-self: start; }
+[data-view="concierge"][data-view] .ui-ready-note { padding-top: var(--sp-2); color: var(--ink-secondary); font: 400 12px/1.5 var(--font-body); }
+@media (min-width: 560px) {
+  [data-view="concierge"][data-view] .ui-ready-row { grid-template-columns: 20px minmax(0, 1fr) auto; }
+  [data-view="concierge"][data-view] .ui-ready-row > .ui-ready-action { grid-column: 3; }
+}
+
+/* The other plans. */
+[data-view="concierge"][data-view] .con-ups { display: grid; gap: var(--sp-5); margin-top: var(--sp-6); padding-top: var(--sp-5); border-top: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .con-up-card { position: relative; display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: var(--sp-4); align-items: start; }
+[data-view="concierge"][data-view] .con-up-frame { aspect-ratio: 4 / 5; border-radius: var(--r-md); }
+[data-view="concierge"][data-view] .con-up-frame .con-credit { display: none; }
+[data-view="concierge"][data-view] .con-up-dates, [data-view="concierge"][data-view] .con-up-facts { margin-top: var(--sp-1); color: var(--ink-secondary); font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-up-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--sp-1) var(--sp-3); margin-top: var(--sp-2); }
+[data-view="concierge"][data-view] .con-count--sm { align-items: baseline; gap: var(--sp-1); color: var(--ink-secondary); font: 400 13px/1 var(--font-body); white-space: nowrap; }
+[data-view="concierge"][data-view] .con-count--sm > .con-num { color: var(--ink); font-size: 36px; }
+[data-view="concierge"][data-view] .con-count--sm > .con-unit { padding: 0; font: inherit; }
+[data-view="concierge"][data-view] .con-up-card .con-cost { margin-top: var(--sp-2); }
+[data-view="concierge"][data-view] .con-none { padding: var(--sp-5) 0; font: 400 22px/1.2 var(--font-heading); }
+@media (min-width: 768px) {
+  [data-view="concierge"][data-view] .con-ups { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-8); margin-top: var(--sp-12); padding-top: var(--sp-10); }
+  [data-view="concierge"][data-view] .con-up-card { grid-template-columns: minmax(0, 1fr); }
+  [data-view="concierge"][data-view] .con-up-frame { aspect-ratio: 16 / 9; border-radius: var(--r-lg); }
+  [data-view="concierge"][data-view] .con-up-frame .con-credit { display: block; }
+  [data-view="concierge"][data-view] .con-up-title { font-size: 28px; }
+  [data-view="concierge"][data-view] .con-up-dates, [data-view="concierge"][data-view] .con-up-facts { font-size: 15px; }
+  [data-view="concierge"][data-view] .con-count--sm > .con-num { font-size: 48px; }
+  [data-view="concierge"][data-view] .con-up-card .con-cost { font-size: 13px; }
+  [data-view="concierge"][data-view] .con-none { grid-column: 1 / -1; }
+}
+
+/* Stats: a quiet typographic line. */
+[data-view="concierge"][data-view] .con-stats { display: grid; gap: var(--sp-5); margin-top: var(--sp-12); padding: var(--sp-8) 0; border-top: 1px solid var(--con-rule); border-bottom: 1px solid var(--con-rule); }
+[data-view="concierge"][data-view] .con-stats-line { color: var(--ink-secondary); font: 400 28px/1.2 var(--font-heading); text-wrap: balance; }
+[data-view="concierge"][data-view] .con-stats-line > b { color: var(--ink); font-weight: 400; }
+[data-view="concierge"][data-view] .con-flags { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+[data-view="concierge"][data-view] .con-flags > .ui-flag { width: 24px; height: 16px; }
+[data-view="concierge"][data-view] .con-stats-names { max-width: 58ch; margin-top: var(--sp-3); color: var(--ink-secondary); font: 400 13px/1.6 var(--font-body); }
+[data-view="concierge"][data-view] .con-stats + .con-past { margin-top: var(--sp-10); }
+[data-view="concierge"][data-view] .con-stats + .con-past > .con-sec-head { padding-top: 0; border-top: 0; }
+@media (min-width: 900px) {
+  [data-view="concierge"][data-view] .con-stats { grid-template-columns: 7fr 5fr; gap: var(--sp-12); align-items: center; margin-top: var(--sp-16); padding: var(--sp-12) 0; }
+  [data-view="concierge"][data-view] .con-stats-line { font-size: 48px; line-height: 1.1; }
+}
+
+/* Past plans: an index by month. The two latest months are open, older ones fold. */
+[data-view="concierge"][data-view] .con-month { display: grid; gap: var(--sp-1); padding: var(--sp-4) 0; border-top: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .con-sec-head + .con-month { padding-top: 0; border-top: 0; }
+[data-view="concierge"][data-view] .con-month-name { font: 400 22px/1.2 var(--font-heading); }
+[data-view="concierge"][data-view] .con-month-count { margin-left: var(--sp-1); color: var(--ink-secondary); font: 400 13px/1 var(--font-body); }
+[data-view="concierge"][data-view] .con-month-sum { display: grid; justify-items: start; gap: var(--sp-1); list-style: none; cursor: pointer; }
+[data-view="concierge"][data-view] .con-month-sum::-webkit-details-marker { display: none; }
+[data-view="concierge"][data-view] .con-month-names { color: var(--ink-secondary); font: 400 15px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-month-toggle { display: inline-flex; align-items: center; min-height: 44px; margin-top: var(--sp-2); padding: 0 var(--sp-4); border: 1px solid var(--con-line); border-radius: var(--r-pill); font: 600 13px/1 var(--font-body); }
+[data-view="concierge"][data-view] .con-month-sum:hover > .con-month-toggle { border-color: var(--ink); background: var(--con-rule-soft); }
+[data-view="concierge"][data-view] .con-month[open] .con-month-show, [data-view="concierge"][data-view] .con-month:not([open]) .con-month-hide, [data-view="concierge"][data-view] .con-month[open] .con-month-names { display: none; }
+[data-view="concierge"][data-view] .con-month[open] > .con-month-rows { margin-top: var(--sp-2); }
+[data-view="concierge"][data-view] .con-prow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-areas: "t n" "t m";
+  column-gap: var(--sp-3);
+  align-items: center;
+  min-height: 60px;
+  padding: var(--sp-2) 0;
+}
+[data-view="concierge"][data-view] .con-prow-thumb { grid-area: t; border-radius: var(--r-sm); }
+[data-view="concierge"][data-view] .con-prow-title { grid-area: n; font: 400 22px/1.15 var(--font-heading); overflow-wrap: anywhere; }
+[data-view="concierge"][data-view] .con-prow-meta { display: flex; flex-wrap: wrap; grid-area: m; align-items: baseline; justify-content: space-between; gap: 0 var(--sp-3); }
+[data-view="concierge"][data-view] .con-prow-dates { color: var(--ink-secondary); font: 400 13px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .con-prow-cost { white-space: nowrap; }
+[data-view="concierge"][data-view] .con-prow:hover > .con-prow-title { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+[data-view="concierge"][data-view] .con-past-more { margin-top: var(--sp-4); }
+@media (min-width: 900px) {
+  [data-view="concierge"][data-view] .con-month { grid-template-columns: 220px minmax(0, 1fr); gap: var(--sp-6); padding: var(--sp-5) 0; }
+  [data-view="concierge"][data-view] .con-month-label { padding-top: var(--sp-4); }
+  [data-view="concierge"][data-view] .con-month-sum > .con-month-label { padding-top: 0; }
+  [data-view="concierge"][data-view] .con-month-sum { padding-top: var(--sp-4); align-content: start; }
+  /* A folded month is one row of the index: the month, the plans by name, the way to show them. */
+  [data-view="concierge"][data-view] .con-month:not([open]) > .con-month-sum { grid-column: 1 / -1; grid-template-columns: 220px minmax(0, 1fr) auto; gap: var(--sp-6); align-items: center; padding-top: 0; }
+  [data-view="concierge"][data-view] .con-month:not([open]) .con-month-toggle { margin-top: 0; }
+  [data-view="concierge"][data-view] .con-month-count { display: block; margin: var(--sp-2) 0 0; }
+  [data-view="concierge"][data-view] .con-month[open] > .con-month-rows { margin-top: 0; }
+  [data-view="concierge"][data-view] .con-prow { grid-template-columns: 64px minmax(0, 5fr) minmax(0, 4fr) 190px; grid-template-areas: "t n d c"; column-gap: var(--sp-5); min-height: 64px; border-bottom: 1px solid var(--con-rule-soft); }
+  [data-view="concierge"][data-view] .con-prow:last-child { border-bottom: 0; }
+  [data-view="concierge"][data-view] .con-prow-thumb { aspect-ratio: 16 / 11; }
+  [data-view="concierge"][data-view] .con-prow-meta { display: contents; }
+  [data-view="concierge"][data-view] .con-prow-dates { grid-area: d; font-size: 15px; }
+  [data-view="concierge"][data-view] .con-prow-cost { grid-area: c; font-size: 13px; text-align: right; }
+}
+
+/* Short hops: a snap row on phones, a grid on wide screens. */
+[data-view="concierge"][data-view] .con-hops {
+  display: flex;
+  gap: var(--sp-3);
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  scrollbar-width: none;
+}
+[data-view="concierge"][data-view] .con-hop { position: relative; flex: 0 0 calc((100% - var(--sp-3)) / 2 - var(--sp-2)); scroll-snap-align: start; }
+[data-view="concierge"][data-view] .con-hop-btn { display: block; width: 100%; height: 100%; padding: 0; border: 0; border-radius: var(--r-lg); background: none; color: inherit; text-align: left; cursor: pointer; }
+[data-view="concierge"][data-view] .con-hop-btn > .ui-frame { height: 100%; }
+[data-view="concierge"][data-view] .con-hop-btn .ui-frame-over { padding: var(--sp-3) var(--sp-3) var(--sp-4); }
+[data-view="concierge"][data-view] .con-hop-name { font: 400 22px/1.1 var(--font-heading); overflow-wrap: anywhere; }
+[data-view="concierge"][data-view] .con-hop-line { margin-top: var(--sp-1); color: var(--on-photo-soft); font: 400 13px/1.35 var(--font-body); }
+[data-view="concierge"][data-view] .con-hops-sec--start { margin-top: var(--sp-8); }
+[data-view="concierge"][data-view] .con-start-sub { margin-bottom: var(--sp-4); color: var(--ink-secondary); font: 400 15px/1.5 var(--font-body); }
+/* Three whole tiles in the width, as in the preview; a fourth starts the rail. */
+[data-view="concierge"][data-view] .con-hops--compact > .con-hop { flex-basis: calc((100% - 2 * var(--sp-3)) / 3); }
+[data-view="concierge"][data-view] .con-hops--compact .con-hop-name { font-size: 17px; line-height: 1.15; }
+[data-view="concierge"][data-view] .con-hops--compact .ui-frame-over { padding: var(--sp-2) var(--sp-2) var(--sp-3); }
+[data-view="concierge"][data-view] .con-hops--compact .ui-frame { aspect-ratio: 1; }
+/* A small phone: one tile and the start of the next, so the name and its two lines clear the credit.
+   A tablet: three tiles and the start of a fourth, not two that fill the screen. */
+@media (max-width: 359px) {
+  [data-view="concierge"][data-view] .con-hops:not(.con-hops--compact) > .con-hop { flex-basis: 68%; }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  [data-view="concierge"][data-view] .con-hops:not(.con-hops--compact) > .con-hop { flex-basis: calc((100% - 3 * var(--sp-3)) / 3.3); }
+  [data-view="concierge"][data-view] .con-hops--compact > .con-hop { flex-basis: calc((100% - 4 * var(--sp-3)) / 5); }
+}
+@media (min-width: 900px) {
+  [data-view="concierge"][data-view] .con-hops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-5); margin-inline: 0; padding-inline: 0; overflow: visible; }
+  [data-view="concierge"][data-view] .con-hop:first-child { grid-column: span 2; }
+  [data-view="concierge"][data-view] .con-hop:first-child .ui-frame { aspect-ratio: auto; }
+  [data-view="concierge"][data-view] .con-hop-btn .ui-frame-over { padding: var(--sp-4) var(--sp-5) var(--sp-5); }
+  [data-view="concierge"][data-view] .con-hop-name { font-size: 28px; }
+  [data-view="concierge"][data-view] .con-hop-line { font-size: 15px; }
+  [data-view="concierge"][data-view] .con-hops--compact { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--sp-3); }
+  [data-view="concierge"][data-view] .con-hops--compact > .con-hop:first-child { grid-column: auto; }
+  [data-view="concierge"][data-view] .con-hops--compact > .con-hop:first-child .ui-frame { aspect-ratio: 1; }
+  [data-view="concierge"][data-view] .con-hops--compact .con-hop-name { font-size: 22px; }
+}
+
+/* The foot: the estimate note and the credits. */
+[data-view="concierge"][data-view] .con-foot { margin-top: var(--sp-12); padding-top: var(--sp-5); border-top: 1px solid var(--con-rule); color: var(--ink-secondary); font: 400 13px/1.6 var(--font-body); }
+[data-view="concierge"][data-view] .con-foot-note { max-width: 70ch; color: var(--ink-secondary); font: 400 13px/1.6 var(--font-body); }
+[data-view="concierge"][data-view] .ui-credits { margin-top: var(--sp-2); font: 400 12px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .ui-credits > summary { color: var(--ink-secondary); font: 400 13px/1 var(--font-body); list-style: none; text-underline-offset: 4px; }
+[data-view="concierge"][data-view] .ui-credits > summary::-webkit-details-marker { display: none; }
+
+/* ===== Trip page ===== */
+/* The page runs the width of the app, so the bar and the hero reach both edges; everything else keeps
+   the content column. --con-in is the inset of that column inside a full-width child of the root (its
+   padding), --con-in-own the same seen from inside such a child (percentages are then its own width). */
+[data-view="concierge"][data-view].td-wrap {
+  --tv-max: none;
+  --tv-bar-min-h: 52px;
+  --tv-tabs-h: 57px;
+  --tv-pinned-h: calc(var(--tv-bar-h) + var(--tv-tabs-h));
+  --tv-day-gap: var(--sp-3);
+  --tv-day-shadow: none;
+  --tv-day-extras-display: contents;
+  --tv-map-max-h: 400px;
+  --con-in: max(var(--gutter), calc((100% - var(--con-max)) / 2 + var(--gutter)));
+  --con-in-own: max(var(--gutter), calc((100% - var(--con-max)) / 2));
+}
+/* The tab list is docked in the bar (from 1024 px): only the bar is pinned. */
+[data-view="concierge"][data-view].td-wrap:has(> .tv-bar .td-tabs) { --tv-pinned-h: var(--tv-bar-h); }
+@media (min-width: 768px) {
+  [data-view="concierge"][data-view].td-wrap { --tv-bar-min-h: 64px; }
+}
+
+/* The bar: glass, pinned at every width. Trips and More on a phone; from 640 px the name; from
+   1024 px the docked tabs and the labelled actions. */
+[data-view="concierge"][data-view] .tv-bar {
+  gap: var(--sp-1) var(--sp-3);
+  padding: 4px var(--con-in);
+  border-bottom-color: var(--con-rule-soft);
+  background: var(--con-bar);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+[data-view="concierge"][data-view] .tv-back { gap: var(--sp-2); padding: 0 var(--sp-4) 0 var(--sp-3); border-color: var(--con-line); border-radius: var(--r-pill); font: 600 15px/1 var(--font-body); }
+[data-view="concierge"][data-view] .tv-back:hover { border-color: var(--ink); background: var(--con-rule-soft); }
+[data-view="concierge"][data-view] .tv-bar-title { font: 600 15px/1.2 var(--font-body); text-wrap: balance; }
+[data-view="concierge"][data-view] .tv-bar-flags, [data-view="concierge"][data-view] .tv-bar-dates { display: none; }
+[data-view="concierge"][data-view] .tv-bar-actions { gap: var(--sp-1); }
+[data-view="concierge"][data-view] .tv-bar-actions > .tv-action { gap: var(--sp-2); padding: 0 var(--sp-3); border-color: transparent; }
+[data-view="concierge"][data-view] .tv-bar-actions > .tv-action > .ui-icon { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .tv-bar-actions > .ui-menu-btn { gap: var(--sp-2); padding: 0 var(--sp-4) 0 var(--sp-3); border-color: var(--con-rule); }
+[data-view="concierge"][data-view] .tv-pdf-status { border-color: var(--con-rule); font: 500 13px/1.4 var(--font-body); }
+@media (max-width: 639px) {
+  [data-view="concierge"][data-view] .tv-bar-title { display: none; }
+}
+@media (min-width: 768px) {
+  [data-view="concierge"][data-view] .tv-bar-title { font-size: 17px; }
+}
+/* From 1024 px the bar holds the name, the docked tabs and the labelled actions on one row. A long
+   name wraps in its own narrow column; between 1280 and 1439 px it also gives up the action icons. */
+@media (min-width: 1024px) {
+  [data-view="concierge"][data-view] .tv-bar { column-gap: var(--sp-2); }
+  [data-view="concierge"][data-view] .tv-bar-title { flex: 0 1 auto; max-width: 150px; font-size: 15px; }
+}
+@media (min-width: 1280px) and (max-width: 1439px) {
+  [data-view="concierge"][data-view]:has([data-title-step="long"]) .tv-action > .ui-icon { display: none; }
+}
+@media (min-width: 1440px) {
+  [data-view="concierge"][data-view] .tv-bar { column-gap: var(--sp-3); }
+  [data-view="concierge"][data-view] .tv-bar-title { max-width: 240px; font-size: 17px; }
+}
+
+/* More: the menu and its items. */
+[data-view="concierge"][data-view] .ui-menu { border-color: var(--con-rule); }
+[data-view="concierge"][data-view] .ui-menu [role="menuitem"] { flex-wrap: wrap; row-gap: 0; min-height: 48px; font: 500 15px/1.3 var(--font-body); }
+[data-view="concierge"][data-view] .ui-menu-item > .ui-icon { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .ui-menu-label { flex: 1; font-weight: 600; }
+[data-view="concierge"][data-view] .ui-menu-hint { flex: 1 0 100%; padding-left: 30px; font: 400 13px/1.35 var(--font-body); }
+
+/* Tabs: a segmented control on a glass strip under the bar; inside the bar once docked. The strip is
+   the list itself, from edge to edge; ::before draws the frame of the control behind the tabs. */
+[data-view="concierge"][data-view] > .td-tabs {
+  gap: 0;
+  width: auto;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 6px var(--con-in);
+  border: 0;
+  border-bottom: 1px solid var(--con-rule-soft);
+  border-radius: 0;
+  background: var(--con-bar);
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+[data-view="concierge"][data-view] > .td-tabs::before {
+  content: '';
+  position: absolute;
+  inset: 6px var(--con-in-own);
+  z-index: -1;
+  border: 1px solid var(--con-rule);
+  border-radius: var(--r-pill);
+  background: var(--surface-inset);
+}
+[data-view="concierge"][data-view] .td-tab {
+  min-height: 44px;
+  padding: 0 var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: none;
+  box-shadow: none;
+  color: var(--ink-secondary);
+  font: 600 13px/1 var(--font-body);
+}
+[data-view="concierge"][data-view] .td-tab:hover { background: none; color: var(--ink); }
+[data-view="concierge"][data-view] .td-tab.td-tab--active { border-color: var(--ink); background: var(--parchment); color: var(--ink); }
+[data-view="concierge"][data-view] .tv-tabs-slot > .td-tabs { padding: 0; border: 1px solid var(--con-rule); border-radius: var(--r-pill); background: var(--surface-inset); }
+[data-view="concierge"][data-view] .tv-tabs-slot .td-tab { padding: 0 var(--sp-4); font-size: 15px; }
+[data-view="concierge"][data-view] .tv-tabs-slot .td-tab > .ui-icon { display: none; }
+@media (min-width: 1024px) and (max-width: 1279px) {
+  [data-view="concierge"][data-view] .tv-tabs-slot .td-tab { padding: 0 var(--sp-3); }
+}
+@media (min-width: 640px) {
+  /* Room to spare: the control keeps to 480 px at the start of the column. */
+  [data-view="concierge"][data-view] > .td-tabs { padding-right: calc(100% + 2 * var(--gutter) - 480px - var(--con-in)); }
+  [data-view="concierge"][data-view] > .td-tabs::before { right: calc(100% - 480px - var(--con-in-own)); }
+  [data-view="concierge"][data-view] .td-tab { font-size: 15px; }
+}
+
+/* The hero: the cover from edge to edge under a fade to the page colour, the title set large. */
+[data-view="concierge"][data-view] .con-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: 328px;
+  margin-inline: calc(-1 * var(--gutter));
+  overflow: hidden;
+  background: color-mix(in srgb, var(--teal) 24%, var(--surface-solid));
+}
+[data-view="concierge"][data-view] .con-hero-photo { position: absolute; inset: 0; z-index: -2; border-radius: 0; background: none; }
+[data-view="concierge"][data-view] .con-hero-photo::after { content: none; }
+[data-view="concierge"][data-view] .con-hero-photo > .ui-frame-none > .ui-icon { display: none; }
+[data-view="concierge"][data-view] .con-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--con-hero-fade);
+  pointer-events: none;
+}
+[data-view="concierge"][data-view] .con-hero > .con-credit { right: calc(var(--con-in-own) - 6px); width: auto; left: 0; }
+[data-view="concierge"][data-view] .con-hero-in {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "t t" "f c";
+  align-items: end;
+  gap: var(--sp-3) var(--sp-4);
+  width: 100%;
+  padding: var(--sp-16) var(--con-in-own) var(--sp-3);
+}
+[data-view="concierge"][data-view] .con-hero-title { grid-area: t; color: var(--ink); font: 400 min(72px, 20.5cqw)/1.02 var(--font-heading); letter-spacing: -0.01em; text-shadow: var(--con-hero-halo); text-wrap: balance; overflow-wrap: anywhere; }
+[data-view="concierge"][data-view] .con-hero[data-title-step="mid"] .con-hero-title { font-size: min(48px, 13.7cqw); }
+[data-view="concierge"][data-view] .con-hero[data-title-step="long"] .con-hero-title { font-size: 36px; line-height: 1.06; }
+[data-view="concierge"][data-view] .con-hero-facts { grid-area: f; }
+[data-view="concierge"][data-view] .con-hero-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--sp-2); font: 500 15px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .con-hero-meta { margin-top: var(--sp-1); color: color-mix(in srgb, var(--ink) 84%, transparent); font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-hero-status { grid-area: c; }
+[data-view="concierge"][data-view] .con-hero-count { flex-direction: column; align-items: flex-end; gap: var(--sp-1); }
+[data-view="concierge"][data-view] .con-hero-count > .con-unit { padding: 0; color: color-mix(in srgb, var(--ink) 84%, transparent); font: 500 13px/1.2 var(--font-body); }
+[data-view="concierge"][data-view] .con-hero-count > .con-unit > span { display: inline; }
+[data-view="concierge"][data-view] .con-hero-state { color: color-mix(in srgb, var(--ink) 84%, transparent); font: 400 22px/1.2 var(--font-heading); white-space: nowrap; }
+/* A running plan: the day in numerals, the segments, today and the next stop, the way to today. */
+[data-view="concierge"][data-view] .con-hero--live .con-hero-in { grid-template-columns: minmax(0, 1fr); grid-template-areas: "t" "f" "c"; }
+[data-view="concierge"][data-view] .con-hero--live .con-hero-in { padding-top: 128px; }
+[data-view="concierge"][data-view] .con-hero--live::after { background: linear-gradient(to top, var(--parchment) 0, var(--parchment) 236px, color-mix(in srgb, var(--parchment) 86%, transparent) 300px, color-mix(in srgb, var(--parchment) 45%, transparent) 380px, transparent 480px); }
+[data-view="concierge"][data-view] .con-live-day { display: flex; align-items: baseline; gap: var(--sp-3); color: var(--ink-secondary); font: 400 22px/1 var(--font-heading); }
+[data-view="concierge"][data-view] .con-live-day > .con-num { color: var(--ink); font-size: 72px; }
+[data-view="concierge"][data-view] .con-hero-status > .ui-segs { margin-top: var(--sp-3); }
+[data-view="concierge"][data-view] .con-hero-status > .con-bl { margin-top: var(--sp-3); border-top: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .con-hero-status .con-bl-row { grid-template-columns: 88px minmax(0, 1fr); }
+[data-view="concierge"][data-view] .con-live-actions { margin-top: var(--sp-4); }
+@container tv-landing (max-width: 319px) {
+  [data-view="concierge"][data-view] .con-toolrow > .tv-action > .ui-icon { display: none; }
+}
+@container tv-landing (min-width: 900px) {
+  [data-view="concierge"][data-view] .con-hero { min-height: min(52vh, 460px); }
+  [data-view="concierge"][data-view] .con-hero-in { grid-template-areas: "t c" "f c"; gap: var(--sp-4) var(--sp-10); padding-bottom: var(--sp-8); }
+  [data-view="concierge"][data-view] .con-hero-title { font-size: 112px; line-height: 0.96; }
+  [data-view="concierge"][data-view] .con-hero[data-title-step="mid"] .con-hero-title { font-size: 72px; line-height: 1.02; }
+  [data-view="concierge"][data-view] .con-hero[data-title-step="long"] .con-hero-title { font-size: 48px; line-height: 1.06; }
+  [data-view="concierge"][data-view] .con-hero-dates { font-size: 17px; }
+  [data-view="concierge"][data-view] .con-hero-meta { font-size: 15px; }
+  [data-view="concierge"][data-view] .con-hero-count { flex-direction: row; align-items: flex-end; gap: var(--sp-3); }
+  [data-view="concierge"][data-view] .con-hero-count > .con-num { font-size: 112px; }
+  [data-view="concierge"][data-view] .con-hero-count > .con-unit { padding-bottom: var(--sp-2); color: var(--ink-secondary); font: 400 22px/1.05 var(--font-heading); }
+  [data-view="concierge"][data-view] .con-hero-count > .con-unit > span { display: block; }
+  [data-view="concierge"][data-view] .con-hero--live .con-hero-in { grid-template-columns: minmax(0, 1fr) 380px; grid-template-areas: "t c" "f c"; padding-top: var(--sp-16); }
+  [data-view="concierge"][data-view] .con-hero--live::after { background: linear-gradient(to top, var(--parchment) 0%, color-mix(in srgb, var(--parchment) 92%, transparent) 40%, color-mix(in srgb, var(--parchment) 55%, transparent) 70%, transparent 100%); }
+  /* A running plan gives 380 px of the row to today, so its title has a narrower column: every step is
+     one size down, and a name of several cities stays on two lines. */
+  [data-view="concierge"][data-view] .con-hero--live .con-hero-title { font-size: 72px; line-height: 1.02; }
+  [data-view="concierge"][data-view] .con-hero--live[data-title-step="mid"] .con-hero-title { font-size: 48px; line-height: 1.06; }
+  [data-view="concierge"][data-view] .con-hero--live[data-title-step="long"] .con-hero-title { font-size: 36px; line-height: 1.1; }
+}
+@container tv-landing (min-width: 1180px) {
+  [data-view="concierge"][data-view] .con-hero-title { font-size: 152px; line-height: 0.92; }
+  [data-view="concierge"][data-view] .con-hero[data-title-step="mid"] .con-hero-title { font-size: 112px; line-height: 0.96; }
+  [data-view="concierge"][data-view] .con-hero[data-title-step="long"] .con-hero-title { font-size: 72px; line-height: 1.02; }
+  [data-view="concierge"][data-view] .con-hero--live .con-hero-title { font-size: 112px; line-height: 0.96; }
+  [data-view="concierge"][data-view] .con-hero--live[data-title-step="mid"] .con-hero-title { font-size: 72px; line-height: 1.02; }
+  [data-view="concierge"][data-view] .con-hero--live[data-title-step="long"] .con-hero-title { font-size: 48px; line-height: 1.06; }
+}
+
+/* Narrow screens: the labelled actions sit under the hero; More in the bar repeats them. */
+[data-view="concierge"][data-view] .con-toolrow { display: flex; gap: var(--sp-2); max-width: var(--con-max); margin-inline: auto; padding: var(--sp-1) 0 var(--sp-3); }
+[data-view="concierge"][data-view] .con-toolrow > .tv-action { flex: 1 1 auto; padding: 0 var(--sp-3); }
+[data-view="concierge"][data-view] .con-notes { max-width: var(--con-max); margin-inline: auto; }
+/* The bar shows the same buttons from 1024 px of viewport (css/views/shared/trip.css), so this follows the viewport too. */
+@media (min-width: 1024px) {
+  [data-view="concierge"][data-view] .con-toolrow { display: none; }
+}
+
+/* The notes under the hero: the offline line, and the card of a plan being built, stopped or empty. */
+[data-view="concierge"][data-view] .con-notes .td-stale-note { margin: 0 0 var(--sp-3); padding: var(--sp-2) 0; border-bottom: 1px solid var(--con-rule-soft); border-radius: 0; background: none; color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .con-notes .td-status-card { gap: var(--sp-3) var(--sp-4); padding: var(--sp-4) var(--sp-5); border-color: var(--con-rule); border-radius: var(--r-lg); background: none; box-shadow: none; }
+[data-view="concierge"][data-view] .con-notes .td-status-card--failed { border-color: color-mix(in srgb, var(--con-stop) 55%, transparent); }
+[data-view="concierge"][data-view] .con-notes .td-status-text > strong { color: var(--ink); font: 400 22px/1.2 var(--font-heading); }
+[data-view="concierge"][data-view] .con-notes .td-status-text > p { margin-top: var(--sp-1); color: var(--ink-secondary); font: 400 15px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .con-notes .td-status-spinner { border-color: var(--con-rule); border-top-color: var(--terracotta); }
+[data-view="concierge"][data-view] .con-notes .td-status-card > .btn { min-height: 44px; padding: 0 var(--sp-5); border: 1px solid transparent; border-radius: var(--r-pill); background: var(--con-cta); box-shadow: none; color: var(--con-on-cta); font: 600 15px/1 var(--font-body); }
+[data-view="concierge"][data-view] .con-notes .td-status-card > .btn:hover { background: var(--con-cta-hover); transform: none; }
+
+/* The panels and the foot keep the content column. */
+[data-view="concierge"][data-view] .td-tab-panel, [data-view="concierge"][data-view] .tv-foot { max-width: var(--con-max); margin-inline: auto; }
+[data-view="concierge"][data-view] .tv-foot { margin-top: var(--sp-12); padding-top: var(--sp-5); border-top-color: var(--con-rule); }
+[data-view="concierge"][data-view] .ui-foot-line { font: 400 13px/1.6 var(--font-body); }
+
+/* Plan intro. Narrow: the brief, the days, before you go. Wide: the brief beside before you go, then the days. */
+[data-view="concierge"][data-view] .con-plan { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--sp-8); }
+[data-view="concierge"][data-view] .con-lede { margin-top: var(--sp-2); font: 400 22px/1.3 var(--font-heading); text-wrap: pretty; }
+[data-view="concierge"][data-view] .tv-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--sp-5); margin: var(--sp-4) 0 0; border-top: 1px solid var(--con-rule); }
+[data-view="concierge"][data-view] .tv-fact { gap: 0; padding: var(--sp-3) 0; border-bottom: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .tv-fact-label, [data-view="concierge"][data-view] .con-spend-label { color: var(--ink-secondary); font: 400 13px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .tv-fact-value { font: 500 15px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .tv-fact-note, [data-view="concierge"][data-view] .con-spend-note { color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .con-spend { padding: var(--sp-3) 0; border-bottom: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .con-spend-value { font: 400 15px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .con-spend-value > .con-mono { font-weight: 600; }
+[data-view="concierge"][data-view] .con-spend-over { color: var(--con-todo); font-weight: 600; }
+[data-view="concierge"][data-view] .con-spend-bar { display: block; height: 6px; margin-top: var(--sp-2); overflow: hidden; border-radius: 3px; background: var(--con-rule); }
+[data-view="concierge"][data-view] .con-spend-bar > i { display: block; width: var(--con-pct, 0%); height: 100%; border-radius: 3px; background: var(--sage); }
+[data-view="concierge"][data-view] .con-spend-bar[data-over] > i { background: var(--amber); }
+[data-view="concierge"][data-view] .con-spend-note { margin-top: var(--sp-2); }
+[data-view="concierge"][data-view] .con-plan--past .con-spend { margin-top: var(--sp-2); border-top: 1px solid var(--con-rule); }
+[data-view="concierge"][data-view] .con-brief-ready {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--sp-2) 0;
+  border: 0;
+  border-bottom: 1px solid var(--con-rule-soft);
+  background: none;
+  color: var(--ink);
+  font: 500 15px/1.4 var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+[data-view="concierge"][data-view] .con-brief-ready-text { flex: 1; }
+[data-view="concierge"][data-view] .con-brief-ready-text > small { display: block; color: var(--ink-secondary); font: 400 13px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .con-brief-ready > .ui-icon { color: var(--ink-secondary); }
+
+/* The days: the map beside a contents page. */
+[data-view="concierge"][data-view] .con-days-sec > .con-sec-head { margin-bottom: var(--sp-4); }
+[data-view="concierge"][data-view] .con-days { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+[data-view="concierge"][data-view] .tv-map-caption { margin-top: var(--sp-2); color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .tv-days--list { border-top: 1px solid var(--con-rule); }
+[data-view="concierge"][data-view] .tv-day-row { grid-template-columns: [num] 44px [main] minmax(0, 1fr) [chev] 20px; gap: 0 var(--sp-3); min-height: 84px; padding: var(--sp-2) 0; border-bottom-color: var(--con-rule-soft); }
+[data-view="concierge"][data-view] .tv-day-row:has(> .ui-thumb) { grid-template-columns: [thumb num] 64px [main] minmax(0, 1fr) [chev] 20px; }
+[data-view="concierge"][data-view] .tv-day-row:hover { background: var(--con-rule-soft); }
+[data-view="concierge"][data-view] .tv-day-row > .ui-thumb { width: 64px; }
+[data-view="concierge"][data-view] .tv-day-row > .tv-day-num { justify-self: start; height: auto; min-width: 0; padding: 0; border: 0; border-radius: 0; color: var(--ink-secondary); font: 400 28px/1 var(--font-heading); }
+/* Over a thumbnail the numeral is a chip in the bottom left corner: its own dark plate, so it reads on
+   a busy photo, on a pale placeholder and in both themes. The row centres both, hence the top margin. */
+[data-view="concierge"][data-view] .tv-day-row > .ui-thumb + .tv-day-num {
+  z-index: 1;
+  min-width: 24px;
+  height: 24px;
+  margin: 32px 0 0 var(--sp-1);
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--con-shade) 74%, transparent);
+  color: var(--on-photo);
+  font-size: 17px;
+}
+/* The day the reader is on: the chip takes the day's colour, the one its map marker has. The shared
+   bar on the row's left edge would cut into the thumbnail here. */
+[data-view="concierge"][data-view] .tv-day-row.is-active { box-shadow: none; }
+[data-view="concierge"][data-view] .tv-day-row.is-active > .tv-day-num { color: var(--ink); }
+[data-view="concierge"][data-view] .tv-day-row.is-active > .ui-thumb + .tv-day-num { background: var(--day-color, var(--terracotta)); color: var(--ui-on-accent); }
+[data-view="concierge"][data-view] .tv-day-row .ui-frame-none > .ui-icon, [data-view="concierge"][data-view] .con-town .ui-frame-none > .ui-icon { display: none; }
+[data-view="concierge"][data-view] .tv-day-row[aria-current="date"] .tv-day-num { box-shadow: none; text-decoration: underline; text-decoration-color: var(--terracotta); text-underline-offset: 4px; }
+[data-view="concierge"][data-view] .tv-day-title { font: 400 22px/1.12 var(--font-heading); text-wrap: balance; }
+[data-view="concierge"][data-view] .tv-day-meta { gap: 0 var(--sp-3); margin-top: var(--sp-1); }
+[data-view="concierge"][data-view] .tv-day-date, [data-view="concierge"][data-view] .tv-day-stops, [data-view="concierge"][data-view] .tv-day-weather, [data-view="concierge"][data-view] .tv-day-times { font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .tv-day-row > .tv-day-cost { color: var(--ink-secondary); font: 400 13px/1.7 var(--font-mono); white-space: nowrap; }
+/* Every row reads the same: the date and the stops, then the weather on a line of its own. */
+[data-view="concierge"][data-view] .tv-days--list .tv-day-weather { flex-basis: 100%; }
+
+/* Before you go: the count, a bar, one sentence, a row for each area. */
+[data-view="concierge"][data-view] .con-byg { scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + var(--sp-4)); }
+[data-view="concierge"][data-view] .con-byg-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--sp-1) var(--sp-4); }
+[data-view="concierge"][data-view] .con-byg-count { color: var(--ink-secondary); font: 400 22px/1.2 var(--font-heading); }
+[data-view="concierge"][data-view] .con-byg-bar { margin-top: var(--sp-3); }
+[data-view="concierge"][data-view] .con-byg-bar > .ui-meter { display: flex; }
+[data-view="concierge"][data-view] .con-byg-bar .ui-meter-cell { flex: 1; width: auto; height: 6px; border-radius: 3px; }
+[data-view="concierge"][data-view] .con-byg-say { margin-top: var(--sp-3); color: var(--ink-secondary); font: 400 15px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .con-byg > .ui-ready { gap: 0; margin-top: var(--sp-3); border-top: 1px solid var(--con-rule); }
+[data-view="concierge"][data-view] .con-byg .ui-ready-head { display: none; }
+[data-view="concierge"][data-view] .con-byg .ui-ready-row { min-height: 84px; }
+[data-view="concierge"][data-view] .con-byg .ui-ready-main { flex-direction: column; }
+[data-view="concierge"][data-view] .con-byg .ui-ready-label { font-size: 17px; line-height: 1.3; }
+[data-view="concierge"][data-view] .con-byg--line > .ui-ready { gap: var(--sp-2) var(--sp-4); margin-top: 0; padding: var(--sp-3) 0; border-bottom: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .con-byg--line .ui-ready-line { color: var(--ink-secondary); font: 400 15px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .con-byg--line .ui-ready-title { color: var(--ink); font: 600 15px/1.4 var(--font-body); }
+/* From 560 px the shared sheet moves the cost to a column of its own: the row needs that column before the chevron. */
+@container tv-landing (min-width: 560px) {
+  [data-view="concierge"][data-view] .tv-day-row { grid-template-columns: [num] 44px [main] minmax(0, 1fr) [cost] auto [chev] 20px; }
+  [data-view="concierge"][data-view] .tv-day-row:has(> .ui-thumb) { grid-template-columns: [thumb num] 64px [main] minmax(0, 1fr) [cost] auto [chev] 20px; }
+  [data-view="concierge"][data-view] .tv-days--list .tv-day-weather { flex-basis: auto; }
+}
+@container tv-landing (min-width: 960px) {
+  [data-view="concierge"][data-view] .con-plan { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sp-16); padding-top: var(--sp-5); }
+  /* Before you go stands beside the brief on a wide screen, as in the preview, and after the days in
+     the markup, where the section cards open under it on a phone. */
+  [data-view="concierge"][data-view] .con-brief-sec { grid-area: 1 / 1; }
+  [data-view="concierge"][data-view] .con-byg { grid-area: 1 / 2; }
+  [data-view="concierge"][data-view] .con-days-sec, [data-view="concierge"][data-view] .con-byg--line { grid-area: auto / 1 / auto / -1; }
+  /* No list beside it (a plan that is running or over): the sentence on the left, the facts and the spend on the right. */
+  [data-view="concierge"][data-view] .con-plan--solo > .con-brief-sec { grid-column: 1 / -1; }
+  [data-view="concierge"][data-view] .con-plan--solo .con-brief-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--sp-16); align-items: start; }
+  [data-view="concierge"][data-view] .con-plan--solo .con-lede { grid-area: 1 / 1 / span 3 / auto; }
+  [data-view="concierge"][data-view] .con-plan--solo .tv-glance, [data-view="concierge"][data-view] .con-plan--solo .con-spend { grid-column: 2; }
+  [data-view="concierge"][data-view] .con-plan--solo .tv-glance { margin-top: var(--sp-3); }
+  [data-view="concierge"][data-view] .con-plan--past .con-spend { margin-top: var(--sp-3); }
+  [data-view="concierge"][data-view] .con-lede { margin-top: var(--sp-3); font-size: 28px; line-height: 1.24; }
+  [data-view="concierge"][data-view] .tv-glance { margin-top: var(--sp-6); }
+  [data-view="concierge"][data-view] .con-brief-ready { display: none; }
+  [data-view="concierge"][data-view] .con-days-sec > .con-sec-head { margin-bottom: var(--sp-6); }
+  [data-view="concierge"][data-view] .con-days:has(.tv-map:not([hidden])) { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--sp-12); align-items: start; }
+  [data-view="concierge"][data-view] .con-days:has(.tv-map:not([hidden])) > .con-days-map { grid-area: 1 / 2; --tv-map-ratio: 1 / 1; }
+  [data-view="concierge"][data-view] .con-days:has(.tv-map:not([hidden])) > .tv-days { grid-area: 1 / 1; }
+  [data-view="concierge"][data-view] .tv-day-row { grid-template-columns: [num] 56px [main] minmax(0, 1fr) [cost] auto [chev] 20px; gap: 0 var(--sp-4); min-height: 88px; padding: var(--sp-3) var(--sp-2) var(--sp-3) 0; }
+  [data-view="concierge"][data-view] .tv-day-row:has(> .ui-thumb) { grid-template-columns: [thumb num] 88px [main] minmax(0, 1fr) [cost] auto [chev] 20px; }
+  [data-view="concierge"][data-view] .tv-day-row > .ui-thumb { width: 88px; aspect-ratio: 4 / 3; }
+  [data-view="concierge"][data-view] .tv-day-row > .ui-thumb + .tv-day-num { min-width: 28px; height: 28px; margin: 30px 0 0 var(--sp-1); font-size: 22px; }
+  [data-view="concierge"][data-view] .tv-day-meta { gap: 0 var(--sp-3); }
+  [data-view="concierge"][data-view] .tv-day-date, [data-view="concierge"][data-view] .tv-day-stops, [data-view="concierge"][data-view] .tv-day-weather, [data-view="concierge"][data-view] .tv-day-times { font-size: 15px; }
+}
+
+/* Between the cards: where you will be, ways to save, the Day by day heading. */
+[data-view="concierge"][data-view] .td-body { container: con-body / inline-size; }
+[data-view="concierge"][data-view] .tv-between { margin-top: var(--sp-12); }
+[data-view="concierge"][data-view] .con-between > .con-sec:first-child { margin-top: 0; }
+[data-view="concierge"][data-view] .con-towns {
+  display: flex;
+  gap: var(--sp-3);
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  scrollbar-width: none;
+}
+[data-view="concierge"][data-view] .con-town-item { flex: 0 0 124px; scroll-snap-align: start; }
+[data-view="concierge"][data-view] .con-town { display: block; width: 100%; padding: 0; border: 0; border-radius: var(--r-md); background: none; color: inherit; text-align: left; cursor: pointer; }
+[data-view="concierge"][data-view] .con-town > .ui-frame { border-radius: var(--r-md); }
+[data-view="concierge"][data-view] .con-town-name { display: block; margin-top: var(--sp-2); font: 600 13px/1.3 var(--font-body); }
+[data-view="concierge"][data-view] .con-save { display: grid; gap: var(--sp-1); padding: var(--sp-3) 0; border-bottom: 1px solid var(--con-rule-soft); }
+[data-view="concierge"][data-view] .con-save:first-child { padding-top: 0; }
+[data-view="concierge"][data-view] .con-save-amt { color: var(--con-ok); font: 600 13px/1.5 var(--font-mono); }
+[data-view="concierge"][data-view] .con-save-title { font: 600 17px/1.3 var(--font-body); }
+[data-view="concierge"][data-view] .con-save-text { color: var(--ink-secondary); font: 400 15px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .con-saves-more { margin-top: var(--sp-1); }
+[data-view="concierge"][data-view] .con-daybyday > .con-sec-head { margin-bottom: var(--sp-4); }
+@container con-body (min-width: 900px) {
+  [data-view="concierge"][data-view] .con-towns { display: grid; grid-auto-columns: minmax(0, 124px); grid-auto-flow: column; gap: var(--sp-4); margin-inline: 0; padding-inline: 0; overflow: visible; }
+  [data-view="concierge"][data-view] .con-saves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--sp-16); }
+  [data-view="concierge"][data-view] .con-save { grid-template-columns: 180px minmax(0, 1fr); gap: var(--sp-5); padding: 0 0 var(--sp-5); }
+  [data-view="concierge"][data-view] .con-saves-more { margin-top: var(--sp-3); }
+}
+
+/* The classic cards, in this skin. A day card: a ruled card with a large serif day numeral, the title,
+   the facts and "Show N stops". The block of day-extras.js is laid out as parts of the header grid. */
+[data-view="concierge"][data-view] .td-day-card { --td-card-inset: var(--sp-4); border-color: var(--con-rule); border-radius: var(--r-lg); background: none; box-shadow: none; }
+[data-view="concierge"][data-view] .td-day-card-header { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); align-items: start; padding: var(--sp-4); border-radius: var(--r-lg); }
+[data-view="concierge"][data-view] .td-day-card-header > .td-day-num { grid-row: 1 / span 4; justify-content: flex-start; width: auto; height: auto; }
+[data-view="concierge"][data-view] .td-day-card-header .td-cal-svg, [data-view="concierge"][data-view] .td-day-card-header .td-day-weather, [data-view="concierge"][data-view] .td-day-card-header > .td-day-chevron { display: none; }
+[data-view="concierge"][data-view] .td-day-card-header .td-cal-num { margin: 0; color: var(--ink-secondary); font: 400 48px/0.9 var(--font-heading); }
+[data-view="concierge"][data-view] .td-day-card-header > .td-day-info { grid-column: 2; }
+[data-view="concierge"][data-view] .td-day-card-header .td-day-card-title { font: 400 22px/1.15 var(--font-heading); }
+[data-view="concierge"][data-view] .td-day-card-header .td-day-date { margin-top: var(--sp-1); color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-header .tv-day-theme, [data-view="concierge"][data-view] .td-day-card-header .tv-day-photos { display: none; }
+[data-view="concierge"][data-view] .td-day-card-header .tv-day-facts { grid-column: 2; gap: 0 var(--sp-3); color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-header .tv-cost-lead { font: 400 12px/1.65 var(--font-mono); }
+[data-view="concierge"][data-view] .td-day-card-header .tv-cost-other { display: none; }
+[data-view="concierge"][data-view] .td-day-card-header .tv-day-more {
+  grid-column: 2;
+  justify-self: start;
+  min-height: 44px;
+  margin-top: var(--sp-2);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--con-line);
+  border-radius: var(--r-pill);
+  font: 600 13px/1 var(--font-body);
+}
+[data-view="concierge"][data-view] .td-day-card-header:hover .tv-day-more { border-color: var(--ink); background: var(--con-rule-soft); }
+/* An open day: the classic floating header in this skin's surface and rule, cut down to one compact
+   row (the numeral, the title, the weather and the cost, "Hide stops"): it stays in sight over the stops. */
+[data-view="concierge"][data-view] .td-day-card.td-day-card--open > .td-day-card-header {
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 2px var(--sp-3);
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  border-color: var(--con-rule);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-md);
+}
+[data-view="concierge"][data-view] .td-day-card.td-day-card--open > .td-day-card-header:hover { background: var(--surface-solid); }
+/* The page scrolls to this header when a day opens: it must land where it sticks, or the first stop starts under it. */
+[data-view="concierge"][data-view] .td-day-card.td-day-card--open > .td-day-card-header { scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + var(--sp-2)); }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--open .td-cal-num { font-size: 36px; }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--open .td-day-card-title { font-size: 22px; }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--open .td-day-date, [data-view="concierge"][data-view] .td-day-card.td-day-card--open .tv-day-theme, [data-view="concierge"][data-view] .td-day-card.td-day-card--open .tv-day-photos, [data-view="concierge"][data-view] .td-day-card.td-day-card--open .tv-cost-other { display: none; }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--open .tv-day-facts { display: flex; grid-column: 2; font-size: 13px; }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--open .tv-day-more { grid-area: auto / 2; justify-self: start; min-height: 0; margin: 0; padding: 0; border: 0; background: none; }
+/* Flights, transport, entry requirements, where to stay. Narrow: a card that a row of Before you go
+   opens, and that is off the page while closed; where no row opens it (a past plan, a plan that is
+   running or being planned again) it stays, closed, as the classic page has it. Wide: sections of
+   their own, under a rule and a serif title. */
+[data-view="concierge"][data-view] .td-day-card.td-day-card--section { --td-card-inset: var(--sp-4); }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--section > .td-day-card-header { display: flex; position: static; align-items: center; margin: 0; padding: var(--sp-4); border: 0; background: none; box-shadow: none; }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--section > .td-day-card-header > .td-day-num { display: none; }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--section > .td-day-card-header > .td-day-chevron { display: block; color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .td-day-card.td-day-card--section .td-day-card-title { font-size: 28px; }
+/* Three stays side by side in the wider column: their booking links wrap instead of running off the page. */
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-links { flex-wrap: wrap; }
+/* The bodies of those cards, in this skin: thin rules instead of boxes, the view's type and spacing.
+   Flights: each leg is a column under a rule; its header, price row and note are lines, not panels. */
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-legs { gap: var(--sp-6) var(--sp-10); }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-leg { border: 0; border-top: 1px solid var(--con-rule); border-radius: 0; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-leg-header { padding: var(--sp-3) 0; border-bottom-color: var(--con-rule-soft); background: none; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-leg-label { color: var(--ink-secondary); font: 400 13px/1.4 var(--font-body); letter-spacing: 0; text-transform: none; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-leg-label::first-letter { text-transform: uppercase; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-number { font: 400 13px/1.4 var(--font-mono); letter-spacing: 0; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-leg-airline { font: 500 15px/1.4 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-journey .td-flight-route { padding-inline: 0; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-route-dash { background: var(--con-line); }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-route-plane { color: var(--ink-secondary); }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-booking, [data-view="concierge"][data-view] .td-day-card-body .td-flight-details { padding-inline: 0; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-details > dd { font: 400 15px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-where { font: 400 13px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-legs--flights .td-flight-bottom { padding: var(--sp-3) 0; border-top: 1px solid var(--con-rule-soft); background: none; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-legs--flights .td-flight-price { font: 500 15px/1.45 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-price .td-flight-price-amount { font: 400 13px/1.65 var(--font-mono); }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-book { font: 500 13px/1.7 var(--font-body); text-decoration: underline; text-decoration-color: var(--con-line); text-underline-offset: 4px; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-book:hover { text-decoration-color: currentColor; }
+[data-view="concierge"][data-view] .td-day-card-body .td-flight-legs--flights .td-flight-tip { padding: var(--sp-3) 0 0; border-top: 1px solid var(--con-rule-soft); color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+/* Where to stay: each stay is a column under a rule, its name in the heading face, the price in the
+   mono of every cost on the page. */
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-grid { gap: var(--sp-5) var(--sp-8); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-city-heading { margin-bottom: 0; padding-bottom: var(--sp-3); border-bottom: 0; font: 400 22px/1.2 var(--font-heading); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-option { padding: var(--sp-4) 0 0; border: 0; border-top: 1px solid var(--con-rule); border-radius: 0; background: none; }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-head { gap: var(--sp-2); margin-bottom: var(--sp-1); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-badge { padding: 3px var(--sp-2); border-radius: var(--r-sm); font: 600 12px/1.3 var(--font-body); letter-spacing: 0; text-transform: lowercase; }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-badge::first-letter { text-transform: uppercase; }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-name { font: 400 22px/1.15 var(--font-heading); text-wrap: balance; }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-area, [data-view="concierge"][data-view] .td-day-card-body .td-accom-address { margin-top: var(--sp-1); color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-stay { color: var(--ink-secondary); font: 400 12px/1.65 var(--font-mono); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-price { margin: var(--sp-2) 0 var(--sp-3); color: var(--ink); font: 400 13px/1.65 var(--font-mono); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-features { gap: var(--sp-1); padding-top: var(--sp-3); border-top-color: var(--con-rule-soft); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-features > li { padding-left: var(--sp-5); color: var(--ink); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-features > li::before { color: var(--con-ok); font: 400 13px/1.5 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-links { gap: var(--sp-2); margin-top: var(--sp-4); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-link { padding: var(--sp-2) var(--sp-3); border-color: var(--con-line); color: var(--ink); font: 500 13px/1.2 var(--font-body); }
+[data-view="concierge"][data-view] .td-day-card-body .td-accom-link:hover { border-color: var(--ink); background: var(--con-rule-soft); color: var(--ink); }
+/* 688 px of content is a 768 px viewport, the width from which the controller opens these cards. */
+@container con-body (max-width: 687px) {
+  [data-view="concierge"][data-view]:has(:where(.ui-ready-row) [data-section-jump="flights"]) .td-day-card[data-section="flights"]:not(.td-day-card--open),
+  [data-view="concierge"][data-view]:has(:where(.ui-ready-row) [data-section-jump="transport"]) .td-day-card[data-section="transport"]:not(.td-day-card--open),
+  [data-view="concierge"][data-view]:has(:where(.ui-ready-row) [data-section-jump="entry"]) .td-day-card[data-section="entry"]:not(.td-day-card--open),
+  [data-view="concierge"][data-view]:has(:where(.ui-ready-row) [data-section-jump="accommodation"]) .td-day-card[data-section="accommodation"]:not(.td-day-card--open) { display: none; }
+  /* A closed card that stays is a quiet line at the size of a day's title, on one line at 320 px. */
+  [data-view="concierge"][data-view] .td-day-card.td-day-card--section:not(.td-day-card--open) .td-day-card-title { font-size: 22px; }
+}
+@container con-body (min-width: 688px) {
+  [data-view="concierge"][data-view] .td-day-card.td-day-card--section { --tv-day-gap: var(--sp-12); --td-card-inset: 0px; border: 0; border-top: 1px solid var(--con-rule); border-radius: 0; }
+  [data-view="concierge"][data-view] .td-day-card.td-day-card--section > .td-day-card-header { padding: var(--sp-4) 0 var(--sp-2); border-radius: 0; }
+  [data-view="concierge"][data-view] .td-day-card.td-day-card--section .td-day-card-title { font-size: 36px; }
+}
+@container con-body (min-width: 900px) {
+  [data-view="concierge"][data-view] .td-day-card-header { grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: var(--sp-1) var(--sp-6); align-items: center; padding: var(--sp-5) var(--sp-6); }
+  [data-view="concierge"][data-view] .td-day-card-header .td-cal-num { font-size: 72px; }
+  [data-view="concierge"][data-view] .td-day-card-header .td-day-card-title { font-size: 28px; }
+  [data-view="concierge"][data-view] .td-day-card-header .td-day-date { font-size: 15px; }
+  [data-view="concierge"][data-view] .td-day-card-header .tv-day-facts { gap: 0 var(--sp-4); font-size: 15px; }
+  [data-view="concierge"][data-view] .td-day-card-header .tv-cost-lead { font-size: 13px; }
+  [data-view="concierge"][data-view] .td-day-card-header .tv-cost-other { display: inline; }
+  [data-view="concierge"][data-view] .td-day-card-header .tv-day-theme { display: block; grid-column: 2; max-width: 56ch; margin-top: var(--sp-1); color: var(--ink); font: 400 15px/1.5 var(--font-body); }
+  [data-view="concierge"][data-view] .td-day-card-header .tv-day-photos { display: flex; grid-area: 1 / 3 / span 4 / auto; }
+  [data-view="concierge"][data-view] .td-day-card-header .tv-day-more { grid-area: 1 / 4 / span 4 / auto; justify-self: end; margin-top: 0; }
+  [data-view="concierge"][data-view] .td-day-card.td-day-card--open > .td-day-card-header { grid-template-columns: 36px minmax(0, 1fr) auto; }
+  [data-view="concierge"][data-view] .td-day-card.td-day-card--open .tv-day-more { grid-area: 1 / 3 / span 2 / auto; justify-self: end; }
+}
+
+/* ---- Entry motion: only on a first render (the renderer adds the class), never with reduced motion ---- */
+@media (prefers-reduced-motion: no-preference) {
+  [data-view="concierge"][data-view] .con-enter { animation: con-rise 480ms var(--ease-out) backwards; }
+  [data-view="concierge"][data-view] .con-enter--1 { animation-delay: 60ms; }
+  [data-view="concierge"][data-view] .con-enter--2 { animation-delay: 120ms; }
+  [data-view="concierge"][data-view] .con-enter--3 { animation-delay: 180ms; }
+  [data-view="concierge"][data-view] .con-enter--4 { animation-delay: 240ms; }
+  [data-view="concierge"][data-view] .con-enter--5 { animation-delay: 300ms; }
+  [data-view="concierge"][data-view] .con-enter--6 { animation-delay: 360ms; }
+  [data-view="concierge"][data-view] .con-say-link, [data-view="concierge"][data-view] .con-link, [data-view="concierge"][data-view] .con-month-toggle { transition: text-decoration-color var(--duration-fast), border-color var(--duration-fast), background-color var(--duration-fast); }
+}
+@keyframes con-rise {
+  from { opacity: 0; transform: translateY(8px); }
+}

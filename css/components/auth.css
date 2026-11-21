@@ -1,5 +1,6 @@
 /* ===== Auth Button ===== */
 .auth-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -21,6 +22,13 @@
   background: rgba(37, 35, 32, 0.9);
 }
 
+/* The pill keeps its height; the target around it is 44 px. */
+.auth-btn::after {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+
 .auth-google-icon {
   flex-shrink: 0;
 }
@@ -28,11 +36,17 @@
 /* ===== Auth Avatar ===== */
 .auth-user {
   position: relative;
-  cursor: pointer;
 }
 
+/* A 44 px target around the 32 px avatar. The negative margin keeps the avatar's own edge on the
+   bar's padding line. */
 .auth-user-toggle {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -6px;
   padding: 0;
   border: none;
   background: transparent;
@@ -42,7 +56,8 @@
 
 .auth-user-toggle:focus-visible {
   outline: 2px solid var(--terracotta);
-  outline-offset: 2px;
+  outline-offset: -4px;
+  border-radius: 50%;
 }
 
 .auth-avatar {
@@ -54,7 +69,8 @@
   transition: border-color var(--duration-fast);
 }
 
-.auth-avatar:hover {
+.auth-user-toggle:hover .auth-avatar,
+.auth-user-toggle[aria-expanded="true"] .auth-avatar {
   border-color: var(--terracotta);
 }
 
@@ -69,53 +85,85 @@
   font-size: 0.8rem;
 }
 
-/* ===== Auth Dropdown ===== */
-.auth-dropdown {
-  display: none;
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 180px;
-  background: var(--surface-solid);
-  border: 1px solid rgba(229, 225, 216, 0.08);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-lg);
-  z-index: var(--z-modal);
-  overflow: hidden;
-  animation: fadeInUp var(--duration-fast) var(--ease-out);
+/* ===== Account menu =====
+   The panel itself (surface, border, sheet on phones, the plain items) is styled in nav.css with
+   every menu of the bar. Here: what only this menu has. */
+.auth-menu-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  margin-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--border);
 }
 
-.auth-dropdown--open {
-  display: block;
-}
-
-.auth-dropdown-name {
-  padding: var(--sp-3) var(--sp-4);
-  font: var(--text-caption);
-  color: var(--ink-ghost);
-  border-bottom: 1px solid rgba(229, 225, 216, 0.06);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.auth-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: var(--sp-3) var(--sp-4);
-  border: none;
-  background: transparent;
+.auth-menu-name {
   font: var(--text-small);
-  font-size: 0.8rem;
-  color: var(--ink-secondary);
-  cursor: pointer;
-  text-align: left;
-  transition: var(--transition-interactive);
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
-.auth-dropdown-item:hover {
-  background: rgba(229, 225, 216, 0.05);
+.auth-menu-context {
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+  overflow-wrap: anywhere;
+}
+
+.auth-menu-group {
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.auth-menu-group-label {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font: var(--text-caption);
+  color: var(--ink-secondary);
+}
+
+/* One row of choices, each a 44 px target; the chosen one is raised and ringed. */
+.auth-menu-options {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-inset);
+}
+
+.auth-menu-radio {
+  flex: 1 1 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--sp-2);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: var(--text-small);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.auth-menu-radio:hover {
   color: var(--ink);
+}
+
+.auth-menu-radio[aria-checked="true"] {
+  background: var(--terracotta-light);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--terracotta);
+}
+
+.auth-menu-sep {
+  height: 1px;
+  margin: var(--sp-2) 0;
+  background: var(--border);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-menu-radio { transition: background-color var(--duration-fast), color var(--duration-fast); }
 }
 
 /* ===== Light Mode ===== */
@@ -132,14 +180,7 @@
   border-color: rgba(44, 42, 37, 0.12);
 }
 
-[data-theme="light"] .auth-dropdown {
-  border-color: rgba(44, 42, 37, 0.1);
-}
-
-[data-theme="light"] .auth-dropdown-name {
-  border-bottom-color: rgba(44, 42, 37, 0.06);
-}
-
-[data-theme="light"] .auth-dropdown-item:hover {
-  background: rgba(44, 42, 37, 0.04);
+/* On the light inset the ring needs the darker orange to reach 3 to 1. */
+[data-theme="light"] .auth-menu-radio[aria-checked="true"] {
+  box-shadow: inset 0 0 0 1px var(--terracotta-hover);
 }

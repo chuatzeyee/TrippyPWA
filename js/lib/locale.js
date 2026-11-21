@@ -79,17 +79,108 @@ export function formatWeekdayDate(dateStr) {
   return new Intl.DateTimeFormat(getLocale(), { weekday: 'short', day: 'numeric', month: 'short' }).format(d);
 }
 
+// Display prefs for clock and temperature text (blueprint 5.4). The prefs store sets them once at
+// start and again whenever they change, so no caller has to pass the choice along. Stored values stay
+// 24-hour and Celsius; these functions are display only.
+const TIME_FORMATS = ['12h', '24h'];
+const TEMPERATURE_UNITS = ['C', 'F'];
+let display = { timeFormat: '12h', temperatureUnit: 'C' };
+
+/** @param {{ timeFormat?: '12h'|'24h', temperatureUnit?: 'C'|'F' }} next a value that is not known is ignored */
+export function setDisplayPrefs(next) {
+  const wanted = next !== null && typeof next === 'object' ? next : {};
+  display = {
+    timeFormat: TIME_FORMATS.includes(wanted.timeFormat) ? wanted.timeFormat : display.timeFormat,
+    temperatureUnit: TEMPERATURE_UNITS.includes(wanted.temperatureUnit) ? wanted.temperatureUnit : display.temperatureUnit,
+  };
+}
+
 // Every 24h clock time in a string ("06:10", "19:30:00") as 12h with AM/PM
 // ("6:10 AM", "7:30 PM"). Times already marked am/pm, and anything that is
 // not a valid clock time, are left alone. Stored values stay 24h; this is
 // display only.
 const CLOCK_24H = /(?<![\d:])(\d{1,2}):([0-5]\d)(?::[0-5]\d)?(?![\d:])(?!\s?[ap]\.?m\b)/gi;
+// A time that carries its own marker: "6:10 PM", "7:30pm", "11:59 p.m.".
+const CLOCK_MARKED = /(?<![\d:.])(\d{1,2}):([0-5]\d)(?::[0-5]\d)?\s?([ap])(?:m\b|\.m\.)/gi;
+// An hour with a marker: "7 PM", "9am". Not the end of a range that marks only its end ("7 to 9 PM",
+// "7-9 PM"): converting half of that would read worse than leaving it.
+const HOUR_MARKED = /(?<![\d:.])(?<!\d\s?(?:-|\u2013|\u2014|to|and|or)\s?)(\d{1,2})\s?([ap])(?:m\b|\.m\.)/gi;
+const twoDigits = (n) => String(n).padStart(2, '0');
 
-export function to12h(text) {
-  if (text == null) return '';
-  return String(text).replace(CLOCK_24H, (match, h, m) => {
+function clockTo12h(text) {
+  return text.replace(CLOCK_24H, (match, h, m) => {
     const hour = Number(h);
     if (hour > 23) return match;
     return `${hour % 12 || 12}:${m} ${hour < 12 ? 'AM' : 'PM'}`;
   });
+}
+
+/** "6", "10", "p" gives "18:10"; an hour that is not on a 12-hour clock gives null. */
+function from12h(h, minutes, marker) {
+  const hour = Number(h);
+  if (hour < 1 || hour > 12) return null;
+  return `${twoDigits((hour % 12) + (marker.toLowerCase() === 'p' ? 12 : 0))}:${minutes}`;
+}
+
+function clockTo24h(text) {
+  return text
+    .replace(CLOCK_MARKED, (match, h, m, marker) => from12h(h, m, marker) ?? match)
+    .replace(HOUR_MARKED, (match, h, marker) => from12h(h, '00', marker) ?? match)
+    .replace(CLOCK_24H, (match, h, m) => (Number(h) > 23 ? match : `${twoDigits(Number(h))}:${m}`));
+}
+
+/**
+ * Clock times inside any text, in the format the user chose.
+ * 12h (the default): "06:10" becomes "6:10 AM"; a time that is already marked is left alone.
+ * 24h: "6:10 PM" becomes "18:10", "7 PM" becomes "19:00", and "9:05:00" becomes "09:05".
+ * @param {*} text
+ * @returns {string} '' for null or undefined
+ */
+export function formatClock(text) {
+  if (text == null) return '';
+  return display.timeFormat === '24h' ? clockTo24h(String(text)) : clockTo12h(String(text));
+}
+
+/** The old name of formatClock: the same function, so no call site changes. */
+export const to12h = formatClock;
+
+/**
+ * Whether a stored temperature can be printed: a finite number, or text that holds one ("18", "9.6").
+ * Null, '', blank text, words and booleans are missing values, not zero.
+ * @param {*} value
+ * @returns {boolean}
+ */
+export function isTemperature(value) {
+  if (typeof value === 'number') return Number.isFinite(value);
+  return typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value));
+}
+/** @returns {number} a Celsius value as a whole number in the unit the user chose */
+const shownDegrees = (celsius) => Math.round(display.temperatureUnit === 'F' ? (Number(celsius) * 9) / 5 + 32 : Number(celsius));
+
+/**
+ * @param {*} celsius
+ * @returns {string} "23°C" or "73°F" from a Celsius value; '' when it is not a number
+ */
+export function formatTemp(celsius) {
+  return isTemperature(celsius) ? `${shownDegrees(celsius)}°${display.temperatureUnit}` : '';
+}
+
+/**
+ * "16 to 23°C" or "61 to 73°F" from two Celsius values; one value when both ends match or only one is
+ * a number; '' when neither is.
+ * @param {*} lowC
+ * @param {*} highC
+ * @param {{ celsiusLetter?: boolean, style?: 'range'|'slash' }} [options]
+ *   celsiusLetter false leaves the C out ("12 to 18°"), as the classic day card and the PDF print it;
+ *   Fahrenheit always carries its letter. style 'slash' is the shared page's badge as it prints
+ *   today: high first and both values even when they match ("18/10°C").
+ * @returns {string}
+ */
+export function formatTempRange(lowC, highC, { celsiusLetter = true, style = 'range' } = {}) {
+  const [low, high] = [lowC, highC].map((value) => (isTemperature(value) ? shownDegrees(value) : null));
+  if (low === null && high === null) return '';
+  const unit = display.temperatureUnit === 'F' || celsiusLetter ? `°${display.temperatureUnit}` : '°';
+  if (low === null || high === null) return `${low ?? high}${unit}`;
+  if (style === 'slash') return `${high}/${low}${unit}`;
+  return low === high ? `${high}${unit}` : `${low} to ${high}${unit}`;
 }

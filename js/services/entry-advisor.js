@@ -5,7 +5,13 @@
 //
 // Advisory only, like visa-advisor: official links, a disclaimer, never a block.
 import { logger } from '../lib/logger.js';
-import { checkRequirement } from './visa-advisor.js';
+import { routeCodes } from '../lib/journey.js';
+import { itemDates } from '../lib/entry-rules.js';
+import { lookupRequirement } from './visa-advisor.js';
+
+// itemDates lives in js/lib/entry-rules.js now; it is still exported from here
+// for the modules that import it from this path.
+export { itemDates };
 
 const BASE = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
 
@@ -38,10 +44,6 @@ export async function loadEntrySteps(fetchImpl = fetch) {
   const data = await res.json();
   _steps = data.countries || {};
   return _steps;
-}
-
-function routeCodes(leg) {
-  return String(leg?.route || '').toUpperCase().match(/\b[A-Z]{3}\b/g) || [];
 }
 
 /**
@@ -96,29 +98,20 @@ export function applicableItems(entry, { passport, mode, tripStart, matrixCode, 
   });
 }
 
-function addDays(dateStr, days) {
-  const d = new Date(`${dateStr}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-/** { from, by } dates for an item before arriving on `arriveDate`. */
-export function itemDates(item, arriveDate) {
-  if (!arriveDate) return { from: null, by: null };
-  const from = Number.isInteger(item.windowDays) ? addDays(arriveDate, -item.windowDays) : null;
-  const by = Number.isInteger(item.leadDays) ? addDays(arriveDate, -item.leadDays) : null;
-  return { from, by: by && from && by < from ? from : by };
-}
-
 /**
  * The full plan: one entry per country (visit, then transit, then home), each
  * with a row per passport. Countries with nothing to report are left out.
+ * `checked` is false when the check did not complete (the steps table or a
+ * visa lookup could not be fetched): the rows are then what could be worked
+ * out, and "nothing to file" must not be read from them.
  */
 export async function entryPlan({ wizardState, extras, passports, homeFlag, groundMode = '', tripStart = null, tripEnd = null }) {
   const group = [...new Set((passports || []).map(p => String(p).toUpperCase()).filter(p => /^[A-Z]{2}$/.test(p)))];
-  if (!group.length) return { passports: [], countries: [] };
+  if (!group.length) return { passports: [], countries: [], checked: true };
+  let checked = true;
   let steps = {};
   try { steps = await loadEntrySteps(); } catch (e) {
+    checked = false;
     logger.warn('data', 'Entry steps unavailable', { error: e?.message });
   }
   const { visit, transit, home, arrival } = tripCountries({ wizardState, extras, homeFlag, groundMode });
@@ -137,7 +130,9 @@ export async function entryPlan({ wizardState, extras, passports, homeFlag, grou
     for (const passport of group) {
       if (passport === iso2) continue; // citizens enter freely
       if (role === 'transit') { rows.push({ passport, visa: null, items: [] }); continue; }
-      const visa = await checkRequirement(passport, iso2, date).catch(() => null);
+      const { requirement: visa, failed } = await lookupRequirement(passport, iso2, date)
+        .catch(() => ({ requirement: null, failed: true }));
+      if (failed) checked = false;
       const items = applicableItems(entry, { passport, mode: arrival, tripStart: date, matrixCode: visa?.code, places, vehicle: groundMode })
         .map(item => ({ ...item, dates: itemDates(item, date) }));
       rows.push({ passport, visa, items });
@@ -150,7 +145,7 @@ export async function entryPlan({ wizardState, extras, passports, homeFlag, grou
     if (!rows.length || (!hasNews && role !== 'visit')) continue;
     countries.push({ iso2, role, transit: entry?.transit || '', landSea: arrival === 'air' ? '' : (entry?.landSea || ''), rows });
   }
-  return { passports: group, countries };
+  return { passports: group, countries, checked };
 }
 
 /** Test hook: reset the cached table. */

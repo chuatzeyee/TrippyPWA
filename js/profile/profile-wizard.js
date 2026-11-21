@@ -1,8 +1,10 @@
 import { getCurrentUser } from '../auth/auth.js';
 import { fetchProfile, updateProfile } from '../data/profile-repository.js';
-import { DESTINATIONS } from '../wizard/destinations.js';
+import { CURRENCY_LIST as CURRENCIES } from '../data/currency-list.js';
+import { searchCities } from './city-search.js';
 import { navigate } from '../router.js';
 import { setHomeCurrency } from '../data/user-prefs.js';
+import { saveProfileSummary } from '../data/profile-cache.js';
 import { setLocaleFromFlag } from '../lib/locale.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from '../components/toast.js';
@@ -29,36 +31,6 @@ const FLAG_TO_CURRENCY = {
   kh: 'KHR', la: 'LAK',
 };
 
-const CURRENCIES = [
-  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
-  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-  { code: 'KRW', symbol: '₩', name: 'South Korean Won' },
-  { code: 'THB', symbol: '฿', name: 'Thai Baht' },
-  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
-  { code: 'PHP', symbol: '₱', name: 'Philippine Peso' },
-  { code: 'TWD', symbol: 'NT$', name: 'Taiwan Dollar' },
-  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar' },
-  { code: 'NZD', symbol: 'NZ$', name: 'New Zealand Dollar' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
-  { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham' },
-  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
-  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
-  { code: 'VND', symbol: '₫', name: 'Vietnamese Dong' },
-  { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
-  { code: 'SEK', symbol: 'kr', name: 'Swedish Krona' },
-  { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone' },
-  { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
-  { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
-  { code: 'MXN', symbol: 'MX$', name: 'Mexican Peso' },
-  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
-];
-
 function sortedCurrencies(flagCode) {
   const localCode = FLAG_TO_CURRENCY[flagCode];
   if (!localCode) return CURRENCIES;
@@ -66,25 +38,6 @@ function sortedCurrencies(flagCode) {
   if (!local) return CURRENCIES;
   return [local, ...CURRENCIES.filter(c => c.code !== localCode)];
 }
-
-function getUniqueCities() {
-  const seen = new Set();
-  return DESTINATIONS.filter(d => {
-    if (seen.has(d.name)) return false;
-    seen.add(d.name);
-    return true;
-  }).sort((a, b) => a.name.localeCompare(b.name));
-}
-
-function searchCities(query) {
-  const q = query.toLowerCase();
-  return getUniqueCities().filter(d =>
-    d.name.toLowerCase().includes(q) || d.country.toLowerCase().includes(q)
-  ).slice(0, 8);
-}
-
-
-
 
 let profileState = {
   displayName: '',
@@ -374,6 +327,9 @@ async function saveProfile() {
   }
 
   setHomeCurrency(profileState.currency.code, profileState.currency.symbol);
+  // The summary saved at the start of the session is of the row before this write: without this the
+  // views have no home, home currency or passport until the next page load.
+  saveProfileSummary(getCurrentUser()?.id, fields);
   renderSuccess(document.getElementById('app'));
 }
 

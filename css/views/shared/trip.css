@@ -1,0 +1,468 @@
+/* Shared components: trip landing (tier 1, blueprint 8.1 and 8.3). Owner: F6.
+   Scope: prefix tv-, plus the td- card hooks listed in blueprint 8.1. Every selector is
+   [data-view] :where(<rest>) or [data-view]:where(.td-wrap) :where(<rest>) and weighs exactly 0,1,0,
+   so any skin rule beats it in any load order. .td-wrap never gets container-type, transform, filter
+   or contain: the chat button is a fixed child of it. Checked by css/views/css-rules.test.js.
+
+   These are neutral looks. A skin restyles them through its own scope and moves the layout through
+   the variables below. Motion sits in the prefers-reduced-motion: no-preference block at the end. */
+
+/* ---- Layout variables (blueprint 8.3) and the page box ----
+   --tv-max        content width of the trip page
+   --tv-top        where pinned elements stick
+   --tv-bar-h      height of the bar. 56 px here, which holds until the bar is measured: stuck.js then
+                   writes the bar's real height on the root (ruling R31), so a trip name that wraps
+                   in the bar pushes the pinned tab row and every offset down with it. Read it; do
+                   not set it, the measured value wins. Build --tv-pinned-h from it, not from a
+                   number, wherever the bar is pinned.
+   --tv-bar-min-h  the least height of the bar: the variable a skin sets for a taller or shorter bar.
+                   The bar is never sized from --tv-bar-h, or it could grow but not shrink again.
+   --tv-tabs-h     height of the tab row
+   --tv-pinned-h   everything a view keeps pinned: the bar, the bar and the tab row, or the tab row
+                   alone. A view sets it per breakpoint; the tab row sticks at pinned minus its own
+                   height, and the resets hang the open day header, the edit bar, the update notice
+                   and the scroll margins under it.
+   --tv-edit-h     height of the classic edit bar, for the open day header under it
+   --tv-day-gap, --tv-day-pad, --tv-day-shadow   read by trip-reset.css for the flat day list: the
+                   gap between day cards, their bottom padding, and their shadow at rest and under
+                   the pointer (a skin that changes the card shadow sets this, not box-shadow)
+   --tv-day-extras-display   how the day card block is laid out (flex unless a skin says otherwise);
+                   trip-reset.css shows the block with it
+   --tv-app-pad    the side padding #app already gives every page (css/base.css: 12 px, 24 px from
+                   768 px). The root adds the rest of --gutter, so the page's side padding is exactly
+                   --gutter, and a full-width child (the bar) reaches the screen edge with a negative
+                   margin of one --gutter.
+   --gutter is set by common.css (16 px, 24 px from 768 px). */
+[data-view]:where(.td-wrap) {
+  --tv-max: 1180px;
+  --tv-top: env(safe-area-inset-top, 0px);
+  --tv-bar-h: 56px;
+  --tv-bar-min-h: 56px;
+  --tv-tabs-h: 54px;
+  --tv-pinned-h: calc(var(--tv-bar-h) + var(--tv-tabs-h));
+  --tv-edit-h: 52px;
+  --tv-day-gap: 12px;
+  --tv-day-pad: 0px;
+  --tv-day-shadow: 0 -1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.1);
+  --tv-app-pad: var(--sp-3);
+  max-width: var(--tv-max);
+  padding: 0 max(0px, calc(var(--gutter) - var(--tv-app-pad))) calc(var(--sp-16) + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  [data-view]:where(.td-wrap) { --tv-app-pad: var(--sp-6); }
+}
+/* The tab list is docked in the bar: only the bar is pinned. */
+[data-view]:where(.td-wrap:has(> .tv-bar .td-tabs)) {
+  --tv-pinned-h: var(--tv-bar-h);
+}
+
+/* ---- The top bar ----
+   One row wherever its parts fit. Where they do not (a split with many labelled buttons, a narrow
+   screen), the bar wraps onto a second row instead of pushing a control off the screen; the title
+   counts as 96 px wide for that, its least width. A taller bar is safe: --tv-bar-h follows it. */
+[data-view]:where(.td-wrap) > :where(.tv-bar) {
+  position: sticky;
+  top: var(--tv-top);
+  z-index: calc(var(--z-sticky) + 10);
+}
+[data-view]:where(.td-wrap) :where(.tv-bar) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--sp-3);
+  min-height: var(--tv-bar-min-h);
+  margin-inline: calc(-1 * var(--gutter));
+  padding: 4px var(--gutter);
+  border-bottom: 1px solid var(--border);
+  background: var(--parchment);
+  color: var(--ink);
+  font: var(--text-small);
+  line-height: 1.2;
+}
+[data-view]:where(.td-wrap) :where(.tv-back) {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: var(--sp-2);
+  min-width: var(--ui-target);
+  min-height: var(--ui-target);
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  color: var(--ink);
+  font: var(--text-small);
+  font-weight: 600;
+  text-decoration: none;
+}
+[data-view]:where(.td-wrap) :where(.tv-back:hover) { background: var(--border); text-decoration: none; }
+/* The name wraps and is never cut. At this size three lines, or two and the dates, still fit the
+   bar's least height; a longer name makes the bar taller, and what is pinned under the bar moves
+   down with it through --tv-bar-h. */
+[data-view]:where(.td-wrap) :where(.tv-bar-title) {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--sp-2);
+  min-width: 96px;
+  font: 600 0.8125rem/1.2 var(--font-body);
+}
+[data-view]:where(.td-wrap) :where(.tv-bar-flags) { display: inline-flex; flex: none; gap: 4px; }
+[data-view]:where(.td-wrap) :where(.tv-bar-name) { flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; }
+[data-view]:where(.td-wrap) :where(.tv-bar-dates) {
+  flex: 1 0 100%;
+  font: 400 0.6875rem/1.3 var(--font-mono);
+  color: var(--ink-secondary);
+}
+[data-view]:where(.td-wrap) :where(.tv-tabs-slot) { display: flex; flex: none; min-width: 0; }
+[data-view]:where(.td-wrap) :where(.tv-tabs-slot:empty) { display: none; }
+[data-view]:where(.td-wrap) :where(.tv-bar-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  flex: none;
+  gap: 4px var(--sp-2);
+  max-width: 100%;
+  margin-left: auto;
+}
+[data-view]:where(.td-wrap) :where(.tv-bar-actions > .ui-btn, .tv-bar-actions > .ui-menu-btn) { padding-inline: var(--sp-3); }
+[data-view]:where(.td-wrap) :where(.tv-action[aria-pressed="true"]) { border-color: var(--terracotta); color: var(--terracotta); }
+/* The staged PDF progress, whatever control started the export. It hangs under the bar's end. */
+[data-view]:where(.td-wrap) :where(.tv-pdf-status) {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: var(--gutter);
+  max-width: calc(100% - 2 * var(--gutter));
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+  font: var(--text-small);
+}
+[data-view]:where(.td-wrap) :where(.tv-pdf-status:empty) { display: none; }
+
+/* Which actions show where (trip-topbar.js writes the marks). Below 1024 px a bar button that More
+   also holds is left to More. From 1024 px the bar shows it, so More drops its copy, drops Settings
+   (the app nav is back) and goes away altogether when nothing is left in it. */
+@media (max-width: 1023px) {
+  [data-view]:where(.td-wrap) :where(.tv-bar-actions > .tv-action[data-in-menu]) { display: none; }
+}
+@media (min-width: 1024px) {
+  [data-view]:where(.td-wrap) :where(
+    .tv-bar-actions[data-narrow-items~="share"] li:has(> [data-focus-key="menu-share"]),
+    .tv-bar-actions[data-narrow-items~="pdf"] li:has(> [data-focus-key="menu-pdf"]),
+    .tv-bar-actions[data-narrow-items~="edit"] li:has(> [data-focus-key="menu-edit"]),
+    .tv-bar-actions[data-narrow-items~="read-view"] li:has(> [data-focus-key="menu-read-view"]),
+    .tv-bar-actions[data-narrow-items~="regenerate"] li:has(> [data-focus-key="menu-regenerate"]),
+    .tv-bar-actions[data-narrow-items~="delete"] li:has(> [data-focus-key="menu-delete"]),
+    .tv-bar-actions[data-narrow-items~="settings"] li:has(> [data-focus-key="menu-settings"]),
+    .tv-bar-actions[data-more="narrow"] > .ui-menu-btn
+  ) { display: none; }
+}
+/* Where the bar is crowded the dates are left to the hero: on phones, and from 1024 px (the tab list
+   and the action buttons are in the bar) until there is room for them again. */
+@media (max-width: 639px) {
+  [data-view]:where(.td-wrap) :where(.tv-bar) { column-gap: var(--sp-2); }
+  [data-view]:where(.td-wrap) :where(.tv-bar-dates) { display: none; }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  [data-view]:where(.td-wrap) :where(.tv-bar-dates, .tv-bar-actions > .tv-action > .ui-icon) { display: none; }
+}
+/* The root font is larger from 768 px (css/base.css), the bar is not: keep the name to the same box. */
+@media (min-width: 768px) {
+  [data-view]:where(.td-wrap) :where(.tv-bar-title) { font-size: 0.75rem; }
+  [data-view]:where(.td-wrap) :where(.tv-bar-dates) { font-size: 0.625rem; }
+}
+
+/* ---- The tab list: the classic .td-tabs row, pinned under whatever else is pinned ---- */
+[data-view]:where(.td-wrap) > :where(.td-tabs) {
+  position: sticky;
+  top: calc(var(--tv-top) + var(--tv-pinned-h) - var(--tv-tabs-h));
+  z-index: calc(var(--z-sticky) + 9); /* under the bar, so the PDF status shows over it */
+  margin-block: var(--sp-3);
+}
+[data-view]:where(.td-wrap) :where(.td-tabs) {
+  align-items: center;
+  background: var(--surface-inset);
+}
+/* Pinned, the row needs the page colour around its pill, or the page shows through beside it. */
+[data-view]:where(.td-wrap) > :where(.td-tabs[data-stuck]) { box-shadow: 0 0 0 var(--sp-2) var(--parchment); }
+/* Docked in the bar the list loses its own frame, so the bar keeps its height. */
+[data-view]:where(.td-wrap) :where(.tv-tabs-slot > .td-tabs) { width: auto; margin: 0; padding: 0; border: 0; background: none; }
+[data-view]:where(.td-wrap) :where(.tv-tabs-slot > .td-tabs > .td-tab) { flex: none; padding: 0 var(--sp-3); }
+@media (max-width: 1279px) {
+  [data-view]:where(.td-wrap) :where(.tv-tabs-slot > .td-tabs > .td-tab > .ui-icon) { display: none; }
+}
+[data-view]:where(.td-wrap) :where(.tv-tabs-back) {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--ui-target);
+  min-height: var(--ui-target);
+  border-radius: var(--r-pill);
+  color: var(--ink);
+}
+[data-view]:where(.td-wrap) :where(.td-tabs[data-stuck] > .tv-tabs-back) { display: inline-flex; }
+[data-view]:where(.td-wrap) :where(.tv-tabs-back:hover) { background: var(--border); }
+@media (max-width: 639px) {
+  [data-view]:where(.td-wrap) :where(.td-tab > .ui-icon) { display: none; }
+}
+
+/* ---- The landing wrappers: the container-query containers (never .td-wrap itself) ---- */
+[data-view]:where(.td-wrap) :where(.tv-landing) {
+  container-type: inline-size;
+  container-name: tv-landing;
+}
+/* The block between the section cards and the day cards answers the same queries. */
+[data-view]:where(.td-wrap) :where(.tv-between) {
+  container-type: inline-size;
+  container-name: tv-landing;
+}
+[data-view]:where(.td-wrap) :where(.tv-landing--intro, .tv-landing--outro) { margin-block: var(--sp-5); }
+[data-view]:where(.td-wrap) :where(.tv-landing:empty, .tv-between:empty) { display: none; }
+[data-view]:where(.td-wrap) :where(.tv-between) { margin-top: var(--tv-day-gap); }
+[data-view]:where(.td-wrap) :where(.tv-between:first-child) { margin-top: 0; }
+/* Jump targets this sheet owns. The td- ones are in trip-reset.css. */
+[data-view]:where(.td-wrap) :where(.ui-ready, .tv-days, .tv-glance, .tv-between) {
+  scroll-margin-top: calc(var(--tv-top) + var(--tv-pinned-h) + 8px);
+}
+
+/* ---- Glance facts ---- */
+[data-view] :where(.tv-glance) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4) var(--sp-5);
+  margin-block: var(--sp-4);
+}
+[data-view] :where(.tv-fact) { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+[data-view] :where(.tv-fact-label) { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view] :where(.tv-fact-body) { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+[data-view] :where(.tv-fact-value) { font: var(--text-h3); color: var(--ink); overflow-wrap: anywhere; }
+[data-view] :where(.tv-fact-about) { font-weight: 400; }
+[data-view] :where(.tv-fact-note) { font: var(--text-caption); color: var(--ink-secondary); overflow-wrap: anywhere; }
+[data-view] :where(.tv-fact-jump) {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+/* The text stays the size of its neighbours; the target is 44 px all the same. */
+[data-view] :where(.tv-fact-jump)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%; /* centred on the text, so a short value at the page edge is a full target on both sides */
+  width: max(100%, var(--ui-target));
+  height: max(100%, var(--ui-target));
+  translate: -50% -50%;
+}
+[data-view] :where(.tv-fact-jump:hover) { text-decoration-color: currentColor; }
+@container tv-landing (min-width: 560px) {
+  [data-view] :where(.tv-glance) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container tv-landing (min-width: 900px) {
+  [data-view] :where(.tv-glance) { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}
+
+/* ---- Day index: shared parts ---- */
+[data-view] :where(.tv-days) { margin: 0; padding: 0; list-style: none; }
+[data-view] :where(.tv-day) { min-width: 0; }
+[data-view] :where(.tv-day-num) {
+  position: relative; /* holds its visually hidden "Day", also inside a scroller that is not positioned */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1.5px solid var(--day-color, var(--border-strong));
+  border-radius: var(--r-pill);
+  color: var(--ink);
+  font: 600 0.8125rem/1 var(--font-mono);
+}
+[data-view] :where(.tv-day-title) { font: var(--text-small); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+[data-view] :where(.tv-day-date, .tv-day-stops, .tv-day-weather, .tv-day-times, .tv-day-hint) { font: var(--text-caption); color: var(--ink-secondary); }
+[data-view] :where(.tv-day-cost) { font: 400 0.8125rem/1.4 var(--font-mono); color: var(--ink); }
+[data-view] :where(.tv-day-row, .tv-day-pick, .tv-day-open, .tv-day-chip) {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* ---- Day index: list ----
+   Narrow by default: the cost sits under the title. Inside a .tv-landing container of 560 px or more
+   it gets a column of its own. */
+[data-view] :where(.tv-days--list) { display: flex; flex-direction: column; }
+[data-view] :where(.tv-day-row) {
+  display: grid;
+  grid-template-columns: [num] auto [main] minmax(0, 1fr) [chev] auto;
+  align-items: center;
+  gap: 0 var(--sp-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+[data-view] :where(.tv-day-row:has(> .ui-thumb)) { grid-template-columns: [thumb] auto [num] auto [main] minmax(0, 1fr) [chev] auto; }
+[data-view] :where(.tv-day-row:hover) { background: var(--border); }
+[data-view] :where(.tv-day-row.is-active) { box-shadow: inset 3px 0 0 var(--day-color, var(--terracotta)); }
+[data-view] :where(.tv-day-row > .ui-thumb) { grid-column: thumb; grid-row: 1 / span 2; }
+[data-view] :where(.tv-day-row > .tv-day-num) { grid-column: num; grid-row: 1 / span 2; }
+[data-view] :where(.tv-day-main) { display: flex; flex-direction: column; grid-column: main; grid-row: 1; gap: 2px; min-width: 0; }
+[data-view] :where(.tv-day-meta) { display: flex; flex-wrap: wrap; gap: 0 var(--sp-3); }
+[data-view] :where(.tv-day-row > .tv-day-cost) { grid-column: main; grid-row: 2; }
+[data-view] :where(.tv-day-row > .ui-icon) { grid-column: chev; grid-row: 1 / span 2; color: var(--ink-secondary); }
+@container tv-landing (min-width: 560px) {
+  [data-view] :where(.tv-day-row) { grid-template-columns: [num] auto [main] minmax(0, 1fr) [cost] auto [chev] auto; }
+  [data-view] :where(.tv-day-row:has(> .ui-thumb)) { grid-template-columns: [thumb] auto [num] auto [main] minmax(0, 1fr) [cost] auto [chev] auto; }
+  [data-view] :where(.tv-day-row > .tv-day-cost) { grid-column: cost; grid-row: 1 / span 2; }
+}
+
+/* ---- Day index: strip ---- */
+[data-view] :where(.tv-days--strip) {
+  display: flex;
+  gap: var(--sp-3);
+  margin-inline: calc(-1 * var(--gutter));
+  padding: 4px var(--gutter) var(--sp-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--gutter);
+  scrollbar-width: thin;
+}
+[data-view] :where(.tv-days--strip > .tv-day) {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 168px;
+  scroll-snap-align: start;
+}
+[data-view] :where(.tv-day-pick) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--sp-1);
+  width: 100%;
+  min-height: var(--ui-target);
+  padding: var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-top: 3px solid var(--day-color, var(--border-strong));
+  border-radius: var(--r-md);
+  background: var(--surface-solid);
+}
+[data-view] :where(.tv-day-pick:hover) { border-color: var(--day-color, var(--ink-secondary)); }
+[data-view] :where(.tv-day-pick[aria-pressed="true"], .tv-day-pick.is-active) { border-color: var(--day-color, var(--ink)); background: var(--surface-inset); }
+[data-view] :where(.tv-day-top) { display: flex; align-items: center; gap: var(--sp-2); }
+[data-view] :where(.tv-day-foot) { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--sp-2); margin-top: auto; }
+[data-view] :where(.tv-day-hint) { text-decoration: underline; text-underline-offset: 3px; }
+[data-view] :where(.tv-day-pick[aria-pressed="true"] > .tv-day-hint) { visibility: hidden; }
+[data-view] :where(.tv-day-open) {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ui-target);
+  padding: 0 var(--sp-3);
+  color: var(--ink);
+  font: var(--text-small);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* The day on screen, in a strip whose cells open the day from this second button (mapDays). */
+[data-view] :where(.tv-day-open.is-active) { text-decoration-thickness: 2px; text-decoration-color: var(--day-color, currentColor); }
+
+/* ---- Day index: chips ---- */
+[data-view] :where(.tv-days--chips) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+[data-view] :where(.tv-day-chip) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--ui-target);
+  min-height: var(--ui-target);
+  padding: 0 var(--sp-3);
+  border: 1.5px solid var(--day-color, var(--border-strong));
+  border-radius: var(--r-pill);
+  color: var(--ink);
+  font: 600 0.875rem/1 var(--font-mono);
+}
+[data-view] :where(.tv-day-chip--all) { font-family: var(--font-body); }
+[data-view] :where(.tv-day-chip:hover) { background: var(--border); }
+[data-view] :where(.tv-day-chip[aria-pressed="true"], .tv-day-chip.is-active) {
+  border-color: var(--day-color, var(--ink));
+  background: var(--day-color, var(--ink));
+  color: var(--ui-on-accent);
+}
+:where([data-theme="light"]) [data-view] :where(.tv-day-chip--all[aria-pressed="true"]) { color: var(--parchment); }
+[data-view] :where(.tv-day-row[aria-current="date"] .tv-day-num, .tv-day-pick[aria-current="date"] .tv-day-num, .tv-day.is-today .tv-day-num, .tv-day-chip[aria-current="date"]) {
+  box-shadow: 0 0 0 2px var(--parchment), 0 0 0 4px var(--live);
+}
+
+/* ---- The day card block (day-extras.js), inside the classic day card header ----
+   trip-reset.css shows the block; a skin picks its display through --tv-day-extras-display. */
+[data-view]:where(.td-wrap) :where(.td-day-card:not(.td-day-card--open)) { box-shadow: var(--tv-day-shadow); }
+[data-view]:where(.td-wrap) :where(.td-day-card-header) { flex-wrap: wrap; }
+[data-view]:where(.td-wrap) :where(.tv-day-extras) {
+  flex: 1 0 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  order: 10;
+  gap: var(--sp-2);
+  min-width: 0;
+  font: var(--text-small);
+  color: var(--ink-secondary);
+}
+[data-view]:where(.td-wrap) :where(.tv-day-theme) { color: var(--ink); overflow-wrap: anywhere; }
+[data-view]:where(.td-wrap) :where(.tv-day-facts) { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--sp-4); }
+[data-view]:where(.td-wrap) :where(.tv-day-times) { display: inline-flex; align-items: center; gap: var(--sp-1); }
+[data-view]:where(.td-wrap) :where(.tv-day-extras .tv-day-cost) { font: inherit; color: inherit; }
+[data-view]:where(.td-wrap) :where(.tv-cost-lead) { color: var(--ink); font-family: var(--font-mono); font-weight: 600; }
+[data-view]:where(.td-wrap) :where(.tv-day-photos) { display: flex; gap: var(--sp-2); min-width: 0; }
+[data-view]:where(.td-wrap) :where(.tv-day-photos > .ui-thumb) { flex: 0 1 64px; width: 64px; min-width: 0; }
+[data-view]:where(.td-wrap) :where(.tv-day-more) { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--ink); font-weight: 600; }
+[data-view]:where(.td-wrap) :where(.tv-day-more-hide) { display: none; }
+/* An open card: its header floats over the stops, so the block shrinks to one wrapping line: the
+   weather, the cost and the way to close the card. The stops and their times are right below. */
+[data-view]:where(.td-wrap) :where(.td-day-card.td-day-card--open .tv-day-extras) { flex-flow: row wrap; align-items: baseline; gap: 2px var(--sp-4); }
+[data-view]:where(.td-wrap) :where(.td-day-card.td-day-card--open .tv-day-facts) { display: contents; }
+[data-view]:where(.td-wrap) :where(
+  .td-day-card.td-day-card--open .tv-day-more-show,
+  .td-day-card.td-day-card--open .tv-day-theme,
+  .td-day-card.td-day-card--open .tv-day-photos,
+  .td-day-card.td-day-card--open .tv-day-times,
+  .td-day-card.td-day-card--open .tv-day-stops,
+  .td-day-card.td-day-card--open .tv-cost-other
+) { display: none; }
+[data-view]:where(.td-wrap) :where(.td-day-card.td-day-card--open .tv-day-more-hide) { display: inline; }
+[data-view]:where(.td-wrap) :where(.td-day-card.td-day-card--open .tv-day-more > .ui-icon) { rotate: 180deg; }
+
+/* ---- The page foot (credits.js fills it; its children are styled by common.css) ---- */
+[data-view]:where(.td-wrap) :where(.tv-foot) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-10);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--border);
+}
+
+/* ---- Motion: only for people who have not asked for less (blueprint 8.4) ---- */
+@media (prefers-reduced-motion: no-preference) {
+  [data-view] :where(.tv-back, .tv-tabs-back, .tv-day-row, .tv-day-pick, .tv-day-chip, .tv-fact-jump) {
+    transition: background-color var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
+  }
+  [data-view]:where(.td-wrap) :where(.tv-day-more > .ui-icon) { transition: rotate var(--duration-fast); }
+}

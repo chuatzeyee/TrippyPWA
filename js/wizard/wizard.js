@@ -8,10 +8,12 @@ import { renderCalendar } from './calendar.js';
 import { convert, formatCurrency } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
 import { formatNumber } from '../lib/locale.js';
+import { prefersReducedMotion } from '../lib/motion.js';
 import { showToast } from '../components/toast.js';
 import { logger } from '../lib/logger.js';
 import { bookedFlightsHtml, bindBookedFlights } from './booked-flights.js';
 import { renderPassportPicker, isTripAbroad } from './passport-picker.js';
+import { mergeProfileSummary } from '../data/profile-cache.js';
 
 const TOTAL_STEPS = 8;
 
@@ -415,9 +417,6 @@ function updateShellChrome() {
   }
 }
 
-const REDUCE_MOTION = typeof window !== 'undefined'
-  && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
 const STEP_EXIT_MS = 140;
 
 let _transitioning = false;
@@ -429,7 +428,7 @@ let _transitioning = false;
 // in bindWizardEvents), so a rapid double-click cannot advance two steps.
 function transitionToStep() {
   const stepEl = document.getElementById('wizard-step-content');
-  if (!stepEl || REDUCE_MOTION) { renderShell(); return; }
+  if (!stepEl || prefersReducedMotion()) { renderShell(); return; }
 
   _transitioning = true;
   stepEl.classList.add('wizard-step--exit');
@@ -457,7 +456,7 @@ function bindWizardEvents() {
   // not on every step re-render (capture phase: step handlers re-render before
   // bubble listeners run).
   wizard.addEventListener('pointerdown', (e) => {
-    if (REDUCE_MOTION || !e.target.closest(SELECTABLE_CARD)) return;
+    if (prefersReducedMotion() || !e.target.closest(SELECTABLE_CARD)) return;
     wizard.classList.add('wizard--just-selected');
     clearTimeout(_popTimer);
     _popTimer = setTimeout(() => wizard.classList.remove('wizard--just-selected'), 350);
@@ -531,7 +530,7 @@ function renderStep() {
   // Mark the step as "entering" so option grids play their stagger exactly
   // once per step entry — in-step re-renders (calendar taps etc.) call the
   // renderStepN functions directly and never re-add this class.
-  if (container && !REDUCE_MOTION) {
+  if (container && !prefersReducedMotion()) {
     container.classList.add('wizard-step--entering');
     clearTimeout(_enterTimer);
     _enterTimer = setTimeout(() => container.classList.remove('wizard-step--entering'), 500);
@@ -908,6 +907,25 @@ function renderTravelerStepper(el) {
   });
 }
 
+/**
+ * Stores the user's own passport in the profile and, once the row has it, in the profile summary on
+ * this device, so the other plans stop asking for a passport in the same session. Never rejects.
+ * @param {string} nationality   a two-letter country code
+ * @returns {Promise<boolean>} whether the profile took it
+ */
+export async function saveOwnPassport(nationality) {
+  try {
+    const { updateProfile } = await import('../data/profile-repository.js');
+    const result = await updateProfile({ nationality });
+    if (result?.error) return false; // the repository has logged it
+    mergeProfileSummary({ nationality });
+    return true;
+  } catch (error) {
+    logger.warn('profile', 'Passport not saved from the trip wizard', { error: error?.message });
+    return false;
+  }
+}
+
 // Passports for the trip's entry requirements; only for trips abroad.
 async function renderPassports(el) {
   if (!el) return;
@@ -919,7 +937,7 @@ async function renderPassports(el) {
       state = updateWizardField(state, 'passports', passports);
       if (ownChanged && passports[0]) {
         _home = { ..._home, nationality: passports[0] };
-        import('../data/profile-repository.js').then(({ updateProfile }) => updateProfile({ nationality: passports[0] })).catch(() => {});
+        saveOwnPassport(passports[0]);
       }
       renderPassports(el);
     },

@@ -1,4 +1,5 @@
 import { logger } from '../lib/logger.js';
+import { addDays } from '../lib/entry-rules.js';
 
 // Advisory visa/travel-authorisation lookups. Data is static JSON served from
 // our own CDN: per-passport requirement files generated from the MIT-licensed
@@ -49,13 +50,6 @@ async function loadPassport(passportIso2) {
   return data;
 }
 
-// Date arithmetic on YYYY-MM-DD strings, calendar-safe.
-function addDays(dateStr, days) {
-  const d = new Date(`${dateStr}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 /**
  * Look up entry requirements for one passport and one destination country.
  *
@@ -65,10 +59,21 @@ function addDays(dateStr, days) {
  * @returns advisory object or null when no action is needed / data missing
  */
 export async function checkRequirement(passportIso2, destIso2, departDate) {
-  if (!passportIso2 || !destIso2) return null;
+  return (await lookupRequirement(passportIso2, destIso2, departDate)).requirement;
+}
+
+/**
+ * The same lookup, saying when it could not be done: `{ requirement, failed }`.
+ * `requirement` is what checkRequirement returns. `failed` is true only when
+ * the passport table or the authorisations table could not be fetched, so a
+ * caller can tell "nothing needed" from "could not check". A failure is not
+ * remembered: the next lookup fetches again.
+ */
+export async function lookupRequirement(passportIso2, destIso2, departDate) {
+  if (!passportIso2 || !destIso2) return { requirement: null, failed: false };
   const passport = passportIso2.toUpperCase();
   const dest = destIso2.toUpperCase();
-  if (passport === dest) return null;
+  if (passport === dest) return { requirement: null, failed: false };
 
   let req, auths;
   try {
@@ -78,11 +83,16 @@ export async function checkRequirement(passportIso2, destIso2, departDate) {
     ]);
   } catch (e) {
     logger.warn('data', 'Visa lookup failed', { passport, dest, error: e?.message });
-    return null;
+    return { requirement: null, failed: true };
   }
+  return { requirement: requirementFor(req, auths[dest] || null, departDate), failed: false };
+}
+
+// The advisory for one matrix entry and its curated authorisation, or null
+// when the matrix has no entry for the destination.
+function requirementFor(req, auth, departDate) {
   if (!req) return null;
 
-  const auth = auths[dest] || null;
   // The matrix may say visa-free while the destination still demands an
   // ARRIVAL CARD from everyone (TH TDAC, SG SGAC). eTA-kind entries, however,
   // only apply when the matrix itself says 'eta' — exemptions (e.g. K-ETA's

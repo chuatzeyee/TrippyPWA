@@ -11,6 +11,7 @@
 import { buildDeckHtml, mountCardDeck } from '../lib/card-deck.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { to12h } from '../lib/locale.js';
+import { scrollBehavior } from '../lib/motion.js';
 
 // Trippy's 7-day accent sequence (matches tokens.css --day-N).
 const DAY_VARS = ['--day-1', '--day-2', '--day-3', '--day-4', '--day-5', '--day-6', '--day-7'];
@@ -125,7 +126,7 @@ export function renderSquareItinerary(host, trip, days, sym, helpers) {
       b.classList.toggle('sq-itin-day--active', bi === i);
     });
     const activeBtn = railEl.querySelector(`.sq-itin-day[data-day="${i}"]`);
-    activeBtn?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    activeBtn?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: scrollBehavior() });
   }
 
   const onRailClick = (e) => {

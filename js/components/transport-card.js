@@ -4,6 +4,11 @@
 // board (embark, for a ferry), any change on the way, where to get off
 // (disembark), then time, frequency, fare and the border crossing.
 import { escapeHtml as esc } from '../data/day-builder.js';
+import { to12h } from '../lib/locale.js';
+
+// The journey helpers live in js/lib/journey.js now; they are still exported
+// from here for the modules that import them from this path.
+export { modeFrom, looksLikeGroundLeg, normalizeLeg, groundJourney, journeyMode } from '../lib/journey.js';
 
 const MODE_LABELS = { bus: 'Bus', train: 'Train', ferry: 'Ferry', car: 'Car', taxi: 'Taxi', mrt: 'MRT', walk: 'Walk' };
 const ENDPOINT_LABELS = {
@@ -33,119 +38,24 @@ export function transportIcon(mode, size = 18) {
   return `<svg class="tl-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${d}"/></svg>`;
 }
 
-const text = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim() : '');
-
-const MODE_PATTERNS = [
-  ['ferry', /\b(ferry|ferries|boat|catamaran|jetty)\b/],
-  ['train', /\b(train|trains|rail|railway|ktm|ktmb|ets|rts|mrt|lrt|metro|shinkansen)\b|shuttle tebrau/],
-  ['bus', /\b(bus|buses|coach|causeway link|plusliner|aeroline|transtar)\b/],
-  ['taxi', /\b(taxi|grab|uber|gojek|cab)\b/],
-  ['car', /\b(car|drive|self-drive|rental)\b/],
-];
-
-/**
- * Main vehicle from free text; '' when it can't tell. Hints are tried in
- * order, strongest first (mode, operator, service, then route, tips), so a
- * tip that mentions trains can't relabel a bus. Whole words only: "tickets"
- * must not read as "ets".
- */
-export function modeFrom(...hints) {
-  for (const hint of hints) {
-    const t = text(hint).toLowerCase();
-    if (!t) continue;
-    for (const [mode, re] of MODE_PATTERNS) if (re.test(t)) return mode;
-  }
-  return '';
-}
-
-// "A to B", "A → B", "A - B" (only a spaced hyphen, so "Kuala-Lumpur" stays).
-function splitRoute(route) {
-  const parts = text(route).split(/\s+(?:to|→|➔|>|-|–)\s+/i).map(s => s.trim()).filter(Boolean);
-  return parts.length >= 2 ? [parts[0], parts[parts.length - 1]] : [text(route), ''];
-}
-
-const NOT_A_FLIGHT = /n\/?a|bus|train|rail|ferry|coach|ktm|shuttle|causeway|express|plusliner/i;
-
-/** A misfiled ground journey stored under extras.flights (older trips). */
-export function looksLikeGroundLeg(leg) {
-  if (!leg || typeof leg !== 'object') return false;
-  const number = text(leg.flightNumber);
-  const airline = text(leg.airline);
-  if (number && NOT_A_FLIGHT.test(number) && !/^[A-Z0-9]{2}\s?\d{1,4}$/i.test(number)) return true;
-  return !!modeFrom(airline) && !/airline|airways|air\b|jet|scoot|airasia/i.test(airline);
-}
-
-/** One leg in a single shape, from any of the stored shapes. */
-export function normalizeLeg(leg) {
-  if (!leg || typeof leg !== 'object') return null;
-  const [routeFrom, routeTo] = splitRoute(leg.route);
-  const operator = text(leg.operator) || text(leg.airline);
-  // Older misfiled legs put the service in flightNumber: "Shuttle Tebrau (or
-  // Bus)" keeps "Shuttle Tebrau"; "N/A (Bus)" keeps nothing.
-  const service = text(leg.service) || text(leg.flightNumber).replace(/\([^)]*\)/g, '').replace(/^n\/?a\b/i, '').trim();
-  const mode = TRANSPORT_MODE(text(leg.mode)) || modeFrom(leg.mode, operator, leg.flightNumber, service, leg.route, leg.terminal, leg.tips) || 'bus';
-  const steps = Array.isArray(leg.steps)
-    ? leg.steps.map(s => ({ mode: TRANSPORT_MODE(text(s?.mode)) || modeFrom(s?.mode, s?.text) || '', text: text(s?.text), duration: text(s?.duration) }))
-      .filter(s => s.text)
-    : [];
-  return {
-    mode,
-    operator: operator.replace(/\s*\(or similar[^)]*\)/i, ''),
-    service,
-    from: text(leg.from) || routeFrom,
-    to: text(leg.to) || routeTo,
-    duration: text(leg.duration),
-    frequency: text(leg.frequency),
-    price: text(leg.priceRange),
-    border: text(leg.border),
-    terminal: text(leg.terminal),
-    steps,
-    tips: text(leg.tips),
-  };
-}
-
-function TRANSPORT_MODE(raw) {
-  const m = raw.toLowerCase();
-  if (m === 'drive' || m === 'self-drive') return 'car';
-  return ENDPOINT_LABELS[m] ? m : '';
-}
-
-/**
- * The trip's ground/sea journey, or null when it travels by air. Covers
- * extras.transport and older trips whose bus legs were stored as flights.
- */
-export function groundJourney(extras) {
-  const t = extras?.transport;
-  if (t && (t.outbound || t.inbound)) {
-    return { outbound: normalizeLeg(t.outbound), inbound: normalizeLeg(t.inbound) };
-  }
-  const f = extras?.flights;
-  if (f && [f.outbound, f.inbound].filter(Boolean).every(looksLikeGroundLeg) && (f.outbound || f.inbound)) {
-    return { outbound: normalizeLeg(f.outbound), inbound: normalizeLeg(f.inbound) };
-  }
-  return null;
-}
-
-/** Main mode for the card header: the outbound's, else the return's. */
-export function journeyMode(journey) {
-  return journey?.outbound?.mode || journey?.inbound?.mode || 'bus';
-}
-
 function directionsUrl(from, to, mode) {
   const travelmode = mode === 'car' || mode === 'taxi' ? 'driving' : 'transit';
   const q = new URLSearchParams({ api: '1', origin: from, destination: to, travelmode });
   return `https://www.google.com/maps/dir/?${q}`;
 }
 
+// Free text that can hold a clock time (how often it runs, terminal and border
+// notes, tips, steps) is shown as every other time in the app is. Durations,
+// fares and names are not: "1:10" there is not a time of day.
 function legHtml(leg, label) {
   if (!leg) return '';
   const [boardLabel, alightLabel] = ENDPOINT_LABELS[leg.mode] || ENDPOINT_LABELS.bus;
   const modeLabel = MODE_LABELS[leg.mode] || 'Transport';
   const facts = [
     leg.duration && ['Door to door', leg.duration],
-    leg.frequency && ['Runs', leg.frequency],
+    leg.frequency && ['Runs', to12h(leg.frequency)],
     leg.price && ['Fare', leg.price],
-    !leg.border && leg.terminal && ['Terminal', leg.terminal],
+    !leg.border && leg.terminal && ['Terminal', to12h(leg.terminal)],
   ].filter(Boolean);
   const links = leg.from && leg.to ? `
     <div class="tl-links">
@@ -166,14 +76,14 @@ function legHtml(leg, label) {
           ${leg.steps.length > 1 ? leg.steps.map((s, i) => `
             <li class="tl-step">
               <span class="tl-step-num">${i + 1}</span>
-              <span class="tl-step-text">${s.mode ? transportIcon(s.mode, 14) : ''}${esc(s.text)}${s.duration ? `<span class="tl-step-time">${esc(s.duration)}</span>` : ''}</span>
+              <span class="tl-step-text">${s.mode ? transportIcon(s.mode, 14) : ''}${esc(to12h(s.text))}${s.duration ? `<span class="tl-step-time">${esc(s.duration)}</span>` : ''}</span>
             </li>`).join('') : ''}
           ${leg.to ? `<li class="tl-stop tl-stop--end"><span class="tl-stop-kind">${alightLabel}</span><span class="tl-stop-name">${esc(leg.to)}</span></li>` : ''}
         </ol>
         ${leg.steps.length > 1 ? `<p class="tl-change">${leg.steps.length - 1 === 1 ? 'One change on the way' : `${leg.steps.length - 1} changes on the way`}</p>` : ''}
         ${facts.length ? `<dl class="tl-facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
-        ${leg.border ? `<p class="tl-border">${transportIcon('passport', 16)}<span>${esc(leg.border)}</span></p>` : ''}
-        ${leg.tips ? `<p class="tl-tip">${transportIcon('info', 14)}<span>${esc(leg.tips)}</span></p>` : ''}
+        ${leg.border ? `<p class="tl-border">${transportIcon('passport', 16)}<span>${esc(to12h(leg.border))}</span></p>` : ''}
+        ${leg.tips ? `<p class="tl-tip">${transportIcon('info', 14)}<span>${esc(to12h(leg.tips))}</span></p>` : ''}
         ${links}
       </div>
     </article>`;

@@ -8,6 +8,7 @@ import { withLocalWrite } from '../data/collab-repository.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { convert, canConvert } from '../data/currencies.js';
 import { showToast } from './toast.js';
+import { prefersReducedMotion } from '../lib/motion.js';
 import {
   CONCIERGE_NAME, CONCIERGE_MARK, chatExamples, chatEmptyHtml, conciergeAvatar,
   typingHtml, chatErrorStatus, chatError,
@@ -136,7 +137,7 @@ function sayHelloOnce(fab) {
     if (sessionStorage.getItem(HELLO_KEY)) return;
     sessionStorage.setItem(HELLO_KEY, '1');
   } catch { return; }
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  if (prefersReducedMotion()) return;
   fab.classList.add('td-chat-fab--hello');
   // The ring is the last of the hello animations to finish.
   fab.addEventListener('animationend', function done(e) {

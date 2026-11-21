@@ -1,12 +1,26 @@
 import { C, dayColor, categoryBadge } from './colors.js';
 import { PW, PH, MX, MX_R, CW, BOTTOM, ensureSpace, drawPageAccent, fmtDateShort, fmtDuration } from './layout.js';
 import { convert } from '../../data/currencies.js';
-import { to12h } from '../locale.js';
+import { formatTempRange, to12h } from '../locale.js';
 
 const NO_COST_CATS = new Set(['departure', 'arrival', 'flight', 'check-in', 'landing', 'transfer', 'check-out']);
 const TIMELINE_X = 26;
 const CARD_X = 32;
 const CARD_W = MX_R - CARD_X;
+
+/**
+ * The weather part of a day header: ", 12 to 18° sunny" in Celsius, ", 54 to 64°F sunny" in Fahrenheit,
+ * ", sunny" when there is no high, '' when there is nothing to say.
+ * @param {*} weather a day's stored weather: text, or { lowC, highC, condition }
+ * @returns {string}
+ */
+export function dayWeatherSuffix(weather) {
+  if (!weather) return '';
+  if (typeof weather === 'string') return `, ${weather}`;
+  const temps = weather.highC != null ? formatTempRange(weather.lowC, weather.highC, { celsiusLetter: false }) : '';
+  const text = [temps, weather.condition].filter(Boolean).join(' ');
+  return text ? `, ${text}` : '';
+}
 
 function drawDayHeader(doc, ctx, day, color) {
   doc.setFont('helvetica', 'normal');
@@ -32,16 +46,7 @@ function drawDayHeader(doc, ctx, day, color) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(...C.inkGhost);
-    let weatherStr = '';
-    if (day.weather) {
-      const w = day.weather;
-      if (typeof w === 'string') weatherStr = `, ${w}`;
-      else if (w.highC != null) {
-        const temps = w.lowC != null ? `${w.lowC} to ${w.highC}°` : `${w.highC}°`;
-        weatherStr = `, ${temps} ${w.condition || ''}`.trimEnd();
-      } else if (w.condition) weatherStr = `, ${w.condition}`;
-    }
-    doc.text(`${fmtDateShort(day.date)}${weatherStr}`, textX, ctx.y + 8);
+    doc.text(`${fmtDateShort(day.date)}${dayWeatherSuffix(day.weather)}`, textX, ctx.y + 8);
   }
 
   if (day.theme) {
