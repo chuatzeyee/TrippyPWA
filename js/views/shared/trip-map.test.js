@@ -200,6 +200,14 @@ describe('mapFallbackSvg', () => {
     expect(at[2][0]).toBeCloseTo(at[0][0], 0);
   });
 
+  it('numbers the stops of a selected day by their place in the day when asked (the day panel)', () => {
+    const gap = [point(1, 1, 52, 4.8), point(1, 3, 52.1, 4.9), point(1, 6, 52.2, 5.0)];
+    expect(all(tree(mapFallbackSvg(gap, { day: 1 })), '.tv-map-fstop').map(textOf)).toEqual(['1', '2', '3']);
+    expect(all(tree(mapFallbackSvg(gap, { day: 1, byOrder: true })), '.tv-map-fstop').map(textOf)).toEqual(['1', '3', '6']);
+    const loose = gap.map((stop, i) => ({ ...stop, order: i === 1 ? undefined : stop.order }));
+    expect(all(tree(mapFallbackSvg(loose, { day: 1, byOrder: true })), '.tv-map-fstop').map(textOf)).toEqual(['1', '1', '6']); // no order stored: its place among the stops drawn
+  });
+
   it('for a selected day draws only that day: its stops numbered in order along a route line', () => {
     const root = tree(mapFallbackSvg(MAP.points, { day: 2 }));
     const stops = MAP.points.filter((p) => p.dayNumber === 2);

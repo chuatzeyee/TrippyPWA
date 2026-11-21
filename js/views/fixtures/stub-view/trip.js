@@ -127,6 +127,7 @@ export function renderTripLanding(model, ctx) {
     planOutro: `<p class="${P}-note">Costs are estimates per person, for activities only. Weather is typical for the season, not a forecast.</p><span class="ui-probe" hidden></span>`,
     openSections: [],
     openSectionsMinWidth: 0,
+    dayAside: true, // the day panel beside the stops of an open day, shown here in its neutral look
   };
 }
 

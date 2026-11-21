@@ -274,6 +274,26 @@
  */
 
 /**
+ * The panel beside the stops of one open day (TripLandingParts.dayAside). About that day only.
+ * @typedef {Object} DayAsideModel
+ * @property {number} index           the day card's data-day-index
+ * @property {number} dayNumber
+ * @property {number} colorIndex      1 to 7, the --day-N token
+ * @property {{ points: MapPoint[], placed: number, total: number }|null} map   the stops of the day that can be
+ *                                    placed (MapPoint.order is the stop's number in the day); null when none can
+ * @property {number} stops           at least 1: a day without stops has no panel
+ * @property {string|null} firstTime  as on the day's DayIndexRow, like cost and weather
+ * @property {string|null} lastTime
+ * @property {CostEstimate|null} cost
+ * @property {{ range: string, condition: string }|null} weather
+ * @property {string[]} areas         the areas of the day in the order its stops reach them, each once
+ * @property {Array<{ label: string, booked: boolean }>} book   checklist items for this day, with this device's ticks
+ * @property {Array<{ id: string, at: number, number: number, time: string, title: string }>} list   every stop in
+ *                                    the order of the day: the activity id ('' when the row has none), its
+ *                                    0-based position, its number, its clock time ('' when it has none)
+ */
+
+/**
  * @typedef {Object} TripAction
  * @property {'share'|'pdf'|'edit'|'read-view'|'regenerate'|'delete'} key
  * @property {string} label           "Share", "Export PDF", "Edit trip", "Reader view", "Regenerate trip", "Delete trip"
@@ -380,6 +400,12 @@
  * @property {string} planOutro   inside the Plan panel, after the day grid (foot notes; not the credits)
  * @property {Array<'flights'|'transport'|'entry'|'accommodation'>} openSections   section cards to open on first render
  * @property {number} openSectionsMinWidth   viewport width in px from which openSections applies (0 for always)
+ * @property {boolean} [dayAside]   optional. true: on a wide day card (about 960 px and up) the body of an open day
+ *                                is two columns, the stops (about two thirds) and the day panel beside them
+ *                                (js/views/shared/day-extras.js, dayAsideHtml on a DayAsideModel). The controller
+ *                                builds, places and refreshes the panel; the view only skins the classes
+ *                                tv-day-aside, tv-day-aside-map, tv-day-aside-facts, tv-day-aside-book and
+ *                                tv-day-aside-stops. Left out or false: one column, no panel.
  *
  * Regions (blueprint 3.4). `hero-status` and `bar-actions` are in the markup from the first render, and so is
  * a `glance` region that the view draws in the hero or the bar, also while it has nothing to show: the

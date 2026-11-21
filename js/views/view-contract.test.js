@@ -207,6 +207,9 @@ const brokenLanding = (key, change) => {
 const NOTES = CTX_FIXTURE.slots.notes;
 
 describe('the trip landing checks fail on broken parts', () => {
+  it('takes the optional day panel flag, on or off', () => {
+    for (const dayAside of [true, false]) expect(checkTripLanding({ ...land('upcoming').parts, dayAside }, land('upcoming').model, CTX_FIXTURE)).toEqual([]);
+  });
   it('passes the untouched stub, so each failure below comes from its one change', () => {
     for (const key of Object.keys(TRIP_FIXTURES)) expect(checkTripLanding(land(key).parts, land(key).model, CTX_FIXTURE)).toEqual([]);
   });
@@ -215,6 +218,7 @@ describe('the trip landing checks fail on broken parts', () => {
     ['an unknown part', 'upcoming', () => ({ footer: '' }), /footer: not a part of the contract/],
     ['an unknown section to open', 'upcoming', () => ({ openSections: ['checklist'] }), /openSections: any of flights, transport, entry, accommodation/],
     ['a width that is not a number', 'upcoming', () => ({ openSectionsMinWidth: '768' }), /openSectionsMinWidth: a width in px/],
+    ['a day panel flag that is not a boolean', 'upcoming', () => ({ dayAside: 'yes' }), /dayAside: true or false, or left out/],
     ['a bar that is not one header', 'upcoming', (p) => ({ bar: `${p.bar}<div></div>` }), /bar: must be exactly one <header class="tv-bar">/],
     ['a back control that goes elsewhere', 'upcoming', (p) => ({ bar: swap(p.bar, '<a href="#/" class="tv-back"', '<a href="#/atlas" class="tv-back"') }), /needs one <a href="#\/" class="tv-back">/],
     ['a back control without the word Trips', 'upcoming', (p) => ({ bar: swap(p.bar, '>Trips</a>', '>Back</a>') }), /visible word Trips/],

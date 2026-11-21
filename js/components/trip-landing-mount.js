@@ -8,6 +8,7 @@
 //   - refreshLanding(): a new model from view.trip, patched into the named parts (the callers are
 //     listed at landingParts() in trip-landing.js);
 //   - swapLandingCover(): a new cover into the hero's frame, nothing else touched;
+//   - the day panel of each open day card, for a view that asks for it (parts.dayAside);
 //   - holdLanding(): what a silent refresh hands to the next render, so the hero photo is not loaded
 //     again and the map keeps its zoom, pan and day;
 //   - what only the trip page needs around a view: the "could not load" notice, the More trigger a
@@ -23,6 +24,7 @@ import { tripMapHtml, mountTripMap } from '../views/shared/trip-map.js';
 import { dayCardExtrasHtml } from '../views/shared/day-extras.js';
 import { TICKS_EVENT, readTicks } from '../data/tick-store.js';
 import { logger } from '../lib/logger.js';
+import { scrollBehavior } from '../lib/motion.js';
 import {
   LANDING_PARTS, REFRESH_PARTS, ENTRY_TIMEOUT_MS, landingParts, entryInputFrom, tabsDocked, mapSlotIndex, mapSlotOptions, sameCover,
   clockKey, redrawLanding, markActiveDay, syncSectionJumps, placeAnchor, patchesEveryRegion,
@@ -285,6 +287,71 @@ function redrawDayBlocks(wrap, shown, rows) {
   });
 }
 
+// ===== The day panel (TripLandingParts.dayAside) =====
+
+const OPEN_DAYS = '.td-day-card.td-day-card--open[data-day-index]';
+
+/**
+ * Puts the day panel of an open day card at the end of its body, or brings the one there in line
+ * with landing.dayAsides. A closed card is left alone: it is brought in line when it opens. The
+ * panel is drawn again only when its markup differs, and keeps its scroll position and focus.
+ */
+function syncDayAside(view, card) {
+  const { landing } = view;
+  const body = card.querySelector(':scope > .td-day-card-body');
+  if (!landing?.asides || !body || !card.matches(OPEN_DAYS)) return;
+  const html = landing.dayAsides?.[Number(card.dataset.dayIndex)] ?? '';
+  const old = body.querySelector(':scope > .tv-day-aside');
+  if ((old ? landing.asides.shown.get(old) : '') === html) return;
+  if (!html) {
+    old.remove();
+    return;
+  }
+  const fresh = fromHtml(html).firstElementChild;
+  landing.asides.shown.set(fresh, html);
+  const focusKey = old?.contains(document.activeElement) ? document.activeElement.getAttribute('data-focus-key') : null;
+  const scrolled = old?.scrollTop ?? 0;
+  if (old) old.replaceWith(fresh);
+  else body.append(fresh);
+  fresh.scrollTop = scrolled;
+  if (focusKey) byAttr(fresh, 'data-focus-key', focusKey)?.focus({ preventScroll: true });
+  // The panel rests under the open day header, whose height follows its title and the width.
+  const header = card.querySelector(':scope > .td-day-card-header');
+  if (header) landing.asides.heads.observe(header);
+}
+
+const syncDayAsides = (view) => view.wrap.querySelectorAll(OPEN_DAYS).forEach((card) => syncDayAside(view, card));
+
+/** A stop of the panel's list: that stop of the open day comes to rest under the day header and takes focus. */
+function jumpToStop(event) {
+  const from = event.target?.closest?.('[data-stop-jump]');
+  const card = from?.closest('.td-day-card');
+  if (!card) return;
+  const stops = [...card.querySelectorAll('.td-timeline .td-activity-card')];
+  const id = from.getAttribute('data-stop-jump');
+  const stop = (id && stops.find((el) => el.dataset.activityId === id)) || stops[Number(from.getAttribute('data-stop-at'))];
+  if (!stop) return;
+  stop.setAttribute('tabindex', '-1');
+  stop.focus({ preventScroll: true });
+  stop.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+}
+
+/** Starts the day panels: one is placed whenever a day card opens (by hand, by a jump, by the scroll spy, on a restore). */
+function mountDayAsides(view, signal) {
+  const { wrap, landing } = view;
+  const grid = wrap.querySelector('.td-day-grid');
+  if (!grid || landing.parts.dayAside !== true) return;
+  const heads = new ResizeObserver((entries) => entries.forEach(({ target }) => {
+    target.closest('.td-day-card')?.style.setProperty('--tv-day-head-h', `${Math.round(target.getBoundingClientRect().height)}px`);
+  }));
+  const opened = new MutationObserver((changes) => new Set(changes.map((change) => change.target)).forEach((el) => syncDayAside(view, el)));
+  landing.asides = { shown: new WeakMap(), heads };
+  opened.observe(grid, { attributes: true, attributeFilter: ['class'], subtree: true });
+  syncDayAsides(view);
+  wrap.addEventListener('click', jumpToStop, { signal });
+  view.cleanups.push(() => { heads.disconnect(); opened.disconnect(); });
+}
+
 /** The foot names the map's source only while a map is drawn, and credits the photos now shown. */
 function redrawFoot(view, footHtml) {
   const foot = view.wrap.querySelector(':scope > footer.tv-foot');
@@ -317,6 +384,9 @@ export function refreshLanding(view, names, { when, every = false } = {}) {
   // The model is the plan as it is now (the actions offered are read from it); the page follows part by part.
   landing.model = next.model;
   landing.parts = next.parts;
+  // The day panels follow every change (a tick books a reservation, an edit moves a stop).
+  landing.dayAsides = next.dayAsides;
+  if (landing.asides) syncDayAsides(view);
 
   const activeDay = wrap.querySelector('[data-day-jump].is-active')?.getAttribute('data-day-jump');
   const regions = wanted.filter((name) => name !== 'map' && name !== 'days');
@@ -504,6 +574,7 @@ export function mountLanding(view, carry = null) {
   dockTabs(wrap);
   view.cleanups.push(observeStuck(wrap.querySelector('.td-tabs')));
   mountMap(view, carry?.map ?? null);
+  mountDayAsides(view, signal);
   window.addEventListener('resize', () => { dockTabs(wrap); placeMap(view); }, { signal });
 
   wrap.addEventListener('change', (event) => writeTick(view, event), { signal });

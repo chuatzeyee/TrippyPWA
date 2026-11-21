@@ -80,3 +80,12 @@
 .td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-card-header .tv-day-extras) {
   display: var(--tv-day-extras-display, flex);
 }
+
+/* 8. The day panel: from 960 px of card width the body of an open day that holds a panel is a grid
+      (the classic rule that shows the body says display: block and is heavier than trip.css). The
+      columns, the placement and the panel itself are in trip.css. */
+@container tv-day (min-width: 960px) {
+  .td-wrap[data-view][data-view][data-view][data-view][data-view][data-view] :where(.td-day-card.td-day-card--open > .td-day-card-body:has(> .tv-day-aside)) {
+    display: grid;
+  }
+}

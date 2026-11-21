@@ -449,6 +449,126 @@
 [data-view]:where(.td-wrap) :where(.td-day-card.td-day-card--open .tv-day-more-hide) { display: inline; }
 [data-view]:where(.td-wrap) :where(.td-day-card.td-day-card--open .tv-day-more > .ui-icon) { rotate: 180deg; }
 
+/* ---- The day panel (TripLandingParts.dayAside; day-extras.js draws it, the controller places it) ----
+   An open day card that holds a panel is a query container: from 960 px of card width its body is two
+   columns (trip-reset.css makes it a grid; the classic rule that shows the body is heavier than this
+   file), the stops in about two thirds and the panel in about one third, never under 300 px. Below
+   that the panel is not shown and the day is one column. The panel sticks under the pinned bar and
+   the open day header and scrolls inside itself when it is taller than what is left of the screen.
+   --tv-day-head-h  height of the open day header, written on the card by the controller
+   --tv-day-under   where the first thing under that header rests: the panel, and a stop the panel's
+                    list jumps to. It follows the offsets trip-reset.css gives the header.
+   --tv-day-aside-gap  the gap between the two columns (a skin may set it)
+   A skin restyles tv-day-aside, tv-day-aside-map, tv-day-aside-facts, tv-day-aside-book and
+   tv-day-aside-stops; it has no need to touch the grid. */
+[data-view]:where(.td-wrap) :where(.td-day-card) {
+  --tv-day-under: calc(var(--tv-top) + var(--tv-pinned-h) + var(--sp-2) + var(--tv-day-head-h, 76px));
+}
+[data-view]:where(.td-wrap) :where(.td-edit-bar ~ .td-day-grid .td-day-card) {
+  --tv-day-under: calc(var(--tv-top) + var(--tv-pinned-h) + var(--tv-edit-h) + var(--sp-4) + var(--tv-day-head-h, 76px));
+}
+[data-view]:where(.td-wrap) :where(.td-day-card.td-day-card--open:has(> .td-day-card-body > .tv-day-aside)) {
+  container: tv-day / inline-size;
+}
+[data-view]:where(.td-wrap) :where(.td-activity-card) { scroll-margin-top: calc(var(--tv-day-under) + var(--sp-4)); }
+[data-view]:where(.td-wrap) :where(.td-activity-card:focus) { outline: none; }
+[data-view]:where(.td-wrap) :where(.td-activity-card:focus-visible) { outline: 2px solid var(--ink-secondary); outline-offset: 4px; border-radius: var(--r-md); }
+[data-view]:where(.td-wrap) :where(.tv-day-aside) { display: none; }
+@container tv-day (min-width: 960px) {
+  [data-view]:where(.td-wrap) :where(.td-day-card-body:has(> .tv-day-aside)) {
+    grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+    column-gap: var(--tv-day-aside-gap, var(--sp-6));
+    align-items: start;
+  }
+  [data-view]:where(.td-wrap) :where(.td-day-card-body:has(> .tv-day-aside) > .td-timeline) { grid-column: 1; grid-row: 1; min-width: 0; }
+  [data-view]:where(.td-wrap) :where(.td-day-card-body:has(> .tv-day-aside) > .td-day-footer) { grid-column: 1; grid-row: 2; }
+  [data-view]:where(.td-wrap) :where(.tv-day-aside) {
+    display: flex;
+    flex-direction: column;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    gap: var(--sp-5);
+    position: sticky;
+    top: calc(var(--tv-day-under) + var(--sp-4));
+    max-height: calc(100vh - var(--tv-day-under) - var(--sp-8));
+    max-height: calc(100dvh - var(--tv-day-under) - var(--sp-8));
+    min-width: 0;
+    margin-top: var(--sp-4);
+    padding: var(--sp-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-inset);
+    font: var(--text-small);
+    color: var(--ink-secondary);
+  }
+}
+/* A stop's photo, or the box that stands in for it, keeps a photo's size on a wide card: it is not a
+   band as wide as the column. */
+@container tv-day (min-width: 720px) {
+  [data-view]:where(.td-wrap) :where(.td-activity-card .td-activity-photo) { max-width: 420px; }
+}
+[data-view]:where(.td-wrap) :where(.tv-day-aside-h) {
+  margin: 0 0 var(--sp-2);
+  font: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+}
+[data-view]:where(.td-wrap) :where(.tv-day-aside-plate) {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--plate);
+}
+[data-view]:where(.td-wrap) :where(.tv-day-aside-note) { margin: var(--sp-2) 0 0; font: var(--text-caption); }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-facts dl) { display: flex; flex-direction: column; margin: 0; }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-facts dl > div) {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+}
+[data-view]:where(.td-wrap) :where(.tv-day-aside-facts dt) { color: var(--ink-secondary); }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-facts dd) { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-book ul, .tv-day-aside-stops ol) { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-book li) {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+}
+[data-view]:where(.td-wrap) :where(.tv-day-aside-label) { min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-state) { flex: none; font: var(--text-caption); font-weight: 600; color: var(--ink); }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-state[data-state="done"]) { font-weight: 400; color: var(--ink-secondary); }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-open) { align-self: flex-start; margin-top: var(--sp-2); }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-book) { display: flex; flex-direction: column; }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-stop) {
+  display: grid;
+  grid-template-columns: 1.5rem 4.75rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: var(--ui-target);
+  padding: var(--sp-2) var(--sp-2);
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+[data-view]:where(.td-wrap) :where(.tv-day-aside-stop:hover) { background: var(--border); }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-n) { font: 600 0.75rem/1.4 var(--font-mono); color: var(--ink-secondary); }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-time) { grid-column: 2; font: 400 0.75rem/1.4 var(--font-mono); color: var(--ink-secondary); white-space: nowrap; }
+[data-view]:where(.td-wrap) :where(.tv-day-aside-title) { grid-column: 3; overflow-wrap: anywhere; }
+
 /* ---- The page foot (credits.js fills it; its children are styled by common.css) ---- */
 [data-view]:where(.td-wrap) :where(.tv-foot) {
   display: flex;
@@ -465,4 +585,5 @@
     transition: background-color var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
   }
   [data-view]:where(.td-wrap) :where(.tv-day-more > .ui-icon) { transition: rotate var(--duration-fast); }
+  [data-view]:where(.td-wrap) :where(.tv-day-aside-stop) { transition: background-color var(--duration-fast); }
 }

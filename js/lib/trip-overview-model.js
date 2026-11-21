@@ -10,11 +10,12 @@ import { isoToUtc, safeUrl, isBookedLeg, flightTimeLine, photoCreditText } from 
 import { groundJourney, journeyMode, routeEnds } from './journey.js';
 import { sortDayActivities, startMinutes } from './day-order.js';
 import { tripStatus, zonedToday } from './trip-status.js';
-import { readiness, summariseEntry, tripReadinessInput } from './readiness.js';
+import { readiness, reservationItems, summariseEntry, tripReadinessInput } from './readiness.js';
+import { checklistKey, legacyChecklistKey, QUICK_KEYS } from './tick-keys.js';
 import { costEstimate, costFigures, COST_BASIS_TEXT } from './money.js';
 import { tripCurrencyCode } from './cost-sum.js';
 import { heroCoverModel } from './cover-model.js';
-import { cleanPoints } from './geo.js';
+import { cleanPoints, kmBetween } from './geo.js';
 import { typicalWeather, weatherLabel } from './weather.js';
 import { dayText, dateRangeText } from './travel-stats.js';
 
@@ -253,6 +254,10 @@ function actionsFor(trip, role, { hasDays, imported }) {
     .map((key) => ({ key, ...ACTIONS[key], href: key === 'read-view' ? `#/trip/${encodeURIComponent(text(trip.id))}/read` : '' }));
 }
 
+/** The day rows of a plan in day order, each with its stops in the order of the day. New objects. */
+const planDays = (trip) => [...rows(trip?.itinerary_days)].sort((a, b) => (Number(a.day_number) || 0) - (Number(b.day_number) || 0))
+  .map((day) => ({ ...day, activities: sortDayActivities(rows(day.activities)) }));
+
 /** The activities of a day whose stored photo can be shown, at most four. */
 const shownPhotos = (day) => day.activities.filter((activity) => safeUrl(activity.photo_url)).slice(0, PHOTO_MAX);
 
@@ -350,8 +355,7 @@ export function buildTripOverviewModel({ trip, now, deviceZone, prefs, profile, 
   const ws = isObject(row.wizard_state) ? row.wizard_state : {};
   const showPhotos = prefs?.showVenuePhotos !== false;
   const money = { profile, prefs };
-  const days = [...rows(row.itinerary_days)].sort((a, b) => (Number(a.day_number) || 0) - (Number(b.day_number) || 0))
-    .map((day) => ({ ...day, activities: sortDayActivities(rows(day.activities)) }));
+  const days = planDays(row);
   const activities = days.flatMap((day) => day.activities);
   const status = row.status === 'generating' || row.status === 'failed' ? row.status : days.length ? 'ok' : 'empty';
   const stand = tripStatus(row, days, now, deviceZone);
@@ -397,4 +401,88 @@ export function buildTripOverviewModel({ trip, now, deviceZone, prefs, profile, 
     role: who, imported, offline: stale ? { savedAt: cachedAt ?? null } : null,
     credits: creditsOf(cover, showPhotos ? days.flatMap(shownPhotos) : [], row.extras?.photoCredits),
   };
+}
+
+// --- The day panel ----------------------------------------------------------------------------------
+
+/** A stop belongs to the nearest area within this distance (the rule of the area labels between stops). */
+const AREA_MAX_KM = 2;
+/** A checklist label and a stop are the same thing only when the shorter name has at least this many letters. */
+const NAME_MIN = 4;
+
+/** The areas of a day in the order its stops reach them, each once; without a placed stop, the areas the plan lists for the day. */
+function dayAreas(day, extras) {
+  const towns = rows(extras?.towns).flatMap((group) => rows(group.towns)).filter((town) => text(town.name));
+  const cells = towns.flatMap((town) => (Array.isArray(town.cells) ? town.cells : []).filter((cell) => Array.isArray(cell) && cell.length === 2)
+    .map((cell) => ({ at: cell, name: text(town.name) })));
+  const reached = cleanPoints(day.activities).map((activity) => cells
+    .map((cell) => ({ name: cell.name, km: kmBetween(activity, cell.at) }))
+    .filter((cell) => cell.km < AREA_MAX_KM).sort((a, b) => a.km - b.km)[0]?.name).filter(Boolean);
+  const listed = towns.filter((town) => rows(town.days).some((entry) => Number(entry.dayNumber) === Number(day.day_number))).map((town) => text(town.name));
+  return [...new Set(reached.length ? reached : listed)];
+}
+
+/** Whether a checklist entry is for this day: by its day number, else by a stop of the day named in its label. */
+function isForDay(entry, day) {
+  const number = Number(entry.day);
+  if (Number.isInteger(number) && number >= 1) return number === Number(day.day_number);
+  const label = text(entry.label).toLowerCase();
+  return day.activities.flatMap((activity) => [text(activity.title), text(activity.venue_name)]).map((name) => name.toLowerCase())
+    .some((name) => name.length >= NAME_MIN && label.length >= NAME_MIN && (label.includes(name) || name.includes(label)));
+}
+
+/**
+ * What to book for a day, from extras.bookingChecklist, with the ticks of this device. The new tick
+ * key decides once it was ever written, else the key saved before it existed (the rule of the
+ * checklist itself); the one "Reservations" tick of Trip prep books every item readiness counts.
+ */
+function dayBookings(day, extras, ticks) {
+  const stored = isObject(ticks?.checklist) ? ticks.checklist : {};
+  const allBooked = Boolean(isObject(ticks?.quick) && ticks.quick[QUICK_KEYS.reservations]);
+  const counted = new Set(reservationItems(extras?.bookingChecklist).map((entry) => entry.item));
+  return rows(extras?.bookingChecklist).flatMap((group) => rows(group.items).filter((entry) => text(entry.label) && isForDay(entry, day)).map((entry) => {
+    const key = checklistKey(group.group, entry);
+    const ticked = Object.hasOwn(stored, key) ? Boolean(stored[key]) : Boolean(stored[legacyChecklistKey(entry)]);
+    return { label: text(entry.label), booked: ticked || (allBooked && counted.has(entry)) };
+  }));
+}
+
+/**
+ * The panel beside the stops of one open day: its stops on a small map, the facts of the day, what
+ * to book for it and the stops as a list. For that day only; nothing here is about the plan.
+ * @param {object} [input]
+ * @param {object} input.day       the itinerary day row, its activities in the order of the day
+ * @param {import('../views/contract.js').DayIndexRow} input.row   the row of the same day in model.days
+ * @param {Array<import('../views/contract.js').MapPoint>} [input.points]   model.map.points (every day)
+ * @param {object|null} [input.extras]   trip.extras: towns and bookingChecklist are read
+ * @param {{ quick?: object, checklist?: object }} [input.ticks]   readTicks(trip.id)
+ * @returns {import('../views/contract.js').DayAsideModel|null} null for a day without stops
+ */
+export function dayAsideModel({ day, row, points, extras, ticks } = {}) {
+  if (!isObject(day) || !isObject(row)) return null;
+  const stops = rows(day.activities);
+  if (!stops.length) return null;
+  const placed = rows(points).filter((point) => point.dayIndex === row.index);
+  return {
+    index: row.index, dayNumber: row.dayNumber, colorIndex: row.colorIndex,
+    map: placed.length ? { points: placed, placed: placed.length, total: stops.length } : null,
+    stops: stops.length, firstTime: row.firstTime ?? null, lastTime: row.lastTime ?? null, cost: row.cost ?? null, weather: row.weather ?? null,
+    areas: dayAreas({ ...day, activities: stops }, extras),
+    book: dayBookings({ ...day, activities: stops }, extras, ticks),
+    list: stops.map((activity, at) => {
+      const minutes = startMinutes(activity.start_time);
+      return { id: text(activity.id), at, number: at + 1, time: minutes === null ? '' : clock(minutes), title: text(activity.title) || text(activity.venue_name) };
+    }),
+  };
+}
+
+/**
+ * The day panels of a plan, one for each row of model.days (null for a day without stops).
+ * @param {{ trip?: object, model?: import('../views/contract.js').TripOverviewModel, ticks?: object }} [input]
+ *   the trip the model was built from, and readTicks(trip.id)
+ * @returns {Array<import('../views/contract.js').DayAsideModel|null>}
+ */
+export function dayAsideModels({ trip, model, ticks } = {}) {
+  const days = planDays(trip);
+  return rows(model?.days).map((row) => dayAsideModel({ day: days[row.index], row, points: model.map?.points, extras: trip?.extras, ticks }));
 }

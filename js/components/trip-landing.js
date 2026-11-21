@@ -15,11 +15,11 @@
 // plain Node. The caller passes what comes from those layers (prefs, the profile, the user, the role,
 // the ticks).
 import { esc } from '../views/shared/html.js';
-import { dayCardExtrasHtml } from '../views/shared/day-extras.js';
+import { dayCardExtrasHtml, dayAsideHtml } from '../views/shared/day-extras.js';
 import { prepCardHtml } from '../views/shared/readiness-list.js';
 import { tripFootHtml } from '../views/shared/credits.js';
 import { formatClock, getLocale } from '../lib/locale.js';
-import { buildTripOverviewModel } from '../lib/trip-overview-model.js';
+import { buildTripOverviewModel, dayAsideModels } from '../lib/trip-overview-model.js';
 import { costFigures, COST_BASIS_TEXT } from '../lib/money.js';
 
 /** The six strings a view returns, in page order. */
@@ -605,6 +605,8 @@ function drawLanding(viewMod, trip, input, ctx) {
   return {
     model, parts,
     dayExtras: model.days.map((row) => dayCardExtrasHtml(row, { animate: ctx.animate })),
+    // The day panel of each day card ('' for a day without stops), only for a view that asks for it.
+    dayAsides: parts.dayAside === true ? dayAsideModels({ trip, model, ticks: input.ticks }).map(dayAsideHtml) : model.days.map(() => ''),
     prepHtml: prepSlotHtml(model.readiness),
     footHtml: tripFootHtml(model.credits, { map: model.map.points.length > 0 }),
   };
@@ -613,8 +615,9 @@ function drawLanding(viewMod, trip, input, ctx) {
 /**
  * Renders the landing of view.viewMod for a trip, on the model of js/lib/trip-overview-model.js.
  * On success the parts are returned and view.landing is set to
- *   { model, parts, dayExtras, prepHtml, footHtml, ctx, facts, role, patched }:
- * dayExtras[i] is the inert block for the header of day card i, prepHtml the Trip prep card of the
+ *   { model, parts, dayExtras, dayAsides, prepHtml, footHtml, ctx, facts, role, patched }:
+ * dayExtras[i] is the inert block for the header of day card i, dayAsides[i] the day panel for its
+ * body ('' unless the view's parts carry dayAside: true and the day has stops), prepHtml the Trip prep card of the
  * Prep tab, footHtml the foot of the page; facts is what stays the same for every refresh of this
  * render, role the role the model was built with, and patched(region, el) calls what the view
  * registered through ctx.onPatched. The entry check is read from view.entry (the last onPlan).
@@ -666,7 +669,7 @@ export function buildLanding(view, trip, opts = {}) {
  * @param {{ now: Date, role?: 'editor'|'viewer'|null, entry?: object|null, ticks?: object }} [live]
  *   what may have changed since the render: the time, the role, the entry check, this device's ticks
  * @param {(error: unknown) => void} [onError] told when the renderer throws
- * @returns {{ model: object, parts: object, dayExtras: string[], prepHtml: string, footHtml: string }|null}
+ * @returns {{ model: object, parts: object, dayExtras: string[], dayAsides: string[], prepHtml: string, footHtml: string }|null}
  */
 export function redrawLanding(view, { now, role = null, entry = null, ticks } = {}, onError) {
   const landing = view?.landing;

@@ -156,10 +156,13 @@ const FRAME_GRID = [...Array.from({ length: 7 }, (_, i) => `M${(i + 1) * 50} 0V$
  * The stops drawn to scale without a base map: one dot a stop and one numbered badge a day, or, for a
  * selected day, that day's stops numbered in order along its route.
  * @param {Array<import('../contract.js').MapPoint>} points
- * @param {{ day?: number }} [opts] a day number; 0 or a day without stops shows every day
+ * @param {{ day?: number, byOrder?: boolean }} [opts] day: a day number; 0 or a day without stops shows every
+ *   day. byOrder: number the stops of the selected day by MapPoint.order, their place in the day, and not
+ *   by their place among the stops drawn, so the numbers match a list that also holds the stops with no
+ *   coordinates (the day panel)
  * @returns {string} '' when nothing can be placed
  */
-export function mapFallbackSvg(points, { day = 0 } = {}) {
+export function mapFallbackSvg(points, { day = 0, byOrder = false } = {}) {
   const days = mapDays(points);
   if (!days.length) return '';
   const selected = days.find((entry) => entry.dayNumber === day) ?? null;
@@ -171,7 +174,7 @@ export function mapFallbackSvg(points, { day = 0 } = {}) {
   if (selected) {
     const route = spots.length > 1 ? `<path class="tv-map-froute" d="M${spots.map(({ x, y }) => `${fmt(x)} ${fmt(y)}`).join('L')}"/>` : '';
     marks = route + settle(spots, STOP_GAP.drawn).map(({ x, y }, i) => `<g class="tv-map-fmark"><title>${esc(stops[i].title)}</title>`
-      + `<circle cx="${fmt(x)}" cy="${fmt(y)}" r="10"/><text class="tv-map-fstop" x="${fmt(x)}" y="${fmt(y)}">${i + 1}</text></g>`).join('');
+      + `<circle cx="${fmt(x)}" cy="${fmt(y)}" r="10"/><text class="tv-map-fstop" x="${fmt(x)}" y="${fmt(y)}">${byOrder && Number.isInteger(stops[i].order) && stops[i].order > 0 ? stops[i].order : i + 1}</text></g>`).join('');
   } else {
     const dots = spots.map(({ x, y }, i) => `<circle class="tv-map-fdot" cx="${fmt(x)}" cy="${fmt(y)}" r="3"${toneStyle(stops[i].tone)}/>`).join('');
     let from = 0;

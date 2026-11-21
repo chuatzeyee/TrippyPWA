@@ -6,7 +6,7 @@ import { TRIP_FIXTURES, CTX_FIXTURE } from '../fixtures/models.js';
 import { checkTripLanding } from '../fixtures/checks/trip-contract.js';
 import { all, attr, classesOf, parseHtml, textOf } from '../fixtures/checks/html-tree.js';
 import { renderTripLanding, mountTripLanding } from './trip.js';
-import { titleSize, readySentence, jumpItems, statusParts, stripColumns, glanceFacts } from './trip-words.js';
+import { titleSize, readySentence, jumpItems, statusParts, glanceFacts } from './trip-words.js';
 
 const KEYS = Object.keys(TRIP_FIXTURES);
 const PARTS = ['bar', 'hero', 'tabs', 'planIntro', 'between', 'planOutro'];
@@ -98,34 +98,65 @@ describe.each(KEYS)('fixture %s', (key) => {
     expect(parts.openSections).toEqual(['flights', 'transport', 'entry', 'accommodation']);
     expect(parts.openSectionsMinWidth).toBe(0);
   });
+  it('asks for the day panel beside the stops of an open day', () => {
+    expect(parts.dayAside).toBe(true);
+  });
 });
 
 describe.each(WITH_DAYS)('fixture %s, a plan with days', (key) => {
   const model = TRIP_FIXTURES[key];
   const parts = render(key);
+  const whole = PARTS.map((name) => parts[name]).join('\n');
   const intro = parseHtml(parts.planIntro).root;
   const hero = parseHtml(parts.hero).root;
+  const between = parseHtml(parts.between).root;
+  const mapped = model.map.points.length > 0;
 
-  it('two map slots that split the widths at 1024 px: beside the cover, and in Day by day', () => {
+  it('two map slots that split the widths at 1024 px: beside the cover, and on the trip map board', () => {
     const wide = one(hero, '[data-map-slot]');
-    const narrow = one(intro, '[data-map-slot]');
+    const narrow = one(between, '[data-map-slot]');
     expect(attr(wide, 'data-map-from')).toBe('1024');
     expect(attr(narrow, 'data-map-below')).toBe('1024');
     expect(one(one(hero, '[id="td-hero"]'), '[data-map-slot]')).toBe(wide);
+    expect(all(intro, '[data-map-slot]')).toHaveLength(0);
   });
-  it('Day by day: the heading, the intro line, the caption of the map and the day strip', () => {
-    const days = one(intro, 'section.atl-days');
-    expect(textOf(one(days, 'h2'))).toBe('Day by day');
-    expect(textOf(one(days, '.atl-sec-head'))).toContain('Weather is typical for these dates, not a forecast.');
-    const strip = region(days, 'dayindex');
-    expect(classesOf(strip)).toContain('tv-days--strip');
-    expect(all(strip, '[data-day-jump]')).toHaveLength(model.days.length);
-    const caption = region(days, 'map-caption');
-    expect(Boolean(caption)).toBe(model.map.points.length > 0);
-    expect(all(strip, '[data-map-day]')).toHaveLength(model.map.points.length ? model.days.length : 0);
-    for (const cell of all(strip, 'li')) expect(textOf(cell)).toMatch(model.map.points.length ? /Show on map Open day \d+$/ : /Open day \d+$/);
-    const order = all(days, 'h2, [data-map-slot], [data-region]').map((el) => attr(el, 'data-region') ?? (attr(el, 'data-map-slot') !== null ? 'slot' : 'h2'));
-    expect(order.filter((name) => name !== 'map-caption')).toEqual(['h2', 'slot', 'dayindex']);
+  it('Trip map: the heading with the stop count, the day chips, the slot, then the caption', () => {
+    const board = one(between, '.atl-mapboard');
+    // Without a stop to place there is no board, only the slot, so points that arrive later have a place.
+    expect(Boolean(board)).toBe(mapped);
+    if (!mapped) return;
+    expect(textOf(one(board, 'h2'))).toBe('Trip map');
+    expect(textOf(one(board, '.atl-board-n'))).toBe(`${model.map.points.length} ${model.map.points.length === 1 ? 'stop' : 'stops'} on the map`);
+    const chips = region(board, 'dayindex');
+    expect(classesOf(chips)).toContain('tv-days--chips');
+    expect(texts(chips, 'button')).toEqual(['All', ...model.days.map((day) => String(day.dayNumber))]);
+    expect(all(chips, '[data-map-day]')).toHaveLength(model.days.length + 1);
+    expect(all(chips, '[data-day-jump]')).toHaveLength(model.days.length);
+    const order = all(board, 'h2, [data-map-slot], [data-region]').map((el) => attr(el, 'data-region') ?? (attr(el, 'data-map-slot') !== null ? 'slot' : 'h2'));
+    expect(order).toEqual(['h2', 'dayindex', 'slot', 'map-caption']);
+  });
+  it('Day by day: the heading, the day count, the typical weather note and the column heads of the rows', () => {
+    const board = one(between, '.atl-dayboard');
+    expect(textOf(one(board, 'h2'))).toBe('Day by day');
+    expect(textOf(one(board, '.atl-board-n'))).toBe(`${model.days.length} ${model.days.length === 1 ? 'day' : 'days'}`);
+    expect(textOf(one(board, '.atl-board-note'))).toBe('Costs are per person, activities only. Weather is typical for the dates, not a forecast.');
+    expect(texts(one(board, '.atl-day-head'), 'span')).toEqual(['Day', 'Date', 'Plan', 'Typical weather', 'Stops', 'Activities estimated']);
+    expect(attr(one(board, '.atl-day-head'), 'aria-hidden')).toBe('true');
+    // Without a map the chips sit under this heading and only go to the day.
+    const chips = region(board, 'dayindex');
+    expect(Boolean(chips)).toBe(!mapped);
+    if (chips) {
+      expect(all(chips, '[data-map-day]')).toHaveLength(0);
+      expect(all(chips, '[data-day-jump]')).toHaveLength(model.days.length);
+    }
+  });
+  it('one day index and one target for the "Day by day" link, and the day strip is gone', () => {
+    expect(all(between, '[data-region="dayindex"]')).toHaveLength(1);
+    expect(all(intro, '[data-region="dayindex"]')).toHaveLength(0);
+    expect(all(between, '[data-atl-target="days"]')).toHaveLength(1);
+    expect(attr(one(between, '[data-atl-target="days"]'), 'tabindex')).toBe('-1');
+    expect(whole).not.toContain('tv-days--strip');
+    expect(all(between, 'h2').map(textOf)).toEqual(mapped ? ['Trip map', 'Day by day'] : ['Day by day']);
   });
   it('Before you go: the count, the meter, one sentence and a row per area, unless the plan is past', () => {
     const before = region(intro, 'readiness');
@@ -154,15 +185,14 @@ describe.each(WITH_DAYS)('fixture %s, a plan with days', (key) => {
     expect(Boolean(jump)).toBe(Boolean(model.readiness));
     if (!jump) return;
     expect(texts(jump, 'button')).toEqual(jumpItems(model).map((item) => item.label));
-    expect(texts(jump, 'button').slice(0, 2)).toEqual(['Day by day', 'Before you go']);
+    expect(texts(jump, 'button')[0]).toBe('Before you go');
+    expect(texts(jump, 'button').at(-1)).toBe('Day by day');
     for (const target of all(jump, '[data-section-jump]').map((el) => attr(el, 'data-section-jump'))) {
       expect(model.readiness.items.map((item) => item.target)).toContain(target);
       expect(target).not.toBe('checklist');
     }
   });
-  it('between: "The days"; outro: what the costs and the weather are', () => {
-    expect(textOf(parseHtml(parts.between).root)).toBe('The days');
-    expect(all(parseHtml(parts.between).root, 'h2')).toHaveLength(1);
+  it('outro: what the costs and the weather are', () => {
     expect(textOf(parseHtml(parts.planOutro).root)).toBe('Costs are estimates per person, for activities only. Weather is typical for the season, not a forecast.');
   });
 });
@@ -201,7 +231,8 @@ describe('states of the task list', () => {
   });
   it('a plan without map points keeps its slots, so points that arrive later have a place', () => {
     expect(all(part('noMap', 'hero'), '[data-map-slot]')).toHaveLength(1);
-    expect(region(part('noMap', 'planIntro'), 'map-caption')).toBeNull();
+    expect(all(part('noMap', 'between'), '[data-map-slot]')).toHaveLength(1);
+    expect(region(part('noMap', 'between'), 'map-caption')).toBeNull();
   });
   it('a viewer and an editor read what they can do', () => {
     expect(textOf(part('viewer', 'hero'))).toContain('Shared with you. You can view it.');
@@ -211,8 +242,8 @@ describe('states of the task list', () => {
   it('while the entry check runs, its row says so', () => {
     expect(textOf(one(part('entryChecking', 'planIntro'), '.ui-ready-row[data-state="checking"]'))).toContain('Checking');
   });
-  it('with venue photos off the strip and the facts are still there', () => {
-    expect(region(part('photosOff', 'planIntro'), 'dayindex')).not.toBeNull();
+  it('with venue photos off the day chips and the facts are still there', () => {
+    expect(region(part('photosOff', 'between'), 'dayindex')).not.toBeNull();
     expect(part('photosOff', 'planIntro')).toBeTruthy();
   });
   it('entry motion is asked for on a first render only', () => {
@@ -259,12 +290,13 @@ describe('readySentence', () => {
 });
 
 describe('jumpItems', () => {
-  it('lists Day by day, Before you go, then the section cards in the order of the page: flights or transport, entry, stay', () => {
+  it('lists what is on the page in its order: Before you go, the section cards (flights or transport, entry, stay), then Day by day', () => {
     expect(jumpItems(TRIP_FIXTURES.upcoming)).toEqual([
-      { label: 'Day by day', to: 'days' }, { label: 'Before you go', to: 'ready' },
+      { label: 'Before you go', to: 'ready' },
       { label: 'Flights', section: 'flights' }, { label: 'Entry', section: 'entry' }, { label: 'Stay', section: 'accommodation' },
+      { label: 'Day by day', to: 'days' },
     ]);
-    expect(jumpItems(TRIP_FIXTURES.ground).map((item) => item.label)).toEqual(['Day by day', 'Before you go', 'Transport', 'Stay']);
+    expect(jumpItems(TRIP_FIXTURES.ground).map((item) => item.label)).toEqual(['Before you go', 'Transport', 'Stay', 'Day by day']);
     expect(jumpItems(TRIP_FIXTURES.past)).toEqual([]);
     expect(jumpItems(TRIP_FIXTURES.failed)).toEqual([]);
   });
@@ -273,22 +305,6 @@ describe('jumpItems', () => {
 describe('mountTripLanding', () => {
   it('is a function', () => {
     expect(typeof mountTripLanding).toBe('function');
-  });
-});
-
-describe('stripColumns', () => {
-  it('keeps up to ten days in one row on a wide page and up to eight on a middling one', () => {
-    expect(stripColumns(7)).toEqual({ wide: 7, mid: 7 });
-    expect(stripColumns(10)).toEqual({ wide: 10, mid: 5 });
-  });
-  it('splits a longer plan into rows of equal length, so no day is cut off at the edge', () => {
-    expect(stripColumns(12)).toEqual({ wide: 6, mid: 6 });
-    expect(stripColumns(21)).toEqual({ wide: 7, mid: 7 });
-    expect(stripColumns(9)).toEqual({ wide: 9, mid: 5 });
-  });
-  it('gives one column for no days or a broken count', () => {
-    expect(stripColumns(0)).toEqual({ wide: 1, mid: 1 });
-    expect(stripColumns(undefined)).toEqual({ wide: 1, mid: 1 });
   });
 });
 
@@ -307,12 +323,8 @@ describe('glanceFacts', () => {
 });
 
 describe('the landing of a plan with many days', () => {
-  it('hands the strip its column counts and marks up the converted cost in two spans', () => {
+  it('marks up the converted cost in two spans', () => {
     const parts = renderTripLanding(TRIP_FIXTURES.upcoming, CTX_FIXTURE);
-    const strip = all(parseHtml(parts.planIntro).root, '.atl-strip')[0];
-    const { wide, mid } = stripColumns(TRIP_FIXTURES.upcoming.days.length);
-    expect(attr(strip, 'style')).toBe(`--atl-cols:${wide};--atl-cols-mid:${mid}`);
-    expect(all(strip, '[data-region="dayindex"]')).toHaveLength(1);
     const cost = all(parseHtml(parts.hero).root, '[data-fact="cost"]')[0];
     expect(textOf(all(cost, '.tv-fact-about')[0])).toBe('about');
     expect(textOf(all(cost, '.tv-fact-figure')[0])).not.toBe('');
