@@ -78,7 +78,7 @@ describe('planContext and buildChatPrompt', () => {
   it('lists stops, stays, the journey and what is left to book', () => {
     const text = planContext(plan());
     expect(text).toContain('TRIP: Kyoto, 2027-03-01 to 2027-03-04, 2 travellers, costs in JPY');
-    expect(text).toContain('Day 1 (2027-03-01): Arrival, day total 10500');
+    expect(text).toContain('Day 1 (Mon 1 Mar 2027): Arrival, day total 10500');
     expect(text).toContain('  [a1] 10:00 Market walk @ Nishiki Market (food, 1500) | Stalls | TRAVELLER NOTE: buy tea');
     expect(text).toContain('  [stay 0] Hotel Granvia, Kyoto Station, Kyoto, not booked, JPY 30,000');
     expect(text).toContain('  [stay 1] Ryokan Yoshida, Kyoto, 2027-03-01 to 2027-03-04, BOOKED ref RY-1');
