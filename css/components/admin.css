@@ -3,7 +3,7 @@
 .adm {
   /* Generous top padding so the header clears the sticky nav with breathing room. */
   padding: calc(var(--sp-16) + var(--sp-6)) 0 var(--sp-16);
-  max-width: 1080px;
+  max-width: var(--nav-max, 1228px); /* the edges of the app bar and the footer */
   margin: 0 auto;
 }
 

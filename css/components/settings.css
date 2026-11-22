@@ -18,7 +18,7 @@
   --st-knob: #FDFBF7;
   --st-track-off: rgba(229, 225, 216, 0.22);
   width: 100%;
-  max-width: 1040px;
+  max-width: var(--nav-max, 1228px); /* the edges of the app bar and the footer */
   margin: 0 auto;
   /* No bottom padding: the gap to the site footer is the footer's own margin (css/components/site.css). */
   padding: var(--sp-5) 0 0;
