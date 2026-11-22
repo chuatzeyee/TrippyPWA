@@ -56,7 +56,7 @@ describe('dayCardExtrasHtml', () => {
     const [cost] = one(root, '.tv-day-cost');
     expect(textOf(cost).replace(/\s+\./g, '.')).toBe(costText(FULL.cost));
     expect(textOf(cost)).toContain('per person');
-    expect(textOf(one(cost, '.tv-cost-lead')[0])).toBe(`about ${FULL.cost.home.text}`);
+    expect(textOf(one(cost, '.tv-cost-lead')[0])).toBe(`~${FULL.cost.home.text}`);
     expect(textOf(one(cost, '.tv-cost-other')[0])).toContain(FULL.cost.local.text);
     const localOnly = { ...FULL, cost: { ...FULL.cost, home: null, homeFirst: false } };
     const [plain] = one(tree(dayCardExtrasHtml(localOnly)), '.tv-day-cost');
@@ -221,7 +221,7 @@ describe('dayAsideHtml', () => {
   it('states the facts of the day: stops, hours, cost per person, typical weather, areas', () => {
     const root = tree(dayAsideHtml(ASIDE));
     expect(facts(root)).toEqual({
-      Stops: '3', Hours: '10:00 AM to 8:30 PM', Cost: `about ${FULL.cost.home.text} per person, activities only`,
+      Stops: '3', Hours: '10:00 AM to 8:30 PM', Cost: `~${FULL.cost.home.text} per person, activities only`,
       Weather: '2 to 8°C typical, partly cloudy', Areas: 'Old town, Harbour',
     });
     expect(textOf(all(root, '.tv-day-aside-facts')[0])).toContain('per person');

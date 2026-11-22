@@ -161,7 +161,7 @@ describe('the glyph rule fails on each banned glyph', () => {
     expect(cssEscapeProblems('.x::before { content: "\\201C"; }', 'a.css')).toEqual([]);
   });
   it('allows the characters real copy needs', () => {
-    const text = "Tromsø, 16 to 23°C, about S$1,090 & more. That's 3 things, isn't it? [...rest] => x - y; a?.b ?? c; &amp; &lt; &#39; &nbsp; &deg;";
+    const text = "Tromsø, 16 to 23°C, ~S$1,090 & more. That's 3 things, isn't it? [...rest] => x - y; a?.b ?? c; &amp; &lt; &#39; &nbsp; &deg;";
     expect(glyphProblems(text, 'ok.js')).toEqual([]);
   });
 });

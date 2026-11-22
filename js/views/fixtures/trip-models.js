@@ -56,7 +56,7 @@ const READINESS = (collapsed) => readinessOf([
 const GLANCE = [
   { key: 'ready', label: 'Ready', value: '1 of 4', note: '3 things left', jump: 'readiness' },
   { key: 'stops', label: 'Stops', value: '31', note: 'about 4 a day', jump: '' },
-  { key: 'cost', label: 'Estimated cost', value: 'about €390', note: 'per person, activities only. MAD 4,200', jump: 'spending' },
+  { key: 'cost', label: 'Estimated cost', value: '~€390', note: 'per person, activities only. MAD 4,200', jump: 'spending' },
   { key: 'weather', label: 'Typical weather', value: '10 to 24°C', note: 'Clear, typical for late March', jump: '' },
   { key: 'pace', label: 'Pace', value: 'Balanced', note: '', jump: '' },
   { key: 'stay', label: 'Stay', value: '4-star riad', note: '', jump: 'accommodation' },
@@ -69,8 +69,8 @@ const AREAS = [
 ];
 const TIPS = {
   shown: [
-    { title: 'Buy the monuments pass', text: 'One ticket covers the Bahia Palace, the Saadian tombs and the Badi Palace.', saving: 'about MAD 60' },
-    { title: 'Share the valley taxi', text: 'A grand taxi to Ourika costs the same for one to six people.', saving: 'about MAD 300' },
+    { title: 'Buy the monuments pass', text: 'One ticket covers the Bahia Palace, the Saadian tombs and the Badi Palace.', saving: '~MAD 60' },
+    { title: 'Share the valley taxi', text: 'A grand taxi to Ourika costs the same for one to six people.', saving: '~MAD 300' },
   ],
   total: 4,
 };

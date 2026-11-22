@@ -185,7 +185,7 @@ describe('two currencies that share a symbol', () => {
     expect(cost.home).toEqual({ amount: yuan, code: 'CNY', text: `CNY ${yuan.toLocaleString('en-SG')}` });
     expect(cost.budget.text).toBe('JPY 100,000');
     expect(cost.budgetHome.text).toMatch(/^CNY /);
-    expect(costText(cost)).toBe(`about CNY ${yuan.toLocaleString('en-SG')} per person, activities only. JPY 100,000`);
+    expect(costText(cost)).toBe(`~CNY ${yuan.toLocaleString('en-SG')} per person, activities only. JPY 100,000`);
     expect(conforms(cost, CostEstimate)).toEqual([]);
   });
   it('the other way round too, and whichever figure leads', () => {
@@ -209,13 +209,13 @@ describe('costText and costFigures', () => {
 
   it('home first: the converted figure leads with "about", the local one follows', () => {
     const cost = hk({ tripSymbol: '$' });
-    expect(costFigures(cost)).toEqual({ lead: `about ${homeAmount()}`, other: 'HKD 6,347', budget: '' });
-    expect(costText(cost)).toBe(`about ${homeAmount()} per person, activities only. HKD 6,347`);
+    expect(costFigures(cost)).toEqual({ lead: `~${homeAmount()}`, other: 'HKD 6,347', budget: '' });
+    expect(costText(cost)).toBe(`~${homeAmount()} per person, activities only. HKD 6,347`);
   });
   it('home first off: the local figure leads and the converted one follows, still with "about"', () => {
     const cost = hk({ tripSymbol: '$', homeFirst: false });
-    expect(costFigures(cost)).toEqual({ lead: 'HKD 6,347', other: `about ${homeAmount()}`, budget: '' });
-    expect(costText(cost)).toBe(`HKD 6,347 per person, activities only. About ${homeAmount()}`);
+    expect(costFigures(cost)).toEqual({ lead: 'HKD 6,347', other: `~${homeAmount()}`, budget: '' });
+    expect(costText(cost)).toBe(`HKD 6,347 per person, activities only. ~${homeAmount()}`);
   });
   it('no home figure: the local figure alone, with no "about" and no apology', () => {
     const cost = hk({ home: null });
@@ -225,7 +225,7 @@ describe('costText and costFigures', () => {
   it('every sentence says "per person"; every converted figure says "about"', () => {
     for (const cost of [hk(), hk({ homeFirst: false }), hk({ home: null })]) expect(costText(cost)).toContain('per person, activities only');
     expect(costText(hk({ home: null }))).not.toMatch(/about/i);
-    expect(costText(hk())).toMatch(/^about S\$/);
+    expect(costText(hk())).toMatch(/^~S\$/);
   });
   it('"about" marks a converted figure and nothing else: a plan priced in the home currency has none', () => {
     for (const homeFirst of [true, false]) {
@@ -234,15 +234,15 @@ describe('costText and costFigures', () => {
       expect(costText(atHome)).toBe('S$4,628 per person, activities only');
     }
     // Another currency with a rate: the home figure is converted and says so, wherever it stands.
-    expect(costFigures(hk()).lead).toMatch(/^about S\$/);
-    expect(costFigures(hk({ homeFirst: false }))).toMatchObject({ lead: 'HK$6,347', other: expect.stringMatching(/^about S\$/) });
+    expect(costFigures(hk()).lead).toMatch(/^~S\$/);
+    expect(costFigures(hk({ homeFirst: false }))).toMatchObject({ lead: 'HK$6,347', other: expect.stringMatching(/^~S\$/) });
     // No rate, or no home currency: nothing was converted, so nothing says "about".
     expect(costText(hk({ tripCode: NO_RATE, tripSymbol: '' }))).not.toContain('about');
     expect(costText(hk({ home: null }))).not.toContain('about');
   });
   it('the budget is given in the currency that leads', () => {
     const budgetHome = `S$${convert(17900, 'HKD', 'SGD').toLocaleString('en-SG')}`;
-    expect(costFigures(hk({ budgetDaily: 1790, dayCount: 10 })).budget).toBe(`about ${budgetHome}`);
+    expect(costFigures(hk({ budgetDaily: 1790, dayCount: 10 })).budget).toBe(`~${budgetHome}`);
     expect(costFigures(hk({ budgetDaily: 1790, dayCount: 10, homeFirst: false })).budget).toBe('HK$17,900');
     expect(costFigures(hk({ budgetDaily: 1790, dayCount: 10, home: null })).budget).toBe('HK$17,900');
   });

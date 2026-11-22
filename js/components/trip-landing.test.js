@@ -490,15 +490,15 @@ describe('spendingFigures', () => {
   });
   it('leads with the home figure, with "about", when the user wants home currency first', () => {
     const out = spendingFigures(cost());
-    expect(out.lead).toBe('about S$1,099');
+    expect(out.lead).toBe('~S$1,099');
     expect(out.other).toBe('HKD 6,347');
     expect(out.basis).toBe('Per person, activities only');
-    expect(out.ring).toEqual({ spent: 6347, budget: 8000, spentHtml: 'about S$1,099', budgetHtml: 'about S$1,385', homeHtml: 'HKD 6,347' });
+    expect(out.ring).toEqual({ spent: 6347, budget: 8000, spentHtml: '~S$1,099', budgetHtml: '~S$1,385', homeHtml: 'HKD 6,347' });
   });
   it('leads with the trip currency otherwise and keeps "about" on the converted one', () => {
     const out = spendingFigures(cost({ homeFirst: false }));
     expect(out.lead).toBe('HKD 6,347');
-    expect(out.other).toBe('about S$1,099');
+    expect(out.other).toBe('~S$1,099');
     expect(out.ring.budgetHtml).toBe('HKD 8,000');
   });
   it('has one figure when nothing converts and no budget when none is set', () => {

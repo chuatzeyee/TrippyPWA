@@ -906,10 +906,10 @@ describe('fetchTripBriefings', () => {
       expect(repo.readSavedBriefings().map(r => r.id)).toEqual(['live1']);
     });
 
-    // Plans with long stop titles (the venue name repeats the title: about 8,000
+    // Plans with long stop titles (the venue name repeats the title: ~8,000
     // characters a day), so a handful of them is over the 120,000 character cap.
     const heavyStops = (n) => [stop(`${'x'.repeat(4000)} ${n}`, '10:00', 0)];
-    const HEAVY_LIVE = (id) => plan(id, marchDays(7, 7, heavyStops));                                    // about 40,000 characters of stops in range
+    const HEAVY_LIVE = (id) => plan(id, marchDays(7, 7, heavyStops));                                    // ~40,000 characters of stops in range
     const HEAVY_SOON = (id) => plan(id, marchDays(15, 5, heavyStops), { ws_passports: null });           // starts 15 Mar: not live, inside the range
     const untilTwentieth = { liveUntil: '2031-03-20' };
 

@@ -279,7 +279,7 @@ describe('glance facts', () => {
     expect(model.glance).toEqual([
       { key: 'ready', label: 'Ready', value: '1 of 4', note: '3 things left', jump: 'readiness' },
       { key: 'stops', label: 'Stops', value: '12', note: 'about 2 a day', jump: '' },
-      { key: 'cost', label: 'Estimated cost', value: `about €${convert(2200, 'DKK', 'EUR')}`, note: 'per person, activities only. DKK 2,200', jump: 'spending' },
+      { key: 'cost', label: 'Estimated cost', value: `~€${convert(2200, 'DKK', 'EUR')}`, note: 'per person, activities only. DKK 2,200', jump: 'spending' },
       { key: 'weather', label: 'Typical weather', value: '11 to 25°C', note: 'Sunny, typical for late March', jump: '' },
       { key: 'pace', label: 'Pace', value: 'Easy', note: '', jump: '' },
       { key: 'stay', label: 'Stay', value: '4-star hotel', note: '', jump: 'accommodation' },
@@ -317,7 +317,7 @@ describe('glance facts', () => {
     const twoBooked = upcoming({ extras: { ...EXTRAS(), accommodation: [{ name: 'Hotel Kanal', bookingRef: 'K1' }, { name: 'Harbour Rooms', booked: true }] } });
     expect(fact(build(twoBooked), 'stay')).toMatchObject({ value: 'Hotel Kanal', note: 'and 1 more' });
     const localFirst = build(upcoming(), { prefs: { ...DEFAULT_PREFS, homeCurrencyFirst: false } });
-    expect(fact(localFirst, 'cost')).toMatchObject({ value: 'DKK 2,200', note: `per person, activities only. About €${convert(2200, 'DKK', 'EUR')}` });
+    expect(fact(localFirst, 'cost')).toMatchObject({ value: 'DKK 2,200', note: `per person, activities only. ~€${convert(2200, 'DKK', 'EUR')}` });
     const noHome = build(upcoming(), { profile: { ...PROFILE, home_currency: null } });
     expect(fact(noHome, 'cost')).toMatchObject({ value: 'DKK 2,200', note: 'per person, activities only' });
     expect(fact(build(upcoming({ wizard_state: { multiCity: false, destination: CITY, style: { pace: 5 }, accommodation: { type: 'ryokan', stars: 5 } } })), 'stay').value).toBe('Traditional stay');

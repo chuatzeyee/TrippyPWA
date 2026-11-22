@@ -366,7 +366,7 @@ describe('placeLabels', () => {
   });
 
   describe('with the pins of the plate (plate.pins): marks and the selection ring are kept clear', () => {
-    // Home and a live plan three degrees apart: on a world plate 360 px wide that is about 3 px.
+    // Home and a live plan three degrees apart: on a world plate 360 px wide that is ~3 px.
     const SMALL = { ...WORLD, cssW: 360 };
     const u = (mx(SMALL.view.east) - mx(SMALL.view.west)) / SMALL.cssW;
     const centre = (p) => [mx(p.at[1]), my(p.at[0])];

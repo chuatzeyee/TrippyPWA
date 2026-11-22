@@ -115,7 +115,7 @@ describe('dayIndexHtml: what each variant shows', () => {
       expect(textOf(all(el, '.tv-day-title')[0])).toBe(row.title);
       expect(textOf(all(el, '.tv-day-date')[0])).toBe(row.dateText);
       expect(textOf(all(el, '.tv-day-stops')[0])).toBe(`${row.stops} stops`);
-      expect(textOf(all(el, '.tv-day-cost')[0])).toBe(`about ${row.cost.home.text}`);
+      expect(textOf(all(el, '.tv-day-cost')[0])).toBe(`~${row.cost.home.text}`);
       if (row.weather) expect(textOf(all(el, '.tv-day-weather')[0])).toContain(`${row.weather.range} typical`);
       else expect(all(el, '.tv-day-weather')).toHaveLength(0);
     }

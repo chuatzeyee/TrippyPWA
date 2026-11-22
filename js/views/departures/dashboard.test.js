@@ -260,7 +260,7 @@ describe('departures dashboard, the states', () => {
     const page = draw('noHomeCurrency');
     expect(page.text('.dep-d-cost').join(' ')).not.toMatch(/about/);
     expect(page.text('.dep-d-cost').join(' ')).toContain('MAD 4,200');
-    expect(draw('ready').text('.dep-drow[data-trip-id="s-marrakech"] .dep-d-cost').join(' ')).toMatch(/about €390[\s\S]*MAD 4,200/);
+    expect(draw('ready').text('.dep-drow[data-trip-id="s-marrakech"] .dep-d-cost').join(' ')).toMatch(/~\s*€390[\s\S]*MAD 4,200/);
   });
 
   it('a briefing still pending: every card of the plan is marked and holds its space', () => {

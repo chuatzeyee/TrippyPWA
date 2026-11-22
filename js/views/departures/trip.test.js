@@ -328,19 +328,19 @@ describe('departures trip landing, how many stops are left today', () => {
 
 describe('departures trip landing, the estimate on the facts card', () => {
   it('sets "about" apart from the figure of a converted estimate, through the hook of the shared glance', () => {
-    const key = KEYS.find((name) => /^about /.test(TRIP_FIXTURES[name].glance.find((fact) => fact.key === 'cost')?.value ?? ''));
+    const key = KEYS.find((name) => /^~/.test(TRIP_FIXTURES[name].glance.find((fact) => fact.key === 'cost')?.value ?? ''));
     expect(key).toBeTruthy();
     const page = draw(key);
     const value = '[data-region="glance"] .tv-fact[data-fact="cost"] .tv-fact-value';
-    expect(page.q('hero', `${value} .tv-fact-about`).map(textOf)).toEqual(['about']);
+    expect(page.q('hero', `${value} .tv-fact-about`).map(textOf)).toEqual(['~']);
     expect(page.q('hero', `${value} .tv-fact-figure`)).toHaveLength(1);
     expect(page.q('hero', '.dep-about')).toHaveLength(0);
-    expect(textOf(page.one('hero', value))).toBe(TRIP_FIXTURES[key].glance.find((fact) => fact.key === 'cost').value);
+    expect(textOf(page.one('hero', value)).replace(/\s+/g, '')).toBe(TRIP_FIXTURES[key].glance.find((fact) => fact.key === 'cost').value.replace(/\s+/g, ''));
   });
   it('an exact figure has no such mark', () => {
     for (const key of KEYS) {
       const cost = TRIP_FIXTURES[key].glance.find((fact) => fact.key === 'cost')?.value ?? '';
-      if (/^about /.test(cost)) continue;
+      if (/^~/.test(cost)) continue;
       expect(draw(key).q('hero', '.tv-fact-about'), key).toHaveLength(0);
     }
   });

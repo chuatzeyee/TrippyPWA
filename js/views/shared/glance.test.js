@@ -56,15 +56,15 @@ describe('glanceHtml', () => {
   it('prints "per person" on the cost', () => {
     const root = tree(glanceHtml(FACTS));
     expect(textOf(fact(root, 'cost'))).toContain('per person');
-    expect(textOf(fact(root, 'cost'))).toContain('about €390');
+    expect(textOf(fact(root, 'cost'))).toContain('~€390');
     expect(textOf(fact(root, 'cost'))).toContain('MAD 4,200');
   });
   it('adds "per person" to a cost whose note does not say it', () => {
     const plain = [{ key: 'cost', label: 'Estimated cost', value: 'MAD 4,200', note: '', jump: '' }];
     expect(textOf(all(tree(glanceHtml(plain)), '.tv-fact-note')[0])).toBe('per person, activities only');
-    const other = [{ key: 'cost', label: 'Estimated cost', value: 'about €390', note: 'MAD 4,200', jump: '' }];
+    const other = [{ key: 'cost', label: 'Estimated cost', value: '~€390', note: 'MAD 4,200', jump: '' }];
     expect(textOf(all(tree(glanceHtml(other)), '.tv-fact-note')[0])).toBe('per person, activities only. MAD 4,200');
-    const said = [{ key: 'cost', label: 'Estimated cost', value: 'about €390 per person', note: 'MAD 4,200', jump: '' }];
+    const said = [{ key: 'cost', label: 'Estimated cost', value: '~€390 per person', note: 'MAD 4,200', jump: '' }];
     expect(textOf(all(tree(glanceHtml(said)), '.tv-fact-note')[0])).toBe('MAD 4,200');
     // Only the cost: another fact is never given the words.
     expect(textOf(tree(glanceHtml([{ key: 'stops', label: 'Stops', value: '31', note: '', jump: '' }])))).not.toContain('per person');
@@ -141,29 +141,29 @@ describe('glanceHtml', () => {
 });
 
 describe('glanceHtml: splitAbout (a hook for the word "about")', () => {
-  const COST = [{ key: 'cost', label: 'Estimated cost', value: 'about €1,390', note: 'per person, activities only. MAD 14,200', jump: 'spending' }];
+  const COST = [{ key: 'cost', label: 'Estimated cost', value: '~€1,390', note: 'per person, activities only. MAD 14,200', jump: 'spending' }];
   const plain = [{ key: 'cost', label: 'Estimated cost', value: 'MAD 14,200', note: 'per person, activities only' }];
 
   it('leaves the markup alone unless asked', () => {
     const html = glanceHtml(COST);
-    expect(html).toContain('<span class="tv-fact-value">about €1,390</span>');
+    expect(html).toContain('<span class="tv-fact-value">~€1,390</span>');
     expect(html).not.toContain('tv-fact-about');
   });
 
   it('marks up the word and the figure, and the text, the note and the label of the value stay the same', () => {
     const root = tree(glanceHtml(COST, { splitAbout: true, jumps: ['spending'] }));
     const value = all(root, '.tv-fact-value')[0];
-    expect(textOf(all(value, '.tv-fact-about')[0])).toBe('about');
+    expect(textOf(all(value, '.tv-fact-about')[0])).toBe('~');
     expect(textOf(all(value, '.tv-fact-figure')[0])).toBe('€1,390');
-    expect(textOf(value)).toBe(textOf(all(tree(glanceHtml(COST, { jumps: ['spending'] })), '.tv-fact-value')[0]));
-    expect(attr(all(root, 'button[data-glance-jump="spending"]')[0], 'aria-label')).toBe('Estimated cost: about €1,390');
+    expect(textOf(value).replace(/\s+/g, '')).toBe(textOf(all(tree(glanceHtml(COST, { jumps: ['spending'] })), '.tv-fact-value')[0]).replace(/\s+/g, ''));
+    expect(attr(all(root, 'button[data-glance-jump="spending"]')[0], 'aria-label')).toBe('Estimated cost: ~€1,390');
     expect(textOf(all(root, '.tv-fact-note')[0])).toBe('per person, activities only. MAD 14,200');
   });
 
   it('touches nothing that is not a converted figure, and escapes the figure', () => {
     expect(glanceHtml(plain, { splitAbout: true })).toBe(glanceHtml(plain));
     expect(glanceHtml([{ key: 'cost', label: 'Cost', value: 'about' }], { splitAbout: true })).not.toContain('tv-fact-about');
-    const hostile = glanceHtml([{ key: 'cost', label: 'Cost', value: `about ${HOSTILE}` }], { splitAbout: true });
+    const hostile = glanceHtml([{ key: 'cost', label: 'Cost', value: `~${HOSTILE}` }], { splitAbout: true });
     expect(hostile).not.toContain('<img');
     expect(textOf(all(tree(hostile), '.tv-fact-figure')[0])).toBe(HOSTILE);
   });

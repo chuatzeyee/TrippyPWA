@@ -30,7 +30,7 @@ function statusLine(card) {
 function generatingRow(card) {
   const { daysDone, daysTotal, etaMinutes } = card.generation;
   const progress = daysTotal ? `${esc(daysDone ?? 0)} of ${esc(daysTotal)} days planned` : `${esc(daysDone ?? 0)} days planned so far`;
-  const eta = etaMinutes ? `, about ${esc(etaMinutes)} minutes to go` : '';
+  const eta = etaMinutes ? `, ~${esc(etaMinutes)} minutes to go` : '';
   return `<li class="${P}-trip" data-trip-id="${esc(card.id)}" data-key="${esc(card.id)}" data-trip-state="generating" role="status">
     <h3 class="${P}-trip-title">${esc(card.title)}</h3>
     <p>Still being planned. ${progress}${eta}.</p>
@@ -100,7 +100,7 @@ function filterBar({ filter }) {
 
 function hopsSection(model) {
   if (!model.hops.length) return '';
-  const hops = model.hops.map((hop) => `<li data-key="${esc(hop.name)}"><button type="button" data-action="plan-city" data-city="${esc(hop.name)}" data-focus-key="hop-${esc(hop.name)}">${esc(hop.name)}, ${esc(hop.country)}, about ${esc(hop.km)} km. ${esc(hop.note)}</button></li>`).join('');
+  const hops = model.hops.map((hop) => `<li data-key="${esc(hop.name)}"><button type="button" data-action="plan-city" data-city="${esc(hop.name)}" data-focus-key="hop-${esc(hop.name)}">${esc(hop.name)}, ${esc(hop.country)}, ~${esc(hop.km)} km. ${esc(hop.note)}</button></li>`).join('');
   return `<section class="${P}-hops" aria-labelledby="${P}-hops-h">
     <h2 id="${P}-hops-h">Short hops from ${esc(model.user.homeCity)}</h2>
     <ul data-region="hops" data-keep-scroll>${hops}</ul>

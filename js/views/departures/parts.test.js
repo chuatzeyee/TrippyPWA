@@ -37,10 +37,10 @@ describe('mono type for figures', () => {
     expect(figures(null)).toBe('');
   });
   it('sets a money figure in mono and keeps "about" in the body face', () => {
-    expect(moneyHtml('about €390')).toBe(`about ${M('€390')}`);
+    expect(moneyHtml('~€390')).toBe(`~${M('€390')}`);
     expect(moneyHtml('MAD 4,200')).toBe(M('MAD 4,200'));
     expect(moneyHtml('')).toBe('');
-    expect(moneyHtml('about <b>')).toBe(`about ${M('&lt;b&gt;')}`);
+    expect(moneyHtml('~<b>')).toBe(`~${M('&lt;b&gt;')}`);
   });
 });
 

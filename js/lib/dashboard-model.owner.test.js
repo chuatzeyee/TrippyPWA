@@ -200,10 +200,10 @@ describe.skipIf(!has('trips-list.json', 'profile.json'))('"about" on the costs o
     const home = model.user.homeCurrency.code;
     const priced = cardsOf(model).filter((card) => card.cost.local);
     expect(priced.length).toBeGreaterThan(0);
-    const plain = priced.filter((card) => !costFigures(card.cost).lead.startsWith('about '));
+    const plain = priced.filter((card) => !costFigures(card.cost).lead.startsWith('~'));
     expect(plain.length).toBeGreaterThan(0);
     expect(plain.every((card) => card.cost.local.code === home && card.cost.home === null)).toBe(true);
     const converted = priced.filter((card) => card.cost.local.code !== home);
-    expect(converted.every((card) => !canConvert(card.cost.local.code) || costFigures(card.cost).lead.startsWith('about '))).toBe(true);
+    expect(converted.every((card) => !canConvert(card.cost.local.code) || costFigures(card.cost).lead.startsWith('~'))).toBe(true);
   });
 });

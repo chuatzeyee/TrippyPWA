@@ -84,8 +84,8 @@ describe('sharedLine', () => {
 
 describe('costHtml and weatherWords', () => {
   it('prints one cost line, or nothing', () => {
-    expect(textOf(tree(costHtml(card.cost)))).toBe('about €390 per person (MAD 4,200)');
-    expect(textOf(tree(costHtml(card.cost, 'x', { short: true })))).toBe('about €390 per person');
+    expect(textOf(tree(costHtml(card.cost)))).toBe('~€390 per person (MAD 4,200)');
+    expect(textOf(tree(costHtml(card.cost, 'x', { short: true })))).toBe('~€390 per person');
     expect(costHtml(null)).toBe('');
   });
   it('spells the condition out beside the range', () => {

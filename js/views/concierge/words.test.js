@@ -92,10 +92,10 @@ const cost = (over) => ({ basis: 'perPerson', local: null, home: null, homeFirst
 
 describe('costLine', () => {
   it('leads with the home figure, says about and per person, and keeps the local figure', () => {
-    expect(costLine(cost({ local: money(4200, 'MAD', 'MAD 4,200'), home: money(390, 'EUR', '€390'), homeFirst: true }))).toBe('about €390 per person (MAD 4,200)');
+    expect(costLine(cost({ local: money(4200, 'MAD', 'MAD 4,200'), home: money(390, 'EUR', '€390'), homeFirst: true }))).toBe('~€390 per person (MAD 4,200)');
   });
   it('has a short form with the leading figure only', () => {
-    expect(costLine(cost({ local: money(4200, 'MAD', 'MAD 4,200'), home: money(390, 'EUR', '€390'), homeFirst: true }), { short: true })).toBe('about €390 per person');
+    expect(costLine(cost({ local: money(4200, 'MAD', 'MAD 4,200'), home: money(390, 'EUR', '€390'), homeFirst: true }), { short: true })).toBe('~€390 per person');
   });
   it('prints a local figure alone without about', () => {
     expect(costLine(cost({ local: money(640, 'EUR', '€640') }))).toBe('€640 per person');

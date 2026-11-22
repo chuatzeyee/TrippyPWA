@@ -111,7 +111,8 @@ export function costEstimate({ activities, total, excluded, tripCode, tripSymbol
   };
 }
 
-const about = (figure) => `about ${figure.text}`;
+// A converted figure is marked with a tilde, set right against it: "~S$1,090".
+const about = (figure) => `~${figure.text}`;
 const capitalise = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**

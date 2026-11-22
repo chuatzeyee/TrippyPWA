@@ -41,7 +41,7 @@ describe('countdowns', () => {
 
 describe('costLine', () => {
   it('leads with the home figure and always says per person', () => {
-    expect(costLine(cost({ local: money(4200, 'MAD'), home: money(390, 'EUR') }))).toBe('about €390 per person');
+    expect(costLine(cost({ local: money(4200, 'MAD'), home: money(390, 'EUR') }))).toBe('~€390 per person');
     expect(costLine(cost({ local: money(640, 'EUR') }))).toBe('€640 per person');
     expect(costLine(cost())).toBe('');
     expect(costLine(null)).toBe('');

@@ -285,7 +285,7 @@ describe('states', () => {
 
   it('costs: about before a converted figure, per person always, local alone without a home currency', () => {
     const costs = (key) => all(tree(key), '.con-cost').map(textOf);
-    expect(costs('ready')).toContain('about €390 per person (MAD 4,200)');
+    expect(costs('ready')).toContain('~€390 per person (MAD 4,200)');
     expect(costs('ready').every((line) => line.includes('per person'))).toBe(true);
     expect(costs('noHomeCurrency').some((line) => line.includes('about'))).toBe(false);
     expect(costs('noHomeCurrency')).toContain('MAD 4,200 per person');

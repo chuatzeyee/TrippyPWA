@@ -35,8 +35,8 @@ function noteOf(fact) {
 
 /** "about €390" as two spans, so a view can set the word small beside the large figure. */
 function aboutHtml(value) {
-  const match = /^about\s+(\S.*)$/.exec(value);
-  return match ? `<span class="tv-fact-about">about</span> <span class="tv-fact-figure">${esc(match[1])}</span>` : esc(value);
+  const match = /^~\s*(\S.*)$/.exec(value);
+  return match ? `<span class="tv-fact-about">~</span><span class="tv-fact-figure">${esc(match[1])}</span>` : esc(value);
 }
 
 function valueHtml(fact, jumps, splitAbout) {

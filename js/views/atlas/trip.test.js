@@ -319,7 +319,7 @@ describe('the landing of a plan with many days', () => {
   it('marks up the converted cost in two spans', () => {
     const parts = renderTripLanding(TRIP_FIXTURES.upcoming, CTX_FIXTURE);
     const cost = all(parseHtml(parts.hero).root, '[data-fact="cost"]')[0];
-    expect(textOf(all(cost, '.tv-fact-about')[0])).toBe('about');
+    expect(textOf(all(cost, '.tv-fact-about')[0])).toBe('~');
     expect(textOf(all(cost, '.tv-fact-figure')[0])).not.toBe('');
   });
 });

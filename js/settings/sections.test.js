@@ -252,7 +252,7 @@ describe('money and units', () => {
   });
   it('shows a live example under each', () => {
     const text = textOf(moneySectionHtml(state({ home: { code: 'SGD', symbol: 'S$' } })));
-    expect(text).toContain('Example: about S$1,099, then HK$6,347');
+    expect(text).toContain('Example: ~S$1,099, then HK$6,347');
     expect(text).toContain('Example: 16 to 23°C');
     expect(text).toContain('Example: 2:30 PM');
   });
@@ -276,21 +276,21 @@ describe('money and units', () => {
 
 describe('exampleTexts', () => {
   it('money follows the home currency and which one leads', () => {
-    expect(exampleTexts({ homeCurrencyFirst: true, home: { code: 'SGD', symbol: 'S$' } }).money).toBe('about S$1,099, then HK$6,347');
-    expect(exampleTexts({ homeCurrencyFirst: false, home: { code: 'SGD', symbol: 'S$' } }).money).toBe('HK$6,347, then about S$1,099');
+    expect(exampleTexts({ homeCurrencyFirst: true, home: { code: 'SGD', symbol: 'S$' } }).money).toBe('~S$1,099, then HK$6,347');
+    expect(exampleTexts({ homeCurrencyFirst: false, home: { code: 'SGD', symbol: 'S$' } }).money).toBe('HK$6,347, then ~S$1,099');
   });
   it('a converted amount always carries "about"', () => {
     for (const { code, symbol } of CURRENCY_LIST) {
       for (const homeCurrencyFirst of [true, false]) {
         const { money } = exampleTexts({ homeCurrencyFirst, home: { code, symbol } });
-        expect(money, code).toMatch(/about /);
+        expect(money, code).toMatch(/~/);
         expect(money, code).toMatch(/, then /);
       }
     }
   });
   it('uses another trip currency when home is the example currency', () => {
     const { money } = exampleTexts({ homeCurrencyFirst: true, home: { code: 'HKD', symbol: 'HK$' } });
-    expect(money).toMatch(/^about HK\$[\d,]+, then ¥120,000$/);
+    expect(money).toMatch(/^~HK\$[\d,]+, then ¥120,000$/);
   });
   it('says so when the home currency cannot be converted, or is not set', () => {
     expect(exampleTexts({ homeCurrencyFirst: true, home: { code: 'QQQ', symbol: 'Q' } }).money).toBe('HK$6,347. Your home currency has no exchange rate in Trippy, so amounts stay in the trip currency.');

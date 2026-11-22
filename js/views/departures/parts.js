@@ -24,8 +24,8 @@ export function figures(text) {
 /** A money figure in mono type; the word "about" in front of a converted amount stays in the body face. */
 export function moneyHtml(text) {
   const value = String(text ?? '').trim();
-  const converted = /^about\s+(.+)$/.exec(value);
-  return converted ? `about ${mono(converted[1])}` : mono(value);
+  const converted = /^~\s*(.+)$/.exec(value);
+  return converted ? `~${mono(converted[1])}` : mono(value);
 }
 
 const WORDS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];

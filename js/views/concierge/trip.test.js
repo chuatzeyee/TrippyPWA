@@ -98,7 +98,7 @@ describe.each(KEYS)('fixture %s', (key) => {
     expect(facts).toEqual(['stops', 'weather', 'pace', 'stay'].filter((k) => model.glance.some((fact) => fact.key === k)));
     const spend = all(brief[0], '.con-spend');
     expect(spend).toHaveLength(costFigures(model.cost).lead ? 1 : 0);
-    expect(textOf(spend[0])).toContain('about €390 per person, activities only, of a budget of about €650 per person');
+    expect(textOf(spend[0])).toContain('~€390 per person, activities only, of a budget of ~€650 per person');
     expect(textOf(spend[0])).toContain('MAD 4,200 of MAD 7,000');
     expect(attr(one(spend[0], '.con-spend-bar'), 'aria-label')).toBe('60 percent of the budget is planned');
     return undefined;
@@ -200,14 +200,14 @@ describe('states', () => {
     const spendOf = (cost) => all(parseHtml(renderTripLanding({ ...T.upcoming, cost }, CTX_FIXTURE).planIntro).root, '.con-spend');
     const noBudget = spendOf({ ...T.upcoming.cost, budget: null, budgetHome: null });
     expect(all(noBudget[0], '.con-spend-bar')).toHaveLength(0);
-    expect(textOf(noBudget[0])).toContain('about €390 per person, activities only');
+    expect(textOf(noBudget[0])).toContain('~€390 per person, activities only');
     expect(textOf(noBudget[0])).not.toContain('budget');
     const over = spendOf({ ...T.upcoming.cost, budgetHome: { amount: 300, code: 'EUR', text: '€300' } });
     const bar = one(over[0], '.con-spend-bar');
     expect(attr(bar, 'aria-label')).toBe('The planned spend is above the budget');
     expect(attr(bar, 'data-over')).not.toBeNull();
     expect(attr(bar, 'style')).toBe('--con-pct:100%');
-    expect(textOf(over[0])).toContain('activities only. Over the budget of about €300 per person');
+    expect(textOf(over[0])).toContain('activities only. Over the budget of ~€300 per person');
     expect(textOf(one(over[0], '.con-spend-over'))).toBe('Over the budget');
     expect(all(spendOf(T.upcoming.cost)[0], '.con-spend-over')).toHaveLength(0);
     const local = spendOf({ ...T.upcoming.cost, home: null, homeFirst: false, budgetHome: null });

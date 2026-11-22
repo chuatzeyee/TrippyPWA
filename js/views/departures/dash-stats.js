@@ -15,7 +15,7 @@ const split = (label, html) => (html ? `<div><dt>${esc(label)}</dt><dd>${html}</
 function spendHtml(stats) {
   if (!stats.spendHome) return '';
   const missing = stats.spendUnconverted > 0 ? `<small>${figures(`${count(stats.spendUnconverted, 'plan', 'plans')} left out, no rate`)}</small>` : '';
-  return `about ${mono(stats.spendHome.text)} <span class="dep-tie">per person</span>${missing}`;
+  return `~${mono(stats.spendHome.text)} <span class="dep-tie">per person</span>${missing}`;
 }
 
 function stampsHtml(stats) {

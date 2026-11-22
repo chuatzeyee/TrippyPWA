@@ -72,7 +72,7 @@ export function costLine(cost) {
 
 /** The cost of a plan as the rail pill shows it: the leading figure alone, "S$3,040". '' with no cost. */
 export function costShort(cost) {
-  return costFigures(cost).lead.replace(/^about\s+/, '');
+  return costFigures(cost).lead.replace(/^~\s*/, '');
 }
 
 /** "3 plans match", "1 plan matches": what a search or a filter found. */
