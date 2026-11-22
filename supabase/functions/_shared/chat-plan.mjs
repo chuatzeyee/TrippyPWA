@@ -72,6 +72,15 @@ function boundedLeg(l) {
   };
 }
 
+// A day's typical weather as stored on the day (lowC, highC, condition; older plans: low, high, desc), or null.
+function boundedWeather(w) {
+  if (!isObj(w)) return null;
+  const num = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Math.round(Number(v)) : null);
+  const low = num(w.lowC ?? w.low), high = num(w.highC ?? w.high);
+  const condition = clip(w.condition ?? w.desc, 40);
+  return low === null && high === null && !condition ? null : { low, high, condition };
+}
+
 /**
  * The plan a chat request carries, cut to what the prompt uses and capped in
  * count and length. Idempotent: the client sends boundedPlan(trip) and the
@@ -93,7 +102,7 @@ export function boundedPlan(raw) {
       notes: clip(a.notes, L.note),
     }));
     left -= activities.length;
-    return { day_number: Math.trunc(int(d.day_number)), date: isoDate(d.date), title: clip(d.title, L.field), activities };
+    return { day_number: Math.trunc(int(d.day_number)), date: isoDate(d.date), title: clip(d.title, L.field), weather: boundedWeather(d.weather), activities };
   });
   return {
     destination: clip(p.destination, 100),
@@ -128,7 +137,9 @@ export function planContext(plan) {
   ];
   for (const d of plan.days) {
     const total = d.activities.reduce((sum, a) => sum + a.cost_amount, 0);
-    lines.push(`Day ${d.day_number}${d.date ? ` (${d.date})` : ''}: ${d.title}, day total ${total}`);
+    const w = d.weather;
+    const weather = w ? `, typical weather ${w.low !== null && w.high !== null ? `${w.low} to ${w.high} C` : ''}${w.condition ? ` ${w.condition}` : ''}`.replace(/\s+/g, ' ') : '';
+    lines.push(`Day ${d.day_number}${d.date ? ` (${d.date})` : ''}: ${d.title}, day total ${total}${weather}`);
     for (const a of d.activities) {
       lines.push(`  [${a.id}] ${a.start_time || '?'} ${a.title} @ ${a.venue_name || '?'} (${a.category || '?'}, ${a.cost_amount})`
         + `${a.description ? ` | ${a.description}` : ''}${a.notes ? ` | TRAVELLER NOTE: ${a.notes}` : ''}`);
@@ -176,7 +187,7 @@ ${talk || '(nothing yet)'}
 <message>${clip(message, L.message)}</message>
 
 Respond to the message as JSON with "reply", "edits" and "choices".
-1. A QUESTION about the plan (what, when, where, how much, what is still to book): answer in "reply" in one to three sentences, using only the plan above, and return no edits. When the plan does not say, say that the plan does not say. Never guess or invent. Write clock times like 7:30 PM. Amounts are in ${cur}.
+1. A QUESTION about the plan (what, when, where, how much, what is still to book): answer in "reply" in one to three sentences, using only the plan above, and return no edits. Each day carries its typical weather for the dates (not a forecast): use it for questions about weather, the coldest or warmest day and what to wear, and say it is typical. Write dates as "Wed 20 Jan", never as 2027-01-20, temperatures as "-18 to -7°C" and numbers as digits. When the plan does not say, say that the plan does not say. Never guess or invent. Write clock times like 7:30 PM. Amounts are in ${cur}.
 2. A NOTE for a stop ("add a note to", "remind me to"): one "activity-note" edit with the stop's activityId and "note", the traveller's own words tidied into one short phrase with nothing added. An empty "note" removes the stop's note. Pick the stop by venue or title, and by day when a day is given.
 3. STAYS, named by the stayIndex in [stay N]:
  - The traveller has booked a stay that is in STAYS: "stay-book" with its stayIndex, and in "stay" only what the traveller gave: name, bookingRef, checkIn and checkOut as YYYY-MM-DD (take the year from the trip dates), address.
