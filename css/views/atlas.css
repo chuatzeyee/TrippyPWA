@@ -492,7 +492,9 @@
   [data-view="atlas"][data-view] .atl-trips,
   [data-view="atlas"][data-view] .atl-hops { margin-top: var(--sp-16); }
   [data-view="atlas"][data-view] .atl-sec-title { font-size: 34px; }
-  [data-view="atlas"][data-view] .atl-trips-head { grid-template-columns: auto minmax(240px, 380px) minmax(0, 1fr); align-items: center; gap: var(--sp-5); margin-bottom: var(--sp-8); }
+  /* "Trips" ends where the month labels of the timeline end (88 px), and the search box starts where the cards start. */
+  [data-view="atlas"][data-view] .atl-trips-head { grid-template-columns: 88px minmax(240px, 380px) minmax(0, 1fr); align-items: center; gap: var(--sp-5) 36px; margin-bottom: var(--sp-8); }
+  [data-view="atlas"][data-view] .atl-trips-head > .atl-sec-title { justify-self: end; }
   [data-view="atlas"][data-view] .atl-trips-head .dv-chips { justify-content: flex-end; }
   [data-view="atlas"][data-view] .atl-trips-head .ui-chip-count { display: inline; }
   /* The rail ahead on the left, the passport on the right (the 1.62 to 1 split of the first row), as
