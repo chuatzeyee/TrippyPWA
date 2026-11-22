@@ -4000,12 +4000,6 @@ body:has(.td-chat-drawer--open) #toast-container {
   color: var(--ink-ghost);
 }
 
-.td-booking-disclosure {
-  margin-top: var(--sp-3);
-  font-size: 0.68rem;
-  color: var(--ink-ghost);
-}
-
 .td-flight-book-group {
   display: flex;
   gap: var(--sp-2);

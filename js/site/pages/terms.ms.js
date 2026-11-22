@@ -10,7 +10,7 @@
 export default {
   title: 'Terma penggunaan',
   intro: [
-    'Terma ini ialah perjanjian antara anda dengan pengendali Trippy bagi penggunaan laman web dan aplikasi Trippy. Trippy dikendalikan dari Singapura, dan terma ini ditadbir oleh undang-undang Singapura.',
+    'Terma ini ialah perjanjian antara anda dengan pengendali Trippy bagi penggunaan laman web dan aplikasi Trippy. Trippy ialah perkhidmatan percuma yang bersifat eksperimen, dikendalikan oleh seorang individu di Singapura, dan terma ini ditadbir oleh undang-undang Singapura.',
     'Sila baca terma ini bersama [Dasar privasi](#/privacy), yang menerangkan cara data peribadi anda dikendalikan. Dalam terma ini, "kami" bermaksud pengendali yang dinamakan dalam bahagian terakhir, dan "anda" bermaksud orang yang menggunakan Trippy.',
   ],
   sections: [
@@ -21,10 +21,10 @@ export default {
         {
           type: 'cards',
           items: [
-            { title: 'Trippy membantu anda merancang', text: 'Trippy menulis draf jadual perjalanan dengan model AI, dan anda boleh menyunting serta berkongsinya. Trippy bukan ejen pelancongan dan tidak menempah apa-apa.' },
+            { title: 'Trippy membantu anda merancang', text: 'Trippy menulis draf jadual perjalanan dengan model AI, dan anda boleh menyunting serta berkongsinya. Trippy bukan ejen pelancongan. Trippy tidak menjual apa-apa, tidak menempah apa-apa dan tidak memperoleh komisen.' },
             { title: 'Semak sebelum bergantung padanya', text: 'Rancangan yang ditulis oleh AI boleh tersilap atau lapuk. Sahkan harga, waktu buka, laluan dan peraturan kemasukan dengan penyedia atau pihak berkuasa sebelum anda membayar atau bertolak.' },
-            { title: 'Perjalanan anda kekal milik anda', text: 'Kami tidak menuntut hak milik atas apa yang anda masukkan. Kami menggunakannya hanya untuk menjalankan Trippy bagi anda dan orang yang anda kongsikan.' },
-            { title: 'Percuma dan disediakan seadanya', text: 'Tiada bayaran dikenakan, dan tiada janji bahawa Trippy akan sentiasa tersedia atau kekal sama.' },
+            { title: 'Perjalanan anda kekal milik anda', text: 'Kami tidak menuntut hak milik atas apa yang anda masukkan. Kami menggunakannya hanya untuk menjalankan Trippy bagi anda dan orang yang anda kongsikan. Anda boleh memadam akaun anda sendiri pada bila-bila masa dalam Settings (Tetapan).' },
+            { title: 'Percuma dan bersifat eksperimen', text: 'Tiada bayaran dikenakan. Trippy ialah satu eksperimen yang disediakan seadanya: ia boleh berubah atau dihentikan, dan tiada janji bahawa ia akan sentiasa tersedia.' },
             { title: 'Gunakan dengan adil', text: 'Rancang perjalanan yang sebenar, jangan kongsi akaun anda, dan jangan cuba merosakkan atau membebankan perkhidmatan ini.' },
             { title: 'Undang-undang Singapura terpakai', text: 'Jika kita berselisih, kita berbincang dahulu. Selepas itu, mahkamah Singapura yang memutuskan. Hak yang diberikan oleh undang-undang kepada anda sebagai pengguna tidak dilucutkan.' },
           ],
@@ -70,7 +70,7 @@ export default {
       id: 'the-service',
       heading: 'Apa itu Trippy, dan apa yang bukan',
       blocks: [
-        { type: 'p', text: 'Trippy ialah alat bantu merancang. Anda menerangkan perjalanan anda, dan model AI mendraf jadual perjalanan hari demi hari dengan tempat, masa, anggaran kos dan maklumat latar. Anda boleh menyunting rancangan itu, mengimport rancangan yang anda tulis di tempat lain, berkongsinya dan menyimpannya sebagai PDF.' },
+        { type: 'p', text: 'Trippy ialah alat bantu merancang yang percuma dan bersifat eksperimen. Anda menerangkan perjalanan anda, dan model AI mendraf jadual perjalanan hari demi hari dengan tempat, masa, anggaran kos dan maklumat latar. Anda boleh menyunting rancangan itu, mengimport rancangan yang anda tulis di tempat lain, berkongsinya dan menyimpannya sebagai PDF.' },
         { type: 'subheading', text: 'Kandungan yang ditulis oleh AI' },
         { type: 'p', text: 'Rancangan, cadangan dan suntingan melalui sembang dihasilkan oleh model AI yang dikendalikan oleh syarikat lain. Model AI boleh menyatakan perkara yang salah, meninggalkan sesuatu, menerangkan tempat yang sudah ditutup atau berpindah, atau mengulang maklumat yang sudah lapuk. Kami tidak menyemak setiap rancangan. Anggaplah setiap rancangan sebagai draf yang perlu disemak, bukan sebagai himpunan fakta.' },
         { type: 'subheading', text: 'Anggaran dan panduan' },
@@ -85,8 +85,8 @@ export default {
             { term: 'Penerbangan dan penginapan', text: 'Butiran penerbangan dan penginapan dalam rancangan ialah sama ada apa yang anda masukkan atau cadangan. Trippy tidak menyemak jadual, tambang atau bilik secara langsung.' },
           ],
         },
-        { type: 'subheading', text: 'Tiada apa-apa ditempah melalui Trippy' },
-        { type: 'p', text: 'Trippy tidak menjual pakej perjalanan, menerima bayaran, membuat tempahan atau memegang tiket. Cadangan dalam rancangan bukan tempahan dan bukan janji bahawa tempat itu ada kekosongan untuk anda. Apabila anda menempah, anda menempah dengan syarikat penerbangan, hotel, pengendali atau laman tempahan, dan kontrak anda adalah dengan mereka mengikut terma mereka.' },
+        { type: 'subheading', text: 'Tiada apa-apa dijual atau ditempah melalui Trippy' },
+        { type: 'p', text: 'Trippy tidak menjual pakej perjalanan, menerima bayaran, membuat tempahan atau memegang tiket, dan tidak memperoleh komisen daripada mana-mana syarikat penerbangan, hotel atau laman tempahan. Cadangan dalam rancangan bukan tempahan dan bukan janji bahawa tempat itu ada kekosongan untuk anda. Apabila anda menempah, anda menempah dengan syarikat penerbangan, hotel, pengendali atau laman tempahan, dan kontrak anda adalah dengan mereka mengikut terma mereka.' },
         { type: 'subheading', text: 'Bukan nasihat profesional' },
         { type: 'p', text: 'Trippy bukan ejen pelancongan dan tidak memegang lesen ejen pelancongan. Tiada apa-apa di dalamnya merupakan nasihat imigresen, undang-undang, perubatan, keselamatan, insurans atau kewangan. Bagi keputusan yang penting, seperti sama ada anda boleh memasuki sesebuah negara, sama ada sesuatu aktiviti selamat untuk anda, atau insurans yang anda perlukan, tanya pihak berkuasa atau orang yang bertauliah.' },
         { type: 'note', title: 'Perjalanan anda ialah keputusan anda', text: 'Anda yang menentukan ke mana hendak pergi dan apa yang hendak dibuat. Semak nasihat perjalanan rasmi bagi destinasi anda, dan jangan ikut rancangan ke mana-mana tempat atau kegiatan yang nampak tidak selamat, menyalahi undang-undang atau sudah ditutup.' },
@@ -131,7 +131,7 @@ export default {
         {
           type: 'list',
           items: [
-            '**Pautan kongsi.** Pautan kongsi membolehkan sesiapa yang memilikinya membaca salinan ringkas perjalanan tanpa log masuk. Anda bertanggungjawab atas siapa yang menerima pautan itu daripada anda. Pautan itu berfungsi sehingga anda menekan Stop sharing (henti berkongsi).',
+            '**Pautan kongsi.** Pautan kongsi membolehkan sesiapa yang memilikinya membaca salinan ringkas perjalanan tanpa log masuk. Anda bertanggungjawab atas siapa yang menerima pautan itu daripada anda. Pautan itu berhenti berfungsi 7 hari selepas dibuat, atau lebih awal jika anda menekan Stop sharing (henti berkongsi). Anda boleh membuat pautan baharu pada bila-bila masa.',
             '**Kolaborator.** Orang yang anda jemput melalui e-mel boleh melihat keseluruhan perjalanan, termasuk permintaan perjalanan dan catatan anda, dan penyunting boleh mengubahnya. Perubahan yang dibuat oleh penyunting disimpan pada perjalanan anda. Jemput hanya orang yang anda percayai, dan hanya dengan persetujuan mereka.',
             '**Perjalanan yang dikongsi dengan anda.** Perjalanan yang dikongsi oleh seseorang dengan anda ialah milik orang itu. Dia boleh mengubahnya, menarik balik akses anda atau memadamnya pada bila-bila masa. Jangan sebarkan apa yang anda lihat di situ tanpa kebenarannya.',
           ],
@@ -163,14 +163,15 @@ export default {
     },
     {
       id: 'third-parties',
-      heading: 'Perkhidmatan lain, pautan dan komisen',
+      heading: 'Perkhidmatan lain dan pautan',
       blocks: [
-        { type: 'p', text: 'Trippy dibina di atas perkhidmatan yang dikendalikan oleh pihak lain. Supabase mengehos log masuk dan pangkalan data. Google menyediakan log masuk dan model AI Gemini, dengan Mistral sebagai model sandaran. Peta datang daripada OpenStreetMap, dan foto serta maklumat tempat datang daripada sumber seperti Wikimedia, Openverse, Pexels dan Google Maps. GitHub mengehos laman web ini. Senarai penuhnya ada dalam Dasar privasi di bawah [Siapa yang menerima data anda](#/privacy/service-providers).' },
+        { type: 'p', text: 'Trippy dibina di atas perkhidmatan yang dikendalikan oleh pihak lain. Supabase mengehos log masuk dan pangkalan data, di Singapura. Google menyediakan log masuk dan model AI Gemini, yang digunakan oleh Trippy pada peringkat percuma perkhidmatan Google, dengan Mistral sebagai model sandaran. Peta datang daripada OpenStreetMap, dan foto serta maklumat tempat datang daripada sumber seperti Wikimedia, Openverse, Pexels dan Google Maps. GitHub mengehos laman web ini. Senarai penuhnya ada dalam Dasar privasi di bawah [Siapa yang menerima data anda](#/privacy/service-providers).' },
         { type: 'p', text: 'Kami memilih perkhidmatan ini dengan teliti, tetapi kami tidak mengawalnya. Perkhidmatan itu boleh berubah, gagal atau dihentikan, dan Trippy boleh terjejas apabila itu berlaku.' },
+        { type: 'p', text: 'Pada peringkat percuma, Google boleh menggunakan apa yang dihantar oleh Trippy kepada modelnya untuk menambah baik produknya, dan penyemak manusia boleh membacanya. Jangan masukkan butiran peribadi yang sensitif dalam permintaan perjalanan. Dasar privasi menerangkan apa yang dihantar, di bawah [Model AI dan peringkat percuma Google](#/privacy/ai-models).' },
         { type: 'subheading', text: 'Pautan ke laman lain' },
         { type: 'p', text: 'Halaman perjalanan mempunyai pautan ke laman tempahan dan peta, termasuk Booking.com, Trip.com, Skyscanner, Google Maps dan Rome2Rio, serta ke halaman rasmi kerajaan bagi syarat kemasukan. Laman-laman itu bukan milik kami. Pautan disediakan untuk kemudahan anda, bukan sebagai syor atau jaminan, dan apa yang anda lakukan di sana ialah urusan antara anda dengan laman itu mengikut terma dan dasar privasinya sendiri.' },
-        { type: 'subheading', text: 'Komisen' },
-        { type: 'p', text: 'Sesetengah pautan tempahan mungkin pautan afiliasi, iaitu Trippy mungkin memperoleh komisen jika anda menempah melaluinya, tanpa kos tambahan kepada anda. Kad yang memuatkan pautan sedemikian menyatakannya. Komisen tidak menentukan tempat yang dicadangkan dalam rancangan. Pada tarikh terma ini, tiada pautan yang memberi Trippy apa-apa pendapatan.' },
+        { type: 'subheading', text: 'Tiada komisen' },
+        { type: 'p', text: 'Pautan tempahan ialah pautan biasa ke laman lain. Tiada kod rakan niaga padanya. Tiada sesiapa membayar Trippy untuk memaparkannya atau untuk muncul dalam rancangan, dan Trippy tidak memperoleh komisen apabila anda membuat tempahan.' },
       ],
     },
     {
@@ -191,7 +192,7 @@ export default {
       id: 'availability',
       heading: 'Ketersediaan dan perubahan pada perkhidmatan',
       blocks: [
-        { type: 'p', text: 'Trippy percuma. Ia ditawarkan seadanya dan setakat yang tersedia. Kami berusaha memastikannya terus berjalan, tetapi kami tidak berjanji bahawa ia akan tersedia pada mana-mana masa tertentu, bebas daripada kerosakan, atau bahawa sesuatu rancangan akan siap ditulis.' },
+        { type: 'p', text: 'Trippy percuma dan bersifat eksperimen. Ia ditawarkan seadanya dan setakat yang tersedia. Kami berusaha memastikannya terus berjalan, tetapi kami tidak berjanji bahawa ia akan tersedia pada mana-mana masa tertentu, bebas daripada kerosakan, atau bahawa sesuatu rancangan akan siap ditulis.' },
         {
           type: 'list',
           items: [
@@ -253,11 +254,11 @@ export default {
       heading: 'Penggantungan dan penamatan',
       blocks: [
         { type: 'subheading', text: 'Anda boleh berhenti pada bila-bila masa' },
-        { type: 'p', text: 'Anda boleh berhenti menggunakan Trippy pada bila-bila masa. Padam perjalanan anda dalam Settings (Tetapan), di bawah Data. Jika anda mahu akaun anda dipadam, tulis kepada wakil perlindungan data yang dinamakan dalam Dasar privasi.' },
+        { type: 'p', text: 'Anda boleh berhenti menggunakan Trippy pada bila-bila masa. Padam perjalanan anda dalam Settings (Tetapan), di bawah Data. Padam akaun anda dalam Settings, di bawah Account (akaun), dengan Delete my account (padam akaun saya). Anda tidak perlu meminta kami. Apabila akaun anda dipadam, terma ini tamat bagi anda, kecuali bahagian yang disenaraikan di bawah Apa yang terus terpakai.' },
         { type: 'subheading', text: 'Bila kami boleh menggantung atau menutup akaun' },
         { type: 'p', text: 'Kami boleh menggantung atau menutup akaun anda jika anda melanggar terma ini secara serius atau berulang kali, jika penggunaan anda membahayakan perkhidmatan ini atau orang lain, jika undang-undang menghendakinya, atau jika kami berhenti menawarkan Trippy. Melainkan perkara itu mendesak atau dihalang oleh undang-undang, kami akan memberitahu anda sebabnya terlebih dahulu di alamat e-mel akaun anda dan memberi anda peluang yang adil untuk membetulkan keadaan atau menyimpan perjalanan anda.' },
         { type: 'subheading', text: 'Apa yang berlaku kepada data anda' },
-        { type: 'p', text: 'Apabila sesuatu akaun ditutup, kami memadam akaun itu, profilnya dan perjalanan miliknya seperti yang diterangkan dalam Dasar privasi di bawah [Berapa lama kami menyimpan data anda](#/privacy/retention). Pautan kongsi ke perjalanan itu tidak lagi berfungsi dan kolaborator kehilangan akses. Salinan yang anda atau orang lain simpan sebagai PDF berada di luar kawalan kami.' },
+        { type: 'p', text: 'Apabila sesuatu akaun dipadam, oleh anda atau oleh kami, akaun itu, profilnya dan perjalanan miliknya dipadam seperti yang diterangkan dalam Dasar privasi di bawah [Berapa lama kami menyimpan data anda](#/privacy/retention). Pautan kongsi ke perjalanan itu tidak lagi berfungsi dan kolaborator kehilangan akses. Salinan yang anda atau orang lain simpan sebagai PDF berada di luar kawalan kami.' },
         { type: 'subheading', text: 'Apa yang terus terpakai' },
         { type: 'p', text: 'Bahagian tentang kandungan anda (selagi kami menyimpannya secara sah), harta intelek, liabiliti, tanggung rugi, undang-undang yang mentadbir dan terma am terus terpakai selepas terma ini tamat.' },
       ],
@@ -267,7 +268,7 @@ export default {
       heading: 'Perubahan pada terma ini',
       blocks: [
         { type: 'p', text: 'Kami boleh mengubah terma ini apabila perkhidmatan berubah, apabila undang-undang berubah, atau untuk menjadikannya lebih jelas. Tarikh di bawah tajuk ialah tarikh versi terkini.' },
-        { type: 'p', text: 'Bagi perubahan yang mengurangkan hak anda atau menambah kewajipan anda, kami akan memaparkan notis dalam aplikasi atau pada halaman ini sekurang-kurangnya 14 hari sebelum ia berkuat kuasa, melainkan undang-undang atau masalah keselamatan memerlukan perubahan yang lebih cepat. Jika anda tidak menerima terma baharu itu, berhenti menggunakan Trippy sebelum ia berkuat kuasa, dan anda boleh meminta kami memadam akaun anda. Menggunakan Trippy selepas tarikh itu bermakna anda menerimanya. Perubahan tidak terpakai kepada pertikaian yang timbul sebelum ia berkuat kuasa.' },
+        { type: 'p', text: 'Bagi perubahan yang mengurangkan hak anda atau menambah kewajipan anda, kami akan memaparkan notis dalam aplikasi atau pada halaman ini sekurang-kurangnya 14 hari sebelum ia berkuat kuasa, melainkan undang-undang atau masalah keselamatan memerlukan perubahan yang lebih cepat. Jika anda tidak menerima terma baharu itu, berhenti menggunakan Trippy sebelum ia berkuat kuasa. Anda boleh memadam akaun anda dalam Settings pada bila-bila masa. Menggunakan Trippy selepas tarikh itu bermakna anda menerimanya. Perubahan tidak terpakai kepada pertikaian yang timbul sebelum ia berkuat kuasa.' },
       ],
     },
     {
@@ -292,7 +293,7 @@ export default {
             { term: 'Kebolehasingan', text: 'Jika mahkamah mendapati sebahagian daripada terma ini tidak sah atau tidak boleh dikuatkuasakan, bahagian itu hendaklah ditafsirkan secara sempit setakat yang perlu, atau dibuang jika itu tidak dapat dilakukan, dan selebihnya terus berkuat kuasa.' },
             { term: 'Tiada penepian', text: 'Jika kami tidak menguatkuasakan sesuatu terma dengan serta-merta, atau langsung tidak menguatkuasakannya pada satu ketika, kami tidak melepaskan hak untuk menguatkuasakannya kemudian. Penepian hanya sah jika dibuat secara bertulis.' },
             { term: 'Keseluruhan perjanjian', text: 'Terma ini, bersama Dasar privasi, ialah keseluruhan perjanjian antara anda dengan kami tentang Trippy dan menggantikan apa-apa yang dinyatakan sebelum ini mengenai perkara itu. Tiada pihak yang bergantung pada kenyataan yang tiada di dalamnya. Ini tidak mengecualikan liabiliti bagi penipuan, atau bagi apa-apa salah nyataan yang tidak boleh kami kecualikan di bawah undang-undang.' },
-            { term: 'Pemindahan', text: 'Terma ini khusus untuk anda dan anda tidak boleh memindahkannya. Kami boleh memindahkan hak dan kewajipan kami kepada pihak yang mengambil alih pengendalian Trippy, dan kami akan memberitahu anda terlebih dahulu supaya anda boleh menutup akaun anda jika anda mahu.' },
+            { term: 'Pemindahan', text: 'Terma ini khusus untuk anda dan anda tidak boleh memindahkannya. Kami boleh memindahkan hak dan kewajipan kami kepada pihak yang mengambil alih pengendalian Trippy, dan kami akan memberitahu anda terlebih dahulu supaya anda boleh memadam akaun anda terlebih dahulu jika anda mahu.' },
             { term: 'Bahasa', text: 'Terma ini ditulis dalam bahasa Inggeris dan mungkin disediakan dalam bahasa lain untuk kemudahan anda. Jika terjemahan berbeza daripada teks bahasa Inggeris, teks bahasa Inggeris yang terpakai.' },
             { term: 'Notis', text: 'Kami memberikan notis dalam aplikasi, pada halaman ini atau di alamat e-mel akaun anda. Anda memberikan notis kepada kami di alamat perhubungan di bawah.' },
           ],

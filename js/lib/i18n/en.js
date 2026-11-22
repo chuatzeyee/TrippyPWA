@@ -37,4 +37,5 @@ export default Object.freeze({
   'site.loadError': 'This page could not load. Check your connection and try again.',
   'site.retry': 'Try again',
   'site.print': 'Print this page',
+  'signIn.consent': 'By signing in you agree to the [Terms of use](#/terms) and have read the [Privacy policy](#/privacy).',
 });

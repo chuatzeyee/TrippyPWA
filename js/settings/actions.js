@@ -12,6 +12,8 @@ import { saveProfileSummary } from '../data/profile-cache.js';
 import { updateProfile } from '../data/profile-repository.js';
 import { clearAllUserData, clearOfflineTripCache, fetchAllTrips } from '../data/trip-repository.js';
 import { clearTicksFor } from '../data/tick-store.js';
+import { deleteMyAccount, signOutThisDevice } from '../data/account-repository.js';
+import { clearDeviceData } from '../data/device-data.js';
 import { confirmDialog } from '../views/shared/confirm-dialog.js';
 import { navigate } from '../router.js';
 import { showToast } from '../components/toast.js';
@@ -233,6 +235,45 @@ async function signOutNow(page) {
   }
 }
 
+function sayAccount(page, message) {
+  page.accountMessage = message;
+  page.refresh();
+}
+
+const ACCOUNT_NOT_DELETED = Object.freeze({
+  'last-admin': 'Your account was not deleted, because you are the only admin. Make another account an admin first, then delete this one.',
+  failed: 'Your account was not deleted. It is still here and you are still signed in. Try again.',
+});
+
+/**
+ * The user deletes their own account (migration 023): the server removes everything in one step, then
+ * this device is signed out and cleared of every Trippy key. When the server says no, nothing on the
+ * device is touched and the page says the account is still there.
+ */
+async function deleteAccount(page) {
+  if (!isOnline()) { page.refresh(); return; }
+  const yes = await confirmDialog({
+    title: 'Delete your account?',
+    body: 'This deletes your account and everything in it, for good: your profile, your settings and every trip you own.\nA trip you own is deleted for the people you shared it with too.\nThis cannot be undone.',
+    confirmLabel: 'Delete my account',
+    danger: true,
+    typed: 'DELETE',
+  });
+  if (!yes || !alive(page)) return;
+  sayAccount(page, 'Deleting your account');
+  const { error } = await deleteMyAccount().catch((e) => ({ error: e?.message || 'failed' }));
+  if (error) {
+    if (alive(page)) sayAccount(page, ACCOUNT_NOT_DELETED[error] ?? ACCOUNT_NOT_DELETED.failed);
+    return;
+  }
+  // The account is gone whatever happens next, so nothing below may stop the device from being cleared.
+  const signedOut = await signOutThisDevice(); // main.js hears the sign-out and redraws the page as signed out
+  if (!signedOut) logger.warn('auth', 'The session of a deleted account could not be removed from this device');
+  clearDeviceData();
+  navigate('/');
+  showToast('Your account and everything in it were deleted.', 'success');
+}
+
 // ---- Moving around: the chips and Done ----
 
 function jumpTo(page, key) {
@@ -273,6 +314,7 @@ const ACTIONS = {
   'notify-enable': enableNotifications,
   'notify-test': testNotification,
   'sign-out': signOutNow,
+  'delete-account': deleteAccount,
 };
 
 /** Binds the page root once. */

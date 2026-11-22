@@ -10,7 +10,7 @@
 export default {
   title: 'Käyttöehdot',
   intro: [
-    'Nämä ehdot ovat sinun ja Trippyn ylläpitäjän välinen sopimus Trippyn verkkosivuston ja sovelluksen käytöstä. Trippyn ylläpidon kotimaa on {country}. Näihin ehtoihin sovelletaan Singaporen lakia.',
+    'Nämä ehdot ovat sinun ja Trippyn ylläpitäjän välinen sopimus Trippyn verkkosivuston ja sovelluksen käytöstä. Trippy on maksuton ja kokeellinen palvelu, jota ylläpitää yksityishenkilö. Ylläpidon kotimaa on {country}. Näihin ehtoihin sovelletaan Singaporen lakia.',
     'Lue ehtojen rinnalla [tietosuojakäytäntö](#/privacy), joka kertoo, miten henkilötietojasi käsitellään. Näissä ehdoissa ”me” tarkoittaa viimeisessä osiossa nimettyä ylläpitäjää ja ”sinä” Trippyn käyttäjää.',
   ],
   sections: [
@@ -21,10 +21,10 @@ export default {
         {
           type: 'cards',
           items: [
-            { title: 'Trippy auttaa suunnittelemaan', text: 'Se kirjoittaa tekoälymallin avulla matkaohjelman luonnoksen, jota voit muokata ja jakaa. Se ei ole matkatoimisto eikä varaa mitään.' },
+            { title: 'Trippy auttaa suunnittelemaan', text: 'Se kirjoittaa tekoälymallin avulla matkaohjelman luonnoksen, jota voit muokata ja jakaa. Se ei ole matkatoimisto. Se ei myy mitään, ei varaa mitään eikä saa palkkiota.' },
             { title: 'Tarkista ennen kuin luotat', text: 'Tekoälyn kirjoittamat suunnitelmat voivat olla virheellisiä tai vanhentuneita. Varmista hinnat, aukioloajat, reitit ja maahantulosäännöt palvelun tarjoajalta tai viranomaisilta ennen kuin maksat tai matkustat.' },
-            { title: 'Matkasi pysyvät sinun', text: 'Emme vaadi omistusoikeutta siihen, mitä syötät. Käytämme sitä vain Trippyn tarjoamiseen sinulle ja niille, joiden kanssa jaat matkasi.' },
-            { title: 'Maksuton ja sellaisenaan', text: 'Käytöstä ei peritä maksua, emmekä lupaa, että Trippy on aina käytettävissä tai pysyy samanlaisena.' },
+            { title: 'Matkasi pysyvät sinun', text: 'Emme vaadi omistusoikeutta siihen, mitä syötät. Käytämme sitä vain Trippyn tarjoamiseen sinulle ja niille, joiden kanssa jaat matkasi. Voit poistaa tilisi itse milloin tahansa asetuksissa (Settings).' },
+            { title: 'Maksuton ja kokeellinen', text: 'Käytöstä ei peritä maksua. Trippy on kokeilu, joka tarjotaan sellaisenaan: se voi muuttua tai loppua, emmekä lupaa, että se on aina käytettävissä.' },
             { title: 'Käytä reilusti', text: 'Suunnittele oikeita matkoja, pidä tilisi omanasi äläkä yritä rikkoa tai kuormittaa palvelua.' },
             { title: 'Sovellamme Singaporen lakia', text: 'Jos olemme eri mieltä, puhumme ensin. Sen jälkeen asian ratkaisevat Singaporen tuomioistuimet. Oikeuksia, jotka laki antaa sinulle kuluttajana, ei viedä pois.' },
           ],
@@ -70,7 +70,7 @@ export default {
       id: 'the-service',
       heading: 'Mikä Trippy on ja mikä se ei ole',
       blocks: [
-        { type: 'p', text: 'Trippy on suunnittelun apuväline. Kuvailet matkan, ja tekoälymalli laatii päivä päivältä etenevän matkaohjelman luonnoksen, jossa on paikkoja, kellonaikoja, arvioituja kuluja ja taustatietoa. Voit muokata suunnitelmaa, tuoda muualla kirjoittamasi suunnitelman, jakaa sen ja tallentaa sen PDF-tiedostoksi.' },
+        { type: 'p', text: 'Trippy on maksuton ja kokeellinen suunnittelun apuväline. Kuvailet matkan, ja tekoälymalli laatii päivä päivältä etenevän matkaohjelman luonnoksen, jossa on paikkoja, kellonaikoja, arvioituja kuluja ja taustatietoa. Voit muokata suunnitelmaa, tuoda muualla kirjoittamasi suunnitelman, jakaa sen ja tallentaa sen PDF-tiedostoksi.' },
         { type: 'subheading', text: 'Tekoälyn kirjoittama sisältö' },
         { type: 'p', text: 'Suunnitelmat, ehdotukset ja chat-muokkaukset tuottaa tekoälymalli, jota ylläpitää toinen yritys. Tekoälymalli voi väittää vääriä asioita, jättää asioita pois, kuvailla paikkaa, joka on suljettu tai muuttanut, tai toistaa vanhentunutta tietoa. Emme tarkista jokaista suunnitelmaa. Suhtaudu jokaiseen suunnitelmaan tarkistettavana luonnoksena, älä tosiasioiden luettelona.' },
         { type: 'subheading', text: 'Arviot ja ohjeet' },
@@ -85,8 +85,8 @@ export default {
             { term: 'Lennot ja majoitukset', text: 'Suunnitelman lento- ja majoitustiedot ovat joko itse antamiasi tai ehdotuksia. Trippy ei tarkista ajantasaisia aikatauluja, hintoja eikä vapaita huoneita.' },
           ],
         },
-        { type: 'subheading', text: 'Trippyn kautta ei varata mitään' },
-        { type: 'p', text: 'Trippy ei myy matkoja, ota vastaan maksuja, tee varauksia eikä säilytä lippuja. Suunnitelmassa oleva ehdotus ei ole varaus eikä lupaus siitä, että paikassa on sinulle tilaa. Kun varaat, varaat lentoyhtiöltä, hotellilta, palvelun järjestäjältä tai varaussivustolta, ja sopimuksesi on niiden kanssa niiden omilla ehdoilla.' },
+        { type: 'subheading', text: 'Trippyn kautta ei myydä eikä varata mitään' },
+        { type: 'p', text: 'Trippy ei myy matkoja, ota vastaan maksuja, tee varauksia eikä säilytä lippuja, eikä se saa palkkiota miltään lentoyhtiöltä, hotellilta tai varaussivustolta. Suunnitelmassa oleva ehdotus ei ole varaus eikä lupaus siitä, että paikassa on sinulle tilaa. Kun varaat, varaat lentoyhtiöltä, hotellilta, palvelun järjestäjältä tai varaussivustolta, ja sopimuksesi on niiden kanssa niiden omilla ehdoilla.' },
         { type: 'subheading', text: 'Ei ammattimaista neuvontaa' },
         { type: 'p', text: 'Trippy ei ole matkatoimisto, eikä sillä ole matkatoimistolupaa. Mikään siinä ei ole maahantuloa, oikeudellisia asioita, terveyttä, turvallisuutta, vakuutuksia tai raha-asioita koskevaa neuvontaa. Kysy tärkeissä päätöksissä viranomaiselta tai pätevältä asiantuntijalta, esimerkiksi siitä, saatko tulla johonkin maahan, onko jokin aktiviteetti sinulle turvallinen tai millaisen vakuutuksen tarvitset.' },
         { type: 'note', title: 'Matkasi on sinun päätöksesi', text: 'Sinä päätät, minne menet ja mitä teet. Tarkista kohteesi viralliset matkustustiedotteet, äläkä seuraa suunnitelmaa mihinkään, mikä näyttää vaaralliselta, lainvastaiselta tai suljetulta.' },
@@ -131,7 +131,7 @@ export default {
         {
           type: 'list',
           items: [
-            '**Jakolinkit.** Jakolinkillä kuka tahansa, jolla se on, voi lukea matkasta suppeamman kopion kirjautumatta. Sinä vastaat siitä, kenelle lähetät sen. Linkki toimii, kunnes painat Stop sharing.',
+            '**Jakolinkit.** Jakolinkillä kuka tahansa, jolla se on, voi lukea matkasta suppeamman kopion kirjautumatta. Sinä vastaat siitä, kenelle lähetät sen. Linkki lakkaa toimimasta 7 päivän kuluttua sen luomisesta tai aiemmin, jos painat Stop sharing. Voit luoda uuden linkin milloin tahansa.',
             '**Yhteiskäyttäjät.** Sähköpostiosoitteella kutsumasi henkilö näkee koko matkan, myös matkapyyntösi ja huomiosi, ja muokkaaja voi muuttaa matkaa. Muokkaajan tekemät muutokset tallentuvat matkaasi. Kutsu vain ihmisiä, joihin luotat, ja vain heidän suostumuksellaan.',
             '**Sinulle jaetut matkat.** Matka, jonka joku jakaa kanssasi, kuuluu hänelle. Hän voi muuttaa sitä, poistaa pääsysi tai poistaa matkan milloin tahansa. Älä välitä eteenpäin sitä, mitä näet siellä, ilman hänen lupaansa.',
           ],
@@ -163,14 +163,15 @@ export default {
     },
     {
       id: 'third-parties',
-      heading: 'Muut palvelut, linkit ja palkkiot',
+      heading: 'Muut palvelut ja linkit',
       blocks: [
-        { type: 'p', text: 'Trippy on rakennettu muiden ylläpitämien palvelujen varaan. Supabase ylläpitää kirjautumista ja tietokantaa. Google tarjoaa kirjautumisen ja Gemini-tekoälymallit, ja Mistral on varamalli. Kartat tulevat OpenStreetMapista, ja kuvat ja paikkatiedot tulevat esimerkiksi Wikimediasta, Openversestä, Pexelsistä ja Google Mapsista. GitHub ylläpitää verkkosivustoa. Koko luettelo on tietosuojakäytännön kohdassa [Kuka saa tietojasi](#/privacy/service-providers).' },
+        { type: 'p', text: 'Trippy on rakennettu muiden ylläpitämien palvelujen varaan. Supabase ylläpitää kirjautumista ja tietokantaa Singaporessa. Google tarjoaa kirjautumisen ja Gemini-tekoälymallit, joita Trippy käyttää Googlen palvelun maksuttomalla tasolla, ja Mistral on varamalli. Kartat tulevat OpenStreetMapista, ja kuvat ja paikkatiedot tulevat esimerkiksi Wikimediasta, Openversestä, Pexelsistä ja Google Mapsista. GitHub ylläpitää verkkosivustoa. Koko luettelo on tietosuojakäytännön kohdassa [Kuka saa tietojasi](#/privacy/service-providers).' },
         { type: 'p', text: 'Valitsemme nämä palvelut huolella, mutta emme hallitse niitä. Ne voivat muuttua, vikaantua tai lakata, ja se voi vaikuttaa Trippyyn.' },
+        { type: 'p', text: 'Maksuttomalla tasolla Google voi käyttää sitä, mitä Trippy lähettää sen malleille, tuotteidensa parantamiseen, ja ihmiset voivat lukea sitä tarkistustyössä. Älä kirjoita arkaluonteisia henkilökohtaisia tietoja matkapyyntöön. Tietosuojakäytäntö kertoo kohdassa [Tekoälymallit ja Googlen maksuton taso](#/privacy/ai-models), mitä lähetetään.' },
         { type: 'subheading', text: 'Linkit muille sivustoille' },
         { type: 'p', text: 'Matkasivuilla on linkkejä varaus- ja karttasivustoille, muun muassa palveluihin Booking.com, Trip.com, Skyscanner, Google Maps ja Rome2Rio, sekä viranomaisten virallisille sivuille maahantulovaatimuksista. Nämä sivustot eivät ole meidän. Linkki on tarjolla käytön helpottamiseksi, eikä se ole suositus tai takuu. Se, mitä teet siellä, on sinun ja kyseisen sivuston välinen asia sen omien ehtojen ja tietosuojakäytännön mukaan.' },
-        { type: 'subheading', text: 'Palkkiot' },
-        { type: 'p', text: 'Jotkin varauslinkit voivat olla kumppanilinkkejä, eli Trippy voi saada palkkion, jos varaat niiden kautta, ilman lisäkuluja sinulle. Kortit, joissa tällaisia linkkejä on, kertovat siitä. Palkkio ei ratkaise sitä, mitä paikkoja suunnitelma ehdottaa. Näiden ehtojen päivämääränä Trippy ei ansaitse mistään linkistä mitään.' },
+        { type: 'subheading', text: 'Ei palkkioita' },
+        { type: 'p', text: 'Varauslinkit ovat tavallisia linkkejä muille sivustoille. Niissä ei ole kumppanikoodia. Kukaan ei maksa Trippylle niiden näyttämisestä eikä siitä, että pääsee suunnitelmaan, eikä Trippy saa palkkiota, kun teet varauksen.' },
       ],
     },
     {
@@ -191,7 +192,7 @@ export default {
       id: 'availability',
       heading: 'Saatavuus ja palvelun muutokset',
       blocks: [
-        { type: 'p', text: 'Trippy on maksuton. Se tarjotaan sellaisena kuin se on ja silloin kuin se on saatavilla. Pyrimme pitämään sen toiminnassa, mutta emme lupaa, että se on käytettävissä tiettynä aikana, että siinä ei ole vikoja tai että suunnitelman kirjoitus valmistuu.' },
+        { type: 'p', text: 'Trippy on maksuton ja kokeellinen. Se tarjotaan sellaisena kuin se on ja silloin kuin se on saatavilla. Pyrimme pitämään sen toiminnassa, mutta emme lupaa, että se on käytettävissä tiettynä aikana, että siinä ei ole vikoja tai että suunnitelman kirjoitus valmistuu.' },
         {
           type: 'list',
           items: [
@@ -253,11 +254,11 @@ export default {
       heading: 'Käytön keskeyttäminen ja päättyminen',
       blocks: [
         { type: 'subheading', text: 'Voit lopettaa milloin tahansa' },
-        { type: 'p', text: 'Voit lopettaa Trippyn käytön milloin haluat. Poista matkasi asetuksissa (Settings) kohdassa Data. Jos haluat, että tilisi poistetaan, kirjoita tietosuojakäytännössä nimetylle tietosuojavastaavalle.' },
+        { type: 'p', text: 'Voit lopettaa Trippyn käytön milloin haluat. Poista matkasi asetuksissa (Settings) kohdassa Data. Poista tilisi asetuksissa kohdassa Account painikkeella Delete my account. Sinun ei tarvitse pyytää sitä meiltä. Kun tilisi on poistettu, nämä ehdot päättyvät sinun osaltasi lukuun ottamatta osioita, jotka luetellaan kohdassa Mikä jää voimaan.' },
         { type: 'subheading', text: 'Milloin voimme keskeyttää tilin käytön tai sulkea tilin' },
         { type: 'p', text: 'Voimme keskeyttää tilisi käytön tai sulkea tilisi, jos rikot näitä ehtoja vakavasti tai toistuvasti, jos käyttösi vaarantaa palvelun tai muita ihmisiä, jos laki sitä vaatii tai jos lopetamme Trippyn tarjoamisen. Ellei asia ole kiireellinen tai laki estä sitä, kerromme syyn etukäteen tilisi sähköpostiosoitteeseen ja annamme sinulle kohtuullisen tilaisuuden korjata asia tai tallentaa matkasi.' },
         { type: 'subheading', text: 'Mitä tiedoillesi tapahtuu' },
-        { type: 'p', text: 'Kun tili suljetaan, poistamme tilin, profiilin ja sen omistamat matkat niin kuin tietosuojakäytännön kohdassa [Kuinka kauan säilytämme tietojasi](#/privacy/retention) kerrotaan. Näiden matkojen jakolinkit lakkaavat toimimasta, ja yhteiskäyttäjät menettävät pääsynsä. Kopiot, jotka sinä tai muut olette tallentaneet PDF-tiedostoina, eivät ole meidän hallinnassamme.' },
+        { type: 'p', text: 'Kun tili poistetaan, sinun tai meidän toimestamme, tili, profiili ja sen omistamat matkat poistetaan niin kuin tietosuojakäytännön kohdassa [Kuinka kauan säilytämme tietojasi](#/privacy/retention) kerrotaan. Näiden matkojen jakolinkit lakkaavat toimimasta, ja yhteiskäyttäjät menettävät pääsynsä. Kopiot, jotka sinä tai muut olette tallentaneet PDF-tiedostoina, eivät ole meidän hallinnassamme.' },
         { type: 'subheading', text: 'Mikä jää voimaan' },
         { type: 'p', text: 'Osiot, jotka koskevat sisältöäsi (niin kauan kuin meillä on sitä laillisesti hallussamme), immateriaalioikeuksia, vastuuta, vahingonkorvausvelvollisuuttasi, sovellettavaa lakia ja yleisiä ehtoja, ovat voimassa myös näiden ehtojen päättymisen jälkeen.' },
       ],
@@ -267,7 +268,7 @@ export default {
       heading: 'Näiden ehtojen muutokset',
       blocks: [
         { type: 'p', text: 'Voimme muuttaa näitä ehtoja, kun palvelu muuttuu, kun laki muuttuu tai kun haluamme selkeyttää niitä. Otsikon alla oleva päivämäärä on viimeisimmän version päivämäärä.' },
-        { type: 'p', text: 'Muutoksesta, joka kaventaa oikeuksiasi tai lisää velvollisuuksiasi, julkaisemme ilmoituksen sovelluksessa tai tällä sivulla vähintään 14 päivää ennen sen voimaantuloa, ellei laki tai tietoturvaongelma vaadi nopeampaa muutosta. Jos et hyväksy uusia ehtoja, lopeta Trippyn käyttö ennen kuin ne tulevat voimaan. Voit myös pyytää meitä poistamaan tilisi. Jos käytät Trippyä tuon päivän jälkeen, hyväksyt uudet ehdot. Muutokset eivät koske riitaa, joka syntyi ennen niiden voimaantuloa.' },
+        { type: 'p', text: 'Muutoksesta, joka kaventaa oikeuksiasi tai lisää velvollisuuksiasi, julkaisemme ilmoituksen sovelluksessa tai tällä sivulla vähintään 14 päivää ennen sen voimaantuloa, ellei laki tai tietoturvaongelma vaadi nopeampaa muutosta. Jos et hyväksy uusia ehtoja, lopeta Trippyn käyttö ennen kuin ne tulevat voimaan. Voit poistaa tilisi asetuksissa milloin tahansa. Jos käytät Trippyä tuon päivän jälkeen, hyväksyt uudet ehdot. Muutokset eivät koske riitaa, joka syntyi ennen niiden voimaantuloa.' },
       ],
     },
     {
@@ -292,7 +293,7 @@ export default {
             { term: 'Ehtojen erillisyys', text: 'Jos tuomioistuin katsoo jonkin osan näistä ehdoista pätemättömäksi tai täytäntöönpanokelvottomaksi, sitä osaa tulkitaan niin suppeasti kuin on tarpeen tai se poistetaan, jos suppea tulkinta ei ole mahdollinen, ja muut ehdot pysyvät voimassa.' },
             { term: 'Ei oikeuksista luopumista', text: 'Jos emme vetoa johonkin ehtoon heti tai jollakin kerralla lainkaan, emme ole luopuneet oikeudesta vedota siihen myöhemmin. Oikeudesta luopuminen pätee vain kirjallisena.' },
             { term: 'Koko sopimus', text: 'Nämä ehdot ja tietosuojakäytäntö muodostavat sinun ja meidän välisen Trippyä koskevan sopimuksen kokonaisuudessaan ja korvaavat kaiken, mitä asiasta on aiemmin sanottu. Kumpikaan meistä ei nojaa lausumaan, jota niissä ei ole. Tämä ei sulje pois vastuuta petoksesta eikä sellaisesta virheellisestä tiedosta, josta lain mukaan emme voi sulkea vastuuta pois.' },
-            { term: 'Siirtäminen', text: 'Nämä ehdot ovat henkilökohtaiset, etkä saa siirtää niitä. Me saamme siirtää oikeutemme ja velvollisuutemme sille, joka ottaa Trippyn ylläpidon hoitaakseen, ja kerromme siitä sinulle etukäteen, jotta voit halutessasi sulkea tilisi.' },
+            { term: 'Siirtäminen', text: 'Nämä ehdot ovat henkilökohtaiset, etkä saa siirtää niitä. Me saamme siirtää oikeutemme ja velvollisuutemme sille, joka ottaa Trippyn ylläpidon hoitaakseen, ja kerromme siitä sinulle etukäteen, jotta voit halutessasi poistaa tilisi ensin.' },
             { term: 'Kieli', text: 'Nämä ehdot on kirjoitettu englanniksi, ja ne voidaan tarjota muilla kielillä lukemisen helpottamiseksi. Jos käännös poikkeaa englanninkielisestä tekstistä, englanninkielinen teksti on ratkaiseva.' },
             { term: 'Ilmoitukset', text: 'Annamme ilmoitukset sovelluksessa, tällä sivulla tai tilisi sähköpostiosoitteeseen. Sinä annat ilmoitukset meille alla olevaan yhteysosoitteeseen.' },
           ],

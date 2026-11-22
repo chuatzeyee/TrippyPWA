@@ -30,6 +30,7 @@ import {
  * @property {{ state: string, message: string }} notify     notificationState() and the result of the last action
  * @property {Array<{ id: string, title: string, savedAt: string }>} offlineTrips
  * @property {string} dataMessage    the result of the last action in the Data section
+ * @property {string} [accountMessage]  the result of "Delete my account" when it did not happen
  * @property {{ email: string|null, admin: boolean }} account
  * @property {string} buildId
  */
@@ -284,7 +285,13 @@ export function accountSectionHtml(state) {
       ${online ? '' : '<p class="st-help" id="st-sign-out-help">Signing out needs a connection.</p>'}
       <div class="st-actions">${actionButtonHtml('Sign out', { action: 'sign-out', disabled: !online, describedBy: online ? null : 'st-sign-out-help' })}${admin}</div>
     </div>`;
-  return section('account', card(part('account', body)));
+  // The user deletes the account here, themselves: nobody has to be written to (migration 023).
+  const remove = `<div class="st-row st-row--action st-row--danger">
+      <h3 class="st-label">Delete my account</h3>
+      <p class="st-help" id="st-delete-account-help">Deletes your account for good: your profile and settings, every trip you own with its photos and share links, your invitations and your usage records. A trip you own is deleted for the people you shared it with too. This cannot be undone.${online ? '' : ' This needs a connection.'}</p>
+      ${actionButtonHtml('Delete my account', { action: 'delete-account', danger: true, disabled: !online, describedBy: 'st-delete-account-help' })}
+    </div>`;
+  return section('account', card(`${part('account', body)}${part('delete-account', remove)}${statusPart('account-status', 'st-account-status', state.accountMessage)}`));
 }
 
 /** The hash in the entry file name ("/assets/index-BxK3f_9a.js" gives "BxK3f_9a"); '' when there is none. */

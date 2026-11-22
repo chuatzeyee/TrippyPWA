@@ -36,4 +36,5 @@ export default Object.freeze({
   'site.loadError': 'Sivua ei voitu ladata. Tarkista yhteys ja yritä uudelleen.',
   'site.retry': 'Yritä uudelleen',
   'site.print': 'Tulosta tämä sivu',
+  'signIn.consent': 'Kirjautumalla hyväksyt [käyttöehdot](#/terms) ja vahvistat lukeneesi [tietosuojakäytännön](#/privacy).',
 });

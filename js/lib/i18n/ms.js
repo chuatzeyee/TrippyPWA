@@ -36,4 +36,5 @@ export default Object.freeze({
   'site.loadError': 'Halaman ini tidak dapat dimuatkan. Semak sambungan anda dan cuba lagi.',
   'site.retry': 'Cuba lagi',
   'site.print': 'Cetak halaman ini',
+  'signIn.consent': 'Dengan log masuk, anda bersetuju dengan [Terma penggunaan](#/terms) dan telah membaca [Dasar privasi](#/privacy).',
 });

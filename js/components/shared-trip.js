@@ -1,4 +1,4 @@
-import { fetchSharedTrip, toSharedView } from '../data/share-repository.js';
+import { fetchSharedTrip, toSharedView, SHARE_GONE_TEXT } from '../data/share-repository.js';
 import { formatNumber, formatTempRange, formatWeekdayDate, to12h } from '../lib/locale.js';
 import { canConvert, convert } from '../data/currencies.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
@@ -45,21 +45,38 @@ export function weatherBadge(w) {
   return `<span class="td-weather">${icon}${range ? ` ${esc(range)}` : ''}</span>`;
 }
 
+/**
+ * The page a visitor gets when there is no trip to show. A link that has expired, one that was
+ * withdrawn and a token that never existed all read the same (the server does not say which):
+ * "This link has expired. Ask the person who shared it for a new one." Only a request that itself
+ * failed says so and offers another try.
+ * @param {{ reason?: 'gone'|'failed', error?: string }} [why]
+ */
+export function sharedTripMissingHtml({ reason = 'gone', error = '' } = {}) {
+  const failed = reason === 'failed';
+  const [title, ...rest] = SHARE_GONE_TEXT.split('. ');
+  const heading = failed ? 'This trip could not be loaded' : title;
+  const line = failed ? (error || 'Check your connection and try again.') : rest.join('. ');
+  return `
+      <div class="container" style="padding:var(--sp-16) 0;text-align:center" data-shared-missing="${failed ? 'failed' : 'gone'}">
+        <h1 class="text-h1">${esc(heading)}</h1>
+        <p class="text-body" style="color:var(--ink-secondary);margin-top:var(--sp-2)">${esc(line)}</p>
+        ${failed
+          ? '<button type="button" class="btn btn--primary btn--pill" style="margin-top:var(--sp-6)" data-shared-retry>Try again</button>'
+          : '<button type="button" class="btn btn--primary btn--pill" style="margin-top:var(--sp-6)" data-go="/">Go to Trippy</button>'}
+      </div>`;
+}
+
 export async function renderSharedTrip(token) {
   const app = document.getElementById('app');
-  app.innerHTML = '<div class="container" style="padding:var(--sp-16) 0;text-align:center"><div class="adm-loading">Loading shared trip...</div></div>';
+  app.innerHTML = '<div class="container" style="padding:var(--sp-16) 0;text-align:center"><div class="adm-loading">Loading shared trip</div></div>';
 
-  const { data: trip, error } = await fetchSharedTrip(token);
+  const { data: trip, error, reason } = await fetchSharedTrip(token);
 
   if (error || !trip) {
-    app.innerHTML = `
-      <div class="container" style="padding:var(--sp-16) 0;text-align:center">
-        <div style="font-size:4rem;margin-bottom:var(--sp-4)">🔗</div>
-        <h1 class="text-h1">Share link not found</h1>
-        <p class="text-body" style="color:var(--ink-secondary);margin-top:var(--sp-2)">${esc(error || 'This itinerary may have been unshared or deleted.')}</p>
-        <button class="btn btn--primary btn--pill" style="margin-top:var(--sp-6)" data-go="/">Go to Trippy</button>
-      </div>`;
+    app.innerHTML = sharedTripMissingHtml({ reason, error });
     bindNav(app);
+    app.querySelector('[data-shared-retry]')?.addEventListener('click', () => renderSharedTrip(token));
     return;
   }
 

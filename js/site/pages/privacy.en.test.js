@@ -19,9 +19,9 @@ describe('privacy policy, English', () => {
     const ids = sectionIds(page);
     expect(ids[0]).toBe('at-a-glance');
     for (const id of [
-      'who-we-are', 'data-protection-contact', 'what-we-collect', 'other-people', 'consent', 'withdrawal',
+      'who-we-are', 'data-protection-contact', 'what-we-collect', 'ai-models', 'other-people', 'consent', 'withdrawal',
       'access-and-correction', 'accuracy', 'protection', 'retention', 'service-providers', 'transfer',
-      'shared-links', 'on-device', 'affiliate-links', 'children', 'breach', 'changes', 'complaints',
+      'shared-links', 'on-device', 'booking-links', 'children', 'breach', 'changes', 'complaints',
     ]) expect(ids, id).toContain(id);
   });
 
@@ -68,7 +68,8 @@ describe('privacy policy, English', () => {
     expect(section('breach')).toMatch(/3 calendar days/);
     expect(section('breach')).toMatch(/500 people/);
     expect(section('transfer')).toMatch(/comparable/);
-    expect(section('retention')).toMatch(/no button for this in the app/);
+    expect(section('retention')).toMatch(/You delete your account yourself, in the app/);
+    expect(section('withdrawal')).toMatch(/by deleting the data in question or by deleting your account/);
     expect(section('complaints')).toContain('https://www.pdpc.gov.sg/');
     expect(section('changes')).toMatch(/English text governs/);
     expect(text).toMatch(/do not sell personal data/i);

@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
   clearOfflineTripCache: vi.fn(),
   confirmDialog: vi.fn(),
   showToast: vi.fn(),
+  deleteMyAccount: vi.fn(),
+  signOutThisDevice: vi.fn(),
+  clearDeviceData: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
 }));
@@ -30,6 +33,8 @@ vi.mock('../data/profile-repository.js', () => ({ updateProfile: mocks.updatePro
 vi.mock('../data/trip-repository.js', () => ({
   clearAllUserData: mocks.clearAllUserData, clearOfflineTripCache: mocks.clearOfflineTripCache, fetchAllTrips: mocks.fetchAllTrips,
 }));
+vi.mock('../data/account-repository.js', () => ({ deleteMyAccount: mocks.deleteMyAccount, signOutThisDevice: mocks.signOutThisDevice }));
+vi.mock('../data/device-data.js', () => ({ clearDeviceData: mocks.clearDeviceData }));
 vi.mock('../views/shared/confirm-dialog.js', () => ({ confirmDialog: mocks.confirmDialog }));
 vi.mock('../router.js', () => ({ navigate: mocks.navigate }));
 vi.mock('../components/toast.js', () => ({ showToast: mocks.showToast }));
@@ -70,7 +75,7 @@ function fakePage(profile = { home_currency: 'EUR', home_currency_symbol: '€',
     },
   };
   const page = {
-    root, handlers, lines, saves: {}, edits: 0, dataMessage: '',
+    root, handlers, lines, saves: {}, edits: 0, dataMessage: '', accountMessage: '',
     profile: { status: 'ready', data: profile },
     refresh: vi.fn(), refreshSoon: vi.fn(), reloadProfile: vi.fn(),
   };
@@ -220,5 +225,89 @@ describe('Delete all my trips', () => {
     const source = readFileSync(new URL('../services/town-mapper.js', import.meta.url), 'utf8');
     expect(source).toMatch(/const CACHE_PREFIX = 'towns-v1-';/);
     expect(source).toMatch(/localStorage\.setItem\(CACHE_PREFIX \+ tripId,/);
+  });
+});
+
+describe('Delete my account', () => {
+  const run = async (page = fakePage()) => {
+    bindActions(page);
+    click(page, '[data-st-action]', { 'data-st-action': 'delete-account' });
+    await settle();
+    await settle();
+    return page;
+  };
+  const order = () => ['deleteMyAccount', 'signOutThisDevice', 'clearDeviceData', 'navigate', 'showToast']
+    .filter((name) => mocks[name].mock.calls.length)
+    .sort((a, b) => mocks[a].mock.invocationCallOrder[0] - mocks[b].mock.invocationCallOrder[0]);
+
+  it('asks with the typed word DELETE, in the same dialog as "Delete all my trips"', async () => {
+    mocks.confirmDialog.mockResolvedValue(false);
+    await run();
+    expect(mocks.confirmDialog).toHaveBeenCalledWith({
+      title: 'Delete your account?',
+      body: 'This deletes your account and everything in it, for good: your profile, your settings and every trip you own.\nA trip you own is deleted for the people you shared it with too.\nThis cannot be undone.',
+      confirmLabel: 'Delete my account',
+      danger: true,
+      typed: 'DELETE',
+    });
+  });
+  it('does nothing when the user cancels', async () => {
+    mocks.confirmDialog.mockResolvedValue(false);
+    const page = await run();
+    expect(mocks.deleteMyAccount).not.toHaveBeenCalled();
+    expect(mocks.clearDeviceData).not.toHaveBeenCalled();
+    expect(page.accountMessage).toBe('');
+  });
+  it('offline it neither asks nor deletes', async () => {
+    vi.stubGlobal('navigator', { onLine: false });
+    await run();
+    expect(mocks.confirmDialog).not.toHaveBeenCalled();
+    expect(mocks.deleteMyAccount).not.toHaveBeenCalled();
+  });
+  it('after the delete: signs out on this device, clears the device, lands on the public page and says so in one line', async () => {
+    mocks.confirmDialog.mockResolvedValue(true);
+    mocks.deleteMyAccount.mockResolvedValue({ error: null });
+    mocks.signOutThisDevice.mockResolvedValue(true);
+    await run();
+    expect(order()).toEqual(['deleteMyAccount', 'signOutThisDevice', 'clearDeviceData', 'navigate', 'showToast']);
+    expect(mocks.clearDeviceData).toHaveBeenCalledTimes(1);
+    expect(mocks.navigate).toHaveBeenCalledWith('/');
+    expect(mocks.showToast).toHaveBeenCalledWith('Your account and everything in it were deleted.', 'success');
+  });
+  it('still clears the device and leaves when the local sign-out does not work', async () => {
+    mocks.confirmDialog.mockResolvedValue(true);
+    mocks.deleteMyAccount.mockResolvedValue({ error: null });
+    mocks.signOutThisDevice.mockResolvedValue(false);
+    await run();
+    expect(mocks.clearDeviceData).toHaveBeenCalledTimes(1);
+    expect(mocks.navigate).toHaveBeenCalledWith('/');
+  });
+  it('a failure leaves the account and the device alone and says so', async () => {
+    mocks.confirmDialog.mockResolvedValue(true);
+    for (const answer of [() => Promise.resolve({ error: 'failed' }), () => Promise.reject(new Error('network')), () => Promise.resolve({ error: 'not-signed-in' })]) {
+      mocks.deleteMyAccount.mockImplementation(answer);
+      const page = await run();
+      expect(page.accountMessage).toBe('Your account was not deleted. It is still here and you are still signed in. Try again.');
+    }
+    expect(mocks.signOutThisDevice).not.toHaveBeenCalled();
+    expect(mocks.clearDeviceData).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+    expect(mocks.showToast).not.toHaveBeenCalled();
+  });
+  it('tells the only admin what to do first', async () => {
+    mocks.confirmDialog.mockResolvedValue(true);
+    mocks.deleteMyAccount.mockResolvedValue({ error: 'last-admin' });
+    const page = await run();
+    expect(page.accountMessage).toBe('Your account was not deleted, because you are the only admin. Make another account an admin first, then delete this one.');
+    expect(mocks.clearDeviceData).not.toHaveBeenCalled();
+  });
+  it('says it is working while the delete runs', async () => {
+    mocks.confirmDialog.mockResolvedValue(true);
+    let finish;
+    mocks.deleteMyAccount.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+    const page = await run();
+    expect(page.accountMessage).toBe('Deleting your account');
+    finish({ error: 'failed' });
+    await settle();
   });
 });

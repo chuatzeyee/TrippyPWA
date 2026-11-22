@@ -184,3 +184,33 @@
 [data-theme="light"] .auth-menu-radio[aria-checked="true"] {
   box-shadow: inset 0 0 0 1px var(--terracotta-hover);
 }
+
+/* The line at a Sign in with Google button (js/auth/signin-consent.js): what signing in agrees to,
+   with a link to each legal text. Each link is a 44 px tall box, so a line that holds one is 44 px
+   high and the two links never share a touch target, on one line or on two. */
+.signin-consent {
+  margin: var(--sp-2) auto 0;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  color: var(--ink-secondary);
+  text-align: center;
+}
+
+.signin-consent-link {
+  display: inline-block;
+  min-width: 44px;
+  padding: 12px 0;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.signin-consent-link:hover {
+  color: var(--accent, var(--ink));
+}
+
+.signin-consent-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -8px;
+  border-radius: 4px;
+}

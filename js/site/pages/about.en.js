@@ -96,7 +96,7 @@ const LIMITS = {
   doesNot: {
     title: 'What it does not do',
     items: [
-      'It does not book anything. Links to airlines, hotels and booking sites take you to them, and you buy there.',
+      'It does not sell or book anything. Links to airlines, hotels and booking sites are plain links that take you to them, and you buy there. Trippy earns no commission.',
       'It does not know live prices. Costs are estimates per person for activities, and flight and hotel prices are rough guides.',
       'It does not know what the weather will be. The weather on a plan is typical for the season, not a forecast.',
       'It does not check opening hours, closures or sold out days. A place the model remembers may have closed.',
@@ -149,7 +149,7 @@ export default {
   title: 'About Trippy',
   intro: [
     'Trippy is a travel planner that runs in your browser. You answer a few questions about a trip and an AI model writes a plan for each day, with real places, times and rough costs. Then you change whatever you do not like.',
-    'It is free, it carries no adverts, and it does not book or sell anything.',
+    'It is a free, experimental service. It carries no adverts, it does not book or sell anything, and it earns no commission.',
   ],
   sections: [
     {
@@ -193,15 +193,15 @@ export default {
       id: 'your-data',
       heading: 'Your data',
       blocks: [
-        { type: 'p', text: 'You sign in with a Google account, and Trippy keeps your name, email address and profile picture from it. It also keeps what you tell it: your home city, your currency, the passport you travel on, and your trips with everything in them. The answers you give for a trip are sent to the AI provider so that it can write the plan. Your recent trips are also stored on your device so that they open offline, and they are removed from it when you sign out. There are no adverts and no advertising trackers. The [privacy policy](#/privacy) sets all of this out in full, including how to see, correct or delete what is held about you and how to withdraw your consent.' },
+        { type: 'p', text: 'You sign in with a Google account, and Trippy keeps your name, email address and profile picture from it. It also keeps what you tell it: your home city, your currency, the passport you travel on, and your trips with everything in them. The answers you give for a trip are sent to the AI provider so that it can write the plan. That provider is Google, on the free tier of its service, where Google may use what is sent to improve its products and human reviewers may read it, so keep sensitive personal details out of the free-text fields. Your recent trips are also stored on your device so that they open offline, and they are removed from it when you sign out. There are no adverts and no advertising trackers. The [privacy policy](#/privacy) sets all of this out in full, including how to see or correct what is held about you, how to delete your account yourself in Settings, and how to withdraw your consent.' },
       ],
     },
     {
       id: 'who-makes-it',
       heading: 'Who makes it',
       blocks: [
-        { type: 'p', text: 'Trippy is a personal project, made and run from {country}. It began as a tool for planning our own trips out of Singapore, which is why the defaults lean that way: Singapore dollars, and short hops to places like Batam and Desaru among the suggestions. It plans trips from anywhere to anywhere.' },
-        { type: 'p', text: 'It costs nothing to use and there is no paid version. The links to booking sites are ordinary links, and Trippy earns nothing when you follow one. If that ever changes, this page will say so first.' },
+        { type: 'p', text: 'Trippy is a personal project and an experiment, made by one person, not by a company, and run from {country}. It began as a tool for planning our own trips out of Singapore, which is why the defaults lean that way: Singapore dollars, and short hops to places like Batam and Desaru among the suggestions. It plans trips from anywhere to anywhere.' },
+        { type: 'p', text: 'It costs nothing to use and there is no paid version. Trippy does not sell tickets or bookings. The links to booking sites are plain links, and Trippy earns no commission and nothing else when you follow one or book there.' },
         { type: 'defs', rows: [
           { term: 'Operated by', text: '{operator}' },
           { term: 'Questions and problems', text: 'Write to: {contactEmail}' },
@@ -222,7 +222,7 @@ export default {
           { term: 'Openverse and Pexels', text: 'More photos: openly licensed ones through [Openverse](https://openverse.org/), and some trip covers from [Pexels](https://www.pexels.com/).' },
           { term: 'Venue websites and the web', text: 'When the open sources have nothing, a photo can come from the venue\'s own website, its Google Maps listing or a page that names it. Those photos stay where they are, belong to their owners, and are shown with a link to the source.' },
           { term: 'Google Gemini and Mistral', text: 'The AI models that write the plans, suggest alternatives, answer in the chat panel and check that a cover photo shows the right place.' },
-          { term: 'Supabase', text: 'Sign in, the database your trips are kept in, file storage and the server functions that talk to the AI providers.' },
+          { term: 'Supabase', text: 'Sign in, the database your trips are kept in, file storage and the server functions that talk to the AI providers. The database, sign in and stored photos are hosted in Singapore.' },
           { term: 'Leaflet', text: 'The library that draws the maps.' },
           { term: 'GitHub Pages', text: 'Where the app itself is served from.' },
         ] },
@@ -233,7 +233,7 @@ export default {
       heading: 'Questions people ask',
       blocks: [
         { type: 'faq', items: [
-          { q: 'Is it really free?', a: 'Yes. There is no paid tier, no trial that runs out and no adverts.' },
+          { q: 'Is it really free?', a: 'Yes. There is no paid tier, no trial that runs out and no adverts, and Trippy earns no commission from the sites it links to. It is an experiment, so it may change or stop.' },
           { q: 'Do I need an account?', a: 'To plan a trip, yes, and the only way to sign in is with a Google account. To read a trip someone shared with you by link, no.' },
           { q: 'Does Trippy book flights or hotels?', a: 'No. It suggests them and links to the airline or the booking site, and you book there yourself. Once you have booked, you can put the flight number, times and booking reference on the trip so that everything is in one place.' },
           { q: 'How long does a plan take?', a: 'Around five minutes for a trip of ten days to two weeks, and less for a short one. You do not have to wait on the page. Close the window and come back, or ask to be notified when it is done.' },
@@ -243,10 +243,10 @@ export default {
           ] },
           { q: 'Why does the weather say "typical"?', a: 'The plan may be written months before you travel, too early for anyone to know the weather. What is shown is the usual weather for that place and month, written when the plan was made. It is not a forecast, and it stays the same however the real weather turns out.' },
           { q: 'Does it work without a connection?', a: 'Reading does. The trips you opened most recently are kept on your device and open offline, and you can install Trippy to your home screen like an app. Making a new plan, editing and the chat panel need a connection.' },
-          { q: 'Can two of us plan together?', a: 'Yes. Invite someone by email as a viewer or an editor, and when one of you changes the trip the other sees it update. You can also make a read only link for people who only need to look, and switch it off again later.' },
+          { q: 'Can two of us plan together?', a: 'Yes. Invite someone by email as a viewer or an editor, and when one of you changes the trip the other sees it update. You can also make a read only link for people who only need to look. The link stops working after 7 days, and you can switch it off sooner.' },
           { q: 'I already planned my trip somewhere else. Can I bring it in?', a: 'Yes. **Import trip** gives you a prompt to paste into any AI assistant together with your notes, and you paste the result back. You see a preview before anything is saved, and you can undo the import.' },
           { q: 'Which languages is it in?', a: 'The footer and these pages (About, Privacy policy, Terms of use) are in English, Bahasa Melayu, Simplified Chinese and Finnish. The rest of the app, and the plans themselves, are in English for now.' },
-          { q: 'How do I delete my trips or my account?', a: '**Delete all my trips** in [Settings](#/settings) removes every trip you own, for good. To have your account and profile removed as well, write to the data protection contact: {dpoEmail}. The [privacy policy](#/privacy) explains what happens next.' },
+          { q: 'How do I delete my trips or my account?', a: '**Delete all my trips** in [Settings](#/settings) removes every trip you own, for good. **Delete my account**, under Account in the same place, removes your account, your profile and everything in it, and you do it yourself. The [privacy policy](#/privacy/retention) says exactly what is removed and what cannot be.' },
         ] },
       ],
     },

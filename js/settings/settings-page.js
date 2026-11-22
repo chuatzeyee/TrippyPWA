@@ -57,6 +57,7 @@ function readState(current) {
     notify: { state: notificationState(readNotificationEnv()), message: current.notifyMessage },
     offlineTrips: listOfflineTrips(),
     dataMessage: current.dataMessage,
+    accountMessage: current.accountMessage,
     account: { email: getUser()?.email ?? null, admin: current.admin },
     buildId: current.buildId,
   };
@@ -231,7 +232,7 @@ function mount(app) {
   const current = {
     root: null, known: {}, held: false, soon: 0, picking: 0, edits: 0, syncPoll: null, syncText: '', outside: null, unmountPicker: null, cityBinding: null,
     profile: { status: ready ? 'ready' : isOnline() && getUser() ? 'loading' : 'offline', data: summary },
-    saves: {}, notifyMessage: '', dataMessage: '', admin: false, buildId: import.meta.env.DEV ? 'dev' : '',
+    saves: {}, notifyMessage: '', dataMessage: '', accountMessage: '', admin: false, buildId: import.meta.env.DEV ? 'dev' : '',
     refresh: (opts) => refresh(current, opts),
     refreshSoon: () => refreshSoon(current),
     reloadProfile: () => loadProfile(current),

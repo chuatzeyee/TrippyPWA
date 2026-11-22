@@ -206,7 +206,7 @@ const LIMITS = {
   doesNot: {
     title: 'Mitä Trippy ei tee',
     items: [
-      'Se ei varaa mitään. Linkit lentoyhtiöille, hotelleihin ja varaussivustoille vievät niiden omille sivuille, ja ostat siellä.',
+      'Se ei myy eikä varaa mitään. Linkit lentoyhtiöille, hotelleihin ja varaussivustoille ovat tavallisia linkkejä, jotka vievät niiden omille sivuille, ja ostat siellä. Trippy ei saa palkkiota.',
       'Se ei tiedä ajantasaisia hintoja. Kulut ovat arvioita aktiviteeteista henkeä kohti, ja lentojen ja hotellien hinnat ovat karkeasti suuntaa antavia.',
       'Se ei tiedä, millainen sää on tulossa. Suunnitelman sää on vuodenajalle tyypillinen, ei ennuste.',
       'Se ei tarkista aukioloaikoja, sulkemisia eikä loppuunmyytyjä päiviä. Paikka, jonka malli muistaa, on voinut lopettaa.',
@@ -259,7 +259,7 @@ export default {
   title: 'Tietoja Trippystä',
   intro: [
     'Trippy on selaimessa toimiva matkasuunnittelija. Vastaat muutamaan kysymykseen matkastasi, ja tekoälymalli kirjoittaa jokaiselle päivälle suunnitelman, jossa on oikeita paikkoja, kellonaikoja ja karkeat kulut. Sen jälkeen muutat kaiken, mistä et pidä.',
-    'Trippy on maksuton, siinä ei ole mainoksia, eikä se varaa tai myy mitään.',
+    'Trippy on maksuton ja kokeellinen palvelu. Siinä ei ole mainoksia, se ei varaa tai myy mitään, eikä se saa palkkiota.',
   ],
   sections: [
     {
@@ -303,15 +303,15 @@ export default {
       id: 'your-data',
       heading: 'Sinun tietosi',
       blocks: [
-        { type: 'p', text: 'Kirjaudut Google-tilillä, ja Trippy tallentaa siitä nimesi, sähköpostiosoitteesi ja profiilikuvasi. Se tallentaa myös sen, mitä kerrot sille: kotikaupunkisi, valuuttasi, passisi maan ja matkasi kaikkine sisältöineen. Matkaa varten antamasi vastaukset lähetetään tekoälypalvelun tarjoajalle, jotta se voi kirjoittaa suunnitelman. Viimeisimmät matkasi tallennetaan myös laitteellesi, jotta ne aukeavat ilman verkkoa, ja ne poistetaan laitteelta, kun kirjaudut ulos. Mainoksia ei ole, eikä mainosseurantaa. [Tietosuojakäytäntö](#/privacy) kertoo tämän kaiken kokonaan, myös sen, miten voit nähdä, korjata tai poistaa sinusta tallennetut tiedot ja miten peruutat suostumuksesi.' },
+        { type: 'p', text: 'Kirjaudut Google-tilillä, ja Trippy tallentaa siitä nimesi, sähköpostiosoitteesi ja profiilikuvasi. Se tallentaa myös sen, mitä kerrot sille: kotikaupunkisi, valuuttasi, passisi maan ja matkasi kaikkine sisältöineen. Matkaa varten antamasi vastaukset lähetetään tekoälypalvelun tarjoajalle, jotta se voi kirjoittaa suunnitelman. Tarjoaja on Google ja sen palvelun maksuton taso, jolla Google voi käyttää lähetettyjä tietoja tuotteidensa parantamiseen ja ihmiset voivat lukea niitä tarkistustyössä, joten jätä arkaluonteiset henkilökohtaiset tiedot pois vapaan tekstin kentistä. Viimeisimmät matkasi tallennetaan myös laitteellesi, jotta ne aukeavat ilman verkkoa, ja ne poistetaan laitteelta, kun kirjaudut ulos. Mainoksia ei ole, eikä mainosseurantaa. [Tietosuojakäytäntö](#/privacy) kertoo tämän kaiken kokonaan, myös sen, miten voit nähdä tai korjata sinusta tallennetut tiedot, miten poistat tilisi itse asetuksissa ja miten peruutat suostumuksesi.' },
       ],
     },
     {
       id: 'who-makes-it',
       heading: 'Kuka Trippyä tekee',
       blocks: [
-        { type: 'p', text: 'Trippy on henkilökohtainen projekti, ja sen kotimaa on {country}. Siellä sitä tehdään ja ylläpidetään. Se sai alkunsa työkaluna omien Singaporesta lähtevien matkojemme suunnitteluun, ja siksi oletukset kallistuvat siihen suuntaan: Singaporen dollarit ja ehdotusten joukossa lyhyet pyrähdykset Batamin ja Desarun kaltaisiin paikkoihin. Matkan voi silti suunnitella mistä tahansa minne tahansa.' },
-        { type: 'p', text: 'Käyttö ei maksa mitään, eikä maksullista versiota ole. Linkit varaussivustoille ovat tavallisia linkkejä, eikä Trippy ansaitse mitään, kun avaat sellaisen. Jos tämä joskus muuttuu, se kerrotaan ensimmäiseksi tällä sivulla.' },
+        { type: 'p', text: 'Trippy on henkilökohtainen projekti ja kokeilu, ja sen kotimaa on {country}. Siellä sitä tekee ja ylläpitää yksi ihminen, ei yritys. Se sai alkunsa työkaluna omien Singaporesta lähtevien matkojemme suunnitteluun, ja siksi oletukset kallistuvat siihen suuntaan: Singaporen dollarit ja ehdotusten joukossa lyhyet pyrähdykset Batamin ja Desarun kaltaisiin paikkoihin. Matkan voi silti suunnitella mistä tahansa minne tahansa.' },
+        { type: 'p', text: 'Käyttö ei maksa mitään, eikä maksullista versiota ole. Trippy ei myy lippuja eikä varauksia. Linkit varaussivustoille ovat tavallisia linkkejä, eikä Trippy saa palkkiota eikä mitään muutakaan, kun avaat sellaisen tai teet varauksen sen takana.' },
         { type: 'defs', rows: [
           { term: 'Ylläpitäjä', text: '{operator}' },
           { term: 'Kysymykset ja ongelmat', text: 'Kirjoita osoitteeseen: {contactEmail}' },
@@ -332,7 +332,7 @@ export default {
           { term: 'Openverse ja Pexels', text: 'Lisää kuvia: avoimesti lisensoituja [Openversen](https://openverse.org/) kautta ja joitakin matkojen kansikuvia [Pexelsistä](https://www.pexels.com/).' },
           { term: 'Paikkojen verkkosivut ja muu verkko', text: 'Kun avoimista lähteistä ei löydy mitään, kuva voi tulla paikan omilta verkkosivuilta, sen Google Maps -sivulta tai sivulta, jolla paikka mainitaan nimeltä. Nämä kuvat pysyvät siellä, missä ne ovat, kuuluvat omistajilleen ja näytetään lähdelinkin kanssa.' },
           { term: 'Google Gemini ja Mistral', text: 'Tekoälymallit, jotka kirjoittavat suunnitelmat, ehdottavat vaihtoehtoja, vastaavat chat-paneelissa ja tarkistavat, että kansikuvassa on oikea paikka.' },
-          { term: 'Supabase', text: 'Kirjautuminen, tietokanta, jossa matkasi säilytetään, tiedostojen tallennus ja palvelinfunktiot, jotka asioivat tekoälypalvelujen kanssa.' },
+          { term: 'Supabase', text: 'Kirjautuminen, tietokanta, jossa matkasi säilytetään, tiedostojen tallennus ja palvelinfunktiot, jotka asioivat tekoälypalvelujen kanssa. Tietokanta, kirjautuminen ja tallennetut kuvat sijaitsevat Singaporessa.' },
           { term: 'Leaflet', text: 'Kirjasto, joka piirtää kartat.' },
           { term: 'GitHub Pages', text: 'Paikka, josta itse sovellus tarjoillaan.' },
         ] },
@@ -343,7 +343,7 @@ export default {
       heading: 'Usein kysyttyä',
       blocks: [
         { type: 'faq', items: [
-          { q: 'Onko se oikeasti ilmainen?', a: 'On. Maksullista tasoa ei ole, ei päättyvää kokeilujaksoa eikä mainoksia.' },
+          { q: 'Onko se oikeasti ilmainen?', a: 'On. Maksullista tasoa ei ole, ei päättyvää kokeilujaksoa eikä mainoksia, eikä Trippy saa palkkiota sivustoilta, joille se linkittää. Se on kokeilu, joten se voi muuttua tai loppua.' },
           { q: 'Tarvitsenko tilin?', a: 'Matkan suunnitteluun tarvitset, ja kirjautua voi vain Google-tilillä. Jos joku on jakanut sinulle matkan linkillä, voit lukea sen ilman tiliä.' },
           { q: 'Varaako Trippy lentoja tai hotelleja?', a: 'Ei. Se ehdottaa niitä ja linkittää lentoyhtiön tai varaussivuston sivuille, ja varaat siellä itse. Kun olet varannut, voit lisätä matkalle lennon numeron, kellonajat ja varausnumeron, jolloin kaikki on yhdessä paikassa.' },
           { q: 'Kauanko suunnitelman tekeminen kestää?', a: 'Noin viisi minuuttia, kun matka kestää kymmenestä päivästä kahteen viikkoon, ja lyhyellä matkalla vähemmän. Sinun ei tarvitse odottaa sivulla. Sulje ikkuna ja palaa myöhemmin, tai pyydä ilmoitus, kun suunnitelma on valmis.' },
@@ -353,10 +353,10 @@ export default {
           ] },
           { q: 'Miksi säästä sanotaan ”tyypillinen”?', a: 'Suunnitelma saatetaan kirjoittaa kuukausia ennen matkaa, jolloin kukaan ei vielä voi tietää säätä. Näytettävä sää on sille paikalle ja kuukaudelle tavallinen, ja se on kirjoitettu suunnitelmaa tehtäessä. Se ei ole ennuste, ja se pysyy samana, millainen oikea sää sitten onkin.' },
           { q: 'Toimiiko se ilman verkkoyhteyttä?', a: 'Lukeminen toimii. Viimeksi avaamasi matkat säilytetään laitteellasi ja ne aukeavat ilman verkkoa, ja voit asentaa Trippyn aloitusnäytölle sovelluksen tapaan. Uuden suunnitelman tekeminen, muokkaaminen ja chat-paneeli tarvitsevat yhteyden.' },
-          { q: 'Voimmeko suunnitella kahdestaan?', a: 'Voitte. Kutsu toinen sähköpostiosoitteella katselijaksi tai muokkaajaksi, niin kun toinen teistä muuttaa matkaa, toinen näkee muutoksen. Voit myös tehdä pelkkään lukemiseen tarkoitetun linkin niille, joiden tarvitsee vain katsoa, ja kytkeä sen myöhemmin pois.' },
+          { q: 'Voimmeko suunnitella kahdestaan?', a: 'Voitte. Kutsu toinen sähköpostiosoitteella katselijaksi tai muokkaajaksi, niin kun toinen teistä muuttaa matkaa, toinen näkee muutoksen. Voit myös tehdä pelkkään lukemiseen tarkoitetun linkin niille, joiden tarvitsee vain katsoa. Linkki lakkaa toimimasta 7 päivän kuluttua, ja voit kytkeä sen pois aiemmin.' },
           { q: 'Suunnittelin matkani jo muualla. Voinko tuoda sen tänne?', a: 'Voit. **Import trip** antaa kehotteen, jonka liität mihin tahansa tekoälyavustajaan omien muistiinpanojesi kanssa, ja liität tuloksen takaisin Trippyyn. Näet esikatselun ennen kuin mitään tallennetaan, ja tuonnin voi kumota.' },
           { q: 'Millä kielillä Trippy on?', a: 'Alatunniste ja nämä sivut (Tietoja, Tietosuojakäytäntö ja Käyttöehdot) ovat englanniksi, malaijiksi, yksinkertaistetulla kiinalla ja suomeksi. Muu sovellus ja itse suunnitelmat ovat toistaiseksi englanniksi.' },
-          { q: 'Miten poistan matkani tai tilini?', a: '[Asetusten](#/settings) **Delete all my trips** poistaa pysyvästi jokaisen matkan, jonka omistat. Jos haluat, että myös tilisi ja profiilisi poistetaan, kirjoita tietosuojavastaavalle: {dpoEmail}. [Tietosuojakäytäntö](#/privacy) kertoo, mitä sen jälkeen tapahtuu.' },
+          { q: 'Miten poistan matkani tai tilini?', a: '[Asetusten](#/settings) **Delete all my trips** poistaa pysyvästi jokaisen matkan, jonka omistat. Saman paikan kohdassa Account oleva **Delete my account** poistaa tilisi, profiilisi ja kaiken niiden sisällön, ja teet sen itse. [Tietosuojakäytäntö](#/privacy/retention) kertoo tarkasti, mitä poistetaan ja mitä ei voida poistaa.' },
         ] },
       ],
     },

@@ -139,6 +139,31 @@ describe('account', () => {
   it('without a known email says the device is signed in', () => {
     expect(textOf(accountSectionHtml(state({ account: { email: null, admin: false } })))).toContain('You are signed in on this device.');
   });
+  it('"Delete my account" is the last control, destructive, and says what goes and that it cannot be undone', () => {
+    const html = accountSectionHtml(state());
+    const buttons = walk(html).filter((el) => el.tag === 'button');
+    const last = buttons.at(-1);
+    expect(last.attrs['data-st-action']).toBe('delete-account');
+    expect(last.text.trim()).toBe('Delete my account');
+    expect(last.attrs.class).toContain('st-btn--danger');
+    expect(last.attrs.disabled).toBeUndefined();
+    const help = textOf(byIdHtml(html, last.attrs['aria-describedby']));
+    expect(help).toBe('Deletes your account for good: your profile and settings, every trip you own with its photos and share links, your invitations and your usage records. A trip you own is deleted for the people you shared it with too. This cannot be undone.');
+    expect(textOf(html)).not.toMatch(/write to|email us|contact/i);
+  });
+  it('offline, "Delete my account" is off and says why', () => {
+    const html = accountSectionHtml(OFFLINE());
+    const button = walk(html).find((el) => el.attrs['data-st-action'] === 'delete-account');
+    expect(button.attrs.disabled).toBe(true);
+    expect(textOf(byIdHtml(html, button.attrs['aria-describedby']))).toContain('This needs a connection.');
+  });
+  it('shows the result of a delete that did not happen in a status line', () => {
+    const message = 'Your account was not deleted. It is still here and you are still signed in. Try again.';
+    const status = byId(walk(accountSectionHtml(state({ accountMessage: message }))), 'st-account-status');
+    expect(status.attrs.role).toBe('status');
+    expect(status.children.map((el) => el.text.trim())).toEqual([message]);
+    expect(byId(walk(accountSectionHtml(state())), 'st-account-status').children).toEqual([]);
+  });
   it('offline, Sign out is off and says why', () => {
     const html = accountSectionHtml(OFFLINE());
     const out = walk(html).find((el) => el.attrs['data-st-action'] === 'sign-out');

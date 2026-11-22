@@ -6,7 +6,7 @@ import { convert, canConvert } from '../data/currencies.js';
 import { getHomeCurrency, setHomeCurrency } from '../data/user-prefs.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { shortenTransitName } from '../data/transit-lines.js';
-import { hotelSearchLinks, flightSearchLink, trackBookingClick, BOOKING_DISCLOSURE } from '../services/booking-links.js';
+import { hotelSearchLinks, flightSearchLink, trackBookingClick } from '../services/booking-links.js';
 import { safeUrl, deadlineInfo, stayInfo, sortChecklistItems, isBookedLeg, flightTimeLine } from '../lib/trip-extras.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from './toast.js';
@@ -1318,7 +1318,6 @@ function renderAccommodationContent(extras, trip) {
   // Group by city when the itinerary spans multiple cities, so each city's stays
   // are shown under their own heading. Legacy/single-city data has no city field
   // (or one distinct value) and renders as a single flat grid.
-  const disclosure = `<p class="td-booking-disclosure">${esc(BOOKING_DISCLOSURE)}</p>`;
   const cities = [...new Set(accom.map(a => (a.city || '').trim()).filter(Boolean))];
   if (cities.length > 1) {
     return cities.map(city => {
@@ -1329,10 +1328,10 @@ function renderAccommodationContent(extras, trip) {
           <div class="td-accom-grid">${forCity.map(renderOption).join('')}</div>
         </div>
       `;
-    }).join('') + disclosure;
+    }).join('');
   }
 
-  return `<div class="td-accom-grid">${accom.map(renderOption).join('')}</div>${disclosure}`;
+  return `<div class="td-accom-grid">${accom.map(renderOption).join('')}</div>`;
 }
 
 // Every writer of a tick says so, and a landing recounts (TICKS_EVENT, js/data/tick-store.js).
@@ -2068,11 +2067,20 @@ async function showShareModal(trip, opener = document.activeElement) {
 
   const renderPrivate = () => {
     section.innerHTML = `
-      <p class="td-share-status">This trip is private. A share link lets anyone who has it view the itinerary (booking references aren't shown).</p>
+      <p class="td-share-status">This trip is private. A share link lets anyone who has it view the itinerary for ${repo.SHARE_LINK_DAYS} days (booking references aren't shown).</p>
       <button type="button" class="btn btn--primary btn--pill td-share-create">Create share link</button>`;
   };
 
+  // The old link stopped working on its date: say so and offer a new one, which has a new address.
+  const renderExpired = (status) => {
+    section.innerHTML = `
+      <p class="td-share-status">${esc(status.text)} It no longer opens the trip. A new link works for ${repo.SHARE_LINK_DAYS} days.</p>
+      <button type="button" class="btn btn--primary btn--pill td-share-create" data-label="Create a new link">Create a new link</button>`;
+  };
+
   const renderShared = () => {
+    const status = repo.shareLinkStatus(share);
+    if (status.expired) { renderExpired(status); return; }
     const shareUrl = `${location.origin}${location.pathname}#/shared/${encodeURIComponent(share.share_token)}`;
     section.innerHTML = `
       <label class="td-share-label" for="td-share-url">Share link</label>
@@ -2080,6 +2088,7 @@ async function showShareModal(trip, opener = document.activeElement) {
         <input type="text" class="td-share-url" id="td-share-url" value="${esc(shareUrl)}" readonly>
         <button type="button" class="td-share-copy">Copy</button>
       </div>
+      ${status.text ? `<p class="td-share-status td-share-expiry">${esc(status.text)}</p>` : ''}
       <p class="td-share-hint" role="status"></p>
       <button type="button" class="td-share-stop">Stop sharing</button>
       <div class="td-share-divider"><span>or send via email</span></div>
@@ -2112,14 +2121,14 @@ async function showShareModal(trip, opener = document.activeElement) {
 
     if (btn.classList.contains('td-share-create')) {
       btn.disabled = true;
-      btn.textContent = 'Creating link...';
+      btn.textContent = 'Creating link';
       const { data, error } = await repo.createShareLink(trip.id);
       if (!overlay.isConnected) return;
       if (error || !data?.share_token) {
         logger.error('share', 'Share creation failed from trip detail', { error });
         showToast(shareErrorText('create a share link'), 'error');
         btn.disabled = false;
-        btn.textContent = 'Create share link';
+        btn.textContent = btn.dataset.label || 'Create share link';
         return;
       }
       share = data;
@@ -2611,7 +2620,7 @@ function renderDayPicker(app, loaded, opts = {}) {
   mountEntryCards(app, view);
   bindTripStatus(view);
 
-  // Affiliate click telemetry (links open in a new tab; no navigation race).
+  // Booking link telemetry (links open in a new tab; no navigation race).
   // Bound to this render's root and aborted with it, so clicks count once.
   wrap.addEventListener('click', (e) => {
     const link = e.target.closest('[data-booking-click]');

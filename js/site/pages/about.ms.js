@@ -152,7 +152,7 @@ const LIMITS = {
   doesNot: {
     title: 'Apa yang Trippy tidak lakukan',
     items: [
-      'Trippy tidak menempah apa-apa. Pautan ke syarikat penerbangan, hotel dan laman tempahan membawa anda ke sana, dan anda membeli di sana.',
+      'Trippy tidak menjual atau menempah apa-apa. Pautan ke syarikat penerbangan, hotel dan laman tempahan ialah pautan biasa yang membawa anda ke sana, dan anda membeli di sana. Trippy tidak memperoleh komisen.',
       'Trippy tidak tahu harga semasa. Kos ialah anggaran seorang untuk aktiviti, dan harga penerbangan serta hotel hanyalah panduan kasar.',
       'Trippy tidak tahu keadaan cuaca nanti. Cuaca dalam rancangan ialah cuaca lazim bagi musim itu, bukan ramalan.',
       'Trippy tidak menyemak waktu buka, penutupan atau hari yang tiketnya habis dijual. Tempat yang diingati oleh model mungkin sudah tutup.',
@@ -205,7 +205,7 @@ export default {
   title: 'Perihal Trippy',
   intro: [
     'Trippy ialah perancang perjalanan yang berjalan dalam pelayar anda. Anda menjawab beberapa soalan tentang perjalanan anda, dan model AI menulis rancangan bagi setiap hari, dengan tempat sebenar, masa dan anggaran kos. Selepas itu, ubahlah apa sahaja yang anda tidak berkenan.',
-    'Trippy percuma, tiada iklan, dan tidak menempah atau menjual apa-apa.',
+    'Trippy ialah perkhidmatan percuma yang bersifat eksperimen. Tiada iklan, Trippy tidak menempah atau menjual apa-apa, dan tidak memperoleh komisen.',
   ],
   sections: [
     {
@@ -249,15 +249,15 @@ export default {
       id: 'your-data',
       heading: 'Data anda',
       blocks: [
-        { type: 'p', text: 'Anda log masuk dengan akaun Google, dan Trippy menyimpan nama, alamat e-mel dan gambar profil anda daripada akaun itu. Trippy juga menyimpan apa yang anda beritahu: bandar tempat anda tinggal, mata wang anda, pasport yang anda gunakan, dan perjalanan anda dengan segala isinya. Jawapan yang anda berikan untuk sesuatu perjalanan dihantar kepada penyedia AI supaya rancangan dapat ditulis. Perjalanan terbaru anda turut disimpan pada peranti supaya boleh dibuka tanpa sambungan, dan dibuang dari peranti itu apabila anda log keluar. Tiada iklan dan tiada penjejak pengiklanan. [Dasar privasi](#/privacy) menerangkan semua ini dengan lengkap, termasuk cara melihat, membetulkan atau memadam data tentang anda yang disimpan, dan cara menarik balik persetujuan anda.' },
+        { type: 'p', text: 'Anda log masuk dengan akaun Google, dan Trippy menyimpan nama, alamat e-mel dan gambar profil anda daripada akaun itu. Trippy juga menyimpan apa yang anda beritahu: bandar tempat anda tinggal, mata wang anda, pasport yang anda gunakan, dan perjalanan anda dengan segala isinya. Jawapan yang anda berikan untuk sesuatu perjalanan dihantar kepada penyedia AI supaya rancangan dapat ditulis. Penyedia itu ialah Google, pada peringkat percuma perkhidmatannya, dan di situ Google boleh menggunakan apa yang dihantar untuk menambah baik produknya dan penyemak manusia boleh membacanya, jadi jangan masukkan butiran peribadi yang sensitif dalam ruang teks bebas. Perjalanan terbaru anda turut disimpan pada peranti supaya boleh dibuka tanpa sambungan, dan dibuang dari peranti itu apabila anda log keluar. Tiada iklan dan tiada penjejak pengiklanan. [Dasar privasi](#/privacy) menerangkan semua ini dengan lengkap, termasuk cara melihat atau membetulkan data tentang anda yang disimpan, cara memadam akaun anda sendiri dalam Settings, dan cara menarik balik persetujuan anda.' },
       ],
     },
     {
       id: 'who-makes-it',
       heading: 'Siapa yang membuatnya',
       blocks: [
-        { type: 'p', text: 'Trippy ialah projek peribadi yang dibuat dan dikendalikan dari Singapura. Asalnya ia alat untuk merancang perjalanan kami sendiri dari Singapura, dan sebab itulah tetapan lalainya condong ke situ: dolar Singapura, dan lawatan singkat ke tempat seperti Batam dan Desaru antara cadangannya. Namun Trippy boleh merancang perjalanan dari mana-mana ke mana-mana.' },
-        { type: 'p', text: 'Penggunaannya percuma dan tiada versi berbayar. Pautan ke laman tempahan ialah pautan biasa, dan Trippy tidak mendapat apa-apa apabila anda mengikutinya. Jika perkara itu berubah, halaman inilah yang akan memaklumkannya dahulu.' },
+        { type: 'p', text: 'Trippy ialah projek peribadi dan satu eksperimen, dibuat dan dikendalikan oleh seorang individu di Singapura, bukan oleh syarikat. Asalnya ia alat untuk merancang perjalanan kami sendiri dari Singapura, dan sebab itulah tetapan lalainya condong ke situ: dolar Singapura, dan lawatan singkat ke tempat seperti Batam dan Desaru antara cadangannya. Namun Trippy boleh merancang perjalanan dari mana-mana ke mana-mana.' },
+        { type: 'p', text: 'Penggunaannya percuma dan tiada versi berbayar. Trippy tidak menjual tiket atau tempahan. Pautan ke laman tempahan ialah pautan biasa, dan Trippy tidak memperoleh komisen atau apa-apa yang lain apabila anda mengikutinya atau membuat tempahan di sana.' },
         { type: 'defs', rows: [
           { term: 'Dikendalikan oleh', text: '{operator}' },
           { term: 'Soalan dan masalah', text: 'Tulis kepada: {contactEmail}' },
@@ -278,7 +278,7 @@ export default {
           { term: 'Openverse dan Pexels', text: 'Foto tambahan: foto berlesen terbuka melalui [Openverse](https://openverse.org/), dan beberapa foto muka depan perjalanan daripada [Pexels](https://www.pexels.com/).' },
           { term: 'Laman web tempat dan web', text: 'Apabila sumber terbuka tidak mempunyai apa-apa, foto boleh datang daripada laman web tempat itu sendiri, penyenaraiannya di Google Maps atau halaman yang menyebut namanya. Foto itu kekal di tempat asalnya, menjadi hak pemiliknya, dan dipaparkan dengan pautan ke sumbernya.' },
           { term: 'Google Gemini dan Mistral', text: 'Model AI yang menulis rancangan, mencadangkan pilihan lain, menjawab dalam panel sembang dan menyemak bahawa foto muka depan menunjukkan tempat yang betul.' },
-          { term: 'Supabase', text: 'Log masuk, pangkalan data tempat perjalanan anda disimpan, storan fail dan fungsi pelayan yang berhubung dengan penyedia AI.' },
+          { term: 'Supabase', text: 'Log masuk, pangkalan data tempat perjalanan anda disimpan, storan fail dan fungsi pelayan yang berhubung dengan penyedia AI. Pangkalan data, log masuk dan foto yang disimpan dihoskan di Singapura.' },
           { term: 'Leaflet', text: 'Pustaka yang melukis peta.' },
           { term: 'GitHub Pages', text: 'Tempat aplikasi ini dihoskan.' },
         ] },
@@ -289,7 +289,7 @@ export default {
       heading: 'Soalan yang sering ditanya',
       blocks: [
         { type: 'faq', items: [
-          { q: 'Betulkah percuma?', a: 'Ya. Tiada pelan berbayar, tiada tempoh percubaan yang akan tamat dan tiada iklan.' },
+          { q: 'Betulkah percuma?', a: 'Ya. Tiada pelan berbayar, tiada tempoh percubaan yang akan tamat dan tiada iklan, dan Trippy tidak memperoleh komisen daripada laman yang dipautnya. Trippy ialah satu eksperimen, jadi ia boleh berubah atau dihentikan.' },
           { q: 'Perlukah saya ada akaun?', a: 'Untuk merancang perjalanan, ya, dan satu-satunya cara log masuk ialah dengan akaun Google. Untuk membaca perjalanan yang dikongsi dengan anda melalui pautan, tidak perlu.' },
           { q: 'Adakah Trippy menempah penerbangan atau hotel?', a: 'Tidak. Trippy mencadangkannya dan memberikan pautan ke syarikat penerbangan atau laman tempahan, dan anda menempah sendiri di sana. Selepas menempah, anda boleh memasukkan nombor penerbangan, masa dan nombor rujukan tempahan ke dalam perjalanan itu supaya semuanya ada di satu tempat.' },
           { q: 'Berapa lama untuk menyiapkan rancangan?', a: 'Sekitar lima minit bagi perjalanan sepuluh hari hingga dua minggu, dan lebih cepat bagi perjalanan yang singkat. Anda tidak perlu menunggu di halaman itu. Tutup tetingkap dan kembali kemudian, atau minta supaya dimaklumkan apabila rancangan siap.' },
@@ -299,10 +299,10 @@ export default {
           ] },
           { q: 'Mengapa cuaca ditulis "typical"?', a: 'Rancangan mungkin ditulis berbulan-bulan sebelum anda bertolak, terlalu awal untuk sesiapa pun tahu cuacanya. Yang dipaparkan ialah cuaca yang biasa bagi tempat dan bulan itu, ditulis semasa rancangan dibuat. Ini bukan ramalan cuaca, dan tidak berubah walau bagaimana sekalipun cuaca sebenar nanti.' },
           { q: 'Bolehkah digunakan tanpa sambungan?', a: 'Untuk membaca, boleh. Perjalanan yang paling baru anda buka disimpan pada peranti dan boleh dibuka tanpa sambungan, dan anda boleh memasang Trippy pada skrin utama seperti aplikasi biasa. Membuat rancangan baharu, menyunting dan panel sembang memerlukan sambungan.' },
-          { q: 'Bolehkah kami berdua merancang bersama?', a: 'Boleh. Jemput seseorang melalui e-mel sebagai pelihat atau penyunting, dan apabila seorang mengubah perjalanan itu, yang seorang lagi akan nampak perubahannya. Anda juga boleh membuat pautan baca sahaja untuk orang yang hanya perlu melihat, dan mematikannya semula kemudian.' },
+          { q: 'Bolehkah kami berdua merancang bersama?', a: 'Boleh. Jemput seseorang melalui e-mel sebagai pelihat atau penyunting, dan apabila seorang mengubah perjalanan itu, yang seorang lagi akan nampak perubahannya. Anda juga boleh membuat pautan baca sahaja untuk orang yang hanya perlu melihat. Pautan itu berhenti berfungsi selepas 7 hari, dan anda boleh mematikannya lebih awal.' },
           { q: 'Saya sudah merancang perjalanan di tempat lain. Bolehkah saya bawa masuk?', a: 'Boleh. **Import trip** memberi anda satu arahan untuk ditampal ke dalam mana-mana pembantu AI bersama catatan anda, dan anda tampal semula hasilnya di sini. Anda akan melihat pratonton sebelum apa-apa disimpan, dan import itu boleh dibatalkan.' },
           { q: 'Trippy ada dalam bahasa apa?', a: 'Kaki halaman dan halaman-halaman ini (Perihal, Dasar privasi, Terma penggunaan) tersedia dalam bahasa Inggeris, Bahasa Melayu, bahasa Cina Ringkas dan bahasa Finland. Bahagian lain aplikasi, dan rancangan itu sendiri, buat masa ini dalam bahasa Inggeris.' },
-          { q: 'Bagaimana saya memadam perjalanan atau akaun saya?', a: '**Delete all my trips** dalam [Settings](#/settings) memadam setiap perjalanan milik anda buat selama-lamanya. Jika anda mahu akaun dan profil anda dibuang juga, tulis kepada wakil perlindungan data: {dpoEmail}. [Dasar privasi](#/privacy) menerangkan apa yang berlaku selepas itu.' },
+          { q: 'Bagaimana saya memadam perjalanan atau akaun saya?', a: '**Delete all my trips** dalam [Settings](#/settings) memadam setiap perjalanan milik anda buat selama-lamanya. **Delete my account**, di bawah Account di tempat yang sama, membuang akaun, profil dan segala isinya, dan anda melakukannya sendiri. [Dasar privasi](#/privacy/retention) menyatakan dengan tepat apa yang dibuang dan apa yang tidak dapat dibuang.' },
         ] },
       ],
     },
