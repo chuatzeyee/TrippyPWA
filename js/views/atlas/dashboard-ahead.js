@@ -3,10 +3,11 @@
 // with the plan after it as a row; or, with nothing ahead, one suggested place for the next plan.
 // The time rail keeps its own "Next departure" entry. Owner: VC.
 import { attr, button, cls, esc, link } from '../shared/html.js';
+import { flapDigitsHtml } from '../shared/flap.js';
 import { icon } from '../shared/icons.js';
 import { coverFrameHtml } from '../shared/photo-frame.js';
 import { coverBlockHtml, enterClass, flagsHtml, placeName, toneOf } from './parts.js';
-import { costLine, inDaysText, lengthText, sharedLine, toGoText, weatherLine } from './words.js';
+import { inDaysText, sharedLine, toGoText, weatherLine } from './words.js';
 
 /** The action of "See more ideas": dashboard.js scrolls to the short hops. */
 export const MORE_IDEAS = 'atl-more-ideas';
@@ -29,12 +30,17 @@ function lateHtml(next) {
 function nextHtml(next, ctx) {
   const card = next.trip;
   const toGo = toGoText(next.daysToGo);
-  const length = [next.lengthText || lengthText(card.dates), costLine(card.cost)].filter(Boolean).join(', ');
+  // The length as two figures with a sign each: the days, then the nights. Said in words for a screen reader.
+  const days = Number(card.dates?.dayCount);
+  const nights = Number(card.dates?.nights);
+  const span = Number.isFinite(days) && days > 0
+    ? `<span class="atl-span"${attr('role', 'img')}${attr('aria-label', `${days} ${days === 1 ? 'day' : 'days'}${nights > 0 ? `, ${nights} ${nights === 1 ? 'night' : 'nights'}` : ''}`)}><span>${esc(days)}${icon('sun', 16)}</span>${nights > 0 ? `<span>${esc(nights)}${icon('moon', 16)}</span>` : ''}</span>`
+    : '';
   const checklist = card.readiness ? link(`${card.href}?open=checklist`, 'Open checklist', { cls: 'ui-btn atl-whole', focusKey: `ahead-checklist-${card.id}` }) : '';
   return `<article class="atl-lead atl-lead--ahead"${tripAttrs(card)}>
     ${coverBlockHtml(card.cover, { cls: 'atl-now-photo', over: `<h3 class="atl-now-title">${esc(card.title)}</h3>`, frame: { ...frameOf(card, ctx), priority: true, sizes: SIZES } })}
     <div class="atl-now-body">
-      <p class="atl-dayline atl-togo">${toGo ? `<strong><b>${esc(toGo.count)}</b> ${toGo.words}</strong>` : ''}<span><span>${esc(card.dates?.text)}</span><span>${esc(length)}</span></span></p>
+      <p class="atl-dayline atl-togo">${toGo ? `<strong>${flapDigitsHtml(next.daysToGo, { cls: 'atl-flaps atl-togo-flaps' })} ${toGo.words}</strong>` : ''}<span><span>${esc(card.dates?.text)}</span>${span}</span></p>
       ${lateHtml(next)}
       ${card.shared ? `<p class="atl-now-shared">${esc(sharedLine(card))}</p>` : ''}
       <p class="atl-now-actions">${link(card.href, 'Open trip', { cls: 'ui-btn ui-btn--primary atl-today', focusKey: `ahead-open-${card.id}` })}${checklist}</p>

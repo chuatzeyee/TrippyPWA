@@ -385,9 +385,15 @@ describe('beside the plate while no plan is live', () => {
     const { trip, daysToGo, todo, lengthText } = model.next;
     expect(attr(card, 'data-trip-id')).toBe(trip.id);
     expect(textOf(one(card, 'h3'))).toBe(trip.title);
-    expect(textOf(one(one(card, '.atl-togo'), 'strong'))).toBe(`${daysToGo} days to go`);
+    // The days to go are flap digits (the cells plus the real number as hidden text), then the words.
+    const toGo = one(one(card, '.atl-togo'), 'strong');
+    expect(one(toGo, '.ui-flap')).toBeTruthy();
+    expect(textOf(toGo)).toMatch(new RegExp(`${daysToGo}.*days to go$`));
     expect(textOf(card)).toContain(trip.dates.text);
-    expect(textOf(card)).toContain(lengthText);
+    // The length is two figures with a sign each and no cost; the words are the label.
+    void lengthText;
+    expect(attr(one(card, '.atl-span'), 'aria-label')).toBe(`${trip.dates.dayCount} days, ${trip.dates.nights} nights`);
+    expect(textOf(one(card, '.atl-togo'))).not.toMatch(/per person|about/);
     expect(textOf(one(card, '.atl-next-wx'))).toContain('typical');
     expect(todo.length).toBeGreaterThan(0);
     expect(all(one(card, '.atl-todo'), 'li')).toHaveLength(Math.min(3, todo.length));

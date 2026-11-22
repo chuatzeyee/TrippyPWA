@@ -183,7 +183,13 @@
 /* Beside the plate while no plan is live: the next departure, or a suggested place. */
 [data-view="atlas"][data-view] .atl-togo > strong { font-weight: 400; color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-togo b { margin-right: 2px; font: 400 40px/1 var(--font-heading); color: var(--ink); }
-[data-view="atlas"][data-view] .atl-togo > span { display: grid; gap: 2px; }
+[data-view="atlas"][data-view] .atl-togo { align-items: flex-start; }
+[data-view="atlas"][data-view] .atl-togo > strong { display: flex; align-items: center; gap: var(--sp-3); }
+[data-view="atlas"][data-view] .atl-togo .atl-togo-flaps { font-size: 34px; }
+[data-view="atlas"][data-view] .atl-togo > span { display: grid; gap: var(--sp-2); }
+[data-view="atlas"][data-view] .atl-span { display: inline-flex; justify-content: flex-end; gap: 1.5em; font: 500 14px/1 var(--font-mono); color: var(--ink); }
+[data-view="atlas"][data-view] .atl-span > span { display: inline-flex; align-items: center; gap: 6px; }
+[data-view="atlas"][data-view] .atl-span .ui-icon { color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-ahead-late { display: grid; gap: var(--sp-3); }
 [data-view="atlas"][data-view] .atl-ahead-late.atl-wait { min-height: 148px; }
 [data-view="atlas"][data-view] .atl-idea-where { display: flex; align-items: center; gap: var(--sp-2); }
