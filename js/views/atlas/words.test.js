@@ -1,7 +1,7 @@
 // The small wordings the Atlas view writes itself.
 import { describe, it, expect } from 'vitest';
 import { cost, money } from '../fixtures/parts.js';
-import { plansText, daysText, shortDate, fullDate, lengthText, toGoText, daysLeftText, costLine, weatherLine, sharedLine, numberText } from './words.js';
+import { plansText, daysText, shortDate, fullDate, lengthText, toGoText, daysLeftText, costLine, costShort, matchText, weatherLine, sharedLine, numberText } from './words.js';
 
 describe('counts', () => {
   it('says plan and plans, day and days', () => {
@@ -45,6 +45,14 @@ describe('costLine', () => {
     expect(costLine(cost({ local: money(640, 'EUR') }))).toBe('€640 per person');
     expect(costLine(cost())).toBe('');
     expect(costLine(null)).toBe('');
+  });
+  it('costShort is the leading figure alone, for the rail pill', () => {
+    expect(costShort(cost({ local: money(4200, 'MAD'), home: money(390, 'EUR') }))).toBe('€390');
+    expect(costShort(cost({ local: money(640, 'EUR') }))).toBe('€640');
+    expect(costShort(null)).toBe('');
+  });
+  it('matchText says how many plans a search found', () => {
+    expect([matchText(1), matchText(3)]).toEqual(['1 plan matches', '3 plans match']);
   });
 });
 

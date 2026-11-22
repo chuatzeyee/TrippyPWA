@@ -20,7 +20,7 @@ import { passportLine, stampRows, stampsHtml } from './passport.js';
 import { mountPlates } from './plate-mount.js';
 import { plateData } from './plates.js';
 import { railGroups } from './rail.js';
-import { inDaysText, numberText, savedText } from './words.js';
+import { inDaysText, matchText, numberText, savedText } from './words.js';
 
 const MAP_CREDIT = 'Map outline: Natural Earth, public domain.';
 const IDLE_MS = 1500;
@@ -70,12 +70,21 @@ function passportHtml(rows) {
 /** The chips of the task table: All, Upcoming, Past, Shared with me ("Now" only while it is the active one). */
 const filterOf = (filter) => ({ ...filter, options: list(filter?.options).filter((option) => option.key !== 'live' || filter.active === 'live') });
 
+/** What a search or a filter found, in words; '' while neither is on (the rail says "No plan matches" itself). */
+function foundText(model, groups) {
+  if (!model.filter?.expanded) return '';
+  const onRail = [...groups.upcoming, ...groups.past].reduce((sum, group) => sum + group.trips.length, 0);
+  const found = onRail + groups.planning.length + list(model.sections?.live).length;
+  return found ? `${esc(matchText(found))}.` : '';
+}
+
 function tripsHtml(model, ctx, rows) {
   const groups = railGroups(model.sections);
   return `<section class="atl-trips" aria-labelledby="atl-trips-h">
     <div class="atl-trips-head">
-      <h2 class="atl-sec-title" id="atl-trips-h">Trips <span class="atl-count" data-region="count">${esc(model.counts?.all)}</span></h2>
+      <h2 class="atl-sec-title" id="atl-trips-h">Trips</h2>
       ${filterBarHtml(filterOf(model.filter), { label: 'Search trips, cities or countries' })}
+      <p class="atl-found" data-region="count" role="status">${foundText(model, groups)}</p>
     </div>
     <div class="atl-trips-grid">
       <div class="atl-ahead">

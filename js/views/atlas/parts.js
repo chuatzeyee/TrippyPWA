@@ -26,25 +26,6 @@ export function flagsHtml(flags, { size = 20, max = 3 } = {}) {
   return chips ? `<span class="atl-flags">${chips}</span>` : '';
 }
 
-/** The longest last word that is kept whole with the flags; a longer one wraps as it likes. */
-const TIED_WORD_MAX = 16;
-
-/**
- * A title followed by its flags, with the flags tied to the last word of the title, so they never
- * wrap onto a line of their own.
- * @param {string} title  text, escaped here
- * @param {string} flags  flagsHtml() output, trusted markup, or ''
- * @returns {string} 'Geneva, Zurich &amp; <span class="atl-nb">Basel<span class="atl-flags"></span></span>'
- */
-export function titleWithFlags(title, flags) {
-  const words = String(title ?? '').trim();
-  if (!flags) return esc(words);
-  const cut = words.lastIndexOf(' ');
-  const last = words.slice(cut + 1);
-  if (!last || last.length > TIED_WORD_MAX) return `${esc(words)} ${flags}`;
-  return `${esc(words.slice(0, cut + 1))}<span class="atl-nb">${esc(last)}${flags}</span>`;
-}
-
 /** The three stats in words: plans, countries, days planned. Plans, never trips taken. */
 export function statWords(stats) {
   const [plans, countries, days] = [whole(stats?.trips), whole(stats?.countries), whole(stats?.daysPlanned)];

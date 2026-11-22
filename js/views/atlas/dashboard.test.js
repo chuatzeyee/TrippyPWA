@@ -120,9 +120,12 @@ describe.each(READY)('ready fixture %s', (key) => {
     expect(all(plate, 'path.wm-arc').length).toBeGreaterThan(0);
     expect(attr(one(plate, '[data-atl-plate]'), 'data-atl-pins')).toContain('"p":');
   });
-  it('4. Trips, with its count, the search field and the filter chips', () => {
+  it('4. Trips, with the search field and the filter chips, and no count badge', () => {
     const trips = one(root, 'section.atl-trips');
-    expect(textOf(one(trips, 'h2'))).toBe(`Trips ${model.counts.all}`);
+    expect(textOf(one(trips, 'h2'))).toBe('Trips');
+    expect(all(trips, '.atl-count')).toHaveLength(0);
+    expect(textOf(trips)).not.toMatch(/Most recent first|Soonest first/);
+    expect(textOf(region(root, 'count'))).toMatch(model.filter.expanded ? /^(\d+ plans? match(es)?\.)?$/ : /^$/);
     expect(all(trips, 'input[data-trip-search]')).toHaveLength(1);
     expect(attr(one(trips, 'input[data-trip-search]'), 'placeholder')).toBe('Search trips, cities or countries');
     const chips = texts(region(root, 'filters'), '.ui-chip-label');
@@ -141,8 +144,8 @@ describe.each(READY)('ready fixture %s', (key) => {
       expect(words).toContain('Next departure');
       expect(words).toMatch(model.next.daysToGo === 1 ? /1 day to go/ : new RegExp(`${model.next.daysToGo} days to go`));
       expect(words).toContain(model.next.trip.dates.text);
-      expect(words).toContain(model.next.lengthText);
-      if (model.next.trip.cost.local) expect(words).toContain('per person');
+      expect(textOf(one(card, '.atl-pill'))).toContain(`${model.next.trip.dates.dayCount} day`);
+      expect(words).not.toMatch(/per person|about [^\d\s]/);
       if (model.next.trip.weather) expect(words).toContain('typical');
       for (const item of model.next.todo) expect(words).toContain(`${item.label}: ${item.status}`);
       if (model.next.settled.length) expect(words).toContain(`Settled: ${model.next.settled.map((item) => item.label).join(', ')}`);
@@ -185,7 +188,7 @@ describe.each(READY)('ready fixture %s', (key) => {
     expect(groups.map((group) => attr(group, 'data-key'))).toEqual(model.pastByMonth.map((group) => `past-${group.key}`));
     expect(groups.map((group) => attr(group, 'open') !== null)).toEqual(model.pastByMonth.map((_, i) => model.filter.expanded || i < 2));
     expect(all(past, '[data-trip-id]').map((el) => attr(el, 'data-trip-id'))).toEqual(model.sections.past.map((card) => card.id));
-    for (const group of groups) expect(textOf(one(group, 'summary'))).toMatch(/^\w{3} \d{4} \d+ plans? \S/);
+    for (const group of groups) { expect(textOf(one(group, 'summary'))).toMatch(/^\w{3} \d{4} \S/); expect(textOf(one(group, 'summary'))).not.toMatch(/^\w{3} \d{4} \d+ plans?\b/); }
     const term = one(past, '.atl-rail-term');
     if (model.sections.past.length && !model.filter.expanded) expect(textOf(term)).toMatch(/^First plan, \d{1,2} \w{3} \d{4}$/);
     else expect(term).toBeNull();
@@ -206,12 +209,15 @@ describe.each(READY)('ready fixture %s', (key) => {
     expect(textOf(one(section, 'h2'))).toBe(`Short hops from ${model.user.homeCity}`);
     expect(textOf(section)).toContain('Nearest first. Distances are straight lines from home.');
   });
-  it('says plans, never trips taken, and "about" before a converted amount', () => {
+  it('says plans, never trips taken, and the rail pill holds the figure and the length alone', () => {
     const words = textOf(root);
     expect(words).not.toMatch(/you went|visited|trips? (logged|taken)/i);
     for (const card of [...model.sections.upcoming, ...model.sections.past]) {
-      if (card.cost.homeFirst && card.cost.home) expect(words).toContain(`about ${card.cost.home.text}`);
-      if (card.cost.local) expect(textOf(one(one(root, '.atl-trips'), `[data-trip-id="${card.id}"]`))).toContain('per person');
+      // The rail rows carry the figure alone in their pill: no "about", no "per person" (the owner's ruling).
+      const row = one(one(root, '.atl-trips'), `[data-trip-id="${card.id}"]`);
+      expect(textOf(row)).not.toMatch(/per person|\babout\b/);
+      if (card.cost.local) expect(textOf(one(row, '.atl-pill-cost'))).toBe(card.cost.homeFirst && card.cost.home ? card.cost.home.text : card.cost.local.text);
+      if (card.dates?.dayCount) expect(textOf(one(row, '.atl-pill-days'))).toMatch(/^\d+ days?$/);
     }
   });
 });
@@ -468,14 +474,27 @@ describe('a closed month of the past rail', () => {
     expect(textOf(all(what, '.atl-rm-names')[0])).toBe('Tokyo, Geneva, Zurich & Basel and 1 more');
     expect(all(all(what, '.atl-rm-flags')[0], 'img')).toHaveLength(3);
   });
-  it('keeps the flag of a past plan on the line of the last word of its title', () => {
-    expect(html).toContain('Geneva, Zurich &amp; <span class="atl-nb">Basel<span class="atl-flags">');
+  it('has a month control of the month and the arrow, with no count of plans', () => {
+    for (const summary of all(root, 'summary.atl-rm')) {
+      expect(textOf(summary)).not.toMatch(/\d+ plans?\b/);
+      const control = one(summary, '.atl-rm-btn');
+      expect(all(control, '.atl-rm-k')).toHaveLength(1);
+      expect(all(control, 'svg')).toHaveLength(1);
+    }
   });
-  it('does not tie the flag to a last word that is too long to keep whole', () => {
-    const long = { ...model, sections: { ...model.sections, past: [card('p9', 'Llanfairpwllgwyngyllgogerychwyrndrobwll', ['gb'])] } };
-    const out = renderDashboard(long, CTX_FIXTURE);
-    expect(out).not.toContain('atl-nb');
-    expect(out).toContain('Llanfairpwllgwyngyllgogerychwyrndrobwll <span class="atl-flags">');
+  it('puts every flag of a past plan together before its name, and never cuts the row in two', () => {
+    const two = { ...model, sections: { ...model.sections, past: [card('p8', 'Singapore, Johor Bahru & Kuala Lumpur', ['sg', 'my']), card('p9', 'Tokyo', ['jp'])] } };
+    const rows = all(parseHtml(renderDashboard(two, CTX_FIXTURE)).root, '.atl-tp');
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(attr(row, 'class')).toContain('atl-fr-2');
+      const kids = row.children.filter((kid) => kid.tag).map((kid) => String(kid.attrs.class).split(' ')[0]);
+      expect(kids.slice(1, 4)).toEqual(['atl-tp-flags', 'atl-tp-main', 'atl-tp-meta']);
+      expect(one(row, '.atl-tp-meta').children.filter((kid) => kid.tag).map((kid) => String(kid.attrs.class).split(' ')[0])).toEqual(['atl-tp-dates', 'atl-pill']);
+      expect(all(one(row, '.atl-tp-title'), 'img')).toHaveLength(0);
+    }
+    expect(all(one(rows[0], '.atl-tp-flags'), 'img')).toHaveLength(2);
+    expect(textOf(one(rows[0], '.atl-tp-title'))).toBe('Singapore, Johor Bahru & Kuala Lumpur');
   });
 });
 

@@ -70,6 +70,14 @@ export function costLine(cost) {
   return lead ? `${lead} per person` : '';
 }
 
+/** The cost of a plan as the rail pill shows it: the leading figure alone, "S$3,040". '' with no cost. */
+export function costShort(cost) {
+  return costFigures(cost).lead.replace(/^about\s+/, '');
+}
+
+/** "3 plans match", "1 plan matches": what a search or a filter found. */
+export const matchText = (n) => `${plansText(n)} ${whole(n) === 1 ? 'matches' : 'match'}`;
+
 /** "10 to 24°C, typical for late March". The stored weather is a seasonal guess, and says so. */
 export function weatherLine(weather) {
   const range = String(weather?.range ?? '').trim();

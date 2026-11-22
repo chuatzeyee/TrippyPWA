@@ -61,7 +61,8 @@
 [data-view="atlas"][data-view] .ui-btn--danger { background: transparent; color: var(--atl-error-ink); }
 [data-view="atlas"][data-view] .ui-flag { border-radius: 2px; box-shadow: 0 0 0 1px var(--atl-rule); }
 [data-view="atlas"][data-view] .atl-flags { display: inline-flex; gap: 4px; margin-left: 5px; vertical-align: -1px; }
-[data-view="atlas"][data-view] .atl-nb { white-space: nowrap; }
+[data-view="atlas"][data-view] .atl-found { font: 400 14px/1.4 var(--font-body); color: var(--ink-secondary); }
+[data-view="atlas"][data-view] .atl-found:empty { display: none; }
 [data-view="atlas"][data-view] .atl-count {
   padding: 4px 6px;
   border-radius: var(--r-sm);
@@ -271,9 +272,9 @@
 [data-view="atlas"][data-view] .atl-ahead::before,
 [data-view="atlas"][data-view] .atl-rg--past::before { content: ''; position: absolute; left: var(--atl-rail-x); top: 12px; bottom: -12px; width: 2px; transform: translateX(-1px); }
 [data-view="atlas"][data-view] .atl-ahead::before { background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--terracotta) 85%, transparent) 0 5px, transparent 5px 11px); }
-[data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-6) + 22px); }
+[data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-10) + 22px); }
 [data-view="atlas"][data-view] .atl-rg--past::before { bottom: 22px; background: color-mix(in srgb, var(--ink) 20%, transparent); }
-[data-view="atlas"][data-view] .atl-rg { position: relative; padding: 0 0 var(--sp-6) var(--atl-rail-pad); }
+[data-view="atlas"][data-view] .atl-rg { position: relative; padding: 0 0 var(--sp-10) var(--atl-rail-pad); }
 [data-view="atlas"][data-view] .atl-rg:empty { display: none; }
 [data-view="atlas"][data-view] .atl-rg--up { --atl-node: var(--terracotta); }
 [data-view="atlas"][data-view] .atl-rg--past { --atl-node: color-mix(in srgb, var(--ink) 52%, var(--parchment)); padding-bottom: 0; }
@@ -282,28 +283,31 @@
 [data-view="atlas"][data-view] .atl-rg-head { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-3); }
 [data-view="atlas"][data-view] .atl-rg-head::before { content: ''; position: absolute; left: calc(var(--atl-rail-x) - var(--atl-rail-pad)); top: 12px; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--atl-node); box-shadow: 0 0 0 4px var(--parchment); }
 [data-view="atlas"][data-view] .atl-rg-title { font: 400 21px/1.15 var(--font-heading); }
-[data-view="atlas"][data-view] .atl-rg-note { font: 400 13px/1.3 var(--font-body); color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-rm { position: relative; display: flex; align-items: center; gap: var(--sp-3); min-height: 32px; margin: var(--sp-1) 0 0; color: var(--ink-secondary); list-style: none; }
 [data-view="atlas"][data-view] .atl-rm::-webkit-details-marker { display: none; }
 [data-view="atlas"][data-view] .atl-rm::before { content: ''; position: absolute; left: calc(var(--atl-rail-x) - var(--atl-rail-pad) - 5px); top: 50%; width: 10px; height: 2px; margin-top: -1px; background: var(--atl-node); }
 [data-view="atlas"][data-view] .atl-rm-k { font: 600 12.5px/1 var(--font-mono); letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
-[data-view="atlas"][data-view] .atl-rm-n { font: 400 12.5px/1 var(--font-body); white-space: nowrap; }
 [data-view="atlas"][data-view] .atl-rm-what { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--sp-2); min-width: 0; padding-block: 6px; }
 [data-view="atlas"][data-view] .atl-rm-names { font: 400 12.5px/1.3 var(--font-body); color: var(--ink-secondary); overflow-wrap: anywhere; }
 [data-view="atlas"][data-view] .atl-rm-flags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
-[data-view="atlas"][data-view] .atl-rm > .ui-icon { margin-left: auto; color: var(--ink-ghost); }
-[data-view="atlas"][data-view] .atl-rmo { margin-bottom: var(--sp-1); }
+[data-view="atlas"][data-view] .atl-rm-btn { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 44px; border-radius: var(--r-sm); }
+[data-view="atlas"][data-view] .atl-rm-btn > .ui-icon { width: 16px; height: 16px; color: var(--ink-secondary); }
+[data-view="atlas"][data-view] .atl-rmo > .atl-rm:hover .atl-rm-k { text-decoration: underline; text-underline-offset: 4px; }
+[data-view="atlas"][data-view] .atl-rm:hover > .atl-rm-btn > .ui-icon { color: var(--ink); }
+/* A month of the past: a hairline across the plan column, room above it, and one plan per row. */
+[data-view="atlas"][data-view] .atl-rmo { margin-top: var(--sp-5); padding-top: var(--sp-3); border-top: 1px solid var(--atl-rule); }
+[data-view="atlas"][data-view] .atl-rg-head + .atl-rmo { margin-top: 0; }
 [data-view="atlas"][data-view] .atl-rmo > .atl-rm { min-height: 44px; cursor: pointer; }
-[data-view="atlas"][data-view] .atl-rmo[open] > .atl-rm > .ui-icon { transform: rotate(180deg); }
+[data-view="atlas"][data-view] .atl-rmo[open] .atl-rm-btn > .ui-icon { transform: rotate(180deg); }
 [data-view="atlas"][data-view] .atl-rmo[open] > .atl-rm > .atl-rm-what { display: none; }
-[data-view="atlas"][data-view] .atl-rl { display: grid; gap: 2px; }
+[data-view="atlas"][data-view] .atl-rl { display: grid; gap: var(--sp-3); padding-top: var(--sp-2); }
 
 /* Rail entries */
 [data-view="atlas"][data-view] .atl-tu,
 [data-view="atlas"][data-view] .atl-tp { position: relative; display: grid; align-items: center; border-radius: var(--r-md); }
 [data-view="atlas"][data-view] .atl-tu:not(.atl-tu--next):hover,
 [data-view="atlas"][data-view] .atl-tp:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
-[data-view="atlas"][data-view] .atl-tu { grid-template-columns: 80px minmax(0, 1fr); grid-template-areas: 'ph side' 'ph body'; gap: 6px var(--sp-3); align-content: center; padding: var(--sp-2); margin: 0 calc(-1 * var(--sp-2)); }
+[data-view="atlas"][data-view] .atl-tu { grid-template-columns: 80px minmax(0, 1fr); grid-template-areas: 'ph side' 'ph body'; gap: 6px var(--sp-3); align-content: center; padding: var(--sp-2); margin: 0 calc(-1 * var(--sp-2)) var(--sp-3); }
 [data-view="atlas"][data-view] .atl-tu::before { content: ''; position: absolute; left: calc(var(--atl-rail-x) - var(--atl-rail-pad) + var(--sp-2)); top: 58px; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--parchment); box-shadow: 0 0 0 2px var(--atl-node); }
 [data-view="atlas"][data-view] .atl-tu-ph { grid-area: ph; align-self: start; width: 80px; aspect-ratio: 4 / 5; border-radius: var(--r-md); }
 [data-view="atlas"][data-view] .atl-tu-ph .ui-frame-name,
@@ -313,14 +317,27 @@
 [data-view="atlas"][data-view] .atl-tu-in > b { font-weight: 600; }
 [data-view="atlas"][data-view] .atl-tu-in--none { color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-tu-body { grid-area: body; display: grid; gap: 4px; min-width: 0; align-self: start; }
-[data-view="atlas"][data-view] .atl-tu-title { font: 400 21px/1.2 var(--font-heading); overflow-wrap: anywhere; }
+[data-view="atlas"][data-view] .atl-tu-title { display: flex; align-items: flex-start; gap: 10px; font: 400 21px/1.2 var(--font-heading); }
+[data-view="atlas"][data-view] .atl-tu-flags,
+[data-view="atlas"][data-view] .atl-tp-flags { display: inline-flex; flex: none; align-items: center; justify-content: flex-end; }
+[data-view="atlas"][data-view] .atl-tu-flags { height: 1.2em; }
+[data-view="atlas"][data-view] .atl-tu-flags:empty,
+[data-view="atlas"][data-view] .atl-tp-flags:empty { display: none; }
+[data-view="atlas"][data-view] .atl-tu-flags > .atl-flags,
+[data-view="atlas"][data-view] .atl-tp-flags > .atl-flags { flex-wrap: nowrap; margin: 0; vertical-align: 0; }
+[data-view="atlas"][data-view] .atl-tu-name { min-width: 0; overflow-wrap: anywhere; }
+[data-view="atlas"][data-view] .atl-tu-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+/* The cost and the length of a plan, in one pill with a thin rule between the two. */
+[data-view="atlas"][data-view] .atl-pill { display: inline-flex; flex: none; align-items: center; gap: 10px; height: 28px; padding: 0 var(--sp-3); border: 1px solid var(--atl-rule); border-radius: 999px; background: color-mix(in srgb, var(--ink) 5%, transparent); font: 500 12.5px/1 var(--font-mono); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+[data-view="atlas"][data-view] .atl-pill-bar { flex: none; width: 1px; height: 12px; background: color-mix(in srgb, var(--ink) 34%, transparent); }
+[data-view="atlas"][data-view] .atl-pill-days { color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-tu-dates { font: 400 12.5px/1.4 var(--font-mono); letter-spacing: -0.02em; color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-tu-meta { font: 400 13px/1.35 var(--font-body); color: var(--ink-secondary); }
 /* The next departure: the one rail entry that carries a briefing. */
 [data-view="atlas"][data-view] .atl-tu--next {
   grid-template-areas: 'ph side' 'ph body' 'more more';
   padding: var(--sp-3);
-  margin: 0 calc(-1 * var(--sp-3)) var(--sp-2);
+  margin: 0 calc(-1 * var(--sp-3)) var(--sp-4);
   border: 1px solid color-mix(in srgb, var(--terracotta) 30%, var(--atl-rule));
   border-radius: var(--r-lg);
   background: linear-gradient(to bottom, color-mix(in srgb, var(--terracotta) 8%, var(--surface-solid)), var(--surface-solid) 60%);
@@ -340,16 +357,16 @@
 [data-view="atlas"][data-view] .atl-ahead-todo > li:last-child { padding-bottom: 0; border-bottom: 0; }
 [data-view="atlas"][data-view] .atl-tick { width: 18px; height: 18px; background: var(--sage); -webkit-mask: var(--atl-icon-check) center / contain no-repeat; mask: var(--atl-icon-check) center / contain no-repeat; }
 [data-view="atlas"][data-view] .atl-next-open { justify-self: start; }
-/* Ledger row: past plans. */
-[data-view="atlas"][data-view] .atl-tp { grid-template-columns: 44px minmax(0, 1fr) auto; gap: var(--sp-3); min-height: 52px; padding: var(--sp-1) var(--sp-2); margin: 0 calc(-1 * var(--sp-2)); }
-[data-view="atlas"][data-view] .atl-tp-ph { width: 44px; border-radius: var(--r-sm); }
+/* Ledger row: past plans, one per row. Narrow: flags and name, then dates and the pill. */
+[data-view="atlas"][data-view] .atl-tp { grid-template-columns: 68px auto minmax(0, 1fr); grid-template-areas: 'ph fl main' 'ph meta meta'; gap: 6px 0; align-content: center; min-height: 72px; padding: var(--sp-2); margin: 0 calc(-1 * var(--sp-2)); }
+[data-view="atlas"][data-view] .atl-tp-ph { grid-area: ph; align-self: center; width: 56px; border-radius: var(--r-md); }
 [data-view="atlas"][data-view] .atl-tp-ph > .ui-frame-img { filter: saturate(0.72) contrast(1.02); }
-[data-view="atlas"][data-view] .atl-tp-main { display: grid; gap: 3px; min-width: 0; }
-[data-view="atlas"][data-view] .atl-tp-title { font: 600 14.5px/1.3 var(--font-body); overflow-wrap: anywhere; }
-[data-view="atlas"][data-view] .atl-tp-dates { font: 400 12px/1.3 var(--font-mono); letter-spacing: -0.02em; color: var(--ink-secondary); }
-[data-view="atlas"][data-view] .atl-tp-side { display: grid; gap: 3px; justify-items: end; text-align: right; }
-[data-view="atlas"][data-view] .atl-tp-cost { font: 400 12px/1.25 var(--font-mono); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
-[data-view="atlas"][data-view] .atl-tp-days { font: 400 12.5px/1.3 var(--font-body); color: var(--ink-secondary); white-space: nowrap; }
+[data-view="atlas"][data-view] .atl-tp-flags { grid-area: fl; align-self: start; height: 21px; padding-right: var(--sp-2); }
+[data-view="atlas"][data-view] .atl-tp-main { grid-area: main; display: grid; gap: 3px; min-width: 0; }
+[data-view="atlas"][data-view] .atl-tp-title { font: 600 16px/1.3 var(--font-body); overflow-wrap: anywhere; }
+[data-view="atlas"][data-view] .atl-tp-shared { font: 400 12.5px/1.35 var(--font-body); color: var(--ink-secondary); }
+[data-view="atlas"][data-view] .atl-tp-meta { grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--sp-3); min-width: 0; }
+[data-view="atlas"][data-view] .atl-tp-dates { font: 400 12.5px/1.3 var(--font-mono); letter-spacing: -0.02em; color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-rail-end,
 [data-view="atlas"][data-view] .atl-rail-term { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); min-height: 44px; margin-top: var(--sp-2); font: 400 13.5px/1.4 var(--font-body); color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-rail-end::before,
@@ -483,36 +500,52 @@
      next departure reaches 16 px into that room, so what is seen between the boxes is 28 to 44 px. */
   [data-view="atlas"][data-view] .atl-trips-grid { display: flow-root; --atl-rail-x: 108px; --atl-rail-pad: 140px; --atl-cols-gap: clamp(44px, 4.2vw, 60px); }
   [data-view="atlas"][data-view] .atl-ahead { float: left; width: calc(100% - (100% - var(--sp-6)) * 0.3816 - var(--atl-cols-gap)); min-width: 0; }
-  [data-view="atlas"][data-view] .atl-rg--past { clear: left; }
-  [data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-8) + 22px); }
-  [data-view="atlas"][data-view] .atl-rg { padding-bottom: var(--sp-8); }
+  /* The past clears the passport too: its rows are one width, the whole of the page, in every month. */
+  [data-view="atlas"][data-view] .atl-rg--past { clear: both; }
+  [data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-12) + 22px); }
+  [data-view="atlas"][data-view] .atl-rg { padding-bottom: var(--sp-12); }
+  [data-view="atlas"][data-view] .atl-rg--plan { padding-bottom: var(--sp-8); }
+  [data-view="atlas"][data-view] .atl-found { grid-column: 1 / -1; margin-top: calc(-1 * var(--sp-2)); }
   [data-view="atlas"][data-view] .atl-rg--next,
   [data-view="atlas"][data-view] .atl-rg--past { padding-bottom: 0; }
   [data-view="atlas"][data-view] .atl-rg-title { font-size: 24px; }
   [data-view="atlas"][data-view] .atl-rg-head { margin-bottom: var(--sp-4); }
   [data-view="atlas"][data-view] .atl-rm { position: absolute; left: 0; width: 88px; min-height: 0; height: 52px; margin: 0; justify-content: flex-end; }
   [data-view="atlas"][data-view] .atl-rm::before { left: auto; right: -25px; }
-  [data-view="atlas"][data-view] .atl-rmo { position: relative; min-height: 52px; margin-bottom: var(--sp-5); }
-  [data-view="atlas"][data-view] .atl-rmo > .atl-rm { left: calc(-1 * var(--atl-rail-pad)); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; justify-items: end; gap: 6px 2px; }
-  [data-view="atlas"][data-view] .atl-rmo > .atl-rm > .atl-rm-k { grid-column: 1 / -1; }
-  [data-view="atlas"][data-view] .atl-rmo > .atl-rm > .ui-icon { margin-left: 0; width: 16px; height: 16px; }
+  /* A month: the rule and 40 px of room above it, the month control in the gutter beside its first row. */
+  [data-view="atlas"][data-view] .atl-rmo { position: relative; min-height: 109px; margin-top: var(--sp-5); padding-top: var(--sp-5); }
+  [data-view="atlas"][data-view] .atl-rmo > .atl-rm { left: calc(-1 * var(--atl-rail-pad)); top: var(--sp-5); width: 96px; height: 76px; }
+  [data-view="atlas"][data-view] .atl-rmo > .atl-rm::before { right: -17px; }
   [data-view="atlas"][data-view] .atl-rmo > .atl-rm > .atl-rm-what { position: absolute; left: var(--atl-rail-pad); top: 50%; width: max-content; max-width: 640px; padding-block: 0; transform: translateY(-50%); }
-  [data-view="atlas"][data-view] .atl-rm-names { font-size: 13.5px; }
-  /* Columns of one fixed width (a third of the 1280 px page), as many as fit: three or two across the
-     page, one beside the passport. A row is then the same width wherever its month sits, so the cost
-     figures of months beside the passport and below it line up. */
-  [data-view="atlas"][data-view] .atl-rl { grid-template-columns: repeat(auto-fill, minmax(0, 342px)); gap: var(--sp-1) var(--sp-8); }
-  [data-view="atlas"][data-view] .atl-tu { grid-template-columns: 168px minmax(0, 1fr) auto; grid-template-areas: 'ph body side'; gap: var(--sp-5); align-items: center; }
+  [data-view="atlas"][data-view] .atl-rm-names { font-size: 14.5px; }
+  [data-view="atlas"][data-view] .atl-rl { padding-top: 0; }
+  /* One plan per row, in columns that line up down the list: photo, flags, name, dates, pill. Every
+     row keeps the room of the widest set of flags on the rail (atl-fr-1 to 3). */
+  [data-view="atlas"][data-view] .atl-fr-2 { --atl-flag-w: 44px; }
+  [data-view="atlas"][data-view] .atl-fr-3 { --atl-flag-w: 68px; }
+  [data-view="atlas"][data-view] .atl-tp { grid-template-columns: 60px var(--atl-flag-w, 20px) minmax(0, 1fr) auto; grid-template-areas: 'ph fl main meta'; gap: 0 var(--sp-4); align-items: start; min-height: 76px; }
+  [data-view="atlas"][data-view] .atl-tp-ph { align-self: start; width: 60px; }
+  [data-view="atlas"][data-view] .atl-tp-flags,
+  [data-view="atlas"][data-view] .atl-tp-meta { align-self: start; margin-top: 16px; }
+  [data-view="atlas"][data-view] .atl-tp-meta { display: grid; grid-template-columns: 208px 196px; gap: 0 var(--sp-4); }
+  [data-view="atlas"][data-view] .atl-tp-meta > .atl-pill { justify-self: end; }
+  [data-view="atlas"][data-view] .atl-tp-flags { height: 28px; padding-right: 0; }
+  [data-view="atlas"][data-view] .atl-tp-flags:empty { display: inline-flex; }
+  [data-view="atlas"][data-view] .atl-tp-dates { display: flex; align-items: center; min-height: 28px; font-size: 13.5px; white-space: nowrap; }
+  [data-view="atlas"][data-view] .atl-tp-main { align-self: start; padding-top: 18px; }
+  [data-view="atlas"][data-view] .atl-tp-title { font-size: 17px; line-height: 24px; }
+  [data-view="atlas"][data-view] .atl-tu { grid-template-columns: 144px minmax(0, 1fr) auto; grid-template-areas: 'ph body side'; gap: var(--sp-5); align-items: center; }
   [data-view="atlas"][data-view] .atl-tu::before { top: 26px; }
-  [data-view="atlas"][data-view] .atl-tu-body { align-self: center; gap: 5px; }
+  [data-view="atlas"][data-view] .atl-tu-body { align-self: center; gap: var(--sp-2); }
   [data-view="atlas"][data-view] .atl-tu-side { flex-direction: column; align-items: flex-end; align-self: center; padding-right: var(--sp-2); }
   [data-view="atlas"][data-view] .atl-tu-in { display: grid; justify-items: end; gap: 4px; font: 400 12.5px/1 var(--font-body); letter-spacing: 0; color: var(--ink-secondary); }
   [data-view="atlas"][data-view] .atl-tu-in > b { font: 400 40px/0.9 var(--font-heading); color: var(--atl-up-ink); }
-  [data-view="atlas"][data-view] .atl-tu-ph { width: 168px; aspect-ratio: 3 / 2; }
+  [data-view="atlas"][data-view] .atl-tu-ph { width: 144px; aspect-ratio: 3 / 2; }
+  [data-view="atlas"][data-view] .atl-tu--next > .atl-tu-ph { width: 168px; }
   [data-view="atlas"][data-view] .atl-tu-title { font-size: 25px; }
   [data-view="atlas"][data-view] .atl-tu-dates,
   [data-view="atlas"][data-view] .atl-tu-meta { font-size: 13.5px; }
-  [data-view="atlas"][data-view] .atl-tu--next { grid-template-areas: 'ph body side' 'more more more'; padding: var(--sp-4); margin: 0 calc(-1 * var(--sp-4)) var(--sp-3); }
+  [data-view="atlas"][data-view] .atl-tu--next { grid-template-columns: 168px minmax(0, 1fr) auto; grid-template-areas: 'ph body side' 'more more more'; padding: var(--sp-4); margin: 0 calc(-1 * var(--sp-4)) var(--sp-5); }
   [data-view="atlas"][data-view] .atl-tu--next::before { left: calc(var(--atl-rail-x) - var(--atl-rail-pad) + var(--sp-4)); top: 26px; }
   [data-view="atlas"][data-view] .atl-tu--next .atl-tu-title { font-size: 28px; }
   [data-view="atlas"][data-view] .atl-tu--next .atl-tu-in > b { font-size: 48px; }
@@ -523,7 +556,6 @@
   [data-view="atlas"][data-view] .atl-tu-more > .atl-todo > li:last-child { padding-bottom: 0; border-bottom: 0; }
   [data-view="atlas"][data-view] .atl-tu-more > .atl-next-open { grid-area: btn; align-self: end; }
   [data-view="atlas"][data-view] .atl-tu-more.atl-wait { min-height: 144px; }
-  [data-view="atlas"][data-view] .atl-tp-title { font-size: 15px; }
   [data-view="atlas"][data-view] .atl-passport {
     float: right;
     position: relative;
@@ -1078,7 +1110,7 @@
   [data-view="atlas"][data-view] .atl-enter { animation: atl-rise 420ms var(--ease-out) both; }
   [data-view="atlas"][data-view] .atl-pulse::after { animation: atl-ping 2.4s var(--ease-out) infinite; }
   [data-view="atlas"][data-view] .atl-tg--busy::before { animation: atl-spin 1.1s linear infinite; }
-  [data-view="atlas"][data-view] .atl-rm > .ui-icon { transition: transform var(--duration-normal) var(--ease-out); }
+  [data-view="atlas"][data-view] .atl-rm-btn > .ui-icon { transition: transform var(--duration-normal) var(--ease-out); }
   [data-view="atlas"][data-view] .atl-tu,
   [data-view="atlas"][data-view] .atl-tp,
   [data-view="atlas"][data-view] .atl-hop-ph { transition: var(--transition-interactive); }
