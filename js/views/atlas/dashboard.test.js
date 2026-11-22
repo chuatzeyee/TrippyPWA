@@ -60,9 +60,9 @@ describe.each(READY)('ready fixture %s', (key) => {
   });
   it('2. Happening now is there exactly when a plan is live', () => {
     const now = one(root, 'section.atl-now');
-    expect(Boolean(now)).toBe(model.live.length > 0);
+    expect(Boolean(now)).toBe(model.live.length > 0 || Boolean(model.next) || Boolean(model.suggestion));
     expect(region(root, 'live')).not.toBeNull();
-    if (!now) { expect(textOf(region(root, 'live'))).toBe(''); return; }
+    if (!model.live.length) { expect(textOf(region(root, 'live'))).toBe(''); return; }
     expect(textOf(one(now, 'h2'))).toBe('Happening now');
     expect(textOf(one(now, '.atl-count'))).toBe(String(model.live.length));
     expect(textOf(now)).toContain(`Today, ${model.now.dateText}`);
@@ -211,7 +211,7 @@ describe.each(READY)('ready fixture %s', (key) => {
     expect(words).not.toMatch(/you went|visited|trips? (logged|taken)/i);
     for (const card of [...model.sections.upcoming, ...model.sections.past]) {
       if (card.cost.homeFirst && card.cost.home) expect(words).toContain(`about ${card.cost.home.text}`);
-      if (card.cost.local) expect(textOf(one(root, `[data-trip-id="${card.id}"]`))).toContain('per person');
+      if (card.cost.local) expect(textOf(one(one(root, '.atl-trips'), `[data-trip-id="${card.id}"]`))).toContain('per person');
     }
   });
 });
@@ -362,6 +362,83 @@ describe('entry motion', () => {
     expect(render('ready', { ...CTX_FIXTURE, animate: false })).not.toContain('data-fade');
     expect(render('ready')).toContain('atl-enter');
     expect(render('ready', { ...CTX_FIXTURE, animate: false })).not.toContain('atl-enter');
+  });
+});
+
+describe('beside the plate while no plan is live', () => {
+  const D = DASHBOARD_FIXTURES;
+  const draw = (model) => parseHtml(renderDashboard(model, CTX_FIXTURE)).root;
+  const labels = (el) => [...texts(one(el, '.atl-now-actions'), 'a'), ...texts(one(el, '.atl-now-actions'), 'button')];
+
+  it('draws the next departure in the language of the lead card: days to go, dates, weather, what is still to do', () => {
+    const model = D.noLive;
+    const root = draw(model);
+    const section = one(root, 'section.atl-now');
+    expect(textOf(one(section, 'h2'))).toBe('Next departure');
+    const card = one(region(root, 'ahead'), '.atl-lead');
+    const { trip, daysToGo, todo, lengthText } = model.next;
+    expect(attr(card, 'data-trip-id')).toBe(trip.id);
+    expect(textOf(one(card, 'h3'))).toBe(trip.title);
+    expect(textOf(one(one(card, '.atl-togo'), 'strong'))).toBe(`${daysToGo} days to go`);
+    expect(textOf(card)).toContain(trip.dates.text);
+    expect(textOf(card)).toContain(lengthText);
+    expect(textOf(one(card, '.atl-next-wx'))).toContain('typical');
+    expect(todo.length).toBeGreaterThan(0);
+    expect(all(one(card, '.atl-todo'), 'li')).toHaveLength(Math.min(3, todo.length));
+    expect(all(card, '.ui-chip')).toHaveLength(0);
+    expect(labels(card)).toEqual(['Open trip', 'Open checklist']);
+    expect(attr(all(card, 'a').find((a) => textOf(a) === 'Open trip'), 'href')).toBe(trip.href);
+    expect(attr(all(card, 'a').find((a) => textOf(a) === 'Open checklist'), 'href')).toBe(`${trip.href}?open=checklist`);
+    // The rail keeps its own entry.
+    expect(all(region(root, 'next'), `[data-trip-id="${trip.id}"]`)).toHaveLength(1);
+  });
+  it('lists the plan after it as a row, and no row when there is none', () => {
+    const model = D.noLive;
+    const [, second] = model.sections.upcoming;
+    const row = one(region(draw(model), 'ahead'), '.atl-also');
+    expect(attr(row, 'data-trip-id')).toBe(second.id);
+    expect(textOf(one(row, 'h3'))).toBe(`Then ${second.title}`);
+    expect(textOf(row)).toContain(`In ${second.daysToGo} days`);
+    const [first] = model.sections.upcoming;
+    const alone = { ...model, sections: { ...model.sections, upcoming: [first] }, cardsById: Object.fromEntries(Object.entries(model.cardsById).filter(([, card]) => card.phase !== 'upcoming' || card === first)) };
+    expect(one(region(draw(alone), 'ahead'), '.atl-also')).toBeNull();
+  });
+  it('keeps the row while a filter empties the sections', () => {
+    const model = { ...D.noLive, sections: { ...D.noLive.sections, upcoming: [] }, filter: { ...D.noLive.filter, active: 'past', expanded: true } };
+    expect(one(region(draw(model), 'ahead'), '.atl-also')).not.toBeNull();
+  });
+  it('reserves the place of the late lines while the briefing is awaited', () => {
+    const { next } = D.noLive;
+    const trip = { ...next.trip, readiness: null, weather: null, briefingPending: true };
+    const model = { ...D.noLive, next: { ...next, trip, todo: [], settled: [] }, cardsById: { ...D.noLive.cardsById, [trip.id]: trip }, sections: { ...D.noLive.sections, upcoming: [trip, ...D.noLive.sections.upcoming.slice(1)] } };
+    const card = one(region(draw(model), 'ahead'), '.atl-lead');
+    expect(attr(card, 'data-briefing')).toBe('pending');
+    expect(one(card, '.atl-ahead-late.atl-wait')).not.toBeNull();
+    expect(labels(card)).toEqual(['Open trip']);
+  });
+  it('suggests one place when nothing is live or upcoming: the hook of a short hop tile, and a way to the others', () => {
+    const model = D.pastOnly;
+    const root = draw(model);
+    const section = one(root, 'section.atl-now');
+    expect(textOf(one(section, 'h2'))).toBe('Suggested trip');
+    const card = one(region(root, 'ahead'), '.atl-lead');
+    const { hop, reason } = model.suggestion;
+    expect(textOf(one(card, 'h3'))).toBe(hop.name);
+    expect(textOf(card)).toContain(hop.country);
+    expect(textOf(one(card, '.atl-idea-why'))).toBe(reason);
+    const [plan, more] = all(card, 'button');
+    expect([textOf(plan), attr(plan, 'data-action'), attr(plan, 'data-city')]).toEqual(['Plan this trip', 'plan-city', hop.name]);
+    expect([textOf(more), attr(more, 'data-action')]).toEqual(['See more ideas', 'atl-more-ideas']);
+    expect(one(root, '[data-atl-hops]')).not.toBeNull();
+    expect(all(section, '[data-trip-id]')).toHaveLength(0);
+  });
+  it('leaves the row to the plate when there is nothing to put beside it', () => {
+    const root = draw({ ...D.pastOnly, hops: [], suggestion: null });
+    expect(one(root, 'section.atl-now')).toBeNull();
+    expect(textOf(region(root, 'live'))).toBe('');
+  });
+  it('never replaces a live plan', () => {
+    for (const key of ['ready', 'nothingUpcoming', 'twoLive']) expect(region(draw(D[key]), 'ahead')).toBeNull();
   });
 });
 

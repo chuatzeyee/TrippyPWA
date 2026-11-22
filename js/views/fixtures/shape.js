@@ -107,6 +107,7 @@ export const MapPin = {
   at: tuple(N, N), kind: one('live', 'up', 'past', 'home'), place: S, country: S, label: S, tripIds: arr(S),
   count: N, href: S, todayHref: nul(S),
 };
+const Hop = { name: S, country: S, flag: S, km: N, cover: CoverModel, note: S };
 const Credit = { label: S, full: S, link: S };
 export const DashboardModel = {
   state: one('ready', 'empty', 'error'), stale: nul({ savedAt: nul(S) }),
@@ -125,7 +126,7 @@ export const DashboardModel = {
     options: arr({ key: S, label: S, count: N }),
   },
   stats: TravelStats,
-  hops: arr({ name: S, country: S, flag: S, km: N, cover: CoverModel, note: S }, 7),
+  hops: arr(Hop, 7), suggestion: nul({ hop: Hop, isNew: B, reason: S }),
   pins: arr(MapPin), credits: arr(Credit),
 };
 
@@ -253,6 +254,8 @@ export function checkDashboardModel(model) {
     if (pin.tripIds.length && pin.href !== model.cardsById[pin.tripIds[0]]?.href) out.push(`pins[${i}].href: must be the first plan's href`);
   });
   if (model.hops.some((hop, i) => i > 0 && hop.km < model.hops[i - 1].km) || model.hops.some((hop) => hop.km > 1000)) out.push('hops: nearest first, within 1,000 km');
+  if (Boolean(model.suggestion) !== model.hops.length > 0) out.push('suggestion: set exactly when there are hops');
+  if (model.suggestion && !model.hops.includes(model.suggestion.hop)) out.push('suggestion.hop: must be one of the hops');
   return out;
 }
 

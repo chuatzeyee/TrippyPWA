@@ -204,6 +204,42 @@ export function applyDashboardFilter(model, { q, filter } = {}) {
   };
 }
 
+// --- The suggested trip -----------------------------------------------------------------------------
+// What the app knows about a user's taste today: nothing. A list row carries the places, the dates,
+// the daily budget and the cover of a plan, the profile summary the home city, flag and currency, and
+// a catalogue entry a name, a point, a currency and a budget range. None of it says quiet or
+// adventurous, so the order below is novelty, then distance, and the reason says only that.
+
+/**
+ * The hops in the order they are suggested: a place that is in no plan first (any plan counts, also
+ * one without dates or still being planned), then the nearest.
+ * @param {import('../views/contract.js').DashboardModel['hops']} hops
+ * @param {Array<import('../views/contract.js').TripCardModel>} cards
+ * @returns {Array<{ hop: object, isNew: boolean }>} new objects around the same hops
+ */
+export function rankHops(hops, cards) {
+  const named = list(cards).flatMap((card) => list(card.places).map((place) => text(place.name).toLowerCase()));
+  return list(hops)
+    .map((hop, at) => ({ hop, at, isNew: !named.includes(text(hop.name).toLowerCase()) }))
+    .sort((a, b) => Number(b.isNew) - Number(a.isNew) || a.hop.km - b.hop.km || a.at - b.at)
+    .map(({ hop, isNew }) => ({ hop, isNew }));
+}
+
+/**
+ * The one place put forward for the next plan, with one line that says why.
+ * @param {import('../views/contract.js').DashboardModel['hops']} hops
+ * @param {Array<import('../views/contract.js').TripCardModel>} cards
+ * @param {{ homeCity?: string }} [options]
+ * @returns {import('../views/contract.js').DashboardModel['suggestion']}
+ */
+export function suggestTrip(hops, cards, { homeCity } = {}) {
+  const [first] = rankHops(hops, cards);
+  if (!first) return null;
+  const km = String(Math.round(finite(first.hop.km) ?? 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const far = `About ${km} km from ${text(homeCity) || 'home'}`;
+  return { hop: first.hop, isNew: first.isNew, reason: first.isNew ? `${far}, and new for you` : `${far}, the nearest of your short hops` };
+}
+
 // --- The model --------------------------------------------------------------------------------------
 
 function creditsOf(covers) {
@@ -273,7 +309,7 @@ export function buildDashboardModel(input = {}) {
     counts,
     filter: { q: '', active: 'all', expanded: false, options: Object.keys(FILTERS).map((key) => ({ key, label: FILTERS[key], count: counts[key] })) },
     stats: travelStats(cards, { homeFlag: profile?.home_flag, homePoint: home, homeCurrency: homeCurrencyOf(profile), now, deviceZone }),
-    hops, pins: mapPins(cards, home),
+    hops, suggestion: suggestTrip(hops, cards, { homeCity: profile?.home_city }), pins: mapPins(cards, home),
     credits: creditsOf([...cards.map((card) => card.cover), ...hops.map((hop) => hop.cover)]),
   };
 }

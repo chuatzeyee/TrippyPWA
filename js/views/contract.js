@@ -225,6 +225,12 @@
  *           month group open and every past row, so a match is never hidden in a collapsed group
  * @property {TravelStats} stats
  * @property {Array<{ name: string, country: string, flag: string, km: number, cover: CoverModel, note: string }>} hops
+ * @property {{ hop: { name: string, country: string, flag: string, km: number, cover: CoverModel, note: string },
+ *              isNew: boolean, reason: string }|null} suggestion
+ *           the place put forward for the next plan: one of `hops` (the same object), null when there are
+ *           none. A place that is in no plan comes first, then the nearest. `reason` is one line that says
+ *           only that ("About 274 km from Lisbon, and new for you"): no data says what a user likes yet.
+ *           A view draws it when no plan is live and none is upcoming; it may ignore it.
  * @property {MapPin[]} pins
  * @property {Array<{ label: string, full: string, link: string }>} credits   one entry per photo drawn, thumbnails included
  */

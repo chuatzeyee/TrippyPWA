@@ -3,6 +3,7 @@
 import { attr, cls, esc, link } from '../shared/html.js';
 import { coverFrameHtml } from '../shared/photo-frame.js';
 import { segmentsHtml } from '../shared/segments.js';
+import { aheadHtml } from './dashboard-ahead.js';
 import { coverBlockHtml, enterClass, placeName, toneOf } from './parts.js';
 import { daysLeftText, sharedLine } from './words.js';
 
@@ -58,14 +59,15 @@ function alsoHtml(briefing, ctx) {
 }
 
 /**
- * The section, or the empty live region alone when no plan is live (the region exists in every
- * ready state, so a patch always finds it).
+ * The section. With no live plan: the next departure or a suggested place in its stead
+ * (dashboard-ahead.js), else the empty live region alone (the region exists in every ready state, so
+ * a patch always finds it).
  * @param {import('../contract.js').DashboardModel} model
  * @param {import('../contract.js').ViewCtx} ctx
  */
 export function nowHtml(model, ctx) {
   const live = Array.isArray(model.live) ? model.live : [];
-  if (!live.length) return '<div class="atl-now-list" data-region="live"></div>';
+  if (!live.length) return aheadHtml(model, ctx) || '<div class="atl-now-list" data-region="live"></div>';
   const cards = live.map((briefing, i) => (i === 0 ? leadHtml(briefing, ctx) : alsoHtml(briefing, ctx))).join('');
   return `<section class="${cls('atl-now', enterClass(ctx))}" aria-labelledby="atl-now-h">
     <div class="atl-gh"><span class="atl-pulse" aria-hidden="true"></span><h2 class="atl-gh-title" id="atl-now-h">Happening now</h2><span class="atl-count">${esc(live.length)}</span><span class="atl-gh-note">Today, ${esc(model.now?.dateText)}</span></div>

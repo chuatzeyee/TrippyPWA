@@ -230,6 +230,15 @@ function hopsFrom(cards, user) {
     });
 }
 
+/** The place put forward for the next plan: one no card names first, then the nearest. */
+function suggestionFrom(hops, cards, user) {
+  const named = cards.flatMap((c) => c.places.map((place) => place.name));
+  const hop = hops.find((one) => !named.includes(one.name)) ?? hops[0];
+  if (!hop) return null;
+  const isNew = !named.includes(hop.name);
+  return { hop, isNew, reason: `About ${hop.km} km from ${user.homeCity}, ${isNew ? 'and new for you' : 'the nearest of your short hops'}` };
+}
+
 // --- The factory ----------------------------------------------------------------------------------
 
 const FILTER_LABELS = { all: 'All', live: 'Now', upcoming: 'Upcoming', past: 'Past', shared: 'Shared with me' };
@@ -257,7 +266,7 @@ function dashboard(cards, { user = USER, state = 'ready', stale = null } = {}) {
     cardsById: Object.fromEntries(cards.map((c) => [c.id, c])),
     counts,
     filter: { q: '', active: 'all', expanded: false, options: Object.keys(FILTER_LABELS).map((key) => ({ key, label: FILTER_LABELS[key], count: counts[key] })) },
-    stats: statsFrom(cards, user), hops, pins: state === 'ready' ? pinsFrom(cards, user) : pinsFrom([], user),
+    stats: statsFrom(cards, user), hops, suggestion: suggestionFrom(hops, cards, user), pins: state === 'ready' ? pinsFrom(cards, user) : pinsFrom([], user),
     credits: uniqueCredits([...plans.map((c) => c.cover), ...hops.map((hop) => hop.cover)]),
   };
 }
@@ -281,6 +290,7 @@ export const DASHBOARD_FIXTURES = {
   twoLive: dashboard([seville, kyoto, ...UPCOMING, ...PAST]),
   noLive: dashboard([...UPCOMING, ...PAST]),
   nothingUpcoming: dashboard([seville, ...PAST]),
+  pastOnly: dashboard(PAST),
   empty: dashboard([], { state: 'empty' }),
   error: dashboard([], { state: 'error' }),
   stale: dashboard(READY, { stale: { savedAt: '2027-03-09T18:42:00+00:00' } }),

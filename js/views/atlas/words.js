@@ -55,6 +55,9 @@ export function toGoText(daysToGo) {
   return { count: numberText(n), words: n === 1 ? 'day to go' : 'days to go' };
 }
 
+/** "tomorrow", "in 30 days": when an upcoming plan starts, inside a sentence. */
+export const inDaysText = (n) => (whole(n) === 1 ? 'tomorrow' : `in ${numberText(n)} days`);
+
 /** "3 days left", "1 day left", "Last day". */
 export function daysLeftText(daysLeft) {
   const n = whole(daysLeft);

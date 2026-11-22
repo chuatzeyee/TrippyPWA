@@ -3,7 +3,7 @@
 // in Lisbon) on 2027-03-10 at 09:10 UTC. Places are the public catalogue's. The cards that carry a
 // briefing (next stop, readiness, route) are in dashboard-model.briefing.test.js.
 import { describe, it, expect, beforeAll } from 'vitest';
-import { buildDashboardModel, applyDashboardFilter, briefingIds } from './dashboard-model.js';
+import { buildDashboardModel, applyDashboardFilter, briefingIds, rankHops, suggestTrip } from './dashboard-model.js';
 import { DEFAULT_PREFS } from './prefs.js';
 import { setLocaleFromFlag } from './locale.js';
 import { convert } from '../data/currencies.js';
@@ -433,5 +433,47 @@ describe('short hops, pins, statistics and credits', () => {
     expect(credits).toContainEqual({ label: 'Wikimedia Commons', full: 'Photo: Wikimedia Commons', link: 'https://commons.wikimedia.org/wiki/File:Trevi_Fountain%2C_Rome%2C_Italy_2_-_May_2007.jpg' });
     expect(links.filter((link) => link.includes('Oporto'))).toHaveLength(1);        // a plan and a hop share the photo
     expect(links.some((link) => link.includes('Sevilla'))).toBe(true);              // a hop nobody planned yet
+  });
+});
+
+// The suggested trip: a short hop for the next plan. Nothing a list row, the profile summary or the
+// catalogue holds says what a user likes, so the order is novelty, then distance, and the reason
+// says only that.
+describe('the suggested trip', () => {
+  const hop = (name, km, note = 'New for you') => ({ name, country: 'Spain', flag: 'es', km, cover: { kind: 'none' }, note });
+  const plan = (name, phase = 'past') => ({ phase, places: [{ name }] });
+  const HOPS = [hop('Porto', 274), hop('Seville', 313), hop('Marrakech', 575)];
+
+  it('ranks a place that is in no plan first, then the nearest', () => {
+    expect(rankHops(HOPS, []).map((entry) => entry.hop.name)).toEqual(['Porto', 'Seville', 'Marrakech']);
+    expect(rankHops(HOPS, [plan('porto')]).map((entry) => [entry.hop.name, entry.isNew])).toEqual([['Seville', true], ['Marrakech', true], ['Porto', false]]);
+  });
+  it('counts every plan that names the place, also one without dates or one still being planned', () => {
+    for (const phase of ['undated', 'generating', 'failed', 'upcoming', 'live']) expect(rankHops(HOPS, [plan('Porto', phase)])[0].hop.name).toBe('Seville');
+  });
+  it('says the distance and that the place is new, and nothing about taste', () => {
+    const pick = suggestTrip(HOPS, [plan('Porto')], { homeCity: 'Lisbon' });
+    expect(pick.hop).toBe(HOPS[1]);
+    expect(pick).toMatchObject({ isNew: true, reason: 'About 313 km from Lisbon, and new for you' });
+  });
+  it('falls back to the nearest place when every hop is in a plan already', () => {
+    const pick = suggestTrip(HOPS, HOPS.map((one) => plan(one.name)), { homeCity: 'Lisbon' });
+    expect(pick).toMatchObject({ hop: HOPS[0], isNew: false, reason: 'About 274 km from Lisbon, the nearest of your short hops' });
+  });
+  it('groups the thousands and leaves the home city out when it is not known', () => {
+    expect(suggestTrip([hop('Far', 1000)], [], {}).reason).toBe('About 1,000 km from home, and new for you');
+  });
+  it('is null without hops, and changes no input', () => {
+    expect(suggestTrip([], [], { homeCity: 'Lisbon' })).toBeNull();
+    expect(suggestTrip(null, null)).toBeNull();
+    const frozen = Object.freeze(HOPS.map(Object.freeze));
+    expect(() => rankHops(frozen, Object.freeze([plan('Porto')]))).not.toThrow();
+  });
+  it('is on the model: one of its hops, and null when there are none', () => {
+    const model = build();
+    expect(model.hops).toContain(model.suggestion.hop);
+    expect(model.suggestion).toMatchObject({ hop: { name: 'Porto' }, isNew: true, reason: 'About 274 km from Lisbon, and new for you' });
+    expect(build(ROWS(), { profile: { ...PROFILE, home_city: null } }).suggestion).toBeNull();
+    expect(build([], { loadError: true }).suggestion).toBeNull();
   });
 });

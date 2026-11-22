@@ -11,6 +11,7 @@ import { tileFrameHtml } from '../shared/photo-frame.js';
 import { loadErrorHtml, staleBannerHtml } from '../shared/state-cards.js';
 import { landDefsSvg } from '../shared/world-map.js';
 import { loadAtlasBody } from './atlas-page.js';
+import { MORE_IDEAS } from './dashboard-ahead.js';
 import { nowHtml } from './dashboard-now.js';
 import { PASSPORT_HREF, bandHtml, emptyPlateHtml, plateBlockHtml } from './dashboard-plate.js';
 import { aheadRegionsHtml, pastRegionHtml, planningRegionHtml } from './dashboard-rail.js';
@@ -19,7 +20,7 @@ import { passportLine, stampRows, stampsHtml } from './passport.js';
 import { mountPlates } from './plate-mount.js';
 import { plateData } from './plates.js';
 import { railGroups } from './rail.js';
-import { numberText, savedText } from './words.js';
+import { inDaysText, numberText, savedText } from './words.js';
 
 const MAP_CREDIT = 'Map outline: Natural Earth, public domain.';
 const IDLE_MS = 1500;
@@ -27,7 +28,6 @@ const list = (value) => (Array.isArray(value) ? value : []);
 
 /** The name a plan goes by in the briefing: its one place, else its title. */
 const shortName = (card) => (list(card?.places).length === 1 && card.places[0]?.name ? card.places[0].name : card?.title ?? '');
-const inDays = (n) => (n === 1 ? 'tomorrow' : `in ${numberText(n)} days`);
 
 /**
  * The briefing: two lines, the second one quieter. The live plan first, then what is next.
@@ -36,7 +36,7 @@ const inDays = (n) => (n === 1 ? 'tomorrow' : `in ${numberText(n)} days`);
 export function briefingLines(model) {
   const [lead] = list(model.live);
   const next = model.next ?? null;
-  const nextLine = next ? `${shortName(next.trip)} is next, ${inDays(next.daysToGo)}.` : '';
+  const nextLine = next ? `${shortName(next.trip)} is next, ${inDaysText(next.daysToGo)}.` : '';
   if (lead) {
     const country = list(lead.trip.places)[0]?.country;
     const where = country ? ` in ${country}.` : `, ${lead.trip.title}.`;
@@ -44,7 +44,7 @@ export function briefingLines(model) {
   }
   if (next) {
     const after = list(model.sections?.upcoming).find((card) => card.id !== next.trip.id && Number.isFinite(card.daysToGo));
-    return [nextLine, after ? `Then ${shortName(after)}, ${inDays(after.daysToGo)}.` : `It starts on ${next.departText}.`];
+    return [nextLine, after ? `Then ${shortName(after)}, ${inDaysText(after.daysToGo)}.` : `It starts on ${next.departText}.`];
   }
   return ['Nothing is on the calendar.', 'Plan a trip to put the next pin on your map.'];
 }
@@ -98,7 +98,7 @@ function hopsHtml(model, ctx) {
         <span class="atl-hop-body"><span class="atl-hop-km">about ${esc(numberText(hop.km))} km</span><span class="atl-hop-name">${esc(hop.name)} ${flagsHtml([hop.flag], { size: 18 })}</span><span class="atl-hop-country">${esc(hop.country)}</span><span class="${cls('atl-hop-note', { 'is-planned': /^planned/i.test(hop.note ?? '') })}">${esc(hop.note)}</span></span>
       </button>
     </li>`).join('');
-  return `<section class="atl-hops" aria-labelledby="atl-hops-h">
+  return `<section class="atl-hops" data-atl-hops aria-labelledby="atl-hops-h">
     <div class="atl-sec-head"><h2 class="atl-sec-title" id="atl-hops-h">Short hops from ${esc(model.user?.homeCity || 'home')}</h2><p>Nearest first. Distances are straight lines from home. Pick one to start planning it.</p></div>
     <ul class="atl-hops-list" data-region="hops" data-keep-scroll="hops">${items}</ul>
   </section>`;
@@ -162,6 +162,13 @@ export function renderDashboard(model, ctx) {
  */
 export function mountDashboard(root, model, ctx) {
   mountPlates(root, ctx);
+  // "See more ideas" on the suggested trip leads to the short hops of the same page.
+  root.addEventListener('click', (event) => {
+    if (!event.target?.closest?.(`[data-action="${MORE_IDEAS}"]`)) return;
+    const hops = root.querySelector('[data-atl-hops]');
+    hops?.scrollIntoView({ behavior: ctx?.reducedMotion ? 'auto' : 'smooth', block: 'start' });
+    hops?.querySelector('[data-action="plan-city"]')?.focus({ preventScroll: true });
+  });
   // The plate leads to the Atlas page: its drawn half is fetched while the browser is idle, so the
   // page opens in one go. A fetch that fails here is tried again by the page itself.
   if (model?.state !== 'ready') return;
