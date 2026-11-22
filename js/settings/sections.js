@@ -8,6 +8,7 @@ import { viewPickerHtml } from '../views/shared/view-picker.js';
 import { PHOTO_SOURCES_HTML, MAP_ATTRIBUTION_HTML } from '../views/shared/credits.js';
 import { costEstimate, costFigures } from '../lib/money.js';
 import { formatClock, formatTempRange, getLocale } from '../lib/locale.js';
+import { LANGUAGES, resolveLanguage } from '../lib/i18n.js';
 import { currencyOptions } from '../data/currency-list.js';
 import { notificationRow } from './notify.js';
 import { NAME_MAX, cityLabel, nationalityOptions } from './profile-fields.js';
@@ -19,6 +20,7 @@ import {
  * @typedef {Object} SettingsState
  * @property {boolean} online
  * @property {import('../lib/prefs.js').Prefs} prefs
+ * @property {string} [language]   the language on screen (js/lib/i18n.js getLanguage), shown while the pref is 'auto'
  * @property {{ theme: 'dark'|'light', baseUrl: string, images: boolean, views: Array<{ id: string, name: string, sentence: string }> }} picker
  * @property {{ override: 'auto'|'on'|'off', active: boolean }} square   the stored choice, and whether square layout is on now
  * @property {{ status: 'ready'|'loading'|'offline'|'error', data: object|null }} profile   the profile row
@@ -131,9 +133,15 @@ export function lookSectionHtml(state) {
     help: 'Reduce motion turns off animations and smooth scrolling.',
     options: [{ value: 'system', label: 'Match device' }, { value: 'reduce', label: 'Reduce motion' }],
   });
+  // The pref is 'auto' until a language is chosen: the control shows the one on screen (state.language).
+  const language = selectHtml({
+    id: 'st-language', label: 'Language', value: resolveLanguage(prefs.language, [state.language]), inputAttrs: { 'data-st-pref': 'language' },
+    help: 'For the footer and the About, Privacy policy and Terms of use pages. The rest of Trippy is in English for now.',
+    options: LANGUAGES.map(({ code, name }) => ({ value: code, label: name })),
+  });
   return section('look', `
     ${card(`<p class="st-lead">Choose how your dashboard and your trip pages look. Your choice applies at once.</p>${part('picker', pickerHtml)}${part('square-note', note)}`, 'st-card--picker')}
-    ${card(`${part('theme', theme)}${part('square', squareControl)}${part('motion', motion)}`)}`);
+    ${card(`${part('theme', theme)}${part('square', squareControl)}${part('motion', motion)}${part('language', language)}`)}`);
 }
 
 // ---- You (6.2) ----

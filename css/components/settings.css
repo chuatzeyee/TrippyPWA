@@ -20,7 +20,8 @@
   width: 100%;
   max-width: 1040px;
   margin: 0 auto;
-  padding: var(--sp-5) 0 var(--sp-16);
+  /* No bottom padding: the gap to the site footer is the footer's own margin (css/components/site.css). */
+  padding: var(--sp-5) 0 0;
   color: var(--ink);
 }
 [data-theme="light"] .st-page[data-view] {

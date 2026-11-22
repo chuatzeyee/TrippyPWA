@@ -115,8 +115,8 @@
   .td-hero { height: 200px; }
   .td-hero-title { font-size: 1.6rem; }
 
-  /* ----- Footer: it already collapses to a stack ≤640px; keep it tidy ----- */
-  .site-footer { padding: var(--sp-6) var(--sp-5); }
+  /* ----- Footer (css/components/site.css): less air above its columns ----- */
+  .site-foot { padding-top: var(--sp-6); }
 }
 
 /* The split-flap headline's per-letter cells are sized in em, so they scale

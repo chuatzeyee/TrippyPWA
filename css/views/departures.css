@@ -67,7 +67,8 @@
 /* ---- The dashboard page box: #app already pads the page, the root adds the rest of the gutter ---- */
 [data-view="departures"][data-view].dv-root {
   max-width: var(--dv-max);
-  padding: 0 max(0px, calc(var(--gutter) - var(--dep-app-pad))) var(--sp-12);
+  /* No bottom padding: the gap to the site footer is the footer's own margin (css/components/site.css). */
+  padding: 0 max(0px, calc(var(--gutter) - var(--dep-app-pad))) 0;
 }
 
 /* ---- Type: mono for figures only ---- */
@@ -620,7 +621,8 @@
 /* ---- 8. The foot ---- */
 [data-view="departures"][data-view] .dep-foot { display: grid; gap: var(--sp-2); margin-top: var(--sp-12); padding-top: var(--sp-4); border-top: 1px solid var(--dep-hair); }
 [data-view="departures"][data-view] .dep-foot-note { font: var(--text-caption); color: var(--ink-secondary); }
-[data-view="departures"][data-view] .dep-foot-credits:empty { display: none; }
+/* Kept in the markup (it is patched as covers arrive) and shown by the photo credits dialog of the site footer. */
+[data-view="departures"][data-view] .dep-foot-credits { display: none; }
 [data-view="departures"][data-view] .ui-credits > summary { color: var(--dep-accent); font: 600 var(--dep-fz-12)/1.4 var(--font-body); }
 
 /* ---- A new account ---- */

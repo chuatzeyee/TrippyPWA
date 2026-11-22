@@ -158,7 +158,8 @@
 /* ===== Dashboard ===== */
 [data-view="concierge"][data-view].dv-root {
   max-width: calc(var(--con-max) + 2 * (var(--gutter) - var(--con-app-pad)));
-  padding: var(--sp-5) calc(var(--gutter) - var(--con-app-pad)) var(--sp-10);
+  /* No bottom padding: the gap to the site footer is the footer's own margin (css/components/site.css). */
+  padding: var(--sp-5) calc(var(--gutter) - var(--con-app-pad)) 0;
 }
 @media (min-width: 768px) {
   [data-view="concierge"][data-view].dv-root { padding-top: var(--sp-8); }
@@ -538,6 +539,8 @@
 /* The foot: the estimate note and the credits. */
 [data-view="concierge"][data-view] .con-foot { margin-top: var(--sp-12); padding-top: var(--sp-5); border-top: 1px solid var(--con-rule); color: var(--ink-secondary); font: 400 13px/1.6 var(--font-body); }
 [data-view="concierge"][data-view] .con-foot-note { max-width: 70ch; color: var(--ink-secondary); font: 400 13px/1.6 var(--font-body); }
+/* Kept in the markup (it is patched as covers arrive) and shown by the photo credits dialog of the site footer. */
+[data-view="concierge"][data-view] .con-foot-credits { display: none; }
 [data-view="concierge"][data-view] .ui-credits { margin-top: var(--sp-2); font: 400 12px/1.5 var(--font-body); }
 [data-view="concierge"][data-view] .ui-credits > summary { color: var(--ink-secondary); font: 400 13px/1 var(--font-body); list-style: none; text-underline-offset: 4px; }
 [data-view="concierge"][data-view] .ui-credits > summary::-webkit-details-marker { display: none; }

@@ -87,7 +87,7 @@ describe('initPrefs', () => {
     expect(() => store.initPrefs()).not.toThrow();
     expect(() => store.setPref('theme', 'light')).not.toThrow();
   });
-  it('by default applies theme, motion, the view attribute and the display formatters', async () => {
+  it('by default applies theme, motion, the language, the view attribute and the display formatters', async () => {
     const attrs = {};
     vi.stubGlobal('document', {
       documentElement: { getAttribute: (name) => attrs[name] ?? null, setAttribute: (name, value) => { attrs[name] = String(value); }, removeAttribute: (name) => { delete attrs[name]; } },
@@ -95,14 +95,14 @@ describe('initPrefs', () => {
     });
     vi.stubGlobal('window', { matchMedia: () => ({ matches: false, addEventListener: () => {} }), dispatchEvent: () => true });
     const { formatClock, formatTemp, setDisplayPrefs } = await import('../lib/locale.js');
-    const storage = memoryStorage(storedCopy({ values: { theme: 'light', motion: 'reduce', view: 'concierge', timeFormat: '24h', temperatureUnit: 'F' } }));
+    const storage = memoryStorage(storedCopy({ values: { theme: 'light', motion: 'reduce', view: 'concierge', timeFormat: '24h', temperatureUnit: 'F', language: 'fi' } }));
     const store = createPrefsStore({ storage, client: null, getUserId: () => null, hasSession: () => false });
     store.initPrefs();
-    expect(attrs).toEqual({ 'data-theme': 'light', 'data-motion': 'reduce', 'data-view-pref': 'concierge' });
+    expect(attrs).toEqual({ 'data-theme': 'light', 'data-motion': 'reduce', 'data-view-pref': 'concierge', lang: 'fi' });
     expect(formatClock('6:10 PM')).toBe('18:10');
     expect(formatTemp(23)).toBe('73°F');
     store.setPrefs({ timeFormat: '12h', temperatureUnit: 'C', motion: 'system', theme: 'dark' });
-    expect(attrs).toEqual({ 'data-theme': 'dark', 'data-view-pref': 'concierge' });
+    expect(attrs).toEqual({ 'data-theme': 'dark', 'data-view-pref': 'concierge', lang: 'fi' });
     expect(formatClock('18:10')).toBe('6:10 PM');
     expect(formatTemp(23)).toBe('23°C');
     setDisplayPrefs({ timeFormat: '12h', temperatureUnit: 'C' });

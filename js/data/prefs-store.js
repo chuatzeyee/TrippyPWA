@@ -9,6 +9,7 @@ import {
 import { applyTheme } from '../lib/theme.js';
 import { applyMotion } from '../lib/motion.js';
 import { setDisplayPrefs } from '../lib/locale.js';
+import { applyLanguage, connectLanguagePref } from '../lib/i18n.js';
 
 /** The device copy: `{ v, values, at, userId, dirty }`. */
 export const PREFS_KEY = 'trippy_prefs_v1';
@@ -30,10 +31,11 @@ function browserStorage() {
   }
 }
 
-/** Document-level effects of the prefs: theme, motion, the boot attribute for the view, the formatters. */
+/** Document-level effects of the prefs: theme, motion, the language, the boot attribute for the view, the formatters. */
 function applyToDocument(prefs) {
   applyTheme(prefs.theme);
   applyMotion(prefs.motion);
+  applyLanguage(prefs.language);
   setDisplayPrefs({ timeFormat: prefs.timeFormat, temperatureUnit: prefs.temperatureUnit });
   if (typeof document !== 'undefined') document.documentElement?.setAttribute('data-view-pref', prefs.view);
 }
@@ -347,3 +349,7 @@ const appStore = createPrefsStore();
 export const {
   initPrefs, getPrefs, setPref, setPrefs, onPrefsChange, syncPrefs, prefsReady, adoptUser, remotePrefsState, pendingPrefKeys,
 } = appStore;
+
+// setLanguage() in js/lib/i18n.js stores a choice through here: on the device at once, in the account
+// when signed in, like every other pref. The store then applies it (applyToDocument).
+connectLanguagePref((code) => { appStore.setPref('language', code); });

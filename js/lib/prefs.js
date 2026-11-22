@@ -16,6 +16,8 @@
  * @property {boolean} openTodayFirst         default true
  * @property {boolean} autoOpenNextDay        default true
  * @property {boolean} showVenuePhotos        default true
+ * @property {'auto'|'en'|'ms'|'zh-Hans'|'fi'} language  default 'auto': the browser's language when it is
+ *                                            one of the four, else English (js/lib/i18n.js resolves it)
  *
  * @typedef {Object} PrefsEnvelope            what is stored, on the device and in profiles.prefs
  * @property {number} v                       1 for this build
@@ -29,9 +31,12 @@ export const PREFS_VERSION = 1;
 
 export const VIEW_IDS = Object.freeze(['departures', 'concierge', 'atlas']);
 
+/** The languages the pages can be read in (js/lib/i18n.js holds their names), and 'auto'. */
+export const LANGUAGE_PREF_VALUES = Object.freeze(['auto', 'en', 'ms', 'zh-Hans', 'fi']);
+
 export const DEFAULT_PREFS = Object.freeze({
   view: 'atlas', viewChooserSeen: false, theme: 'system', motion: 'system', timeFormat: '12h', temperatureUnit: 'C',
-  homeCurrencyFirst: true, openTodayFirst: true, autoOpenNextDay: true, showVenuePhotos: true,
+  homeCurrencyFirst: true, openTodayFirst: true, autoOpenNextDay: true, showVenuePhotos: true, language: 'auto',
 });
 
 /** Keys whose change needs the open route to render again when it arrives from another device. */
@@ -49,12 +54,13 @@ const SCHEMA = Object.freeze({
   openTodayFirst: 'boolean',
   autoOpenNextDay: 'boolean',
   showVenuePhotos: 'boolean',
+  language: LANGUAGE_PREF_VALUES,
 });
 const PREF_KEYS = Object.freeze(Object.keys(DEFAULT_PREFS));
 /** The one key that merges with OR: once any device has dismissed the chooser it stays dismissed. */
 const STICKY_TRUE_KEY = 'viewChooserSeen';
 /** What a device keeps when another account signs in on it, so the screen does not flash. */
-const KEPT_ACROSS_USERS = Object.freeze(['theme', 'motion']);
+const KEPT_ACROSS_USERS = Object.freeze(['theme', 'motion', 'language']);
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -213,7 +219,7 @@ export function sameEnvelope(a, b) {
 
 /**
  * The device copy for an account other than the one it was made for: values return to the defaults,
- * timestamps go, theme and motion stay (unstamped). One account's choices never reach the next one.
+ * timestamps go, theme, motion and language stay (unstamped). One account's choices never reach the next one.
  * @param {PrefsEnvelope} envelope
  * @returns {PrefsEnvelope}
  */

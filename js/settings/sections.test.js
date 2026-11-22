@@ -139,6 +139,26 @@ describe('look and layout', () => {
   });
 });
 
+describe('the language control', () => {
+  const select = (html) => byId(walk(html), 'st-language');
+  const chosen = (html) => (html.match(/<option value="([^"]+)" selected>/g) ?? []).map((tag) => tag.match(/value="([^"]+)"/)[1]);
+  const control = (html) => html.slice(html.indexOf('id="st-language"'), html.indexOf('</select>', html.indexOf('id="st-language"')));
+  it('is a labelled select in the first section, wired to the language pref', () => {
+    const html = lookSectionHtml(state());
+    expect(select(html).tag).toBe('select');
+    expect(select(html).attrs['data-st-pref']).toBe('language');
+    expect(html).toContain('data-st-part="language"');
+    expect(textOf(html)).toContain('Language');
+    expect([...control(html).matchAll(/<option value="([^"]+)"/g)].map((m) => m[1])).toEqual(['en', 'ms', 'zh-Hans', 'fi']);
+    for (const name of ['English', 'Bahasa Melayu', '简体中文', 'Suomi']) expect(control(html)).toContain(`>${name}</option>`);
+  });
+  it('shows the stored choice, and the language on screen while nothing is chosen', () => {
+    expect(chosen(control(lookSectionHtml(state({ prefs: { ...DEFAULT_PREFS, language: 'fi' }, language: 'en' }))))).toEqual(['fi']);
+    expect(chosen(control(lookSectionHtml(state({ prefs: { ...DEFAULT_PREFS, language: 'auto' }, language: 'zh-Hans' }))))).toEqual(['zh-Hans']);
+    expect(chosen(control(lookSectionHtml(state())))).toEqual(['en']);
+  });
+});
+
 describe('you', () => {
   it('the name field holds the stored name, escaped, and takes 100 characters', () => {
     const els = walk(youSectionHtml(state({ profile: { status: 'ready', data: { ...PROFILE, display_name: 'Avery "Ace" <b>' } } })));

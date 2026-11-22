@@ -43,7 +43,8 @@
 /* ---- The page box of the dashboard and the Atlas page ---- */
 [data-view="atlas"][data-view].dv-root {
   max-width: calc(var(--dv-max) + 2 * var(--gutter));
-  padding: var(--sp-4) max(0px, calc(var(--gutter) - var(--atl-app-pad))) var(--sp-10);
+  /* No bottom padding: the gap to the site footer is the footer's own margin (css/components/site.css). */
+  padding: var(--sp-4) max(0px, calc(var(--gutter) - var(--atl-app-pad))) 0;
   font: 400 16px/1.5 var(--font-body);
   color: var(--ink);
 }
@@ -449,9 +450,9 @@
 [data-view="atlas"][data-view] .atl-hop-note.is-planned { color: var(--atl-sage-ink); }
 
 /* ---- Dashboard: the foot, and the empty atlas ---- */
-[data-view="atlas"][data-view] .atl-foot { display: grid; gap: var(--sp-1); margin-top: var(--sp-16); padding: var(--sp-5) 0 0; color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
-[data-view="atlas"][data-view] .atl-foot-credits:empty { display: none; }
-[data-view="atlas"][data-view] .atl-foot .ui-credits > summary { font: 500 13.5px/1.2 var(--font-body); color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+/* The credits of the page (photos, the map outline) stay in the markup, where they are patched as photos
+   arrive, and are read by the photo credits dialog the site footer opens (js/site/credits-dialog.js). */
+[data-view="atlas"][data-view] .atl-foot { display: none; }
 [data-view="atlas"][data-view] .atl-empty { max-width: 720px; margin: var(--sp-2) auto 0; border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--plate); overflow: hidden; }
 [data-view="atlas"][data-view] .atl-empty-map { position: relative; aspect-ratio: 520 / 220; }
 [data-view="atlas"][data-view] .atl-empty-body { display: grid; gap: var(--sp-3); padding: var(--sp-5) var(--sp-4); border-top: 1px solid var(--atl-rule); background: var(--surface-solid); }

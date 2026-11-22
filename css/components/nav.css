@@ -1,4 +1,8 @@
 html[data-view-pref="atlas"] { --nav-max: 1280px; }
+/* The content width of the other two views (--dv-max in departures.css, --con-max in concierge.css),
+   so the bar and the site footer start and end where their pages do. */
+html[data-view-pref="departures"] { --nav-max: 1120px; }
+html[data-view-pref="concierge"] { --nav-max: 1040px; }
 
 .app-nav {
   position: sticky;
@@ -15,6 +19,12 @@ html[data-view-pref="atlas"] { --nav-max: 1280px; }
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: var(--glass-border);
+}
+/* From 768 px the page under the bar keeps 24 px from the window (#app's padding, the views' gutter),
+   and so does the bar: without this the wordmark sat 8 px left of the page between 768 and 1312 px.
+   The site footer and the site pages use the same two values (css/components/site.css). */
+@media (min-width: 768px) {
+  .app-nav { padding-inline: max(var(--sp-6), calc((100% - var(--nav-max, 1228px)) / 2)); }
 }
 
 .nav-logo {

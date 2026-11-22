@@ -1,5 +1,6 @@
 import { addRoute, start, navigate, onNotFound, reloadCurrentRoute } from './router.js';
 import { renderNav, updateNavLinks } from './components/nav.js';
+import { renderFooter } from './site/footer-mount.js';
 import { renderDashboard } from './components/dashboard.js';
 import { logger } from './lib/logger.js';
 import { supabase, getUser, hasLocalSession } from './lib/supabase.js';
@@ -62,6 +63,7 @@ onSquareModeChange(() => {
   const focused = document.activeElement;
   const focusedId = focused?.closest?.('#app-nav') ? focused.id : '';
   renderNav();
+  renderFooter(); // Atlas is not a page in square layout
   // The square control itself may have caused the flip: keep the focus on it.
   if (focusedId) document.getElementById(focusedId)?.focus();
   reloadCurrentRoute();
@@ -107,6 +109,7 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 renderNav();
+renderFooter();
 
 // ===== Auth state =====
 
@@ -250,6 +253,7 @@ function startUserSession(userId) {
 // sign-in/out in another tab.
 async function onUserChanged(userId, { fromSignIn }) {
   renderNav();
+  renderFooter(); // its links follow who is signed in
   if (!userId) {
     clearProfileSummary();
     const { clearOfflineTripCache } = await import('./data/trip-repository.js');
@@ -336,7 +340,7 @@ function pageIsBusy() {
 // shows the new values.
 function handlePrefsChange(prefs, changedKeys, { origin } = {}) {
   // Only the links are replaced, so the avatar does not blink.
-  if (changedKeys.includes('view')) updateNavLinks();
+  if (changedKeys.includes('view')) { updateNavLinks(); renderFooter(); }
   if (origin !== 'remote') return;
   const rebuild = shouldReloadForRemotePrefs({
     path: location.hash,
@@ -511,6 +515,17 @@ addRoute('/shared/:token', async (params) => {
   await renderSharedTrip(params.token);
 }, { title: 'Shared trip', titleFromHeading: true });
 
+// The site pages: public, signed in or out. #/privacy/<section> opens the page at a section.
+for (const pageId of ['about', 'privacy', 'terms']) {
+  const open = async (params) => {
+    const { renderSitePage } = await import('./site/site-page.js');
+    if (currentPath().split('/')[1] !== pageId) return; // left while the code was loading
+    await renderSitePage(pageId, { section: params.section ?? null });
+  };
+  addRoute(`/${pageId}`, open, { title: 'Trippy', titleFromHeading: true });
+  addRoute(`/${pageId}/:section`, open, { title: 'Trippy', titleFromHeading: true });
+}
+
 addRoute('/trip/:id/read', async (params) => {
   if (!(await ensureSignedIn())) return;
   const { renderOwnerReadView } = await import('./components/shared-trip.js');
@@ -564,6 +579,7 @@ async function boot() {
   if (renderedUserId) startUserSession(renderedUserId);
   routesStarted = true;
   renderNav();
+  renderFooter();
   start();
 
   const hash = location.hash.slice(1) || '/';
@@ -703,6 +719,3 @@ btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: scrollBe
 window.addEventListener('scroll', () => {
   btt.classList.toggle('back-to-top--visible', window.scrollY > 400);
 }, { passive: true });
-
-const footerYear = document.getElementById('footer-year');
-if (footerYear) footerYear.textContent = String(new Date().getFullYear());

@@ -2,7 +2,7 @@
 // The merge between a device and the server is in prefs.merge.test.js.
 import { describe, it, expect } from 'vitest';
 import {
-  DEFAULT_PREFS, PREFS_VERSION, RERENDER_KEYS, VIEW_IDS,
+  DEFAULT_PREFS, LANGUAGE_PREF_VALUES, PREFS_VERSION, RERENDER_KEYS, VIEW_IDS,
   changedPrefKeys, emptyEnvelope, envelopeForNewUser, migrateLegacy,
   normaliseEnvelope, normalisePrefs, shouldReloadForRemotePrefs, stampPatch, validatePatch,
 } from './prefs.js';
@@ -17,10 +17,10 @@ const frozen = (value) => {
 };
 
 describe('defaults', () => {
-  it('are the ten prefs of blueprint 2.5', () => {
+  it('are the ten prefs of blueprint 2.5 and the language', () => {
     expect(DEFAULT_PREFS).toEqual({
       view: 'atlas', viewChooserSeen: false, theme: 'system', motion: 'system', timeFormat: '12h',
-      temperatureUnit: 'C', homeCurrencyFirst: true, openTodayFirst: true, autoOpenNextDay: true, showVenuePhotos: true,
+      temperatureUnit: 'C', homeCurrencyFirst: true, openTodayFirst: true, autoOpenNextDay: true, showVenuePhotos: true, language: 'auto',
     });
     expect(Object.isFrozen(DEFAULT_PREFS)).toBe(true);
     expect(VIEW_IDS).toEqual(['departures', 'concierge', 'atlas']);
@@ -46,6 +46,7 @@ describe('normalisePrefs', () => {
     const chosen = {
       view: 'departures', viewChooserSeen: true, theme: 'light', motion: 'reduce', timeFormat: '24h',
       temperatureUnit: 'F', homeCurrencyFirst: false, openTodayFirst: false, autoOpenNextDay: false, showVenuePhotos: false,
+      language: 'zh-Hans',
     };
     expect(normalisePrefs(chosen)).toEqual(chosen);
     expect(normalisePrefs({ view: 'concierge', theme: 'dark' })).toEqual({ ...DEFAULT_PREFS, view: 'concierge', theme: 'dark' });
@@ -184,6 +185,10 @@ describe('envelopeForNewUser', () => {
     expect(envelopeForNewUser(other)).toEqual(env({ theme: 'light', motion: 'reduce' }));
     expect(normalisePrefs(envelopeForNewUser(other).values)).toEqual({ ...DEFAULT_PREFS, theme: 'light', motion: 'reduce' });
   });
+  it('keeps the language of the device too, with no timestamp', () => {
+    const other = env({ language: 'fi', view: 'departures' }, { language: MON, view: MON });
+    expect(envelopeForNewUser(other)).toEqual(env({ language: 'fi' }));
+  });
   it('keeps neither when there was neither', () => {
     expect(envelopeForNewUser(env({ view: 'concierge' }, { view: MON }))).toEqual(emptyEnvelope());
     expect(envelopeForNewUser(null)).toEqual(emptyEnvelope());
@@ -227,5 +232,20 @@ describe('shouldReloadForRemotePrefs', () => {
     expect(shouldReloadForRemotePrefs({ path: '/' })).toBe(false);
     expect(shouldReloadForRemotePrefs({ ...base, path: '/', changedKeys: [] })).toBe(false);
     expect(shouldReloadForRemotePrefs({ ...base, path: null })).toBe(false);
+  });
+});
+
+describe('the language pref', () => {
+  it('takes auto and the four languages and nothing else', () => {
+    expect(LANGUAGE_PREF_VALUES).toEqual(['auto', 'en', 'ms', 'zh-Hans', 'fi']);
+    for (const language of LANGUAGE_PREF_VALUES) expect(validatePatch({ language }).ok).toBe(true);
+    for (const language of ['zh', 'de', '', null, true, 'EN']) expect(validatePatch({ language }).ok).toBe(false);
+  });
+  it('falls back to auto when the stored value is not a language', () => {
+    expect(normalisePrefs({ language: 'fi' }).language).toBe('fi');
+    expect(normalisePrefs({ language: 'klingon' }).language).toBe('auto');
+  });
+  it('does not make an open page render again when it arrives from another device', () => {
+    expect(RERENDER_KEYS).not.toContain('language');
   });
 });

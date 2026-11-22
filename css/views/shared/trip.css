@@ -46,7 +46,9 @@
   --tv-day-shadow: 0 -1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.1);
   --tv-app-pad: var(--sp-3);
   max-width: var(--tv-max);
-  padding: 0 max(0px, calc(var(--gutter) - var(--tv-app-pad))) calc(var(--sp-16) + env(safe-area-inset-bottom, 0px));
+  /* No bottom padding: the gap to the site footer is the footer's own margin, and the footer keeps
+     clear of the home indicator (css/components/site.css). */
+  padding: 0 max(0px, calc(var(--gutter) - var(--tv-app-pad))) 0;
 }
 @media (min-width: 768px) {
   [data-view]:where(.td-wrap) { --tv-app-pad: var(--sp-6); }
@@ -570,15 +572,10 @@
 [data-view]:where(.td-wrap) :where(.tv-day-aside-time) { grid-column: 2; font: 400 0.75rem/1.4 var(--font-mono); color: var(--ink-secondary); white-space: nowrap; }
 [data-view]:where(.td-wrap) :where(.tv-day-aside-title) { grid-column: 3; overflow-wrap: anywhere; }
 
-/* ---- The page foot (credits.js fills it; its children are styled by common.css) ---- */
-[data-view]:where(.td-wrap) :where(.tv-foot) {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  margin-top: var(--sp-10);
-  padding-top: var(--sp-5);
-  border-top: 1px solid var(--border);
-}
+/* ---- The page foot (credits.js fills it). It stays in the markup, redrawn as photos and the map
+   arrive, and is not displayed here: the photo credits dialog of the site footer reads it
+   (js/site/credits-dialog.js). ---- */
+[data-view]:where(.td-wrap) :where(.tv-foot) { display: none; }
 
 /* ---- Motion: only for people who have not asked for less (blueprint 8.4) ---- */
 @media (prefers-reduced-motion: no-preference) {

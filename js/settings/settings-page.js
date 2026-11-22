@@ -7,6 +7,7 @@ import '../../css/components/settings.css';
 import { getUser } from '../lib/supabase.js';
 import { logger } from '../lib/logger.js';
 import { THEME_EVENT, effectiveTheme } from '../lib/theme.js';
+import { getLanguage } from '../lib/i18n.js';
 import { getSquareOverride, isSquareMode } from '../lib/square-mode.js';
 import { getPrefs, onPrefsChange, pendingPrefKeys, remotePrefsState } from '../data/prefs-store.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
@@ -46,6 +47,7 @@ function readState(current) {
   return {
     online: isOnline(),
     prefs: getPrefs(),
+    language: getLanguage(),
     picker: { theme: effectiveTheme(), baseUrl: import.meta.env.BASE_URL, images: PICKER_IMAGES, views: VIEWS },
     square: { override: getSquareOverride(), active: isSquareMode() },
     profile,
