@@ -111,7 +111,7 @@ function hopsHtml(model, ctx) {
       </button>
     </li>`).join('');
   return `<section class="atl-hops" data-atl-hops aria-labelledby="atl-hops-h">
-    <div class="atl-sec-head"><h2 class="atl-sec-title" id="atl-hops-h">Short hops from ${esc(model.user?.homeCity || 'home')}</h2><p>Nearest first. Distances are straight lines from home. Pick one to start planning it.</p></div>
+    <div class="atl-sec-head"><h2 class="atl-sec-title" id="atl-hops-h">Nearby getaway ideas</h2></div>
     <ul class="atl-hops-list" data-region="hops" data-keep-scroll="hops">${items}</ul>
   </section>`;
 }

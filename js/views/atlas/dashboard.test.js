@@ -206,7 +206,7 @@ describe.each(READY)('ready fixture %s', (key) => {
       expect(textOf(buttons[i])).toContain(hop.note);
     });
     const section = one(root, 'section.atl-hops');
-    expect(textOf(one(section, 'h2'))).toBe(`Short hops from ${model.user.homeCity}`);
+    expect(textOf(one(section, 'h2'))).toBe('Nearby getaway ideas');
     expect(textOf(section)).toContain('Nearest first. Distances are straight lines from home.');
   });
   it('says plans, never trips taken, and the rail pill holds the figure and the length alone', () => {
@@ -313,7 +313,7 @@ describe('a search that matches only a live plan', () => {
 describe('short hops without a home city name', () => {
   it('still has a heading', () => {
     const model = { ...DASHBOARD_FIXTURES.ready, user: { ...DASHBOARD_FIXTURES.ready.user, homeCity: '' } };
-    expect(textOf(one(one(parseHtml(renderDashboard(model, CTX_FIXTURE)).root, 'section.atl-hops'), 'h2'))).toBe('Short hops from home');
+    expect(textOf(one(one(parseHtml(renderDashboard(model, CTX_FIXTURE)).root, 'section.atl-hops'), 'h2'))).toBe('Nearby getaway ideas');
   });
 });
 
