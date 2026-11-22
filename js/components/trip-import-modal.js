@@ -1,4 +1,6 @@
-// Guided trip import: gather details, turn them into a Trippy file with an AI
+// Trip import. First a Word document or pasted plan text, which the server
+// turns into a Trippy file (trip-import-doc.js). Under "Advanced", the guided
+// JSON route: gather details, turn them into a Trippy file with an AI
 // assistant, paste or choose the file, check a preview, then save. Nothing is
 // saved before the preview. The pasted text is kept on the device (with an
 // expiry) so it survives the PWA being reloaded while the user is in the AI app.
@@ -16,6 +18,7 @@ import { validateTripImport, symbolForCurrency, IMPORT_LIMITS, IMPORT_MESSAGES }
 import {
   AI_PROMPT, TEMPLATE_JSON, GATHER_ITEMS, INCLUDE_CHIPS, GOOD_TO_KNOW, buildFixRequest, buildImportSummary,
 } from '../services/trip-import-guide.js';
+import { DOC_MESSAGES, readDocumentFile, importDocumentText, withDates } from '../services/trip-import-doc.js';
 
 const DRAFT_KEY = 'trippy_import_draft';
 const DRAFT_TTL_MS = 3 * 24 * 60 * 60 * 1000; // holds booking references, so don't keep it for long
@@ -88,10 +91,30 @@ function stepHeading(text) {
   return `<h3 class="ti-step-title" tabindex="-1">${escapeHtml(text)}</h3>`;
 }
 
+function docHtml() {
+  return `
+    <section class="ti-step" data-step="doc" hidden>
+      ${stepHeading('Add your plan')}
+      <p class="ti-intro">Planned a trip with Gemini, ChatGPT or another assistant? Save the answer as a Word document and add it here. Trippy turns it into a trip you can check before it is saved.</p>
+      <label class="ti-doc-drop" data-ref="doc-drop">
+        <input type="file" class="ti-doc-file" data-ref="doc-file"
+          accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        <strong>Drop a Word document here, or choose a file</strong>
+        <span>A .docx file up to 20 MB. The file stays on your device. Only its text is sent to make the plan.</span>
+      </label>
+      <label class="trip-edit-label" for="ti-doc-text">or paste the plan text</label>
+      <textarea class="trip-edit-textarea" id="ti-doc-text" data-ref="doc-text" rows="6"
+        placeholder="${escapeHtml('Day 1: arrive, check in, dinner near the hotel')}"></textarea>
+      <p class="ti-status" role="status" aria-live="polite" data-ref="doc-status"></p>
+      <button type="button" class="ti-link ti-link--tall" data-act="goto-1">Advanced: import a Trippy JSON file</button>
+    </section>`;
+}
+
 function step1Html() {
   return `
     <section class="ti-step" data-step="1" hidden>
       ${stepHeading('Gather your trip details')}
+      <button type="button" class="ti-link ti-link--tall" data-act="goto-doc">Import a Word document or plan text instead</button>
       <p class="ti-intro">Already planned or booked your trip somewhere else? Bring it into Trippy in about five minutes. Collect your bookings and notes, let an AI assistant turn them into a Trippy file, then check everything before it is saved.</p>
       <h4 class="trip-edit-label">What to collect</h4>
       ${listHtml(GATHER_ITEMS, CHECK_ICON)}
@@ -153,7 +176,7 @@ function shellHtml(canReadClipboard) {
         <div class="wizard-progress" aria-hidden="true">${'<div class="wizard-progress-seg"></div>'.repeat(STEP_COUNT)}</div>
       </div>
       <div class="trip-edit-body" data-ref="body">
-        ${step1Html()}${step2Html()}${step3Html(canReadClipboard)}
+        ${docHtml()}${step1Html()}${step2Html()}${step3Html(canReadClipboard)}
         <section class="ti-step" data-step="4" hidden></section>
         <section class="ti-step" data-step="state" hidden></section>
       </div>
@@ -166,7 +189,10 @@ const FOOTERS = {
   1: [['I already have a file', 'goto-3'], ['Next', 'goto-2']],
   2: [['Back', 'goto-1'], ['Next: add your trip', 'goto-3']],
   3: [['Back', 'goto-2'], ['Check trip', 'check']],
-  4: [['Back', 'goto-3'], ['Import trip', 'import']],
+  4: [['Back', 'back'], ['Import trip', 'import']],
+  doc: [null, ['Read plan', 'doc-read']],
+  reading: [['Cancel', 'goto-doc'], ['Working', 'none']],
+  working: [['Cancel', 'goto-doc'], ['Working', 'none']],
   saving: [null, ['Saving', 'none']],
   success: [['Undo import', 'undo'], ['Open trip', 'open']],
   failure: [['Back', 'goto-4'], ['Try again', 'import']],
@@ -175,7 +201,7 @@ const FOOTERS = {
 function footerHtml(phase) {
   const [left, right] = FOOTERS[phase];
   return `${left ? btn('btn--ghost btn--pill', left[1], left[0]) : ''}
-    ${btn('btn--primary btn--pill', right[1], right[0], phase === 'saving' ? 'disabled' : '')}`;
+    ${btn('btn--primary btn--pill', right[1], right[0], right[1] === 'none' ? 'disabled' : '')}`;
 }
 
 function groupedHtml(items) {
@@ -237,8 +263,10 @@ function deadlineText({ count, earliest, overdue }) {
   return `${plural(count, 'deadline')}, earliest ${longDate(earliest)}`;
 }
 
-function previewHtml(result) {
+// doc: set when the trip came from a document: { cut, needsDate, start }.
+function previewHtml(result, doc = null) {
   const s = buildImportSummary(result.data);
+  const undated = Boolean(doc?.needsDate && !doc.start);
   const dest = result.data.wizardState.destination;
   const money = (c) => `${c.currency === dest.currencyCode ? dest.currencySymbol : symbolForCurrency(c.currency)}${formatNumber(c.amount)}`;
   const endText = fmtDate(s.end, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
@@ -255,18 +283,28 @@ function previewHtml(result) {
   const stat = (value, label) => `<div class="ti-stat"><strong>${escapeHtml(String(value))}</strong>${escapeHtml(label)}</div>`;
   const legCount = s.flights.legs.length;
   const dayLine = (d) => {
-    const when = d.date ? `, ${formatWeekdayDate(d.date)}` : '';
+    const when = d.date && !undated ? `, ${formatWeekdayDate(d.date)}` : '';
     return `<li>Day ${d.dayNumber}${escapeHtml(when)}: ${escapeHtml(d.title)} (${plural(d.activities, 'activity', 'activities')})</li>`;
   };
 
   return `
     ${stepHeading('Check your trip')}
-    <p class="ti-intro">Here is what will be added. You can edit any activity after importing.</p>
+    <p class="ti-intro">${doc
+      ? 'Here is what we found in your plan. You can edit any activity after importing. Trippy will find its own photos of the places. Pictures in the document are not imported.'
+      : 'Here is what will be added. You can edit any activity after importing.'}</p>
+    ${doc?.cut ? `<p class="ti-caption">${escapeHtml(DOC_MESSAGES.cut)}</p>` : ''}
+    ${doc?.needsDate ? `
+      <div class="ti-date">
+        <label class="trip-edit-label" for="ti-start">Start date</label>
+        <input type="date" id="ti-start" class="trip-edit-input" data-ref="start-date" value="${escapeHtml(doc.start)}" aria-describedby="ti-start-help">
+        <p class="ti-caption" id="ti-start-help">The plan had no dates. Choose the first day of the trip to continue.</p>
+      </div>` : ''}
+    <div data-ref="review-body">
     <div class="ti-preview">
       <div>
         <p class="ti-preview-title">${escapeHtml([s.emoji, s.title].filter(Boolean).join(' '))}</p>
         <p class="ti-preview-line">${escapeHtml([s.destination, s.country].filter(Boolean).join(', '))}</p>
-        <p class="ti-preview-line">${escapeHtml(`${formatWeekdayDate(s.start)} to ${endText} (${plural(s.tripDays, 'day')}), ${plural(s.travelers, 'traveler')}`)}</p>
+        <p class="ti-preview-line">${escapeHtml(`${undated ? plural(s.tripDays, 'day') : `${formatWeekdayDate(s.start)} to ${endText} (${plural(s.tripDays, 'day')})`}, ${plural(s.travelers, 'traveler')}`)}</p>
       </div>
       <div class="ti-stats">
         ${stat(s.dayCount, s.dayCount === 1 ? 'day' : 'days')}
@@ -284,7 +322,8 @@ function previewHtml(result) {
       <div class="ti-warnings">
         <h3>Imported with small changes</h3>
         ${groupedHtml(result.warnings)}
-      </div>` : ''}`;
+      </div>` : ''}
+    </div>`;
 }
 
 function stateHtml(phase, title) {
@@ -295,6 +334,14 @@ function stateHtml(phase, title) {
         ${stepHeading('Saving your trip')}
         <p>This usually takes a few seconds. Keep this screen open.</p>
         <p class="ti-caption" data-ref="save-progress" role="status" aria-live="polite"></p>
+      </div>`;
+  }
+  if (phase === 'reading' || phase === 'working') {
+    return `
+      <div class="ti-state">
+        <span class="trip-card-gen-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        ${stepHeading(phase === 'reading' ? 'Reading your document' : 'Turning your plan into a trip')}
+        <p role="status">${phase === 'reading' ? 'This happens on your device.' : 'This can take up to a minute. Keep this screen open.'}</p>
       </div>`;
   }
   if (phase === 'success') {
@@ -407,6 +454,8 @@ function createController(overlay, { returnFocus, onChange, draft, guideSeen }) 
   let undoing = false;  // deleting the saved trip; the modal can't close meanwhile
   let validateTimer = 0;
   let draftTimer = 0;
+  let doc = null;       // the trip read from a document: { trip, cut, needsDate, start, json }
+  let docRun = 0;       // bumped when a document read starts or is cancelled
 
   const focusHeading = () => overlay.querySelector('.ti-step:not([hidden]) .ti-step-title')?.focus();
   const primaryButton = () => ref('footer').querySelector('.btn--primary');
@@ -420,9 +469,9 @@ function createController(overlay, { returnFocus, onChange, draft, guideSeen }) 
   function show(next) {
     phase = next;
     const numbered = typeof next === 'number';
-    const key = numbered ? String(next) : 'state';
+    const key = numbered || next === 'doc' ? String(next) : 'state';
     overlay.querySelectorAll('.ti-step').forEach(s => { s.hidden = s.dataset.step !== key; });
-    ref('progress').hidden = !numbered;
+    ref('progress').hidden = !numbered || (next === 4 && Boolean(doc));
     if (numbered) {
       ref('count').textContent = `Step ${next} of ${STEP_COUNT}`;
       overlay.querySelectorAll('.wizard-progress-seg').forEach((seg, i) => {
@@ -433,6 +482,11 @@ function createController(overlay, { returnFocus, onChange, draft, guideSeen }) 
     overlay.querySelector('[data-act="close"]').disabled = next === 'saving';
     ref('footer').innerHTML = footerHtml(next);
     if (next === 3) syncPasteControls();
+    if (next === 'doc') {
+      docRun++;
+      ref('doc-status').textContent = '';
+      primaryButton().disabled = !ref('doc-text').value.trim();
+    }
     ref('body').scrollTop = 0;
     focusHeading();
   }
@@ -545,6 +599,69 @@ function createController(overlay, { returnFocus, onChange, draft, guideSeen }) 
     show(4);
   }
 
+  // ---- Word document or pasted plan text ----
+
+  function docFailed(message) {
+    show('doc');
+    const status = ref('doc-status');
+    status.textContent = message;
+    status.classList.add('ti-status--error');
+  }
+
+  // Validates the trip with the chosen start date. Without one, today stands in
+  // so the days and activities can be shown, and Import stays off.
+  async function renderReview(first = false) {
+    const dated = withDates(doc.trip, doc.start) || withDates(doc.trip, new Date().toISOString().slice(0, 10));
+    const text = JSON.stringify(dated);
+    const run = docRun;
+    const checked = await withCatalogueDestination(validateTripImport(text), text);
+    if (closed || run !== docRun) return;
+    if (!checked.ok) {
+      logger.warn('data', 'Document import did not validate', { errors: checked.errors.slice(0, 5) });
+      doc = null;
+      docFailed(DOC_MESSAGES.not_a_plan);
+      return;
+    }
+    const pending = doc.needsDate && !doc.start;
+    result = pending ? null : checked;
+    // A date change swaps only the preview, so the date field keeps its focus.
+    const fresh = document.createElement('div');
+    fresh.innerHTML = previewHtml(checked, doc);
+    if (first) {
+      overlay.querySelector('[data-step="4"]').replaceChildren(...fresh.childNodes);
+      show(4);
+    } else {
+      ref('review-body').replaceWith(fresh.querySelector('[data-ref="review-body"]'));
+    }
+    primaryButton().disabled = pending;
+  }
+
+  async function sendPlanText(text) {
+    showState('working');
+    const run = docRun;
+    const reply = await importDocumentText(text, { currency: getUserPrefs().homeCurrency });
+    if (closed || run !== docRun) return;
+    if (!reply.ok) {
+      docFailed(reply.message);
+      return;
+    }
+    doc = { trip: reply.trip, cut: reply.cut, needsDate: !withDates(reply.trip), start: '' };
+    await renderReview(true);
+  }
+
+  async function readDoc(file) {
+    showState('reading');
+    const run = docRun;
+    const read = await readDocumentFile(file);
+    if (closed || run !== docRun) return;
+    if (read.error) {
+      docFailed(read.error);
+      return;
+    }
+    ref('doc-text').value = read.text;
+    await sendPlanText(read.text);
+  }
+
   async function save() {
     if (importing || !result?.ok) return;
     importing = true;
@@ -560,10 +677,14 @@ function createController(overlay, { returnFocus, onChange, draft, guideSeen }) 
       const { data, error } = await saveTripWithItinerary(wizardState, itinerary, { onProgress });
       if (error || !data?.id) throw new Error(error || 'No trip returned');
       saved = { id: data.id, title: data.title || itinerary.tripTitle };
-      clearTimeout(draftTimer);
-      clearDraft();
-      paste.value = '';
-      setUserPref('importGuideSeen', true);
+      if (doc) {
+        ref('doc-text').value = '';
+      } else {
+        clearTimeout(draftTimer);
+        clearDraft();
+        paste.value = '';
+        setUserPref('importGuideSeen', true);
+      }
       showState('success');
     } catch (err) {
       // The user sees fixed copy only; the detail goes to the log.
@@ -643,10 +764,13 @@ function createController(overlay, { returnFocus, onChange, draft, guideSeen }) 
 
   const actions = {
     close: () => close(phase === 'success' ? 'done' : 'cancel'),
-    'goto-1': () => goTo(1),
+    'goto-1': () => { doc = null; goTo(1); },
     'goto-2': () => goTo(2),
     'goto-3': () => goTo(3),
     'goto-4': () => goTo(4),
+    'goto-doc': () => show('doc'),
+    back: () => show(doc ? 'doc' : 3),
+    'doc-read': () => sendPlanText(ref('doc-text').value),
     guide: () => goTo(1),
     check,
     import: save,
@@ -738,33 +862,49 @@ function createController(overlay, { returnFocus, onChange, draft, guideSeen }) 
     if (file) loadFile(file);
   });
 
-  const drop = ref('drop');
-  drop.addEventListener('dragover', (e) => {
-    if (![...(e.dataTransfer?.types || [])].includes('Files')) return;
-    e.preventDefault();
-    drop.classList.add('ti-drop--active');
+  const docFile = ref('doc-file');
+  docFile.addEventListener('change', () => {
+    const file = docFile.files?.[0];
+    docFile.value = '';
+    if (file) readDoc(file);
   });
-  drop.addEventListener('dragleave', (e) => {
-    if (!drop.contains(e.relatedTarget)) drop.classList.remove('ti-drop--active');
+  ref('doc-text').addEventListener('input', () => {
+    if (phase === 'doc') primaryButton().disabled = !ref('doc-text').value.trim();
   });
-  drop.addEventListener('drop', (e) => {
-    drop.classList.remove('ti-drop--active');
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
-    e.preventDefault();
-    loadFile(file);
+  overlay.addEventListener('change', (e) => {
+    if (e.target.dataset?.ref !== 'start-date' || !doc) return;
+    doc = { ...doc, start: /^\d{4}-\d{2}-\d{2}$/.test(e.target.value) ? e.target.value : '' };
+    renderReview();
   });
+
+  for (const [drop, onFile] of [[ref('drop'), loadFile], [ref('doc-drop'), readDoc]]) {
+    drop.addEventListener('dragover', (e) => {
+      if (![...(e.dataTransfer?.types || [])].includes('Files')) return;
+      e.preventDefault();
+      drop.classList.add('ti-drop--active');
+    });
+    drop.addEventListener('dragleave', (e) => {
+      if (!drop.contains(e.relatedTarget)) drop.classList.remove('ti-drop--active');
+    });
+    drop.addEventListener('drop', (e) => {
+      drop.classList.remove('ti-drop--active');
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      e.preventDefault();
+      onFile(file);
+    });
+  }
 
   window.addEventListener('hashchange', onHashChange);
 
   if (draft || guideSeen) ref('guide-link').hidden = false;
-  // Always open on step 1. A saved draft waits in step 3 ("I already have a
-  // file" jumps straight to it).
+  // Always open on the document step. A saved draft waits in step 3 of the
+  // JSON route ("I already have a file" jumps straight to it).
   if (draft) {
     paste.value = draft;
     setStatus('We kept the trip you pasted earlier.');
   }
-  show(1);
+  show('doc');
 
   return { focusHeading };
 }

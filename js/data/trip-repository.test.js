@@ -435,6 +435,33 @@ describe('fetchAllTrips', () => {
 describe('deleteTrip', () => {
   const lookup = (row) => (call) => (op(call, 'delete') ? { data: [], error: null } : { data: row, error: null });
 
+  it('removes the stored photos first, and deletes the trip even when a photo cannot be removed', async () => {
+    const steps = [];
+    let removeError = null;
+    fake.client.storage = {
+      from: (bucket) => ({
+        list: async (folder) => { steps.push(`list ${bucket}/${folder}`); return { data: [{ name: 'a.webp', id: 'f1' }, { name: 'sub', id: null }], error: null }; },
+        remove: async (paths) => { steps.push(`remove ${paths.join(',')}`); return { data: null, error: removeError }; },
+      }),
+    };
+    fake.respond = (call) => { steps.push(`${op(call, 'delete') ? 'delete' : 'read'} ${call.table}`); return { data: [{ id: 't1' }], error: null }; };
+    try {
+      expect(await repo.deleteTrip('t1')).toEqual({ error: null });
+      expect(steps).toEqual(['list trip-photos/t1', 'remove t1/a.webp', 'delete trips']);
+      steps.length = 0;
+      await repo.clearAllUserData({ keepProfile: true });
+      expect(steps).toEqual(['read trips', 'list trip-photos/t1', 'remove t1/a.webp', 'delete trips']);
+
+      removeError = { message: 'storage down' };
+      const { logger } = await import('../lib/logger.js');
+      logger.warn.mockClear();
+      expect(await repo.deleteTrip('t1')).toEqual({ error: null });
+      expect(logger.warn).toHaveBeenCalledWith('data', 'Trip photos could not be removed', { error: 'storage down' });
+    } finally {
+      delete fake.client.storage;
+    }
+  });
+
   it('forgets the offline copy after deleting', async () => {
     fake.respond = () => ({ data: { id: 't1', title: 'Tokyo', itinerary_days: [] }, error: null, status: 200 });
     await repo.fetchTripById('t1');
@@ -990,7 +1017,7 @@ describe('clearAllUserData', () => {
   it('issues no profile delete with keepProfile, and no request on the profiles table at all', async () => {
     expect(await repo.clearAllUserData({ keepProfile: true })).toEqual({ error: null });
     expect(deletes()).toEqual([['trips', ['eq', 'user_id', 'u1']]]);
-    expect(fake.calls.map(c => c.table)).toEqual(['trips']);
+    expect(fake.calls.map(c => c.table)).toEqual(['trips', 'trips']); // the ids for the stored photos, then the delete
   });
 
   it('removes every offline copy either way, the saved briefings included', async () => {
@@ -1007,7 +1034,7 @@ describe('clearAllUserData', () => {
     localStorage.setItem('trippy-offline-trip-list', JSON.stringify({ userId: 'u1', savedAt: 'x', rows: [] }));
     fake.respond = () => ({ data: null, error: { message: 'permission denied' } });
     expect((await repo.clearAllUserData()).error).toMatch(/permission denied/);
-    expect(fake.calls.map(c => c.table)).toEqual(['trips']);
+    expect(fake.calls.map(c => c.table)).toEqual(['trips', 'trips']);
     expect(offlineKeys()).toEqual(['trippy-offline-trip-list']);
   });
 

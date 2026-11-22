@@ -32,16 +32,20 @@ async function photoPathsOf(tripId) {
   }
 }
 
-async function removeTripPhotos(userId) {
+/** Removes the stored photos of one trip. Throws when one could not be listed or removed. */
+export async function removePhotosOfTrip(tripId) {
+  const paths = await photoPathsOf(tripId);
+  for (let i = 0; i < paths.length; i += REMOVE_BATCH) {
+    const { error } = await supabase.storage.from(PHOTO_BUCKET).remove(paths.slice(i, i + REMOVE_BATCH));
+    if (error) throw new Error(error.message || 'remove failed');
+  }
+}
+
+/** Removes the stored photos of every trip the user owns. Throws on the first failure. */
+export async function removeTripPhotos(userId) {
   const { data: trips, error } = await supabase.from('trips').select('id').eq('user_id', userId);
   if (error) throw new Error(error.message || 'trips could not be read');
-  for (const { id } of trips ?? []) {
-    const paths = await photoPathsOf(id);
-    for (let i = 0; i < paths.length; i += REMOVE_BATCH) {
-      const { error: removeError } = await supabase.storage.from(PHOTO_BUCKET).remove(paths.slice(i, i + REMOVE_BATCH));
-      if (removeError) throw new Error(removeError.message || 'remove failed');
-    }
-  }
+  for (const { id } of trips ?? []) await removePhotosOfTrip(id);
 }
 
 /**

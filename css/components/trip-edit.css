@@ -226,6 +226,14 @@
 .ti-drop--active { border-color: var(--terracotta); background: var(--terracotta-light); }
 .ti-drop-hint { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; border-radius: var(--r-lg); font: var(--text-small); font-weight: 600; color: var(--terracotta); background: var(--terracotta-light); pointer-events: none; }
 .ti-drop--active .ti-drop-hint { display: flex; }
+.ti-doc-drop { position: relative; display: grid; gap: var(--sp-2); justify-items: center; text-align: center; padding: var(--sp-8) var(--sp-4); margin-bottom: var(--sp-5); border: 1px dashed var(--border-strong); border-radius: var(--r-lg); cursor: pointer; font: var(--text-caption); color: var(--ink-secondary); transition: var(--transition-interactive); }
+.ti-doc-drop strong { font: var(--text-body); font-weight: 600; color: var(--ink); }
+.ti-doc-drop:hover,
+.ti-doc-drop:focus-within { border-style: solid; border-color: var(--terracotta); }
+.ti-doc-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.ti-link--tall { min-height: 44px; margin: 0; }
+.ti-date { margin-bottom: var(--sp-4); }
+.ti-date .ti-caption { margin-top: var(--sp-2); }
 .ti-paste { font: 400 0.8rem/1.5 var(--font-mono); min-height: 180px; border: none; }
 .ti-paste:focus { border: none; }
 .ti-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-3) 0; }
@@ -263,3 +271,5 @@
   .ti-row { grid-template-columns: 1fr; gap: 0; }
 }
 [data-square-mode="on"] .ti-modal { max-height: 100dvh; border-radius: 0; }
+.ti-overlay .trip-edit-footer .btn:disabled { opacity: 0.5; cursor: default; }
+.ti-overlay .trip-edit-footer .btn { min-height: 44px; }

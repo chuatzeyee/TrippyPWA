@@ -3,6 +3,11 @@ import { logger } from '../lib/logger.js';
 import { formatCityList } from '../lib/locale.js';
 import { startMinutes, normStartTime, sortDayActivities } from '../lib/day-order.js';
 import { storedSessionUserId } from './profile-cache.js';
+import { removePhotosOfTrip, removeTripPhotos } from './account-repository.js';
+
+// Stored photos go before the trip rows (the owner storage policies need the
+// trip to exist). A failure is logged and never blocks the delete.
+const photosKept = (e) => logger.warn('data', 'Trip photos could not be removed', { error: e?.message });
 
 function normDay(raw, index) {
   const d = raw && typeof raw === 'object' ? raw : {};
@@ -850,6 +855,7 @@ export async function deleteTrip(id) {
   const user = getUser();
   if (!user) return { error: 'Not authenticated' };
 
+  await removePhotosOfTrip(id).catch(photosKept);
   const { data, error } = await supabase
     .from('trips')
     .delete()
@@ -1011,6 +1017,7 @@ export async function clearAllUserData(options) {
   const user = getUser();
   if (!user) return { error: 'Not authenticated' };
 
+  await removeTripPhotos(user.id).catch(photosKept);
   const { error: tripsErr } = await supabase
     .from('trips')
     .delete()
