@@ -363,6 +363,17 @@
 [data-view="atlas"][data-view] .atl-tu--next .atl-tu-title { font-size: 24px; }
 [data-view="atlas"][data-view] .atl-tu-more { grid-area: more; display: grid; gap: var(--sp-3); margin-top: var(--sp-2); }
 [data-view="atlas"][data-view] .atl-tu-more.atl-wait { min-height: 248px; }
+/* Phone: the next departure box has air inside, no rules, its label top right and its pill bottom right. */
+@media (max-width: 1023.98px) {
+  [data-view="atlas"][data-view] .atl-tu--next { padding: var(--sp-4); margin-right: 0; gap: var(--sp-2) var(--sp-4); }
+  [data-view="atlas"][data-view] .atl-tu--next .atl-tu-k { position: absolute; top: var(--sp-4); right: var(--sp-4); height: 32px; }
+  [data-view="atlas"][data-view] .atl-tu--next .atl-pill { position: absolute; right: var(--sp-4); bottom: calc(var(--sp-4) + 8px); }
+  [data-view="atlas"][data-view] .atl-tu--next .atl-tu-more { gap: var(--sp-2); margin-top: var(--sp-3); }
+  [data-view="atlas"][data-view] .atl-tu--next .atl-tu-more:not(:has(.atl-next-open)) { padding-bottom: 40px; }
+  [data-view="atlas"][data-view] .atl-tu--next .atl-todo { border-top: 0; }
+  [data-view="atlas"][data-view] .atl-tu--next .atl-todo > li { padding: 6px 0; border-bottom: 0; }
+  [data-view="atlas"][data-view] .atl-tu--next .atl-next-open { justify-self: start; margin-top: var(--sp-2); }
+}
 [data-view="atlas"][data-view] .atl-next-wx { display: flex; align-items: flex-start; gap: var(--sp-2); font: 400 14px/1.4 var(--font-body); color: var(--ink-secondary); }
 [data-view="atlas"][data-view] .atl-next-wx > .ui-icon { flex: none; margin-top: 1px; color: var(--ink-ghost); }
 [data-view="atlas"][data-view] .atl-todo { display: grid; border-top: 1px solid var(--atl-rule); list-style: none; }
