@@ -469,7 +469,7 @@ ol.site-list { list-style: decimal; }
   .site-content a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.85em; overflow-wrap: anywhere; }
 }
 
-/* ===== Backdrop of the site pages: a drawn chart (graticule, contours, routes) at full strength
+/* ===== Backdrop of the site pages: the Atlas world map (the land outline of js/views/shared/world-land.js, with its grid) at full strength
    under the bar, fading out into the page. A mask, so it takes the theme's ink. ===== */
 .site-page { position: relative; isolation: isolate; }
 .site-page::before {
@@ -477,13 +477,13 @@ ol.site-list { list-style: decimal; }
   position: absolute;
   z-index: -1;
   inset: 0 0 auto;
-  height: min(560px, 70vh);
+  height: 620px;
   background: var(--ink);
-  opacity: 0.16;
+  opacity: 0.11;
   pointer-events: none;
-  -webkit-mask: url("./site-backdrop.svg") top center / max(100%, 1100px) auto no-repeat, linear-gradient(#000 0%, #000 12%, transparent 100%);
+  -webkit-mask: url("./site-backdrop.svg") top center / max(100%, 1200px) auto no-repeat, linear-gradient(#000 0%, #000 15%, transparent 92%);
   -webkit-mask-composite: source-in;
-  mask: url("./site-backdrop.svg") top center / max(100%, 1100px) auto no-repeat, linear-gradient(#000 0%, #000 12%, transparent 100%);
+  mask: url("./site-backdrop.svg") top center / max(100%, 1200px) auto no-repeat, linear-gradient(#000 0%, #000 15%, transparent 92%);
   mask-composite: intersect;
 }
 @media print { .site-page::before { display: none; } }
