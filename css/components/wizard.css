@@ -250,14 +250,15 @@
   left: var(--sp-4);
   top: 50%;
   transform: translateY(-50%);
-  color: var(--ink-ghost);
+  display: flex;
+  color: var(--ink-secondary);
   font-size: 1rem;
   pointer-events: none;
   z-index: 1;
 }
 
 .dest-search-wrap .input {
-  padding-left: var(--sp-10);
+  padding-left: calc(var(--sp-4) + 18px + var(--sp-3));
   background: rgba(30, 29, 26, 0.8);
   border: 1px solid rgba(229, 225, 216, 0.08);
   height: 48px;

@@ -648,7 +648,7 @@ function renderStep1(el) {
   el.innerHTML = `
     <h2 class="wizard-step-title">Where to?</h2>
     <div class="dest-search-wrap dest-search-wrap--top">
-      <span class="dest-search-icon">&#x1F50D;</span>
+      <span class="dest-search-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
       <input class="input" type="text" placeholder="${state.multiCity ? 'Add another city...' : 'Search cities...'}" id="dest-search" aria-label="Search cities"
         value="${!state.multiCity ? escapeHtml(state.destination?.name || '') : ''}" autocomplete="off">
       <div class="dest-dropdown" id="dest-dropdown"></div>
