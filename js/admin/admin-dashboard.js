@@ -1,577 +1,270 @@
-import { navigate } from '../router.js';
-import { isAdmin, fetchAdminStats, fetchAllUsers, fetchAllTrips, updateUserRole, deleteUserTrip, retryTripGeneration } from '../data/admin-repository.js';
+// The Admin route: an operator's console over what an admin can already read. This file loads the
+// data, keeps the state of the page and draws it; the markup of each section is its own file
+// (admin-overview.js, admin-people.js, admin-trips.js, admin-logs.js), the numbers are pure
+// (admin-stats.js, admin-filters.js, admin-format.js), what a click does is admin-events.js and
+// admin-actions.js.
+import '../views/shared/styles.js';
+import { onRouteLeave } from '../router.js';
+import { getUser } from '../lib/supabase.js';
 import { logger } from '../lib/logger.js';
 import { showToast } from '../components/toast.js';
-import { renderLogsPanel, bindLogEvents, loadLogs, loadLogStats, stopAutoRefresh } from './admin-logs.js';
-import { escapeHtml as esc } from '../data/day-builder.js';
+import { adminStatus, fetchErrorCounts, fetchGenerationJobs, fetchLogFacts, fetchLogs, fetchPeople, fetchTrips, LIMITS } from '../data/admin-repository.js';
+import { statusLine } from './admin-stats.js';
+import { deniedPageHtml, failedPageHtml, headHtml, isSection, loadingPageHtml, tabsHtml } from './admin-parts.js';
+import { overviewHtml } from './admin-overview.js';
+import { peopleHtml } from './admin-people.js';
+import { tripsHtml } from './admin-trips.js';
+import { AUTO_REFRESH_MS, activityHtml } from './admin-logs.js';
+import { bindEvents } from './admin-events.js';
 
-function formatDate(iso) {
-  if (!iso) return '-';
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
+const SECTION_KEY = 'trippy-admin-section';
+const SECTION_HTML = Object.freeze({ overview: overviewHtml, people: peopleHtml, trips: tripsHtml, activity: activityHtml });
 
-function relativeTime(iso) {
-  if (!iso) return '';
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  return formatDate(iso);
-}
+/** The one mounted page, or null. */
+let mounted = null;
 
-function formatName(displayName) {
-  if (!displayName || !displayName.trim()) return 'Anonymous';
-  return displayName.trim().split(/\s+/).map(w =>
-    w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-  ).join(' ');
-}
+const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
 
-function isValidCountryCode(code) {
-  return typeof code === 'string' && /^[a-z]{2}$/.test(code);
-}
-
-// Normalised http(s) avatar URL, or '' (output the parsed href, never the raw
-// string: a value can parse as a URL and still contain quotes).
-function avatarSrc(url) {
+function storedSection() {
   try {
-    const parsed = new URL(url);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : '';
+    const key = sessionStorage.getItem(SECTION_KEY);
+    return isSection(key) ? key : 'overview';
   } catch {
-    return '';
+    return 'overview';
   }
 }
 
-const STATUS_BADGES = {
-  planning: 'adm-badge--muted',
-  generating: 'adm-badge--amber',
-  generated: 'adm-badge--teal',
-  active: 'adm-badge--sage',
-  completed: 'adm-badge--sage',
-  failed: 'adm-badge--error',
-};
-
-const STAT_ICONS = {
-  users: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
-  trips: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/><line x1="9" y1="11" x2="9" y2="16"/><line x1="15" y1="11" x2="15" y2="16"/></svg>',
-  generated: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-  admin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
-  logs: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
-};
-
-function buildStatCards(stats, logStats) {
-  return `
-    <div class="adm-stats">
-      <div class="adm-stat-card">
-        <div class="adm-stat-icon adm-stat-icon--terracotta">${STAT_ICONS.users}</div>
-        <div class="adm-stat-body">
-          <span class="adm-stat-value">${stats.totalUsers}</span>
-          <span class="adm-stat-label">Users</span>
-        </div>
-        <span class="adm-stat-sub">+${stats.recentUsers} this month, +${stats.weeklyUsers} this week</span>
-      </div>
-      <div class="adm-stat-card">
-        <div class="adm-stat-icon adm-stat-icon--teal">${STAT_ICONS.trips}</div>
-        <div class="adm-stat-body">
-          <span class="adm-stat-value">${stats.totalTrips}</span>
-          <span class="adm-stat-label">Trips</span>
-        </div>
-        <span class="adm-stat-sub">+${stats.recentTrips} this month, +${stats.weeklyTrips} this week</span>
-      </div>
-      <div class="adm-stat-card">
-        <div class="adm-stat-icon adm-stat-icon--sage">${STAT_ICONS.generated}</div>
-        <div class="adm-stat-body">
-          <span class="adm-stat-value">${stats.generatedTrips}</span>
-          <span class="adm-stat-label">Generated</span>
-        </div>
-        <span class="adm-stat-sub">${stats.activeTrips} active, ${stats.generatingTrips} in progress</span>
-      </div>
-      <div class="adm-stat-card">
-        <div class="adm-stat-icon adm-stat-icon--amber">${STAT_ICONS.admin}</div>
-        <div class="adm-stat-body">
-          <span class="adm-stat-value">${stats.totalAdmins}</span>
-          <span class="adm-stat-label">Admins</span>
-        </div>
-        <span class="adm-stat-sub">${stats.failedTrips} failed, ${stats.planningTrips} planning</span>
-      </div>
-      <div class="adm-stat-card">
-        <div class="adm-stat-icon adm-stat-icon--error">${STAT_ICONS.logs}</div>
-        <div class="adm-stat-body">
-          <span class="adm-stat-value">${logStats.errors}</span>
-          <span class="adm-stat-label">Errors</span>
-        </div>
-        <span class="adm-stat-sub">${logStats.warnings} warnings, ${logStats.total} total logs</span>
-      </div>
-    </div>`;
+function storeSection(key) {
+  try { sessionStorage.setItem(SECTION_KEY, key); } catch { /* private mode: the section is simply not remembered */ }
 }
 
-function buildUserRow(u, tripCount) {
-  const name = formatName(u.display_name);
-  const avatar = u.avatar_url ? avatarSrc(u.avatar_url) : '';
-  const initials = name === 'Anonymous' ? '?' : name.split(' ').map(w => w[0]).join('').slice(0, 2);
-  const locationParts = [];
-  if (isValidCountryCode(u.home_flag)) locationParts.push(`<img src="https://flagcdn.com/w40/${u.home_flag}.png" width="18" height="13" alt="" class="adm-flag">`);
-  if (u.home_city) locationParts.push(esc(u.home_city));
-  if (u.home_country && u.home_country !== u.home_city) locationParts.push(esc(u.home_country));
-  const location = locationParts.length ? locationParts.join(' ') : '<span class="adm-muted">Not set</span>';
-  const isNomad = u.is_nomad ? '<span class="adm-badge adm-badge--plum" title="Digital Nomad">Nomad</span>' : '';
-  const onboarded = u.onboarding_complete ? '' : '<span class="adm-badge adm-badge--amber" title="Has not completed onboarding">Pending</span>';
-
-  return `
-    <tr data-user-id="${esc(u.id)}">
-      <td>
-        <div class="adm-user-cell">
-          ${avatar
-            ? `<img src="${esc(avatar)}" class="adm-avatar" alt="" loading="lazy">`
-            : `<div class="adm-avatar adm-avatar--initials">${esc(initials)}</div>`}
-          <div class="adm-user-info">
-            <span class="adm-user-name">${esc(name)}</span>
-            <span class="adm-user-meta">${relativeTime(u.updated_at || u.created_at)}</span>
-          </div>
-        </div>
-      </td>
-      <td>${location}</td>
-      <td>
-        <div class="adm-badge-group">
-          <span class="adm-badge ${u.role === 'admin' ? 'adm-badge--terracotta' : 'adm-badge--muted'}">${esc(u.role)}</span>
-          ${isNomad}${onboarded}
-        </div>
-      </td>
-      <td class="adm-center">${tripCount}</td>
-      <td class="adm-mono">${formatDate(u.created_at)}</td>
-      <td>
-        <select class="adm-role-select" data-user-id="${esc(u.id)}" data-current="${esc(u.role)}">
-          <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
-          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-        </select>
-      </td>
-    </tr>`;
+function emptyData() {
+  return { people: [], trips: [], peopleTotal: 0, tripsTotal: 0, jobs: [], facts: [], factsTruncated: false, errors: null, warnings: [], loadedAt: null };
 }
 
-function buildTripRow(t, owner) {
-  const days = t.itinerary_days?.length || 0;
-  const dateRange = t.start_date
-    ? `${formatDate(t.start_date)}${t.end_date ? ' to ' + formatDate(t.end_date) : ''}`
-    : '-';
-  const budget = t.budget_daily
-    ? `${t.budget_currency || '$'}${t.budget_daily}/day`
-    : '-';
-  const ownerName = formatName(owner?.display_name);
-  const ownerAvatar = owner?.avatar_url ? avatarSrc(owner.avatar_url) : '';
-
-  return `
-    <tr>
-      <td>
-        <div class="adm-trip-cell">
-          <span class="adm-trip-emoji">${esc(t.emoji || '✈️')}</span>
-          <div class="adm-trip-info">
-            <span class="adm-trip-title">${esc(t.title || 'Untitled Trip')}</span>
-            <span class="adm-trip-meta">${days} day${days !== 1 ? 's' : ''}, ${esc(budget)}, ${esc(t.travelers || 1)} traveler${(t.travelers || 1) !== 1 ? 's' : ''}</span>
-          </div>
-        </div>
-      </td>
-      <td>
-        <div class="adm-user-cell adm-user-cell--compact">
-          ${ownerAvatar ? `<img src="${esc(ownerAvatar)}" class="adm-avatar adm-avatar--sm" alt="" loading="lazy">` : ''}
-          <span>${esc(ownerName)}</span>
-        </div>
-      </td>
-      <td><span class="adm-badge ${STATUS_BADGES[t.status] || 'adm-badge--muted'}">${esc(t.status || 'unknown')}</span>${t.extras?.provider ? ` <span class="adm-badge adm-badge--muted" style="font-size:.65rem">${esc(t.extras.provider)}</span>` : ''}</td>
-      <td class="adm-mono adm-nowrap">${esc(dateRange)}</td>
-      <td class="adm-mono">${formatDate(t.created_at)}</td>
-      <td>
-        <div class="adm-actions">
-          <button class="adm-btn adm-btn--ghost adm-view-trip" data-trip-id="${esc(t.id)}" title="View trip">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-          ${t.status !== 'generating' ? `<button class="adm-btn adm-btn--retry adm-retry-trip" data-trip-id="${esc(t.id)}" title="${t.status === 'failed' ? 'Retry generation' : 'Regenerate itinerary'}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-          </button>` : ''}
-          <button class="adm-btn adm-btn--danger adm-delete-trip" data-trip-id="${esc(t.id)}" title="Delete trip">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-          </button>
-        </div>
-      </td>
-    </tr>`;
+function createPage(app) {
+  return {
+    app,
+    root: null,
+    alive: true,
+    abort: new AbortController(),
+    meId: getUser()?.id ?? null,
+    online: isOnline(),
+    busy: false,
+    section: storedSection(),
+    data: emptyData(),
+    busyTrips: new Set(),
+    people: { q: '', chip: 'all', sort: { key: 'joined', dir: 'desc' }, openId: null, detail: null },
+    trips: { q: '', status: 'all', sort: { key: 'created', dir: 'desc' }, focusId: null },
+    activity: { level: 'all', category: 'all', source: 'all', q: '', logs: [], count: 0, status: 'idle', error: '', openId: null, auto: false, loadingMore: false, copiedId: null },
+    logSerial: 0,
+    autoTimer: null,
+    searchTimer: null,
+    copiedTimer: null,
+  };
 }
 
-function sortData(data, key, dir) {
-  return [...data].sort((a, b) => {
-    let va = a[key], vb = b[key];
-    if (va == null && vb == null) return 0;
-    if (va == null) return 1;
-    if (vb == null) return -1;
-    if (typeof va === 'string') va = va.toLowerCase();
-    if (typeof vb === 'string') vb = vb.toLowerCase();
-    if (va < vb) return dir === 'asc' ? -1 : 1;
-    if (va > vb) return dir === 'asc' ? 1 : -1;
-    return 0;
+function teardown(page) {
+  if (!page || !page.alive) return;
+  page.alive = false;
+  page.abort.abort();
+  clearInterval(page.autoTimer);
+  clearTimeout(page.searchTimer);
+  clearTimeout(page.copiedTimer);
+  page.offLeave?.();
+  if (mounted === page) mounted = null;
+}
+
+/** What the section builders read: the state of the page with the clock of this draw. */
+function viewModel(page) {
+  return { now: new Date(), meId: page.meId, data: page.data, busyTrips: page.busyTrips, people: page.people, trips: page.trips, activity: page.activity };
+}
+
+function pageInner(page) {
+  const { data } = page;
+  const status = statusLine({ peopleTotal: data.peopleTotal, tripsTotal: data.tripsTotal, jobs: data.jobs, trips: data.trips, now: new Date() });
+  const badges = { people: data.peopleTotal, trips: data.tripsTotal };
+  const label = `adm-tab-${page.section}`;
+  return `${headHtml({ status, loadedAt: data.loadedAt, busy: page.busy, online: page.online })}
+    ${tabsHtml(page.section, badges)}
+    <div class="adm-panel" id="adm-panel" role="tabpanel" aria-labelledby="${label}" data-adm-section="${page.section}">${SECTION_HTML[page.section](viewModel(page))}</div>`;
+}
+
+function keepFocus(page, work) {
+  const active = document.activeElement;
+  const key = active && page.root.contains(active) ? active.dataset.focusKey : null;
+  const caret = key && active.matches('input[type="search"]') ? [active.selectionStart, active.selectionEnd] : null;
+  work();
+  if (!key) return;
+  const next = page.root.querySelector(`[data-focus-key="${CSS.escape(key)}"]`);
+  if (!next || next === document.activeElement) return;
+  next.focus({ preventScroll: true });
+  if (caret) { try { next.setSelectionRange(caret[0], caret[1]); } catch { /* not a text field any more */ } }
+}
+
+/** Draws the whole page again and keeps the focus where it was. */
+function redraw(page) {
+  if (!page.alive || !page.root) return;
+  keepFocus(page, () => { page.root.innerHTML = pageInner(page); });
+}
+
+/** Draws only the named regions of the open section again: a search field is never touched. */
+function patch(page, names) {
+  if (!page.alive || !page.root) return;
+  const fresh = document.createElement('template');
+  fresh.innerHTML = SECTION_HTML[page.section](viewModel(page));
+  keepFocus(page, () => {
+    for (const name of names) {
+      const from = fresh.content.querySelector(`[data-adm-region="${name}"]`);
+      const to = page.root.querySelector(`[data-adm-region="${name}"]`);
+      if (from && to) to.innerHTML = from.innerHTML;
+    }
   });
 }
 
-export async function renderAdminDashboard() {
-  const app = document.getElementById('app');
+/** Loads one page of logs. `reset` starts from the newest line; without it the next page is added. */
+async function loadLogs(page, { reset = true, quiet = false } = {}) {
+  if (!page.alive) return;
+  const serial = ++page.logSerial;
+  const state = page.activity;
+  const offset = reset ? 0 : state.logs.length;
+  page.activity = reset
+    ? { ...state, status: quiet && state.logs.length ? state.status : 'loading', logs: quiet ? state.logs : [], error: '' }
+    : { ...state, loadingMore: true };
+  if (page.section === 'activity' && !quiet) patch(page, ['logs-results']);
+  let result;
+  try {
+    result = await fetchLogs({ level: state.level, category: state.category, source: state.source, q: state.q, limit: LIMITS.logs, offset });
+  } catch (err) {
+    result = { data: [], count: 0, error: err?.message || 'The request failed.' };
+  }
+  if (!page.alive || serial !== page.logSerial) return;
+  const held = page.activity;
+  if (result.error) {
+    logger.warn('data', 'Admin logs could not be loaded', { error: result.error });
+    page.activity = quiet || !reset
+      ? { ...held, loadingMore: false }
+      : { ...held, status: 'error', error: 'Check your connection, then try again.', logs: [], count: 0, loadingMore: false };
+  } else {
+    const logs = reset ? result.data : [...held.logs, ...result.data];
+    page.activity = { ...held, status: 'ready', error: '', logs, count: Math.max(result.count, logs.length), loadingMore: false };
+  }
+  if (page.section === 'activity') patch(page, ['logs-results']);
+}
 
-  if (!await isAdmin()) {
-    app.innerHTML = `
-      <div class="container adm-denied">
-        <div class="adm-denied-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-        </div>
-        <h1 class="text-h1">Access Denied</h1>
-        <p class="text-body" style="color:var(--ink-secondary);margin-top:var(--sp-2)">You do not have admin privileges.</p>
-        <button class="btn btn--primary btn--pill" style="margin-top:var(--sp-6)" data-nav="home">Back to Dashboard</button>
-      </div>`;
-    app.querySelector('[data-nav="home"]')?.addEventListener('click', () => navigate('/'));
+/** The recent log lines of the person whose row is open. */
+async function loadPersonLogs(page, personId) {
+  page.people = { ...page.people, detail: { id: personId, status: 'loading', logs: [] } };
+  if (page.section === 'people') patch(page, ['people-results']);
+  let result;
+  try {
+    result = await fetchLogs({ userId: personId, limit: LIMITS.personLogs });
+  } catch (err) {
+    result = { data: [], error: err?.message || 'The request failed.' };
+  }
+  if (!page.alive || page.people.detail?.id !== personId) return;
+  page.people = { ...page.people, detail: { id: personId, status: result.error ? 'error' : 'ready', logs: result.data } };
+  if (page.section === 'people') patch(page, ['people-results']);
+}
+
+function setAuto(page, on) {
+  clearInterval(page.autoTimer);
+  page.autoTimer = null;
+  page.activity = { ...page.activity, auto: on };
+  if (!on) return;
+  page.autoTimer = setInterval(() => {
+    if (page.section !== 'activity' || document.hidden || !isOnline()) return;
+    loadLogs(page, { reset: true, quiet: true });
+  }, AUTO_REFRESH_MS);
+}
+
+function setSection(page, key) {
+  if (!isSection(key) || !page.alive) return;
+  page.section = key;
+  storeSection(key);
+  redraw(page);
+  if (key === 'activity' && page.activity.status === 'idle') loadLogs(page);
+}
+
+/** Reads everything the page shows. False when nothing at all could be read. */
+async function loadData(page) {
+  const now = Date.now();
+  const [people, trips, jobs, facts, errors] = await Promise.all([
+    fetchPeople(), fetchTrips(), fetchGenerationJobs({ now }), fetchLogFacts({ now }), fetchErrorCounts({ now }),
+  ]);
+  if (people.error && trips.error) return false;
+  const warnings = [];
+  if (people.error) warnings.push('People could not be read, so names and counts of people are missing.');
+  if (trips.error) warnings.push('Trips could not be read, so the trip numbers are missing.');
+  if (jobs.error) warnings.push('Generation jobs could not be read, so health is worked out from the trips alone.');
+  if (facts.error) warnings.push('Logs could not be read, so error counts and last active times are missing.');
+  for (const failure of [people, trips, jobs, facts]) {
+    if (failure.error) logger.warn('data', 'Admin data could not be read', { error: failure.error });
+  }
+  page.data = {
+    people: people.data, trips: trips.data, peopleTotal: people.total, tripsTotal: trips.total,
+    jobs: jobs.data, facts: facts.data, factsTruncated: facts.truncated, errors, warnings,
+    loadedAt: new Date().toISOString(),
+  };
+  return true;
+}
+
+/** Reads everything again in place: the section, the filters and the open rows stay. */
+async function refresh(page) {
+  if (!page.alive || page.busy || !isOnline()) return;
+  page.busy = true;
+  redraw(page);
+  let ok = false;
+  try { ok = await loadData(page); } catch (err) { logger.warn('data', 'Admin refresh failed', { error: err?.message }); }
+  if (!page.alive) return;
+  page.busy = false;
+  redraw(page);
+  if (!ok) {
+    showToast('The numbers could not be refreshed. Try again.', 'error');
     return;
   }
+  if (page.activity.status !== 'idle') loadLogs(page, { reset: true, quiet: page.activity.logs.length > 0 });
+  if (page.people.openId) loadPersonLogs(page, page.people.openId);
+}
 
-  app.innerHTML = `
-    <div class="container adm">
-      <div class="adm-loading">
-        <div class="adm-spinner"></div>
-        <span>Loading admin portal&hellip;</span>
-      </div>
-    </div>`;
+function showStatic(page, html) {
+  page.app.innerHTML = html;
+  page.root = null;
+  const again = () => { if (page.alive) renderAdminDashboard(); };
+  page.app.querySelector('[data-adm-action="reload"]')?.addEventListener('click', again, { signal: page.abort.signal });
+  window.addEventListener('online', again, { signal: page.abort.signal });
+}
 
-  const [stats, usersResult, tripsResult, logStats] = await Promise.all([
-    fetchAdminStats(),
-    fetchAllUsers(),
-    fetchAllTrips(),
-    loadLogStats(),
-  ]);
-  await loadLogs(true);
+export async function renderAdminDashboard() {
+  teardown(mounted);
+  const app = document.getElementById('app');
+  const page = createPage(app);
+  mounted = page;
+  page.offLeave = onRouteLeave(() => teardown(page));
+  app.innerHTML = loadingPageHtml();
 
-  const users = usersResult.data;
-  const trips = tripsResult.data;
-  const userMap = Object.fromEntries(users.map(u => [u.id, u]));
-  const tripCountByUser = {};
-  for (const t of trips) {
-    tripCountByUser[t.user_id] = (tripCountByUser[t.user_id] || 0) + 1;
-  }
+  if (!page.online) { showStatic(page, failedPageHtml({ online: false })); return; }
+  const role = await adminStatus();
+  if (!page.alive) return;
+  if (role === 'user') { app.innerHTML = deniedPageHtml(); return; }
+  if (role === 'unknown') { showStatic(page, failedPageHtml({ online: isOnline(), message: 'Your account could not be checked. Check your connection, then try again.' })); return; }
 
-  let activeTab = 'users';
-  let userSearch = '';
-  let tripSearch = '';
-  let tripStatusFilter = 'all';
-  let userSort = { key: 'created_at', dir: 'desc' };
-  let tripSort = { key: 'created_at', dir: 'desc' };
+  let ok = false;
+  try { ok = await loadData(page); } catch (err) { logger.warn('data', 'Admin load failed', { error: err?.message }); }
+  if (!page.alive) return;
+  if (!ok) { showStatic(page, failedPageHtml({ online: isOnline() })); return; }
 
-  function getFilteredUsers() {
-    let filtered = users;
-    if (userSearch) {
-      const q = userSearch.toLowerCase();
-      filtered = filtered.filter(u =>
-        (u.display_name || '').toLowerCase().includes(q) ||
-        (u.home_city || '').toLowerCase().includes(q) ||
-        (u.home_country || '').toLowerCase().includes(q) ||
-        u.role.includes(q)
-      );
-    }
-    return sortData(filtered, userSort.key, userSort.dir);
-  }
-
-  function getFilteredTrips() {
-    let filtered = trips;
-    if (tripStatusFilter !== 'all') {
-      filtered = filtered.filter(t => t.status === tripStatusFilter);
-    }
-    if (tripSearch) {
-      const q = tripSearch.toLowerCase();
-      filtered = filtered.filter(t =>
-        (t.title || '').toLowerCase().includes(q) ||
-        (userMap[t.user_id]?.display_name || '').toLowerCase().includes(q)
-      );
-    }
-    return sortData(filtered, tripSort.key, tripSort.dir);
-  }
-
-  function sortIcon(currentKey, columnKey, dir) {
-    if (currentKey !== columnKey) return '<span class="adm-sort-icon">↕</span>';
-    return `<span class="adm-sort-icon adm-sort-icon--active">${dir === 'asc' ? '↑' : '↓'}</span>`;
-  }
-
-  function renderUsersPanel() {
-    const filtered = getFilteredUsers();
-    return `
-      <div class="adm-toolbar">
-        <div class="adm-search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" class="adm-search-input" placeholder="Search users by name, city, country…" value="${esc(userSearch)}" data-search="users">
-        </div>
-        <span class="adm-result-count">${filtered.length} of ${users.length} users</span>
-      </div>
-      <div class="adm-table-wrap">
-        <table class="adm-table">
-          <thead>
-            <tr>
-              <th class="adm-sortable" data-sort-table="users" data-sort-key="display_name">User ${sortIcon(userSort.key, 'display_name', userSort.dir)}</th>
-              <th>Location</th>
-              <th class="adm-sortable" data-sort-table="users" data-sort-key="role">Role ${sortIcon(userSort.key, 'role', userSort.dir)}</th>
-              <th class="adm-center">Trips</th>
-              <th class="adm-sortable" data-sort-table="users" data-sort-key="created_at">Joined ${sortIcon(userSort.key, 'created_at', userSort.dir)}</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filtered.length
-              ? filtered.map(u => buildUserRow(u, tripCountByUser[u.id] || 0)).join('')
-              : '<tr><td colspan="6" class="adm-empty">No users match your search</td></tr>'}
-          </tbody>
-        </table>
-      </div>`;
-  }
-
-  function renderTripsPanel() {
-    const filtered = getFilteredTrips();
-    const statuses = [...new Set(trips.map(t => t.status))].sort();
-    return `
-      <div class="adm-toolbar">
-        <div class="adm-search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" class="adm-search-input" placeholder="Search trips by title or owner…" value="${esc(tripSearch)}" data-search="trips">
-        </div>
-        <div class="adm-filter-group">
-          <select class="adm-filter-select" data-filter="trip-status">
-            <option value="all" ${tripStatusFilter === 'all' ? 'selected' : ''}>All Status</option>
-            ${statuses.map(s => `<option value="${esc(s)}" ${tripStatusFilter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
-          </select>
-        </div>
-        <span class="adm-result-count">${filtered.length} of ${trips.length} trips</span>
-      </div>
-      <div class="adm-table-wrap">
-        <table class="adm-table">
-          <thead>
-            <tr>
-              <th class="adm-sortable" data-sort-table="trips" data-sort-key="title">Trip ${sortIcon(tripSort.key, 'title', tripSort.dir)}</th>
-              <th>Owner</th>
-              <th class="adm-sortable" data-sort-table="trips" data-sort-key="status">Status ${sortIcon(tripSort.key, 'status', tripSort.dir)}</th>
-              <th class="adm-sortable" data-sort-table="trips" data-sort-key="start_date">Dates ${sortIcon(tripSort.key, 'start_date', tripSort.dir)}</th>
-              <th class="adm-sortable" data-sort-table="trips" data-sort-key="created_at">Created ${sortIcon(tripSort.key, 'created_at', tripSort.dir)}</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filtered.length
-              ? filtered.map(t => buildTripRow(t, userMap[t.user_id])).join('')
-              : '<tr><td colspan="6" class="adm-empty">No trips match your search</td></tr>'}
-          </tbody>
-        </table>
-      </div>`;
-  }
-
-  function render() {
-    app.innerHTML = `
-      <div class="container adm">
-        <div class="adm-header">
-          <button class="adm-btn adm-btn--ghost adm-back" data-nav="home">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-          </button>
-          <div class="adm-header-text">
-            <h1 class="adm-title">Admin Portal</h1>
-            <span class="adm-subtitle">Manage users, trips, and platform activity</span>
-          </div>
-          <button class="adm-btn adm-btn--outline adm-refresh" title="Refresh data">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-            Refresh
-          </button>
-        </div>
-
-        ${buildStatCards(stats, logStats)}
-
-        <div class="adm-tabs">
-          <button class="adm-tab ${activeTab === 'users' ? 'adm-tab--active' : ''}" data-tab="users">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            Users <span class="adm-tab-count">${users.length}</span>
-          </button>
-          <button class="adm-tab ${activeTab === 'trips' ? 'adm-tab--active' : ''}" data-tab="trips">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/><line x1="9" y1="11" x2="9" y2="16"/><line x1="15" y1="11" x2="15" y2="16"/></svg>
-            Trips <span class="adm-tab-count">${trips.length}</span>
-          </button>
-          <button class="adm-tab ${activeTab === 'logs' ? 'adm-tab--active' : ''}" data-tab="logs">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            Logs ${logStats.errors > 0 ? `<span class="adm-tab-count adm-tab-count--error">${logStats.errors}</span>` : `<span class="adm-tab-count">${logStats.total}</span>`}
-          </button>
-        </div>
-
-        <div class="adm-panel" id="adm-panel-users" ${activeTab !== 'users' ? 'style="display:none"' : ''}>
-          ${renderUsersPanel()}
-        </div>
-
-        <div class="adm-panel" id="adm-panel-trips" ${activeTab !== 'trips' ? 'style="display:none"' : ''}>
-          ${renderTripsPanel()}
-        </div>
-
-        <div class="adm-panel" id="adm-panel-logs" ${activeTab !== 'logs' ? 'style="display:none"' : ''}>
-          ${renderLogsPanel()}
-        </div>
-      </div>`;
-    bindEvents();
-  }
-
-  function reRenderLogsPanel() {
-    const logsPanel = document.getElementById('adm-panel-logs');
-    if (logsPanel) {
-      logsPanel.innerHTML = renderLogsPanel();
-      bindLogEvents(logsPanel, reRenderLogsPanel);
-    }
-  }
-
-  function reRenderPanel() {
-    const usersPanel = document.getElementById('adm-panel-users');
-    const tripsPanel = document.getElementById('adm-panel-trips');
-    if (usersPanel) usersPanel.innerHTML = renderUsersPanel();
-    if (tripsPanel) tripsPanel.innerHTML = renderTripsPanel();
-    bindPanelEvents();
-  }
-
-  function bindPanelEvents() {
-    const container = app.querySelector('.adm');
-    if (!container) return;
-
-    container.querySelectorAll('.adm-search-input').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const table = e.target.dataset.search;
-        const cursorPos = e.target.selectionStart;
-        if (table === 'users') userSearch = e.target.value;
-        if (table === 'trips') tripSearch = e.target.value;
-        reRenderPanel();
-        const newInput = container.querySelector(`[data-search="${table}"]`);
-        if (newInput) { newInput.focus(); newInput.setSelectionRange(cursorPos, cursorPos); }
-      });
-    });
-
-    const statusFilter = container.querySelector('[data-filter="trip-status"]');
-    if (statusFilter) {
-      statusFilter.addEventListener('change', (e) => {
-        tripStatusFilter = e.target.value;
-        reRenderPanel();
-      });
-    }
-  }
-
-  function bindEvents() {
-    const container = app.querySelector('.adm');
-    if (!container) return;
-
-    bindPanelEvents();
-
-    container.addEventListener('click', (e) => {
-      const navBtn = e.target.closest('[data-nav="home"]');
-      if (navBtn) { e.preventDefault(); navigate('/'); return; }
-
-      const tab = e.target.closest('.adm-tab');
-      if (tab) {
-        const prevTab = activeTab;
-        activeTab = tab.dataset.tab;
-        container.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('adm-tab--active'));
-        tab.classList.add('adm-tab--active');
-        container.querySelectorAll('.adm-panel').forEach(p => p.style.display = 'none');
-        const panel = document.getElementById(`adm-panel-${activeTab}`);
-        if (panel) panel.style.display = '';
-        if (prevTab === 'logs' && activeTab !== 'logs') stopAutoRefresh();
-        if (activeTab === 'logs') {
-          const logsPanel = document.getElementById('adm-panel-logs');
-          if (logsPanel) bindLogEvents(logsPanel, reRenderLogsPanel);
-        }
-        return;
-      }
-
-      const sortHeader = e.target.closest('.adm-sortable');
-      if (sortHeader) {
-        const table = sortHeader.dataset.sortTable;
-        const key = sortHeader.dataset.sortKey;
-        const sortState = table === 'users' ? userSort : tripSort;
-        if (sortState.key === key) {
-          sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
-        } else {
-          sortState.key = key;
-          sortState.dir = 'asc';
-        }
-        reRenderPanel();
-        return;
-      }
-
-      const refreshBtn = e.target.closest('.adm-refresh');
-      if (refreshBtn) {
-        e.preventDefault();
-        renderAdminDashboard();
-        return;
-      }
-
-      const viewBtn = e.target.closest('.adm-view-trip');
-      if (viewBtn) { e.preventDefault(); navigate(`/trip/${viewBtn.dataset.tripId}`); return; }
-
-      const retryBtn = e.target.closest('.adm-retry-trip');
-      if (retryBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        const tripId = retryBtn.dataset.tripId;
-        const row = retryBtn.closest('tr');
-        const curStatus = row?.querySelector('.adm-badge')?.textContent?.trim();
-        // Regenerating an already-generated trip replaces its itinerary, so confirm.
-        if (curStatus && curStatus !== 'failed' &&
-            !confirm('Regenerate this itinerary? The current plan will be replaced.')) return;
-        retryBtn.disabled = true;
-        retryBtn.classList.add('adm-btn--spinning');
-        retryTripGeneration(tripId).then(({ error }) => {
-          retryBtn.classList.remove('adm-btn--spinning');
-          if (error) { showToast(`Retry failed: ${error}`, 'error'); retryBtn.disabled = false; return; }
-          showToast('Generation restarted', 'success');
-          const badge = retryBtn.closest('tr')?.querySelector('.adm-badge');
-          if (badge) { badge.textContent = 'generating'; badge.className = 'adm-badge ' + (STATUS_BADGES['generating'] || 'adm-badge--muted'); }
-          retryBtn.disabled = false;
-        });
-        return;
-      }
-
-      const deleteBtn = e.target.closest('.adm-delete-trip');
-      if (deleteBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!confirm('Delete this trip? This cannot be undone.')) return;
-        deleteBtn.disabled = true;
-        deleteUserTrip(deleteBtn.dataset.tripId).then(({ error }) => {
-          if (error) { showToast('Failed to delete trip', 'error'); logger.error('data', 'Admin trip delete failed', { error }); deleteBtn.disabled = false; return; }
-          deleteBtn.closest('tr')?.remove();
-        });
-      }
-    });
-
-    const logsPanel = document.getElementById('adm-panel-logs');
-    if (logsPanel && activeTab === 'logs') bindLogEvents(logsPanel, reRenderLogsPanel);
-
-    container.addEventListener('change', (e) => {
-      const select = e.target.closest('.adm-role-select');
-      if (!select) return;
-      const userId = select.dataset.userId;
-      const newRole = select.value;
-      const prev = select.dataset.current;
-      if (newRole === prev) return;
-
-      if (!confirm(`Change this user's role to "${newRole}"?`)) {
-        select.value = prev;
-        return;
-      }
-
-      updateUserRole(userId, newRole).then(({ error }) => {
-        if (error) {
-          showToast('Failed to update role', 'error'); logger.error('auth', 'Admin role update failed', { error });
-          select.value = prev;
-          return;
-        }
-        select.dataset.current = newRole;
-        const badge = select.closest('tr')?.querySelector('.adm-badge');
-        if (badge) {
-          badge.textContent = newRole;
-          badge.className = `adm-badge ${newRole === 'admin' ? 'adm-badge--terracotta' : 'adm-badge--muted'}`;
-        }
-      });
-    });
-  }
-
-  render();
+  app.innerHTML = '<div class="container adm" data-view="admin"></div>';
+  page.root = app.firstElementChild;
+  page.redraw = () => redraw(page);
+  page.patch = (names) => patch(page, names);
+  page.reloadLogs = () => loadLogs(page);
+  page.loadLogs = (opts) => loadLogs(page, opts);
+  page.loadPersonLogs = (id) => loadPersonLogs(page, id);
+  page.setSection = (key) => setSection(page, key);
+  page.setAuto = (on) => setAuto(page, on);
+  page.refresh = () => refresh(page);
+  redraw(page);
+  bindEvents(page);
+  if (page.section === 'activity') loadLogs(page);
 }
