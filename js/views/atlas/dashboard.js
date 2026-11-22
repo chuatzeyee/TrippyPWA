@@ -181,6 +181,18 @@ export function mountDashboard(root, model, ctx) {
     hops?.scrollIntoView({ behavior: ctx?.reducedMotion ? 'auto' : 'smooth', block: 'start' });
     hops?.querySelector('[data-action="plan-city"]')?.focus({ preventScroll: true });
   });
+  // While the pill that says what was found is up, the search box makes room for it, and takes the
+  // room back when the pill has gone (the box animates; atlas.css).
+  const finding = (event, on) => {
+    if (event.animationName !== 'atl-found') return;
+    const head = event.target?.closest?.('.atl-trips-head');
+    if (!head) return;
+    if (on) head.style.setProperty('--atl-found-w', `${Math.ceil(event.target.getBoundingClientRect().width)}px`);
+    head.classList.toggle('is-finding', on);
+  };
+  root.addEventListener('animationstart', (event) => finding(event, true));
+  root.addEventListener('animationend', (event) => finding(event, false));
+  root.addEventListener('animationcancel', (event) => finding(event, false));
   // The plate leads to the Atlas page: its drawn half is fetched while the browser is idle, so the
   // page opens in one go. A fetch that fails here is tried again by the page itself.
   if (model?.state !== 'ready') return;

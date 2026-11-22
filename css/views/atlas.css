@@ -520,14 +520,18 @@
   /* The past clears the passport too: its rows are one width, the whole of the page, in every month. */
   [data-view="atlas"][data-view] .atl-rg--past { clear: both; }
   /* With nothing ahead on the rail (the Past filter, a search that finds past plans only) Past starts at the top, beside the Passport panel, and keeps to its column. */
-  [data-view="atlas"][data-view] .atl-trips-grid:not(:has(.atl-tu, .atl-tg)) .atl-rg--past { clear: none; display: flow-root; margin-right: var(--atl-cols-gap); }
+  [data-view="atlas"][data-view] .atl-trips-grid:not(:has(.atl-tu, .atl-tg)) .atl-rg--past { clear: none; display: flow-root; padding-right: calc(var(--sp-6) + var(--sp-2)); }
   [data-view="atlas"][data-view] .atl-trips-grid:not(:has(.atl-tu, .atl-tg)) .atl-tp-meta { grid-template-columns: auto auto; align-items: center; }
   [data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-12) + 22px); }
   [data-view="atlas"][data-view] .atl-rg { padding-bottom: var(--sp-12); }
   [data-view="atlas"][data-view] .atl-rg--plan { padding-bottom: var(--sp-8); }
   /* What was found shows at the right end of the search box for a moment. */
   [data-view="atlas"][data-view] .atl-found { left: auto; right: calc(100% - (100% - var(--sp-6)) * 0.6183 + 4px); top: 4px; }
+  [data-view="atlas"][data-view] .atl-found { right: calc(100% - (100% - var(--sp-6)) * 0.6183); }
   [data-view="atlas"][data-view] .atl-found-cover { justify-content: flex-end; height: 36px; min-width: 0; background: none; }
+  /* The search box draws back to make room for the pill, and comes back when the pill has gone. */
+  [data-view="atlas"][data-view] .atl-trips-head .dv-search { transition: margin-right var(--duration-normal) var(--ease-out); }
+  [data-view="atlas"][data-view] .atl-trips-head.is-finding .dv-search { margin-right: calc(var(--atl-found-w, 150px) + var(--sp-3)); }
   [data-view="atlas"][data-view] .atl-rg--next,
   [data-view="atlas"][data-view] .atl-rg--past { padding-bottom: 0; }
   [data-view="atlas"][data-view] .atl-rg-title { font-size: 24px; }
