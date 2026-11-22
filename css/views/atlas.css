@@ -449,7 +449,7 @@
 [data-view="atlas"][data-view] .atl-hop-note.is-planned { color: var(--atl-sage-ink); }
 
 /* ---- Dashboard: the foot, and the empty atlas ---- */
-[data-view="atlas"][data-view] .atl-foot { display: grid; gap: var(--sp-1); margin-top: var(--sp-16); padding: var(--sp-5) 0 0; border-top: 1px solid var(--atl-rule); color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
+[data-view="atlas"][data-view] .atl-foot { display: grid; gap: var(--sp-1); margin-top: var(--sp-16); padding: var(--sp-5) 0 0; color: var(--ink-secondary); font: 400 13px/1.5 var(--font-body); }
 [data-view="atlas"][data-view] .atl-foot-credits:empty { display: none; }
 [data-view="atlas"][data-view] .atl-foot .ui-credits > summary { font: 500 13.5px/1.2 var(--font-body); color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 [data-view="atlas"][data-view] .atl-empty { max-width: 720px; margin: var(--sp-2) auto 0; border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--plate); overflow: hidden; }
@@ -727,7 +727,12 @@
   [data-view="atlas"][data-view] .atl-ap-card-ph { width: 100%; height: 100%; min-height: 160px; aspect-ratio: auto; }
   [data-view="atlas"][data-view] .atl-ap-card-title { font-size: 26px; }
   [data-view="atlas"][data-view] .atl-ap-card-text { gap: var(--sp-1); }
-  [data-view="atlas"][data-view] .atl-ap-pass-grid { grid-template-columns: minmax(0, 840fr) minmax(0, 368fr); align-items: start; gap: var(--sp-6); }
+  [data-view="atlas"][data-view] .atl-ap-pass-grid { grid-template-columns: minmax(0, 840fr) minmax(0, 368fr); align-items: stretch; gap: var(--sp-6); }
+  /* The side is a panel like the stamps beside it and as tall: the days by month on top, the facts sharing the height that is left. */
+  [data-view="atlas"][data-view] .atl-ap-side { grid-template-rows: auto minmax(0, 1fr); align-content: stretch; padding: var(--sp-5); border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--surface-solid); }
+  [data-view="atlas"][data-view] .atl-ap-side > .atl-facts { grid-auto-rows: minmax(min-content, 1fr); }
+  [data-view="atlas"][data-view] .atl-ap-side > .atl-facts > div { align-content: center; }
+  [data-view="atlas"][data-view] .atl-ap-side > .atl-facts > div:last-child { border-bottom: 0; }
 }
 
 /* ==== Trip landing ==== */

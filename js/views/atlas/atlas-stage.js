@@ -105,7 +105,7 @@ export function stageHtml(model, ctx) {
   return `<section class="atl-ap-stage" aria-labelledby="atl-ap-map-h" data-atl-stage data-plate="world"${attr('data-place', first.key)}>
     <h2 class="ui-vh" id="atl-ap-map-h">Map</h2>
     <div class="atl-ap-map"><span class="atl-plate-frame" data-atl-frame>${stagePlateSvg(model, { selected: first.key })}</span></div>
-    <div class="atl-ap-places"><p class="atl-ap-places-k">Places</p>${placesListHtml(model.pins, { selected: first.key, label: 'Places' })}</div>
+    <div class="atl-ap-places">${placesListHtml(model.pins, { selected: first.key, label: 'Places' })}</div>
     <aside class="atl-ap-card" data-atl-card aria-live="polite" aria-label="Selected place"${attr('data-kind', kind)}>${placeCardHtml(model, entries, 0, ctx)}</aside>
   </section>`;
 }
