@@ -19,14 +19,15 @@ function digitsOf(value, minDigits) {
 /**
  * @param {number} value  a whole number, zero or more (anything else shows 0)
  * @param {{ minDigits?: number, cls?: any, word?: string }} [opts] minDigits pads with zeros, 1 to 6.
- *   word: a short word in capital letters on flap cells of its own before the digits ("IN"), read out
- *   in lower case before the number; letters only, at most 6.
+ *   word: a short word in small capitals in the top corner of the first digit's cell ("IN"), read
+ *   out in lower case before the number; letters only, at most 6.
  * @returns {string} cells that are aria-hidden, plus the real number as hidden text
  */
 export function flapDigitsHtml(value, { minDigits, cls: extra, word } = {}) {
   const { number, digits } = digitsOf(value, minDigits);
   const letters = typeof word === 'string' && /^[A-Za-z]{1,6}$/.test(word) ? word.toUpperCase() : '';
-  const lead = letters ? `<span class="ui-flap-word">${[...letters].map((ch) => cellHtml(ch, true)).join('')}</span>` : '';
+  // The word is a small mark in the top corner of the first digit's cell, not cells of its own.
+  const lead = letters ? `<span class="ui-flap-word">${letters}</span>` : '';
   const cells = [...digits].map((ch) => cellHtml(ch)).join('');
   return `<span class="${cls('ui-flap', extra)}" data-flap="${esc(number)}"><span class="ui-flap-cells" aria-hidden="true">${lead}${cells}</span>${visuallyHidden(letters ? `${letters.toLowerCase()} ${number}` : number)}</span>`;
 }
