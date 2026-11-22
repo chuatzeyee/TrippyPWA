@@ -1,125 +1,56 @@
-// Trippy Concierge, the chat panel for itinerary edits: message ->
-// itinerary-chat edge fn -> patch preview (diff chips) -> Apply writes via
-// existing repositories -> the view refreshes in place (the panel and its
-// conversation survive the refresh).
-import { supabase } from '../lib/supabase.js';
+// Trippy Concierge, the chat panel on a trip: message -> itinerary-chat edge
+// fn -> an answer, or a proposal (each change in plain words) -> Apply writes
+// via the repositories -> the view refreshes in place (the panel and its
+// conversation survive the refresh). Nothing is written before Apply.
+import { supabase, getUser } from '../lib/supabase.js';
 import { updateActivityById, deleteActivityById, addActivityToDay } from '../data/trip-repository.js';
-import { withLocalWrite } from '../data/collab-repository.js';
+import { withLocalWrite, fetchMyRole } from '../data/collab-repository.js';
+import { changeTripExtras, saveActivityNote } from '../data/chat-repository.js';
 import { escapeHtml } from '../data/day-builder.js';
-import { convert, canConvert } from '../data/currencies.js';
-import { showToast } from './toast.js';
 import { prefersReducedMotion } from '../lib/motion.js';
 import {
-  CONCIERGE_NAME, CONCIERGE_MARK, chatExamples, chatEmptyHtml, conciergeAvatar,
-  typingHtml, chatErrorStatus, chatError,
+  CONCIERGE_NAME, CONCIERGE_MARK, CHAT_OFFLINE, chatExamples, chatEmptyHtml, conciergeAvatar,
+  typingHtml, chatErrorStatus, chatError, replyHtml, choicesHtml, proposalHtml,
 } from './itinerary-chat-ui.js';
+import { buildChatRequest, planForChat, validateEdits, validateChoices, editWrite, proposalText, choiceText } from './itinerary-chat-plan.js';
 import { logger } from '../lib/logger.js';
 
-function timeSlotFor(startTime) {
-  const h = parseInt(String(startTime || '').split(':')[0], 10);
-  if (!Number.isFinite(h)) return 'morning';
-  return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-}
-
-function tripCurrency(trip) {
-  const ws = trip.wizard_state;
-  const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
-  return String(dest?.currencyCode || trip.budget_currency || 'USD').toUpperCase();
-}
-
-// An activity's cost in the trip currency, which is what the chat model is told
-// every cost is in. 0 when its own currency can't be converted.
-function costInTrip(activity, code) {
-  const amount = Number(activity?.cost_amount) || 0;
-  const from = String(activity?.cost_currency || '').trim().toUpperCase();
-  if (!amount || !/^[A-Z]{3}$/.test(from) || from === code) return Math.round(amount);
-  return canConvert(from) && canConvert(code) ? convert(amount, from, code) : 0;
-}
-
-// The days as the model sees them: every cost in the trip currency.
-function daysForChat(trip, code) {
-  return (trip.itinerary_days || []).map(d => ({
-    ...d,
-    activities: (d.activities || []).map(a => ({ ...a, cost_amount: costInTrip(a, code) })),
-  }));
-}
-
-// A modify edit's cost is priced in the trip currency. Write it (with that
-// currency) only when it differs from the cost the model was shown, so an
-// untouched cost keeps the activity's own amount and currency.
-function costUpdate(trip, activityId, costAmount, code) {
-  const cost = Number(costAmount);
-  if (costAmount == null || !Number.isFinite(cost)) return {};
-  const before = (trip.itinerary_days || []).flatMap(d => d.activities || []).find(x => x.id === activityId);
-  if (before && Math.round(cost) === costInTrip(before, code)) return {};
-  return { costAmount: cost, costCurrency: code };
-}
-
-async function applyEdits(trip, edits) {
-  const dayByNumber = new Map((trip.itinerary_days || []).map(d => [d.day_number, d]));
-  let applied = 0;
-  // Every write is marked as our own so its realtime echo doesn't reload the
-  // trip; the caller refreshes once when all edits are in.
-  for (const e of edits) {
-    if (e.op === 'remove' && e.activityId) {
-      const { error } = await withLocalWrite([e.activityId], () => deleteActivityById(e.activityId));
-      if (!error) applied++;
-    } else if (e.op === 'modify' && e.activityId && e.activity) {
-      const a = e.activity;
-      const { error } = await withLocalWrite([e.activityId], () => updateActivityById(e.activityId, {
-        title: a.title, venueName: a.venueName, description: a.description,
-        category: a.category, startTime: a.startTime, durationMinutes: a.durationMinutes,
-        ...costUpdate(trip, e.activityId, a.costAmount, tripCurrency(trip)),
-        latitude: a.latitude, longitude: a.longitude, tips: a.tips,
-      }));
-      if (!error) applied++;
-    } else if (e.op === 'add' && e.activity) {
-      const day = dayByNumber.get(e.dayNumber);
-      if (!day?.id) continue;
-      const a = e.activity;
-      // The new row's id isn't known before the insert, so mark its day.
-      const { error } = await withLocalWrite([`day:${day.id}`], () => addActivityToDay(day.id, {
-        title: a.title, venueName: a.venueName, description: a.description,
-        category: a.category, startTime: a.startTime, durationMinutes: a.durationMinutes,
-        costAmount: a.costAmount, costCurrency: tripCurrency(trip),
-        latitude: a.latitude, longitude: a.longitude, tips: a.tips,
-        timeSlot: timeSlotFor(a.startTime),
-      }));
-      if (!error) applied++;
-    }
-  }
-  return applied;
-}
-
-function editChip(e) {
-  const day = Number(e.dayNumber) || '';
-  const label = e.op === 'remove' ? `Remove from Day ${day}`
-    : e.op === 'add' ? `Add to Day ${day}: ${escapeHtml(e.activity?.title || '')}`
-    : `Change on Day ${day}: ${escapeHtml(e.activity?.title || 'activity')}`;
-  const op = ['remove', 'add', 'modify'].includes(e.op) ? e.op : 'modify';
-  return `<div class="td-chat-edit td-chat-edit--${op}"><span>${label}</span><span class="td-chat-edit-reason">${escapeHtml(e.reason || '')}</span></div>`;
+// Write one applied edit. Returns '' when it was saved, else why not:
+// 'stale' (it no longer matches the trip), 'no_column' or 'failed'. Every
+// activity write is marked as our own so its realtime echo doesn't reload the
+// trip; the caller refreshes once when all edits are in.
+async function applyEdit(trip, edit) {
+  const w = editWrite(trip, edit);
+  if (!w) return 'stale';
+  let error;
+  if (w.type === 'extras') ({ error } = await changeTripExtras(trip.id, w.change));
+  else if (w.type === 'delete') ({ error } = await withLocalWrite([w.id], () => deleteActivityById(w.id)));
+  else if (w.type === 'note') ({ error } = await withLocalWrite([w.id], () => saveActivityNote(w.id, w.note)));
+  else if (w.type === 'update') ({ error } = await withLocalWrite([w.id], () => updateActivityById(w.id, w.updates)));
+  // The new row's id isn't known before the insert, so mark its day.
+  else ({ error } = await withLocalWrite([`day:${w.dayId}`], () => addActivityToDay(w.dayId, w.activity)));
+  if (!error) return '';
+  return error === 'stale' || error === 'no_column' ? error : 'failed';
 }
 
 // One request to the itinerary-chat edge function: its answer, or the HTTP
 // status it failed with (null when no answer came back at all).
-async function askConcierge(trip, message) {
-  const ws = trip.wizard_state;
-  const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
-  const code = tripCurrency(trip);
+async function askConcierge(trip, message, history) {
   try {
-    const res = await supabase.functions.invoke('itinerary-chat', {
-      body: {
-        message,
-        days: daysForChat(trip, code),
-        destination: dest?.name || trip.title || '',
-        currency: code,
-      },
-    });
+    const res = await supabase.functions.invoke('itinerary-chat', { body: buildChatRequest(trip, message, history) });
     if (!res.error && res.data && typeof res.data === 'object') return { data: res.data, status: null };
     return { data: null, status: chatErrorStatus(res) };
   } catch (err) {
     return { data: null, status: chatErrorStatus({ error: err }) };
   }
+}
+
+// A stop to name in the note example: the first with a venue that is a place to visit.
+const LOGISTICS = new Set(['departure', 'arrival', 'flight', 'check-in', 'landing', 'transfer', 'hotel']);
+function exampleStop(trip) {
+  const stop = (trip?.itinerary_days || []).flatMap(d => d.activities || [])
+    .find(a => a?.venue_name && !LOGISTICS.has(String(a.category || '').toLowerCase()));
+  return stop?.venue_name || '';
 }
 
 const RETRY_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>';
@@ -182,6 +113,12 @@ export function mountItineraryChat(container, trip, onApplied) {
   fab.setAttribute('aria-expanded', 'false');
   fab.innerHTML = CONCIERGE_MARK;
   sayHelloOnce(fab);
+  // Owner and editors only: on someone else's plan the button waits for the role.
+  const me = getUser()?.id;
+  if (me && trip.user_id && trip.user_id !== me) {
+    fab.hidden = true;
+    fetchMyRole(trip.id).then(({ data }) => { fab.hidden = data !== 'editor'; }).catch(() => {});
+  }
 
   // Non-modal panel: the trip stays usable beside it, so no focus trap, but it
   // is labelled, closes on Escape and hands focus back to the button.
@@ -206,8 +143,8 @@ export function mountItineraryChat(container, trip, onApplied) {
       <div class="td-chat-log" role="log" aria-live="polite"></div>
     </div>
     <form class="td-chat-form">
-      <input class="td-chat-input" type="text" maxlength="500" aria-label="Describe a change"
-        placeholder="Describe a change" autocomplete="off" enterkeyhint="send">
+      <input class="td-chat-input" type="text" maxlength="500" aria-label="Ask or describe a change"
+        placeholder="Ask or describe a change" autocomplete="off" enterkeyhint="send">
       <button class="td-chat-send btn btn--primary btn--pill" type="submit">Send</button>
     </form>
   `;
@@ -227,7 +164,7 @@ export function mountItineraryChat(container, trip, onApplied) {
   const renderEmpty = () => {
     empty.hidden = log.childElementCount > 0;
     if (empty.hidden) return;
-    const examples = chatExamples(currentTrip?.itinerary_days?.length);
+    const examples = chatExamples(currentTrip?.itinerary_days?.length, exampleStop(currentTrip));
     const key = examples.join('|');
     if (key === examplesKey) return;
     examplesKey = key;
@@ -313,70 +250,98 @@ export function mountItineraryChat(container, trip, onApplied) {
     if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); }
   });
 
-  // The suggested edits as diff chips, with Apply and Discard.
-  const offerEdits = (bubble, reply, edits) => {
-    setBubble(bubble, `
-      ${escapeHtml(reply || '')}
-      <div class="td-chat-edits">${edits.map(editChip).join('')}</div>
-      <div class="td-chat-apply-row">
-        <button type="button" class="btn btn--primary btn--sm btn--pill td-chat-apply">Apply ${edits.length} change${edits.length > 1 ? 's' : ''}</button>
-        <button type="button" class="btn btn--ghost btn--sm btn--pill td-chat-discard">Discard</button>
-      </div>`);
+  // The conversation of this visit, sent back as short history so "the second
+  // one" and "make it 8 PM instead" have something to refer to.
+  const turns = [];
 
-    bubble.querySelector('.td-chat-discard').addEventListener('click', () => {
-      bubble.querySelector('.td-chat-apply-row').remove();
-      addMsg('bot', 'Discarded.');
+  // The proposed changes in plain words, with Apply and Dismiss. Nothing is
+  // written before Apply; afterwards each change says whether it was saved,
+  // and one that was not keeps the buttons.
+  const offerEdits = (bubble, reply, edits) => {
+    const items = edits.map(edit => ({ edit, text: proposalText(edit, currentTrip), reason: edit.reason, state: 'pending' }));
+    let phase = 'open';
+    const draw = () => setBubble(bubble, proposalHtml(reply, items, phase));
+    draw();
+    bubble.addEventListener('click', async (e) => {
+      if (phase !== 'open') return;
+      if (e.target.closest('.td-chat-discard')) { phase = 'dismissed'; draw(); return; }
+      if (!e.target.closest('.td-chat-apply')) return;
+      phase = 'saving';
+      draw();
+      let saved = 0;
+      for (const item of items.filter(it => it.state !== 'saved')) {
+        item.error = await applyEdit(currentTrip, item.edit)
+          .catch((err) => { logger.warn('data', 'Chat edit failed', { error: err?.message }); return 'failed'; });
+        item.state = item.error ? 'failed' : 'saved';
+        if (!item.error) saved++;
+      }
+      phase = items.every(it => it.state === 'saved') ? 'done' : 'open';
+      draw();
+      if (saved > 0) onApplied?.();
     });
-    bubble.querySelector('.td-chat-apply').addEventListener('click', async (e) => {
-      const applyBtn = e.currentTarget;
-      applyBtn.disabled = true;
-      applyBtn.textContent = 'Applying…';
-      bubble.querySelector('.td-chat-discard').disabled = true;
-      const n = await applyEdits(currentTrip, edits);
-      bubble.querySelector('.td-chat-apply-row')?.remove();
-      const failed = edits.length - n;
-      addMsg('bot', failed > 0
-        ? escapeHtml(`Applied ${n} of ${edits.length} changes. Some couldn't be saved.`)
-        : escapeHtml(`Applied ${n} change${n === 1 ? '' : 's'}.`));
-      showToast(`${n} change${n === 1 ? '' : 's'} applied`, failed > 0 ? 'warn' : 'success');
-      if (n > 0) onApplied?.();
-    });
+    return items.map(it => it.text);
   };
 
   // Ask the concierge and answer in `bubble`, which shows the typing dots
   // meanwhile. A failure a retry could fix offers one, asking again in place.
-  const ask = async (message, bubble) => {
-    setBubble(bubble, typingHtml(), 'typing');
-    const trip = currentTrip;
-    const { data, status } = await askConcierge(trip, message);
-    if (!data) {
-      const { text, retry } = chatError(status);
+  const ask = async (message, bubble, history) => {
+    const fail = (text, retry, status) => {
       setBubble(bubble, escapeHtml(text) + (retry ? RETRY_ROW : ''), 'error');
       bubble.querySelector('.td-chat-retry')?.addEventListener('click', (e) => {
         // The button is about to go; keep keyboard focus in the panel.
         if (e.currentTarget.matches(':focus-visible')) input.focus({ preventScroll: true });
-        askIn(message, bubble);
+        askIn(message, bubble, history);
       }, { once: true });
-      logger.warn('data', 'itinerary-chat failed', { tripId: trip.id, status });
+      logger.warn('data', 'itinerary-chat failed', { tripId: currentTrip?.id, status });
+    };
+    if (navigator.onLine === false) { fail(CHAT_OFFLINE, true, 'offline'); return; }
+    setBubble(bubble, typingHtml(), 'typing');
+    const trip = currentTrip;
+    const { data, status } = await askConcierge(trip, message, history);
+    if (!data) {
+      const { text, retry } = navigator.onLine === false ? { text: CHAT_OFFLINE, retry: true } : chatError(status);
+      fail(text, retry, status);
       return;
     }
-    const edits = Array.isArray(data.edits) ? data.edits : [];
-    if (!edits.length) {
-      setBubble(bubble, escapeHtml(data.reply || 'No changes needed.'));
+    // Checked again here against the trip as it is now: only what names real
+    // stops, days and stays is shown, and so can be applied.
+    const plan = planForChat(currentTrip);
+    const { edits, dropped } = validateEdits(data.edits, plan);
+    const left = dropped > 0 ? ` I left out ${dropped} change${dropped === 1 ? '' : 's'} that did not match your plan.` : '';
+    const reply = `${String(data.reply || '').slice(0, 1400)}${left}`.trim();
+    if (edits.length) {
+      const lines = offerEdits(bubble, reply, edits);
+      turns.push({ role: 'bot', text: `${reply} Proposed: ${lines.join('; ')}` });
       return;
     }
-    offerEdits(bubble, data.reply, edits);
+    const labels = validateChoices(data.choices, plan).map(c => choiceText(c, currentTrip)).filter(Boolean);
+    const said = reply || 'I have no answer for that.';
+    setBubble(bubble, labels.length ? choicesHtml(said, labels) : replyHtml(said));
+    turns.push({ role: 'bot', text: labels.length ? `${said} Choices: ${labels.map((l, i) => `${i + 1}. ${l}`).join('; ')}` : said });
   };
-  const askIn = (message, bubble) => ask(message, bubble)
+  const askIn = (message, bubble, history) => ask(message, bubble, history)
     .catch((err) => logger.warn('data', 'itinerary-chat ask failed', { error: err?.message }));
 
+  const send = (message) => {
+    const history = turns.slice();
+    turns.push({ role: 'user', text: message });
+    addMsg('user', escapeHtml(message));
+    askIn(message, addMsg('bot', ''), history);
+  };
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
     const message = input.value.trim();
     if (!message) return;
     input.value = '';
-    addMsg('user', escapeHtml(message));
-    askIn(message, addMsg('bot', ''));
+    send(message);
+  });
+  // A choice the concierge offered is sent as the traveller's answer.
+  log.addEventListener('click', (e) => {
+    const choice = e.target.closest('.td-chat-choice');
+    if (choice && !choice.disabled) {
+      choice.parentElement.querySelectorAll('.td-chat-choice').forEach((b) => { b.disabled = true; });
+      send(choice.textContent.trim());
+    }
   });
 
   return {

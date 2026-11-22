@@ -654,6 +654,7 @@ function renderActivity(activity, currencySymbol, isFirst, tripCode = '') {
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(to12h(activity.tips))}</div>` : ''}
         ${wantsActivityPhoto(activity) ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${credit ? `data-photo-credit="${esc(credit)}"` : ''} ${safeUrl(_photoCredits[activity.id]?.link || '') ? `data-photo-link="${esc(safeUrl(_photoCredits[activity.id].link))}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
         ${activity.id ? `<button type="button" class="td-alt-btn" data-alt-for="${esc(activity.id)}" title="Suggest alternatives" aria-expanded="false">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
+        ${activity.notes ? `<div class="td-activity-note"><span class="td-note-label">Your note</span> ${esc(to12h(activity.notes))}</div>` : ''}
       </div>
     </div>
   `;
@@ -1308,6 +1309,7 @@ function renderAccommodationContent(extras, trip) {
         ` : ''}
         <div class="td-accom-links">
           ${links.map(l => `
+          ${a.note ? `<div class="td-activity-note"><span class="td-note-label">Your note</span> ${esc(to12h(String(a.note).slice(0, 300)))}</div>` : ''}
             <a class="td-accom-link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-booking-click="${esc(l.label.toLowerCase())}" data-booking-kind="hotel">${l.icon} ${esc(l.label)}</a>
           `).join('')}
         </div>

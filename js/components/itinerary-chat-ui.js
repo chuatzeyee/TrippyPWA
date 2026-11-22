@@ -1,11 +1,15 @@
 // Pure pieces of the Trippy Concierge panel (the itinerary chat): its mark,
-// greeting, typing indicator and error copy, kept apart from
+// greeting, typing indicator, error copy and the HTML of an answer, a set of
+// choices and a proposal, kept apart from
 // itinerary-chat.js so they can be tested without the Supabase client.
 import { escapeHtml } from '../data/day-builder.js';
+import { formatClock } from '../lib/locale.js';
 
 export const CONCIERGE_NAME = 'Trippy Concierge';
 
-export const CHAT_GREETING = 'Hello, I\'m your Trippy Concierge. Tell me what you\'d like to change and I\'ll suggest edits you can apply.';
+export const CHAT_GREETING = 'Hello, I\'m your Trippy Concierge. Ask me about your plan, or tell me what to change, note down or mark as booked. Nothing is saved until you apply it.';
+
+export const CHAT_OFFLINE = 'You are offline. Trippy Concierge needs a connection.';
 
 // Mirrors DAILY_LIMIT in supabase/functions/itinerary-chat/index.ts.
 export const CHAT_DAILY_LIMIT = 60;
@@ -34,17 +38,22 @@ export function conciergeAvatar(size = 'msg') {
 }
 
 /**
- * Three example requests. Day numbers are clamped to the trip's length so a
- * short trip is never offered a day it doesn't have.
+ * Four example requests that fill the box: a question, a note, a booking and
+ * a change. Day numbers are clamped to the trip's length so a short trip is
+ * never offered a day it doesn't have.
  * @param {number} dayCount
+ * @param {string} [stopName]  a stop of the trip, for the note example
  * @returns {string[]}
  */
-export function chatExamples(dayCount) {
+export function chatExamples(dayCount, stopName = '') {
   const last = Math.max(1, Math.floor(Number(dayCount) || 0));
+  const day = Math.min(2, last);
+  const stop = String(stopName || '').trim().slice(0, 40);
   return [
-    `Make day ${Math.min(2, last)} more relaxed`,
-    'Swap a museum for a park',
-    `Add a coffee stop on day ${Math.min(3, last)}`,
+    `What are we doing for dinner on day ${day}?`,
+    stop ? `Add a note to ${stop}: bring cash` : 'Add a note to the first stop on day 1: bring cash',
+    'I booked the hotel, confirmation 12345',
+    `Make day ${day} more relaxed`,
   ];
 }
 
@@ -95,7 +104,62 @@ export function chatError(status) {
     return { text: `You've reached today's limit of ${CHAT_DAILY_LIMIT} requests. Try again tomorrow.`, retry: false };
   }
   if (status === 413) {
-    return { text: 'This trip is too large to edit by chat.', retry: false };
+    return { text: 'This trip is too large for the chat.', retry: false };
   }
   return { text: 'Sorry, I couldn\'t get an answer just now. Please try again.', retry: true };
+}
+
+/** The concierge's words, with clock times in the format the user chose. Escaped. */
+export function replyHtml(reply) {
+  return escapeHtml(formatClock(String(reply || '').trim()));
+}
+
+/**
+ * A question back to the traveller with the candidates as tappable buttons.
+ * @param {string} reply
+ * @param {string[]} labels  what each button says and sends
+ */
+export function choicesHtml(reply, labels) {
+  const buttons = labels.map(label => `<button type="button" class="td-chat-example td-chat-choice">${escapeHtml(label)}</button>`).join('');
+  return `${replyHtml(reply)}<div class="td-chat-choices">${buttons}</div>`;
+}
+
+const ITEM_STATE = { saved: 'Saved', failed: 'Not saved' };
+
+/**
+ * A proposal: what the concierge said, each change in plain words, and Apply
+ * and Dismiss. After Apply every change says whether it was saved; one that
+ * was not keeps the buttons when trying again could help.
+ * @param {string} reply
+ * @param {{ text: string, reason?: string, state: 'pending'|'saved'|'failed', error?: string }[]} items
+ * @param {'open'|'saving'|'done'|'dismissed'} phase
+ */
+export function proposalHtml(reply, items, phase = 'open') {
+  const rows = items.map(it => `<div class="td-chat-edit td-chat-edit--${it.state}"><span>${escapeHtml(it.text)}</span>`
+    + `${it.reason ? `<span class="td-chat-edit-reason">${escapeHtml(formatClock(it.reason))}</span>` : ''}`
+    + `${ITEM_STATE[it.state] ? `<span class="td-chat-edit-state">${ITEM_STATE[it.state]}</span>` : ''}</div>`).join('');
+  const failed = items.filter(it => it.state === 'failed');
+  const open = items.filter(it => it.state !== 'saved').length;
+  let status = '';
+  if (phase === 'dismissed') status = 'Dismissed. Nothing was changed.';
+  else if (phase === 'done') status = items.length === 1 ? 'Saved to your plan.' : `Saved ${items.length} changes to your plan.`;
+  else if (failed.length) status = proposalFailure(failed);
+  const saving = phase === 'saving';
+  const label = saving ? 'Saving' : failed.length ? 'Try again' : open === 1 ? 'Apply' : `Apply ${open} changes`;
+  // A change that no longer fits, or notes that are not switched on: asking again cannot help.
+  const stuck = failed.length > 0 && failed.every(it => it.error === 'stale' || it.error === 'no_column');
+  const buttons = (phase === 'open' && !stuck) || saving
+    ? `<div class="td-chat-apply-row">
+        <button type="button" class="btn btn--primary btn--sm btn--pill td-chat-apply"${saving ? ' disabled' : ''}>${label}</button>
+        <button type="button" class="btn btn--ghost btn--sm btn--pill td-chat-discard"${saving ? ' disabled' : ''}>Dismiss</button>
+      </div>` : '';
+  return `${replyHtml(reply)}<div class="td-chat-edits">${rows}</div>`
+    + `${status ? `<p class="td-chat-status" role="status">${escapeHtml(status)}</p>` : ''}${buttons}`;
+}
+
+function proposalFailure(failed) {
+  const many = failed.length > 1;
+  if (failed.every(it => it.error === 'stale')) return `${many ? 'These changes no longer match' : 'This change no longer matches'} your plan, so ${many ? 'they were' : 'it was'} not saved.`;
+  if (failed.every(it => it.error === 'no_column')) return 'Notes on stops are not switched on yet, so this was not saved.';
+  return `${many ? `${failed.length} changes were` : 'This change was'} not saved. Check your connection and try again.`;
 }

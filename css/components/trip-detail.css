@@ -874,6 +874,23 @@ a.td-hero-credit:focus-visible {
   margin-top: 1px;
 }
 
+/* The traveller's own note on a stop or a stay (from the chat or the editor). */
+.td-activity-note {
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--surface-inset);
+  color: var(--ink);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.td-note-label {
+  margin-right: 6px;
+  color: var(--ink-secondary);
+  font-weight: 600;
+}
+
 /* ===== Getting There (transport between venues) ===== */
 .td-getting-there {
   display: grid;
@@ -2902,11 +2919,22 @@ body:has(.td-chat-drawer--open) #toast-container {
   border: 1px solid var(--border);
   font: var(--text-caption);
 }
-.td-chat-edit-reason { color: var(--ink-ghost); }
+.td-chat-edit-reason { color: var(--ink-secondary); }
 .td-chat-apply-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
 .td-chat-apply-row .btn { height: auto; min-height: 44px; padding: 0 var(--sp-4); }
 .td-chat-retry { border: 1px solid var(--border-strong); background: transparent; color: var(--ink); }
 .td-chat-retry:hover { border-color: var(--terracotta); color: var(--terracotta); }
+.td-chat-fab[hidden] { display: none; }
+.td-chat-msg { overflow-wrap: anywhere; }
+.td-chat-edit > span:first-child { font-weight: 500; }
+.td-chat-edit--saved { background: var(--surface); }
+.td-chat-edit-state { margin-top: 2px; font-weight: 600; color: var(--ink); }
+.td-chat-edit--saved .td-chat-edit-state { color: var(--teal); }
+.td-chat-apply-row .btn:disabled { opacity: 0.55; cursor: default; }
+.td-chat-status { margin: var(--sp-2) 0 0; font: var(--text-caption); color: var(--ink-secondary); }
+.td-chat-choices { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); margin-top: var(--sp-2); }
+.td-chat-choice:disabled { opacity: 0.55; cursor: default; }
+.td-chat-choice:disabled:hover { border-color: var(--border-strong); color: var(--ink); }
 .td-chat-form {
   flex: 0 0 auto;
   display: flex;
@@ -4710,3 +4738,20 @@ a.td-activity-photo-credit:hover { text-decoration: underline; }
   .td-day-card--open .td-day-card-body,
   .td-day-card-header--entering { animation: none; }
 }
+
+/* ===== Imported plan: the way into the comparison with a Trippy plan (trip-compare-html.js) ===== */
+.cmp-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+.cmp-entry-text { flex: 1 1 240px; min-width: 0; font: var(--text-small); color: var(--ink); }
+.cmp-entry .btn { min-height: 44px; height: auto; padding-inline: var(--sp-5); }
+

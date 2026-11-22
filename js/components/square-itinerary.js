@@ -65,6 +65,7 @@ function activityCard(activity, opts) {
         ${activity.venue_name ? `<div class="sq-itin-venue">${escapeHtml(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="sq-itin-map">Map</a>` : ''}</div>` : ''}
         ${activity.description ? `<p class="sq-itin-desc">${escapeHtml(activity.description)}</p>` : ''}
         ${activity.tips ? `<p class="sq-itin-tip">${escapeHtml(activity.tips)}</p>` : ''}
+        ${activity.notes ? `<p class="sq-itin-tip">Your note: ${escapeHtml(activity.notes)}</p>` : ''}
         <div class="sq-itin-meta">
           ${cost ? `<span class="sq-itin-cost">${cost}</span>` : ''}
           ${duration ? `<span class="sq-itin-dur">${duration}</span>` : ''}

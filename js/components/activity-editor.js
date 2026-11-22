@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { updateActivityById } from '../data/trip-repository.js';
 import { withLocalWrite } from '../data/collab-repository.js';
+import { saveActivityNote } from '../data/chat-repository.js';
 import { escapeHtml } from '../data/day-builder.js';
 import { fetchPlacePhotoByQuery } from '../services/generate.js';
 import { showToast } from './toast.js';
@@ -94,8 +95,12 @@ export function makeActivityEditable(cardEl, activity, tripLocation) {
         </div>
         <div class="ae-field ae-field--half">
           <label class="ae-label" for="${fid('tips')}">Tips</label>
-          <input type="text" class="ae-input" id="${fid('tips')}" data-field="tips" value="${escapeHtml(activity.tips)}" placeholder="Optional tip...">
+          <input type="text" class="ae-input" id="${fid('tips')}" data-field="tips" value="${escapeHtml(activity.tips)}" placeholder="Optional tip">
         </div>
+      </div>
+      <div class="ae-field">
+        <label class="ae-label" for="${fid('note')}">Your note</label>
+        <textarea class="ae-input ae-textarea" id="${fid('note')}" data-field="note" rows="2" maxlength="300" placeholder="Only you and people you plan with see this">${escapeHtml(activity.notes || '')}</textarea>
       </div>
       <div class="ae-actions">
         <button type="button" class="btn btn--ghost btn--sm ae-cancel">Cancel</button>
@@ -201,6 +206,15 @@ export function makeActivityEditable(cardEl, activity, tripLocation) {
       saveBtn.disabled = false;
       saveBtn.textContent = 'Save';
       return;
+    }
+
+    // The traveller's own note is its own column (migration 024) and its own
+    // write, so a database without the column still saves everything else.
+    const note = form.querySelector('[data-field="note"]').value.trim();
+    if (note !== (activity.notes || '')) {
+      const saved = await withLocalWrite([activity.id], () => saveActivityNote(activity.id, note));
+      if (saved.error) showToast(saved.error === 'no_column' ? 'Notes on stops are not switched on yet, so your note was not saved' : 'Your note could not be saved', 'warn');
+      else activity.notes = note;
     }
 
     const venueChanged = Boolean(selectedPlace) || updates.venueName !== (activity.venue_name || '');
