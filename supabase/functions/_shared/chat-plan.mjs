@@ -5,12 +5,12 @@
 // Node), no dependencies. Tested in chat-plan.test.mjs.
 
 export const CHAT_LIMITS = Object.freeze({
-  maxBodyBytes: 400_000,  // 600 ordinary stops are about 200 kB; the client drops descriptions when a plan is over
+  maxBodyBytes: 600_000,  // 600 ordinary stops are about 200 kB; the client drops descriptions when a plan is over
   maxDays: 60,            // IMPORT_LIMITS.maxDays
   maxStopsPerDay: 40,     // IMPORT_LIMITS.maxActivitiesPerDay
   maxStops: 600,          // across the trip
   field: 120,             // a title, venue, name or area
-  description: 140,
+  description: 400,
   note: 300,
   message: 500,
   stays: 30,
@@ -100,9 +100,15 @@ export function boundedPlan(raw) {
       cost_amount: int(a.cost_amount),
       description: clip(a.description, L.description),
       notes: clip(a.notes, L.note),
+      // The rest of what the planner wrote for the stop, so questions about it can be answered.
+      tips: clip(a.tips, 300),
+      address: clip(a.address ?? a.venue_address, 160),
+      duration: Math.max(0, int(a.duration ?? a.duration_minutes)),
+      cost_note: clip(a.cost_note, 80),
+      getting_there: clip([a.transport_mode, a.transport_duration, a.transport_cost, a.getting_there].map((v) => clip(v, 200)).filter(Boolean).join(', '), 260),
     }));
     left -= activities.length;
-    return { day_number: Math.trunc(int(d.day_number)), date: isoDate(d.date), title: clip(d.title, L.field), weather: boundedWeather(d.weather), activities };
+    return { day_number: Math.trunc(int(d.day_number)), date: isoDate(d.date), title: clip(d.title, L.field), theme: clip(d.theme, L.field), weather: boundedWeather(d.weather), activities };
   });
   return {
     destination: clip(p.destination, 100),
@@ -110,6 +116,11 @@ export function boundedPlan(raw) {
     startDate: isoDate(p.startDate),
     endDate: isoDate(p.endDate),
     travelers: Math.min(99, Math.max(0, int(p.travelers))),
+    title: clip(p.title, L.field),
+    from: clip(p.from, 80),
+    budgetDaily: Math.max(0, int(p.budgetDaily)),
+    budgetCurrency: /^[A-Za-z]{3}$/.test(String(p.budgetCurrency || '')) ? String(p.budgetCurrency).toUpperCase() : '',
+    savingsTips: arr(p.savingsTips).map((t) => clip(isObj(t) ? (t.tip ?? t.text ?? t.title) : t, 240)).filter(Boolean).slice(0, 8),
     days,
     stays: arr(p.stays).slice(0, L.stays).map(boundedStay),
     legs: arr(p.legs).filter(isObj).slice(0, 2).map(boundedLeg),
@@ -127,24 +138,37 @@ export function boundedHistory(raw) {
     .slice(-L.historyTurns);
 }
 
+// "Fri 15 Jan 2027": the weekday is worked out here, since models get weekdays wrong.
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function dayLabel(iso) {
+  const t = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(t.getTime()) ? iso : `${WEEKDAYS[t.getUTCDay()]} ${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]} ${t.getUTCFullYear()}`;
+}
+
 /** The plan as the text the model reads. */
 export function planContext(plan) {
   const lines = [
     `TRIP: ${plan.destination || 'destination not stated'}`
       + `${plan.startDate && plan.endDate ? `, ${plan.startDate} to ${plan.endDate}` : ', dates not set'}`
-      + `${plan.travelers ? `, ${plan.travelers} traveller${plan.travelers === 1 ? '' : 's'}` : ''}, costs in ${plan.currency}`,
+      + `${plan.travelers ? `, ${plan.travelers} traveller${plan.travelers === 1 ? '' : 's'}` : ''}, costs in ${plan.currency}`
+      + `${plan.title ? `, called "${plan.title}"` : ''}${plan.from ? `, travelling from ${plan.from}` : ''}`
+      + `${plan.budgetDaily ? `, daily budget ${plan.budgetDaily} ${plan.budgetCurrency || plan.currency} per person` : ''}`,
     'DAYS',
   ];
   for (const d of plan.days) {
     const total = d.activities.reduce((sum, a) => sum + a.cost_amount, 0);
     const w = d.weather;
     const weather = w ? `, typical weather ${w.low !== null && w.high !== null ? `${w.low} to ${w.high} C` : ''}${w.condition ? ` ${w.condition}` : ''}`.replace(/\s+/g, ' ') : '';
-    lines.push(`Day ${d.day_number}${d.date ? ` (${d.date})` : ''}: ${d.title}, day total ${total}${weather}`);
+    lines.push(`Day ${d.day_number}${d.date ? ` (${dayLabel(d.date)})` : ''}: ${d.title}${d.theme && d.theme !== d.title ? ` (${d.theme})` : ''}, day total ${total}${weather}`);
     for (const a of d.activities) {
       lines.push(`  [${a.id}] ${a.start_time || '?'} ${a.title} @ ${a.venue_name || '?'} (${a.category || '?'}, ${a.cost_amount})`
-        + `${a.description ? ` | ${a.description}` : ''}${a.notes ? ` | TRAVELLER NOTE: ${a.notes}` : ''}`);
+        + `${a.duration ? `, ${a.duration} min` : ''}${a.cost_note ? `, ${a.cost_note}` : ''}${a.address ? ` | at ${a.address}` : ''}`
+        + `${a.description ? ` | ${a.description}` : ''}${a.tips ? ` | TIP: ${a.tips}` : ''}${a.getting_there ? ` | GETTING THERE: ${a.getting_there}` : ''}`
+        + `${a.notes ? ` | TRAVELLER NOTE: ${a.notes}` : ''}`);
     }
   }
+  if (plan.savingsTips.length) { lines.push('WAYS TO SAVE'); for (const t of plan.savingsTips) lines.push(`  ${t}`); }
   lines.push('STAYS');
   if (!plan.stays.length) lines.push('  none in the plan');
   plan.stays.forEach((s, i) => {
@@ -187,7 +211,7 @@ ${talk || '(nothing yet)'}
 <message>${clip(message, L.message)}</message>
 
 Respond to the message as JSON with "reply", "edits" and "choices".
-1. A QUESTION about the plan (what, when, where, how much, what is still to book): answer in "reply" in one to three sentences, using only the plan above, and return no edits. Each day carries its typical weather for the dates (not a forecast): use it for questions about weather, the coldest or warmest day and what to wear, and say it is typical. Write dates as "Wed 20 Jan", never as 2027-01-20, temperatures as "-18 to -7°C" and numbers as digits. When the plan does not say, say that the plan does not say. Never guess or invent. Write clock times like 7:30 PM. Amounts are in ${cur}.
+1. A QUESTION about the plan (what, when, where, how much, what is still to book): answer in "reply" in one to three sentences, using only the plan above, and return no edits. Each day carries its typical weather for the dates (not a forecast): use it for questions about weather, the coldest or warmest day and what to wear, and say it is typical. Write dates as the plan gives them without the year ("Wed 20 Jan"), never as 2027-01-20, and never work out a weekday yourself, temperatures as "-18 to -7°C" and numbers as digits. When the plan does not say, say that the plan does not say. Never guess or invent. Write clock times like 7:30 PM. Amounts are in ${cur}.
 2. A NOTE for a stop ("add a note to", "remind me to"): one "activity-note" edit with the stop's activityId and "note", the traveller's own words tidied into one short phrase with nothing added. An empty "note" removes the stop's note. Pick the stop by venue or title, and by day when a day is given.
 3. STAYS, named by the stayIndex in [stay N]:
  - The traveller has booked a stay that is in STAYS: "stay-book" with its stayIndex, and in "stay" only what the traveller gave: name, bookingRef, checkIn and checkOut as YYYY-MM-DD (take the year from the trip dates), address.

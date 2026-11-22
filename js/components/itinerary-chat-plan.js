@@ -61,6 +61,11 @@ export function planForChat(trip) {
     startDate: trip.start_date,
     endDate: trip.end_date,
     travelers: trip.travelers || ws?.travelers,
+    title: trip.title,
+    from: ws?.departure?.city || ws?.departure?.name || ws?.origin?.name || '',
+    budgetDaily: trip.budget_daily || ws?.budget?.dailyAmount,
+    budgetCurrency: trip.budget_currency,
+    savingsTips: extras.savingsTips,
     days: (trip.itinerary_days || []).map(d => ({
       ...d, activities: (d.activities || []).map(a => ({ ...a, cost_amount: costInTrip(a, code) })),
     })),
@@ -80,7 +85,7 @@ export function buildChatRequest(trip, message, history = []) {
   const request = { message: text(message).slice(0, CHAT_LIMITS.message), history: boundedHistory(history), ...planForChat(trip) };
   if (bytes(request) <= CHAT_LIMITS.maxBodyBytes) return request;
   // A very long trip: the descriptions go first, so times, places, costs and notes still fit.
-  return { ...request, days: request.days.map(d => ({ ...d, activities: d.activities.map(a => ({ ...a, description: '' })) })) };
+  return { ...request, days: request.days.map(d => ({ ...d, activities: d.activities.map(a => ({ ...a, description: '', tips: '', getting_there: '', address: '' })) })) };
 }
 const bytes = (value) => new TextEncoder().encode(JSON.stringify(value)).length;
 

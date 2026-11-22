@@ -32,7 +32,7 @@ const valid = (edit, t = trip()) => validateEdits([edit], planForChat(t)).edits[
 
 describe('buildChatRequest', () => {
   it('drops descriptions when a very long trip would pass the body limit', () => {
-    const stop = (i) => ({ id: `s${i}`, title: 't'.repeat(120), venue_name: 'v'.repeat(120), description: 'd'.repeat(140), notes: 'n'.repeat(300) });
+    const stop = (i) => ({ id: `s${i}`, title: 't'.repeat(120), venue_name: 'v'.repeat(120), description: 'd'.repeat(400), tips: 'p'.repeat(300), getting_there: 'g'.repeat(260), notes: 'n'.repeat(300) });
     const long = { itinerary_days: Array.from({ length: 60 }, (_, d) => ({ day_number: d + 1, activities: Array.from({ length: 10 }, (_, i) => stop(d * 10 + i)) })) };
     const stops = buildChatRequest(long, 'hi').days.flatMap(d => d.activities);
     expect(stops).toHaveLength(600);
@@ -44,7 +44,7 @@ describe('buildChatRequest', () => {
     expect(body.message).toBe('when is my flight?');
     expect(body.history).toEqual([{ role: 'user', text: 'hi' }, { role: 'bot', text: 'hello' }]);
     expect(body).toMatchObject({ destination: 'Kyoto', currency: 'JPY', startDate: '2027-03-01', endDate: '2027-03-04', travelers: 2 });
-    expect(body.days[0].activities[0]).toEqual({
+    expect(body.days[0].activities[0]).toMatchObject({
       id: 'a1', start_time: '10:00:00', title: 'Market walk', venue_name: 'Nishiki Market', category: 'food', cost_amount: 1500, description: '', notes: 'buy tea',
     });
     expect(body.stays.map(s => [s.name, s.booked, s.bookingRef])).toEqual([['Hotel Granvia', false, ''], ['Ryokan Yoshida', true, 'RY-1']]);

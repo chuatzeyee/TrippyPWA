@@ -26,7 +26,7 @@ describe('boundedPlan', () => {
   it('keeps only what the prompt uses and is idempotent', () => {
     const p = plan();
     expect(p.currency).toBe('JPY');
-    expect(p.days[0].activities[0]).toEqual({
+    expect(p.days[0].activities[0]).toMatchObject({
       id: 'a1', start_time: '10:00', title: 'Market walk', venue_name: 'Nishiki Market', category: 'food',
       cost_amount: 1500, description: 'Stalls', notes: 'buy tea',
     });
