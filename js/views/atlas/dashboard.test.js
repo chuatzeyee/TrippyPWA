@@ -207,7 +207,7 @@ describe.each(READY)('ready fixture %s', (key) => {
     });
     const section = one(root, 'section.atl-hops');
     expect(textOf(one(section, 'h2'))).toBe('Nearby getaway ideas');
-    expect(textOf(section)).toContain('Nearest first. Distances are straight lines from home.');
+    expect(textOf(section)).not.toContain('Nearest first');
   });
   it('says plans, never trips taken, and the rail pill holds the figure and the length alone', () => {
     const words = textOf(root);
