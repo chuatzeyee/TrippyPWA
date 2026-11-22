@@ -2535,7 +2535,10 @@ body:has(.td-chat-fab) {
 /* The global back-to-top button stacks just above the concierge button, over the
    trip footer but under the open panel. */
 body:has(.td-chat-fab) .back-to-top {
-  bottom: calc(var(--td-fab-bottom) + 52px + var(--sp-2));
+  right: calc(var(--sp-5) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--td-fab-bottom) + 52px + var(--sp-4));
+  width: 52px;
+  height: 52px;
   z-index: calc(var(--z-sticky) + 1);
 }
 body:has(.td-chat-drawer--open) .back-to-top { opacity: 0; pointer-events: none; }
@@ -2596,6 +2599,24 @@ body:has(.td-chat-drawer--open) .back-to-top { opacity: 0; pointer-events: none;
 }
 [data-theme="light"] .td-chat-fab { --td-fab-glow: 0 8px 20px rgba(234, 88, 12, 0.28), 0 2px 6px rgba(0, 0, 0, 0.12); }
 .td-chat-fab .td-cm { width: 30px; height: 30px; filter: drop-shadow(0 1px 1px rgba(74, 18, 0, 0.35)); }
+/* A slow gloss crosses the badge every few seconds, so the concierge reads as alive. */
+.td-chat-fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0) 62%) no-repeat;
+  background-size: 300% 100%;
+  background-position: 130% 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .td-chat-fab::before { animation: td-concierge-gloss 4.5s ease-in-out 1.5s infinite; }
+}
+@keyframes td-concierge-gloss {
+  0%, 62% { background-position: 130% 0; }
+  100% { background-position: -30% 0; }
+}
 .td-chat-fab:hover { transform: translateY(-2px); }
 .td-chat-fab:active { transform: translateY(0) scale(0.96); }
 .td-chat-fab:focus-visible { outline-color: var(--ink); outline-offset: 3px; }
@@ -2649,7 +2670,9 @@ body:has(.td-chat-drawer--open) .back-to-top { opacity: 0; pointer-events: none;
   .td-wrap[data-view] .td-chat-fab .td-cm { width: 26px; height: 26px; }
   body:has(.td-wrap[data-view] .td-chat-fab) .back-to-top {
     right: calc(var(--sp-2) + env(safe-area-inset-right, 0px));
-    bottom: calc(var(--sp-2) + env(safe-area-inset-bottom, 0px) + 44px + var(--sp-3));
+    bottom: calc(var(--sp-2) + env(safe-area-inset-bottom, 0px) + 44px + var(--sp-4));
+    width: 44px;
+    height: 44px;
     background: var(--surface-solid);
     box-shadow: 0 0 0 3px var(--parchment), 0 2px 8px rgba(0, 0, 0, 0.25);
     backdrop-filter: none;

@@ -13,7 +13,7 @@
 /* ---- Tokens ---- */
 [data-view="atlas"][data-view] {
   --dv-max: 1232px;
-  --tv-max: 1232px;
+  --tv-max: 1280px; /* the app bar's width (--nav-max in css/components/nav.css) */
   --plate: color-mix(in srgb, var(--surface-solid) 70%, var(--parchment));
   --atl-rule: color-mix(in srgb, var(--ink) 12%, transparent);
   --atl-rule-soft: color-mix(in srgb, var(--ink) 7%, transparent);

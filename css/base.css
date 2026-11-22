@@ -433,9 +433,9 @@ html[data-motion="reduce"] *::after {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent);
-  background: color-mix(in srgb, var(--surface-solid) 90%, var(--teal));
-  color: var(--teal);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-solid);
+  color: var(--ink-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -457,8 +457,8 @@ html[data-motion="reduce"] *::after {
 }
 
 .back-to-top:hover {
-  background: color-mix(in srgb, var(--teal) 20%, var(--surface-solid));
-  border-color: var(--teal);
+  color: var(--ink);
+  border-color: var(--ink-secondary);
 }
 
 .back-to-top svg {
