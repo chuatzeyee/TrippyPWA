@@ -1,9 +1,12 @@
+html[data-view-pref="atlas"] { --nav-max: 1280px; }
+
 .app-nav {
   position: sticky;
   top: 0;
   z-index: var(--z-nav);
   height: var(--nav-h);
-  padding: 0 var(--sp-4);
+  /* The wordmark starts where the page under the bar starts and the account ends where it ends. */
+  padding: 0 max(var(--sp-4), calc((100% - var(--nav-max, 1228px)) / 2));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -44,26 +47,37 @@
   transition: font-size 0.3s ease;
 }
 
-/* The labelled links after the wordmark (nav.js navLinksHtml). They fill the bar's height, so the
-   mark of the open page sits on the bar's bottom edge. */
+/* The page links (nav.js navLinksHtml): one two-part control beside the account, Trips on the left
+   and Atlas on the right, the open page filled. A bar with a single link draws no control: the
+   wordmark already leads home. */
 .nav-links {
   display: flex;
-  align-items: stretch;
-  align-self: stretch;
+  align-items: center;
+  flex: none;
+  gap: 2px;
   min-width: 0;
+  margin-left: auto;
+  padding: 3px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-inset);
 }
 
+.nav-links:empty,
+.nav-links:has(> .nav-link:only-child) { display: none; }
+
 .nav-link {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 var(--sp-3);
+  min-height: 36px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-pill);
   font: var(--text-small);
+  font-weight: 500;
   color: var(--ink-secondary);
   text-decoration: none;
   white-space: nowrap;
-  transition: color var(--duration-fast);
+  transition: color var(--duration-fast), background var(--duration-fast);
 }
 
 .nav-link:hover {
@@ -71,22 +85,16 @@
   text-decoration: none;
 }
 
-.nav-link:focus-visible { outline-offset: -2px; }
+.nav-link:focus-visible { outline-offset: 2px; }
 
 .nav-link[aria-current="page"] {
-  color: var(--ink);
+  background: var(--ink);
+  color: var(--parchment);
   font-weight: 600;
 }
 
-.nav-link[aria-current="page"]::after {
-  content: '';
-  position: absolute;
-  left: var(--sp-3);
-  right: var(--sp-3);
-  bottom: 0;
-  height: 2px;
-  background: var(--terracotta);
-}
+/* The control takes the spare room on its left, so the account sits right after it. */
+.nav-links:not(:empty):not(:has(> .nav-link:only-child)) + .nav-actions { margin-left: var(--sp-3); }
 
 .nav-actions {
   display: flex;
