@@ -61,7 +61,7 @@ function topHtml(model, ctx) {
 function passportHtml(rows) {
   if (!rows.stamped.length && !rows.coming.length) return '';
   return `<section class="atl-passport" aria-labelledby="atl-pp-h">
-    <div class="atl-passport-head"><h2 class="atl-pp-title" id="atl-pp-h">Passport</h2><p data-region="passport-line">${esc(passportLine(rows))}</p></div>
+    <div class="atl-passport-head"><h2 class="atl-pp-title" id="atl-pp-h">Passport</h2><p class="ui-vh" data-region="passport-line">${esc(passportLine(rows))}</p></div>
     <div class="atl-pp-stamps" data-region="passport">${stampsHtml(rows)}</div>
     ${link(PASSPORT_HREF, 'Open passport', { cls: 'ui-btn atl-pp-open', focusKey: 'open-passport', html: `${icon('passport', 18)}<span>Open passport</span>` })}
   </section>`;

@@ -14,7 +14,7 @@ function passportHtml(model) {
   const rows = stampRows(model.stats?.byCountry);
   if (!rows.stamped.length && !rows.coming.length) return '';
   return `<section class="atl-ap-pass" id="atl-passport" aria-labelledby="atl-pass-h">
-    <div class="atl-ap-pass-head"><h2 class="atl-ap-h2" id="atl-pass-h">Passport</h2><p>${esc(passportLine(rows))}</p></div>
+    <div class="atl-ap-pass-head"><h2 class="atl-ap-h2" id="atl-pass-h">Passport</h2><p class="ui-vh">${esc(passportLine(rows))}</p></div>
     <div class="atl-ap-pass-grid">
       <div class="atl-ap-stamps">${stampsHtml(rows)}</div>
       <div class="atl-ap-side">${monthsHtml(model.stats)}${factsHtml(model.stats, model.pins)}</div>
