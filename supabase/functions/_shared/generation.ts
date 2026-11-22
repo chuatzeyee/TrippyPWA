@@ -317,7 +317,7 @@ ${isSameCity
   : `- Flights: ${fareClass} class, ${connectionPref} connections`}${startsAtHome ? `\n- The trip starts in the traveller's home city (${departureCity}): the outbound journey is from ${departureCity} to the next city on the route, and the return is from the last city back to ${departureCity}.` : ""}
 - Travel pace: ${pace} — plan ${activityGuidance}${brevityNote}
 - Interests: ${interests}
-- ${foodStyle}
+${/unesco/i.test(interests) ? "- UNESCO World Heritage: the traveller wants UNESCO World Heritage Sites. Include the inscribed sites in and within day-trip reach of the destination (at least one, and more on a longer trip), give each enough time, and say in its description that it is a UNESCO World Heritage Site and why. Only call a place a UNESCO site when it really is inscribed on the World Heritage List; if there is none within reach, say so in the day theme instead of inventing one.\n" : ""}- ${foodStyle}
 - ${exploration}
 ${nightlife ? `- ${nightlife}` : ""}${freeDayNote}
 ${extras.length > 0 ? "\nSPECIAL REQUESTS:\n- " + extras.join("\n- ") : ""}

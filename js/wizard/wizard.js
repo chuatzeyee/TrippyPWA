@@ -110,7 +110,7 @@ function applyFlagBackground(flagCode) {
 }
 
 const INTERESTS = [
-  'Museums', 'Markets', 'Nature', 'Temples', 'Beaches', 'Hiking',
+  'Museums', 'UNESCO Sites', 'Markets', 'Nature', 'Temples', 'Beaches', 'Hiking',
   'Photography', 'Cooking Classes', 'Live Music', 'Sports',
   'Wellness', 'Architecture', 'Street Art', 'Local Workshops',
   'Coffee & Cafes', 'Wine & Bars', 'Vinyl Records'
