@@ -504,9 +504,9 @@
   [data-view="atlas"][data-view] .atl-trips,
   [data-view="atlas"][data-view] .atl-hops { margin-top: var(--sp-16); }
   [data-view="atlas"][data-view] .atl-sec-title { font-size: 34px; }
-  /* "Trips" ends on the line of the timeline (--atl-rail-x, 108 px), and the search box starts where the cards start (124 px). */
-  [data-view="atlas"][data-view] .atl-trips-head { grid-template-columns: 108px minmax(240px, 380px) minmax(0, 1fr); align-items: center; gap: var(--sp-5) 16px; margin-bottom: var(--sp-8); }
-  [data-view="atlas"][data-view] .atl-trips-head > .atl-sec-title { justify-self: end; }
+  /* The search box is the left column of the first row, edge to edge with the atlas panel above it; the filters take the right column. The "Trips" heading is kept for the outline and is not shown. */
+  [data-view="atlas"][data-view] .atl-trips-head { grid-template-columns: calc((100% - var(--sp-6)) * 0.6183) minmax(0, 1fr); align-items: center; gap: var(--sp-5) var(--sp-6); margin-bottom: var(--sp-8); }
+  [data-view="atlas"][data-view] .atl-trips-head > .atl-sec-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   [data-view="atlas"][data-view] .atl-trips-head .dv-chips { justify-content: flex-end; }
   [data-view="atlas"][data-view] .atl-trips-head .ui-chip-count { display: inline; }
   /* The rail ahead on the left, the passport on the right (the 1.62 to 1 split of the first row), as
@@ -515,7 +515,8 @@
      The passport keeps the column of the first row; the rail gives up the room between the two. The
      next departure reaches 16 px into that room, so what is seen between the boxes is 28 to 44 px. */
   [data-view="atlas"][data-view] .atl-trips-grid { display: flow-root; --atl-rail-x: 108px; --atl-rail-pad: 140px; --atl-cols-gap: clamp(44px, 4.2vw, 60px); }
-  [data-view="atlas"][data-view] .atl-ahead { float: left; width: calc(100% - (100% - var(--sp-6)) * 0.3816 - var(--atl-cols-gap)); min-width: 0; }
+  /* The next departure reaches 16 px past the rail, and ends on the right edge of the atlas panel above. */
+  [data-view="atlas"][data-view] .atl-ahead { float: left; width: calc((100% - var(--sp-6)) * 0.6183 - var(--sp-4)); min-width: 0; }
   /* The past clears the passport too: its rows are one width, the whole of the page, in every month. */
   [data-view="atlas"][data-view] .atl-rg--past { clear: both; }
   /* With nothing ahead on the rail (the Past filter, a search that finds past plans only) Past starts at the top, beside the Passport panel, and keeps to its column. */
@@ -524,8 +525,9 @@
   [data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-12) + 22px); }
   [data-view="atlas"][data-view] .atl-rg { padding-bottom: var(--sp-12); }
   [data-view="atlas"][data-view] .atl-rg--plan { padding-bottom: var(--sp-8); }
-  [data-view="atlas"][data-view] .atl-found { left: auto; right: calc(100% - 108px); }
-  [data-view="atlas"][data-view] .atl-found-cover { justify-content: flex-end; }
+  /* What was found shows at the right end of the search box for a moment. */
+  [data-view="atlas"][data-view] .atl-found { left: auto; right: calc(100% - (100% - var(--sp-6)) * 0.6183 + 4px); top: 4px; }
+  [data-view="atlas"][data-view] .atl-found-cover { justify-content: flex-end; height: 36px; min-width: 0; background: none; }
   [data-view="atlas"][data-view] .atl-rg--next,
   [data-view="atlas"][data-view] .atl-rg--past { padding-bottom: 0; }
   [data-view="atlas"][data-view] .atl-rg-title { font-size: 24px; }
@@ -582,7 +584,7 @@
     display: flex;
     flex-direction: column;
     width: calc((100% - var(--sp-6)) * 0.3816);
-    margin: 0 0 var(--sp-8) var(--atl-cols-gap);
+    margin: 0 0 var(--sp-8) 0;
     padding: var(--sp-6);
     border: 1px solid var(--atl-rule);
     border-radius: var(--r-lg);
