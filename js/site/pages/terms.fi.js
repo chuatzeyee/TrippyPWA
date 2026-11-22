@@ -131,9 +131,9 @@ export default {
         {
           type: 'list',
           items: [
-            '**Jakolinkit.** Jakolinkillä kuka tahansa, jolla se on, voi lukea matkasta suppeamman kopion kirjautumatta. Sinä vastaat siitä, kenelle lähetät sen. Linkki lakkaa toimimasta 7 päivän kuluttua sen luomisesta tai aiemmin, jos painat Stop sharing. Voit luoda uuden linkin milloin tahansa.',
-            '**Yhteiskäyttäjät.** Sähköpostiosoitteella kutsumasi henkilö näkee koko matkan, myös matkapyyntösi ja huomiosi, ja muokkaaja voi muuttaa matkaa. Muokkaajan tekemät muutokset tallentuvat matkaasi. Kutsu vain ihmisiä, joihin luotat, ja vain heidän suostumuksellaan.',
-            '**Sinulle jaetut matkat.** Matka, jonka joku jakaa kanssasi, kuuluu hänelle. Hän voi muuttaa sitä, poistaa pääsysi tai poistaa matkan milloin tahansa. Älä välitä eteenpäin sitä, mitä näet siellä, ilman hänen lupaansa.',
+            '**Jakolinkit:** Jakolinkillä kuka tahansa, jolla se on, voi lukea matkasta suppeamman kopion kirjautumatta. Sinä vastaat siitä, kenelle lähetät sen. Linkki lakkaa toimimasta 7 päivän kuluttua sen luomisesta tai aiemmin, jos painat Stop sharing. Voit luoda uuden linkin milloin tahansa.',
+            '**Yhteiskäyttäjät:** Sähköpostiosoitteella kutsumasi henkilö näkee koko matkan, myös matkapyyntösi ja huomiosi, ja muokkaaja voi muuttaa matkaa. Muokkaajan tekemät muutokset tallentuvat matkaasi. Kutsu vain ihmisiä, joihin luotat, ja vain heidän suostumuksellaan.',
+            '**Sinulle jaetut matkat:** Matka, jonka joku jakaa kanssasi, kuuluu hänelle. Hän voi muuttaa sitä, poistaa pääsysi tai poistaa matkan milloin tahansa. Älä välitä eteenpäin sitä, mitä näet siellä, ilman hänen lupaansa.',
           ],
         },
         { type: 'p', text: 'Tietosuojakäytäntö kertoo tarkasti, mitä jakolinkki näyttää ja mitä se piilottaa: katso [Jakolinkit ja yhteiskäyttäjät](#/privacy/shared-links).' },

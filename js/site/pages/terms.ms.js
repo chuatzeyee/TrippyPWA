@@ -131,9 +131,9 @@ export default {
         {
           type: 'list',
           items: [
-            '**Pautan kongsi.** Pautan kongsi membolehkan sesiapa yang memilikinya membaca salinan ringkas perjalanan tanpa log masuk. Anda bertanggungjawab atas siapa yang menerima pautan itu daripada anda. Pautan itu berhenti berfungsi 7 hari selepas dibuat, atau lebih awal jika anda menekan Stop sharing (henti berkongsi). Anda boleh membuat pautan baharu pada bila-bila masa.',
-            '**Kolaborator.** Orang yang anda jemput melalui e-mel boleh melihat keseluruhan perjalanan, termasuk permintaan perjalanan dan catatan anda, dan penyunting boleh mengubahnya. Perubahan yang dibuat oleh penyunting disimpan pada perjalanan anda. Jemput hanya orang yang anda percayai, dan hanya dengan persetujuan mereka.',
-            '**Perjalanan yang dikongsi dengan anda.** Perjalanan yang dikongsi oleh seseorang dengan anda ialah milik orang itu. Dia boleh mengubahnya, menarik balik akses anda atau memadamnya pada bila-bila masa. Jangan sebarkan apa yang anda lihat di situ tanpa kebenarannya.',
+            '**Pautan kongsi:** Pautan kongsi membolehkan sesiapa yang memilikinya membaca salinan ringkas perjalanan tanpa log masuk. Anda bertanggungjawab atas siapa yang menerima pautan itu daripada anda. Pautan itu berhenti berfungsi 7 hari selepas dibuat, atau lebih awal jika anda menekan Stop sharing (henti berkongsi). Anda boleh membuat pautan baharu pada bila-bila masa.',
+            '**Kolaborator:** Orang yang anda jemput melalui e-mel boleh melihat keseluruhan perjalanan, termasuk permintaan perjalanan dan catatan anda, dan penyunting boleh mengubahnya. Perubahan yang dibuat oleh penyunting disimpan pada perjalanan anda. Jemput hanya orang yang anda percayai, dan hanya dengan persetujuan mereka.',
+            '**Perjalanan yang dikongsi dengan anda:** Perjalanan yang dikongsi oleh seseorang dengan anda ialah milik orang itu. Dia boleh mengubahnya, menarik balik akses anda atau memadamnya pada bila-bila masa. Jangan sebarkan apa yang anda lihat di situ tanpa kebenarannya.',
           ],
         },
         { type: 'p', text: 'Dasar privasi menyatakan dengan tepat apa yang dipaparkan dan disembunyikan oleh pautan kongsi: lihat [Pautan kongsi dan kolaborator](#/privacy/shared-links).' },

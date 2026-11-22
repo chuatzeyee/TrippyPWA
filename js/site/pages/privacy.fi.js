@@ -165,9 +165,9 @@ export default {
         {
           type: 'list',
           items: [
-            '**Kun luot tilin.** Painamalla painiketta Sign in with Google annat suostumuksesi siihen, että keräämme tilisi tunnistetiedot sekä käyttömäärät ja vianmäärityslokit, joita sovellus kirjaa käyttösi aikana, edellä lueteltuihin tarkoituksiin.',
-            '**Kun käytät jotain toimintoa.** Tässä käytännössä kerrotaan, mihin kutakin vastausta käytetään. Kun täytät profiilisi, lähetät matkapyynnön, kutsut yhteiskäyttäjän tai luot jakolinkin, annat suostumuksesi siihen, että tietoja käytetään kyseistä toimintoa varten ja että ne lähetetään palveluntarjoajille, joita toiminto tarvitsee. Matkapyynnössä, chat-muokkauksessa ja vaihtoehtojen pyytämisessä näihin kuuluvat Googlen Gemini-mallit maksuttomalla tasolla niillä ehdoilla, jotka kerrotaan osiossa [Tekoälymallit ja Googlen maksuton taso](#/privacy/ai-models).',
-            '**Kun selaimesi kysyy.** Ilmoitukset ovat pois päältä, kunnes sallit ne selaimen kysyessä.',
+            '**Kun luot tilin:** Painamalla painiketta Sign in with Google annat suostumuksesi siihen, että keräämme tilisi tunnistetiedot sekä käyttömäärät ja vianmäärityslokit, joita sovellus kirjaa käyttösi aikana, edellä lueteltuihin tarkoituksiin.',
+            '**Kun käytät jotain toimintoa:** Tässä käytännössä kerrotaan, mihin kutakin vastausta käytetään. Kun täytät profiilisi, lähetät matkapyynnön, kutsut yhteiskäyttäjän tai luot jakolinkin, annat suostumuksesi siihen, että tietoja käytetään kyseistä toimintoa varten ja että ne lähetetään palveluntarjoajille, joita toiminto tarvitsee. Matkapyynnössä, chat-muokkauksessa ja vaihtoehtojen pyytämisessä näihin kuuluvat Googlen Gemini-mallit maksuttomalla tasolla niillä ehdoilla, jotka kerrotaan osiossa [Tekoälymallit ja Googlen maksuton taso](#/privacy/ai-models).',
+            '**Kun selaimesi kysyy:** Ilmoitukset ovat pois päältä, kunnes sallit ne selaimen kysyessä.',
           ],
         },
         { type: 'subheading', text: 'Oletettu suostumus' },
@@ -175,8 +175,8 @@ export default {
         {
           type: 'list',
           items: [
-            '**Toimintasi perusteella.** Kun annat tietoja oma-aloitteisesti tarkoitukseen, joka käy asiayhteydestä selvästi ilmi, esimerkiksi kirjoitat ruokavaliosi, jotta suunnitelma sopii sinulle, sinun katsotaan suostuvan tietojen käyttöön tuohon tarkoitukseen.',
-            '**Sopimuksen täyttämiseksi.** Kun pyydät Trippyä tekemään jotain, mihin se pystyy vain välittämällä tietosi palveluntarjoajalle, esimerkiksi tallentamaan matkan Supabaseen tai lähettämään matkapyynnön tekoälymallin kirjoitettavaksi, sinun katsotaan suostuvan tähän luovutukseen ja siihen, että palveluntarjoaja käyttää tietoja tehtävän hoitamiseen.',
+            '**Toimintasi perusteella:** Kun annat tietoja oma-aloitteisesti tarkoitukseen, joka käy asiayhteydestä selvästi ilmi, esimerkiksi kirjoitat ruokavaliosi, jotta suunnitelma sopii sinulle, sinun katsotaan suostuvan tietojen käyttöön tuohon tarkoitukseen.',
+            '**Sopimuksen täyttämiseksi:** Kun pyydät Trippyä tekemään jotain, mihin se pystyy vain välittämällä tietosi palveluntarjoajalle, esimerkiksi tallentamaan matkan Supabaseen tai lähettämään matkapyynnön tekoälymallin kirjoitettavaksi, sinun katsotaan suostuvan tähän luovutukseen ja siihen, että palveluntarjoaja käyttää tietoja tehtävän hoitamiseen.',
           ],
         },
         { type: 'p', text: 'Emme nojaa ilmoitukseen perustuvaan oletettuun suostumukseen. Jos joskus haluamme käyttää tietojasi uuteen tarkoitukseen, kysymme sinulta ensin.' },
@@ -261,13 +261,13 @@ export default {
         {
           type: 'list',
           items: [
-            '**Salatut yhteydet.** Sivusto ja kaikki pyynnöt tietokantaamme, kirjautumispalveluumme ja palvelinfunktioihimme kulkevat HTTPS-yhteydellä.',
-            '**Trippyllä ei ole salasanoja.** Kirjautua voi vain Googlen kautta. Google tarkistaa salasanasi ja kertoo meille, kuka olet.',
-            '**Pääsysäännöt tietokannassa.** Jokaisessa taulussa on rivitason säännöt: tili voi lukea ja muuttaa vain omaa profiiliaan ja omia matkojaan sekä matkoja, joihin se on kutsuttu, saamansa roolin rajoissa.',
-            '**Tarkistukset palvelimella.** Funktiot, jotka kirjoittavat suunnitelmia, vastaavat chat-muokkauksiin ja hakevat kuvia, hyväksyvät pyyntöjä vain kirjautuneelta tililtä, ja suunnitelman kirjoittajalla ja chat-muokkaajalla on päivärajat.',
-            '**Karsitut jakolinkit.** Jakolinkki näyttää matkasta suppeamman kopion. Katso [Jakolinkit ja yhteiskäyttäjät](#/privacy/shared-links).',
-            '**Avaimet pysyvät poissa laitteeltasi.** Tekoäly- ja kuvapalvelujen avaimet säilytetään palvelimella. Selaimesi ei koskaan saa niitä.',
-            '**Rajattu ylläpito.** Niiden ihmisten lisäksi, joille jaat matkan, profiiliasi, matkojasi ja vianmäärityslokeja voi lukea vain tili, jolle ylläpitäjä on antanut pääkäyttäjän roolin. Ylläpitäjä pääsee tietokantaan myös palveluntarjoajan oman hallintakonsolin kautta. Käytämme tätä pääsyä vain vikojen korjaamiseen, pyyntöihisi vastaamiseen ja ehtojemme valvomiseen.',
+            '**Salatut yhteydet:** Sivusto ja kaikki pyynnöt tietokantaamme, kirjautumispalveluumme ja palvelinfunktioihimme kulkevat HTTPS-yhteydellä.',
+            '**Trippyllä ei ole salasanoja:** Kirjautua voi vain Googlen kautta. Google tarkistaa salasanasi ja kertoo meille, kuka olet.',
+            '**Pääsysäännöt tietokannassa:** Jokaisessa taulussa on rivitason säännöt: tili voi lukea ja muuttaa vain omaa profiiliaan ja omia matkojaan sekä matkoja, joihin se on kutsuttu, saamansa roolin rajoissa.',
+            '**Tarkistukset palvelimella:** Funktiot, jotka kirjoittavat suunnitelmia, vastaavat chat-muokkauksiin ja hakevat kuvia, hyväksyvät pyyntöjä vain kirjautuneelta tililtä, ja suunnitelman kirjoittajalla ja chat-muokkaajalla on päivärajat.',
+            '**Karsitut jakolinkit:** Jakolinkki näyttää matkasta suppeamman kopion. Katso [Jakolinkit ja yhteiskäyttäjät](#/privacy/shared-links).',
+            '**Avaimet pysyvät poissa laitteeltasi:** Tekoäly- ja kuvapalvelujen avaimet säilytetään palvelimella. Selaimesi ei koskaan saa niitä.',
+            '**Rajattu ylläpito:** Niiden ihmisten lisäksi, joille jaat matkan, profiiliasi, matkojasi ja vianmäärityslokeja voi lukea vain tili, jolle ylläpitäjä on antanut pääkäyttäjän roolin. Ylläpitäjä pääsee tietokantaan myös palveluntarjoajan oman hallintakonsolin kautta. Käytämme tätä pääsyä vain vikojen korjaamiseen, pyyntöihisi vastaamiseen ja ehtojemme valvomiseen.',
           ],
         },
         { type: 'subheading', text: 'Rajoitukset, jotka sinun on hyvä tietää' },

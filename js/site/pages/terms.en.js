@@ -130,9 +130,9 @@ export default {
         {
           type: 'list',
           items: [
-            '**Share links.** A share link lets anyone who has it read a reduced copy of the trip without signing in. You are responsible for who you send it to. It stops working 7 days after it is made, or sooner if you press Stop sharing. You can make a new link at any time.',
-            '**Collaborators.** A person you invite by email can see the whole trip, including your trip request and notes, and an editor can change it. Changes an editor makes are saved to your trip. Invite only people you trust, and only with their agreement.',
-            '**Trips shared with you.** A trip someone shares with you belongs to them. They can change it, remove your access or delete it at any time. Do not pass on what you see there without their permission.',
+            '**Share links:** A share link lets anyone who has it read a reduced copy of the trip without signing in. You are responsible for who you send it to. It stops working 7 days after it is made, or sooner if you press Stop sharing. You can make a new link at any time.',
+            '**Collaborators:** A person you invite by email can see the whole trip, including your trip request and notes, and an editor can change it. Changes an editor makes are saved to your trip. Invite only people you trust, and only with their agreement.',
+            '**Trips shared with you:** A trip someone shares with you belongs to them. They can change it, remove your access or delete it at any time. Do not pass on what you see there without their permission.',
           ],
         },
         { type: 'p', text: 'The Privacy policy says exactly what a share link shows and hides: see [Shared links and collaborators](#/privacy/shared-links).' },

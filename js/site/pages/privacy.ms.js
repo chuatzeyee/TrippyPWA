@@ -165,9 +165,9 @@ export default {
         {
           type: 'list',
           items: [
-            '**Apabila anda membuat akaun.** Dengan menekan Sign in with Google, anda bersetuju dengan pengumpulan identiti akaun anda, serta kiraan penggunaan dan log diagnostik yang direkodkan oleh aplikasi semasa anda menggunakannya, bagi tujuan yang disenaraikan di atas.',
-            '**Apabila anda menggunakan sesuatu ciri.** Dasar ini menyenaraikan kegunaan setiap jawapan. Apabila anda mengisi profil, menghantar permintaan perjalanan, menjemput kolaborator atau membuat pautan kongsi, anda bersetuju maklumat itu digunakan untuk ciri tersebut, termasuk dihantar kepada penyedia yang diperlukan oleh ciri itu. Bagi permintaan perjalanan, suntingan melalui sembang atau permintaan pilihan lain, ini termasuk model Gemini Google pada peringkat percuma, mengikut syarat yang dinyatakan di bawah [Model AI dan peringkat percuma Google](#/privacy/ai-models).',
-            '**Apabila pelayar anda bertanya.** Pemberitahuan dimatikan sehingga anda membenarkannya apabila ditanya oleh pelayar.',
+            '**Apabila anda membuat akaun:** Dengan menekan Sign in with Google, anda bersetuju dengan pengumpulan identiti akaun anda, serta kiraan penggunaan dan log diagnostik yang direkodkan oleh aplikasi semasa anda menggunakannya, bagi tujuan yang disenaraikan di atas.',
+            '**Apabila anda menggunakan sesuatu ciri:** Dasar ini menyenaraikan kegunaan setiap jawapan. Apabila anda mengisi profil, menghantar permintaan perjalanan, menjemput kolaborator atau membuat pautan kongsi, anda bersetuju maklumat itu digunakan untuk ciri tersebut, termasuk dihantar kepada penyedia yang diperlukan oleh ciri itu. Bagi permintaan perjalanan, suntingan melalui sembang atau permintaan pilihan lain, ini termasuk model Gemini Google pada peringkat percuma, mengikut syarat yang dinyatakan di bawah [Model AI dan peringkat percuma Google](#/privacy/ai-models).',
+            '**Apabila pelayar anda bertanya:** Pemberitahuan dimatikan sehingga anda membenarkannya apabila ditanya oleh pelayar.',
           ],
         },
         { type: 'subheading', text: 'Persetujuan yang dianggap telah diberikan' },
@@ -175,8 +175,8 @@ export default {
         {
           type: 'list',
           items: [
-            '**Melalui perbuatan.** Apabila anda memberikan maklumat secara sukarela bagi tujuan yang jelas daripada konteksnya, misalnya menaip keperluan pemakanan supaya rancangan sesuai dengan anda, anda dianggap bersetuju maklumat itu digunakan bagi tujuan tersebut.',
-            '**Kerana keperluan kontrak.** Apabila anda meminta Trippy melakukan sesuatu yang hanya dapat dilakukan dengan menyerahkan data anda kepada penyedia, misalnya menyimpan perjalanan di Supabase atau menghantar permintaan perjalanan kepada model AI untuk ditulis, anda dianggap bersetuju dengan pendedahan itu dan dengan penggunaan data tersebut oleh penyedia untuk melaksanakan tugas itu.',
+            '**Melalui perbuatan:** Apabila anda memberikan maklumat secara sukarela bagi tujuan yang jelas daripada konteksnya, misalnya menaip keperluan pemakanan supaya rancangan sesuai dengan anda, anda dianggap bersetuju maklumat itu digunakan bagi tujuan tersebut.',
+            '**Kerana keperluan kontrak:** Apabila anda meminta Trippy melakukan sesuatu yang hanya dapat dilakukan dengan menyerahkan data anda kepada penyedia, misalnya menyimpan perjalanan di Supabase atau menghantar permintaan perjalanan kepada model AI untuk ditulis, anda dianggap bersetuju dengan pendedahan itu dan dengan penggunaan data tersebut oleh penyedia untuk melaksanakan tugas itu.',
           ],
         },
         { type: 'p', text: 'Kami tidak bergantung pada persetujuan yang dianggap diberikan melalui pemberitahuan. Jika kami mahu menggunakan data anda bagi tujuan baharu, kami akan bertanya kepada anda dahulu.' },
@@ -261,13 +261,13 @@ export default {
         {
           type: 'list',
           items: [
-            '**Sambungan yang disulitkan.** Laman ini dan setiap permintaan kepada pangkalan data, perkhidmatan log masuk dan fungsi pelayan kami dihantar melalui HTTPS.',
-            '**Tiada kata laluan disimpan oleh Trippy.** Log masuk hanya melalui Google. Google menyemak kata laluan anda dan memberitahu kami siapa anda.',
-            '**Peraturan akses dalam pangkalan data.** Setiap jadual mempunyai peraturan pada peringkat baris: sesuatu akaun hanya boleh membaca dan mengubah profil dan perjalanannya sendiri, serta perjalanan yang ia dijemput untuk sertai, mengikut peranan yang diberikan kepadanya.',
-            '**Semakan pada pelayan.** Fungsi yang menulis rancangan, menjawab suntingan melalui sembang dan mencari foto hanya menerima permintaan daripada akaun yang sudah log masuk, dan penulis rancangan serta penyunting sembang mempunyai had harian.',
-            '**Pautan kongsi yang diringkaskan.** Pautan kongsi memaparkan salinan perjalanan yang dikurangkan isinya. Lihat [Pautan kongsi dan kolaborator](#/privacy/shared-links).',
-            '**Kunci tidak disimpan pada peranti anda.** Kunci bagi perkhidmatan AI dan foto disimpan pada pelayan. Pelayar anda tidak pernah menerimanya.',
-            '**Pentadbiran yang terhad.** Selain orang yang anda kongsikan perjalanan dengannya, hanya akaun yang diberi peranan pentadbir oleh pengendali boleh membaca profil, perjalanan dan log diagnostik anda. Pengendali juga boleh mencapai pangkalan data melalui konsol penyedia itu sendiri. Kami menggunakan akses itu hanya untuk membaiki kerosakan, menjawab permintaan anda dan menguatkuasakan terma kami.',
+            '**Sambungan yang disulitkan:** Laman ini dan setiap permintaan kepada pangkalan data, perkhidmatan log masuk dan fungsi pelayan kami dihantar melalui HTTPS.',
+            '**Tiada kata laluan disimpan oleh Trippy:** Log masuk hanya melalui Google. Google menyemak kata laluan anda dan memberitahu kami siapa anda.',
+            '**Peraturan akses dalam pangkalan data:** Setiap jadual mempunyai peraturan pada peringkat baris: sesuatu akaun hanya boleh membaca dan mengubah profil dan perjalanannya sendiri, serta perjalanan yang ia dijemput untuk sertai, mengikut peranan yang diberikan kepadanya.',
+            '**Semakan pada pelayan:** Fungsi yang menulis rancangan, menjawab suntingan melalui sembang dan mencari foto hanya menerima permintaan daripada akaun yang sudah log masuk, dan penulis rancangan serta penyunting sembang mempunyai had harian.',
+            '**Pautan kongsi yang diringkaskan:** Pautan kongsi memaparkan salinan perjalanan yang dikurangkan isinya. Lihat [Pautan kongsi dan kolaborator](#/privacy/shared-links).',
+            '**Kunci tidak disimpan pada peranti anda:** Kunci bagi perkhidmatan AI dan foto disimpan pada pelayan. Pelayar anda tidak pernah menerimanya.',
+            '**Pentadbiran yang terhad:** Selain orang yang anda kongsikan perjalanan dengannya, hanya akaun yang diberi peranan pentadbir oleh pengendali boleh membaca profil, perjalanan dan log diagnostik anda. Pengendali juga boleh mencapai pangkalan data melalui konsol penyedia itu sendiri. Kami menggunakan akses itu hanya untuk membaiki kerosakan, menjawab permintaan anda dan menguatkuasakan terma kami.',
           ],
         },
         { type: 'subheading', text: 'Batasan yang perlu anda tahu' },

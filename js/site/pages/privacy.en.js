@@ -166,9 +166,9 @@ export default {
         {
           type: 'list',
           items: [
-            '**When you create an account.** By pressing Sign in with Google you consent to the collection of your account identity, and to the usage counts and diagnostic logs that the app records while you use it, for the purposes listed above.',
-            '**When you use a feature.** This policy lists what each answer is used for. When you fill in your profile, send a trip request, invite a collaborator or create a share link, you consent to the use of that information for that feature, including sending it to the providers that the feature relies on. For a trip request, a chat edit or a request for alternatives, that includes Google\'s Gemini models on the free tier, on the terms set out under [AI models and Google\'s free tier](#/privacy/ai-models).',
-            '**When your browser asks.** Notifications are off until you allow them at the browser prompt.',
+            '**When you create an account:** By pressing Sign in with Google you consent to the collection of your account identity, and to the usage counts and diagnostic logs that the app records while you use it, for the purposes listed above.',
+            '**When you use a feature:** This policy lists what each answer is used for. When you fill in your profile, send a trip request, invite a collaborator or create a share link, you consent to the use of that information for that feature, including sending it to the providers that the feature relies on. For a trip request, a chat edit or a request for alternatives, that includes Google\'s Gemini models on the free tier, on the terms set out under [AI models and Google\'s free tier](#/privacy/ai-models).',
+            '**When your browser asks:** Notifications are off until you allow them at the browser prompt.',
           ],
         },
         { type: 'subheading', text: 'Deemed consent' },
@@ -176,8 +176,8 @@ export default {
         {
           type: 'list',
           items: [
-            '**By conduct.** When you volunteer information for a purpose that is plain from the context, such as typing a dietary need so that the plan suits you, you are taken to consent to its use for that purpose.',
-            '**By contractual necessity.** When you ask Trippy to do something that it can only do by passing your data to a provider, such as storing a trip at Supabase or sending a trip request to an AI model to be written, you are taken to consent to that disclosure and to the provider using the data to carry out the task.',
+            '**By conduct:** When you volunteer information for a purpose that is plain from the context, such as typing a dietary need so that the plan suits you, you are taken to consent to its use for that purpose.',
+            '**By contractual necessity:** When you ask Trippy to do something that it can only do by passing your data to a provider, such as storing a trip at Supabase or sending a trip request to an AI model to be written, you are taken to consent to that disclosure and to the provider using the data to carry out the task.',
           ],
         },
         { type: 'p', text: 'We do not rely on deemed consent by notification. If we ever want to use your data for a new purpose, we will ask you first.' },
@@ -262,13 +262,13 @@ export default {
         {
           type: 'list',
           items: [
-            '**Encrypted connections.** The site and every request to our database, sign-in service and server functions travel over HTTPS.',
-            '**No passwords held by Trippy.** Sign-in is by Google only. Google checks your password and tells us who you are.',
-            '**Access rules in the database.** Every table has row-level rules: an account can read and change only its own profile and trips, and the trips it has been invited to, within the role it was given.',
-            '**Checks on the server.** The functions that write plans, answer chat edits and look up photos accept requests only from a signed-in account, and the plan writer and the chat editor have daily limits.',
-            '**Cut-down share links.** A share link shows a reduced copy of a trip. See [Shared links and collaborators](#/privacy/shared-links).',
-            '**Keys kept off your device.** The keys for the AI and photo services are held on the server. Your browser never receives them.',
-            '**Limited administration.** Apart from the people you share a trip with, only an account that the operator has given the administrator role can read your profile, trips and diagnostic logs. The operator can also reach the database through the provider\'s own console. We use that access only to fix faults, answer your requests and enforce our terms.',
+            '**Encrypted connections:** The site and every request to our database, sign-in service and server functions travel over HTTPS.',
+            '**No passwords held by Trippy:** Sign-in is by Google only. Google checks your password and tells us who you are.',
+            '**Access rules in the database:** Every table has row-level rules: an account can read and change only its own profile and trips, and the trips it has been invited to, within the role it was given.',
+            '**Checks on the server:** The functions that write plans, answer chat edits and look up photos accept requests only from a signed-in account, and the plan writer and the chat editor have daily limits.',
+            '**Cut-down share links:** A share link shows a reduced copy of a trip. See [Shared links and collaborators](#/privacy/shared-links).',
+            '**Keys kept off your device:** The keys for the AI and photo services are held on the server. Your browser never receives them.',
+            '**Limited administration:** Apart from the people you share a trip with, only an account that the operator has given the administrator role can read your profile, trips and diagnostic logs. The operator can also reach the database through the provider\'s own console. We use that access only to fix faults, answer your requests and enforce our terms.',
           ],
         },
         { type: 'subheading', text: 'Limits you should know about' },
