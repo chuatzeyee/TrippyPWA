@@ -125,7 +125,7 @@ describe.each(READY)('ready fixture %s', (key) => {
     expect(textOf(one(trips, 'h2'))).toBe('Trips');
     expect(all(trips, '.atl-count')).toHaveLength(0);
     expect(textOf(trips)).not.toMatch(/Most recent first|Soonest first/);
-    expect(textOf(region(root, 'count'))).toMatch(model.filter.expanded ? /^(\d+ plans? match(es)?\.)?$/ : /^$/);
+    expect(textOf(region(root, 'count'))).toMatch(model.filter.expanded ? /^(\d+ plans? match(es)?)?$/ : /^$/);
     expect(all(trips, 'input[data-trip-search]')).toHaveLength(1);
     expect(attr(one(trips, 'input[data-trip-search]'), 'placeholder')).toBe('Search trips, cities or countries');
     const chips = texts(region(root, 'filters'), '.ui-chip-label');

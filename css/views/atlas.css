@@ -61,7 +61,11 @@
 [data-view="atlas"][data-view] .ui-btn--danger { background: transparent; color: var(--atl-error-ink); }
 [data-view="atlas"][data-view] .ui-flag { border-radius: 2px; box-shadow: 0 0 0 1px var(--atl-rule); }
 [data-view="atlas"][data-view] .atl-flags { display: inline-flex; gap: 4px; margin-left: 5px; vertical-align: -1px; }
-[data-view="atlas"][data-view] .atl-found { font: 400 14px/1.4 var(--font-body); color: var(--ink-secondary); }
+/* What a search or a filter found: a pill under the search box that fades in and out again. */
+[data-view="atlas"][data-view] .atl-trips-head { position: relative; }
+[data-view="atlas"][data-view] .atl-found { position: absolute; top: calc(100% + var(--sp-2)); left: 0; z-index: 2; margin: 0; pointer-events: none; }
+[data-view="atlas"][data-view] .atl-found-pill { display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--sp-4); border-radius: var(--r-pill); background: var(--ink); color: var(--parchment); font: 600 14px/1 var(--font-body); box-shadow: var(--shadow-md); opacity: 0; animation: atl-found 2.6s var(--ease-out) forwards; }
+@keyframes atl-found { 0% { opacity: 0; transform: translateY(-4px); } 10% { opacity: 1; transform: none; } 78% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
 [data-view="atlas"][data-view] .atl-found:empty { display: none; }
 [data-view="atlas"][data-view] .atl-count {
   padding: 4px 6px;
@@ -515,7 +519,7 @@
   [data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-12) + 22px); }
   [data-view="atlas"][data-view] .atl-rg { padding-bottom: var(--sp-12); }
   [data-view="atlas"][data-view] .atl-rg--plan { padding-bottom: var(--sp-8); }
-  [data-view="atlas"][data-view] .atl-found { grid-column: 1 / -1; margin-top: calc(-1 * var(--sp-2)); }
+  [data-view="atlas"][data-view] .atl-found { left: 124px; }
   [data-view="atlas"][data-view] .atl-rg--next,
   [data-view="atlas"][data-view] .atl-rg--past { padding-bottom: 0; }
   [data-view="atlas"][data-view] .atl-rg-title { font-size: 24px; }
