@@ -1,5 +1,7 @@
 import { navigate, onRouteLeave } from '../router.js';
 import { fetchTripById, deleteTrip, cachedListRole } from '../data/trip-repository.js';
+import { comparisonOf } from '../lib/trip-compare.js';
+import { compareEntryHtml } from './trip-compare-html.js';
 import { getUser } from '../lib/supabase.js';
 import { formatNumber, formatDateRange, formatWeekdayDate, getLocale, formatCityList, to12h, formatClock } from '../lib/locale.js';
 import { convert, canConvert } from '../data/currencies.js';
@@ -652,9 +654,9 @@ function renderActivity(activity, currencySymbol, isFirst, tripCode = '') {
         ${activity.venue_name ? `<div class="td-activity-venue">${esc(activity.venue_name)}${mapsUrl ? ` <a href="${mapsUrl}" target="_blank" rel="noopener" class="td-maps-link">Map ${ICONS.openInNew}</a>` : ''}</div>` : ''}
         ${activity.description ? `<div class="td-activity-desc">${esc(to12h(activity.description))}</div>` : ''}
         ${activity.tips ? `<div class="td-activity-tip"><span class="td-tip-icon">${ICONS.info}</span> ${esc(to12h(activity.tips))}</div>` : ''}
+        ${activity.notes ? `<div class="td-activity-note"><span class="td-note-label">Your note</span> ${esc(to12h(activity.notes))}</div>` : ''}
         ${wantsActivityPhoto(activity) ? `<div class="td-activity-photo" data-venue="${esc(activity.venue_name)}" data-category="${esc(activity.category || '')}" ${activity.photo_url ? `data-photo="${esc(activity.photo_url)}"` : ''} ${activity.photo_source ? `data-photo-source="${esc(activity.photo_source)}"` : ''} ${credit ? `data-photo-credit="${esc(credit)}"` : ''} ${safeUrl(_photoCredits[activity.id]?.link || '') ? `data-photo-link="${esc(safeUrl(_photoCredits[activity.id].link))}"` : ''} ${lat ? `data-lat="${lat}"` : ''} ${lng ? `data-lng="${lng}"` : ''}></div>` : ''}
         ${activity.id ? `<button type="button" class="td-alt-btn" data-alt-for="${esc(activity.id)}" title="Suggest alternatives" aria-expanded="false">${mdIcon(MD.travelExplore, 13)} Alternatives</button>` : ''}
-        ${activity.notes ? `<div class="td-activity-note"><span class="td-note-label">Your note</span> ${esc(to12h(activity.notes))}</div>` : ''}
       </div>
     </div>
   `;
@@ -839,6 +841,13 @@ export async function renderTripDetail(rawTripId, opts = {}) {
       const notFound = error === 'not_found' || (!error && !trip);
       if (error && !notFound) logger.error('data', 'Trip load failed', { tripId, error });
       renderTripError(app, rawTripId, notFound ? 'not_found' : 'error');
+      return;
+    }
+
+    // A comparison trip has no page of its own: it is read next to its imported trip.
+    const comparedWith = comparisonOf(trip.wizard_state);
+    if (comparedWith && trip.user_id === getUser()?.id) {
+      location.replace(`#/trip/${encodeURIComponent(comparedWith)}/compare`);
       return;
     }
 
@@ -1300,6 +1309,7 @@ function renderAccommodationContent(extras, trip) {
           ${a.area || a.type ? `<div class="td-accom-area">${esc([a.area, a.type].filter(Boolean).join(', '))}</div>` : ''}
           ${address ? `<div class="td-accom-address">${esc(address)} <a class="td-maps-link" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Map ${ICONS.openInNew}</a></div>` : ''}
           ${stay ? `<div class="td-accom-stay">${esc(stay)}</div>` : ''}
+          ${a.note ? `<div class="td-activity-note"><span class="td-note-label">Your note</span> ${esc(to12h(String(a.note).slice(0, 300)))}</div>` : ''}
         </div>
         <div class="td-accom-price">${esc(a.priceRange)}</div>
         ${features.length > 0 ? `
@@ -1309,7 +1319,6 @@ function renderAccommodationContent(extras, trip) {
         ` : ''}
         <div class="td-accom-links">
           ${links.map(l => `
-          ${a.note ? `<div class="td-activity-note"><span class="td-note-label">Your note</span> ${esc(to12h(String(a.note).slice(0, 300)))}</div>` : ''}
             <a class="td-accom-link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-booking-click="${esc(l.label.toLowerCase())}" data-booking-kind="hotel">${l.icon} ${esc(l.label)}</a>
           `).join('')}
         </div>
@@ -2600,6 +2609,10 @@ function renderDayPicker(app, loaded, opts = {}) {
 
   const wrap = app.querySelector('.td-wrap');
   view.wrap = wrap;
+  // An imported plan, for its owner: the one way into the comparison with a Trippy plan.
+  if (trip.wizard_state?.imported === true && trip.user_id && trip.user_id === userId && !comparisonOf(trip.wizard_state)) {
+    wrap.querySelector('[data-panel="plan"]')?.insertAdjacentHTML('afterbegin', compareEntryHtml(trip));
+  }
   bindAirlineLogos(wrap, signal);
   const unpublishFooter = publishFooterHeight(app);
   if (unpublishFooter) view.cleanups.push(unpublishFooter);

@@ -1,0 +1,182 @@
+/* The comparison page of an imported trip (js/components/trip-compare*.js). Two plans side by side
+   from 768 px; below it one side at a time, picked with the switch pinned under the app bar. */
+.cmp-page {
+  --cmp-ok-ink: #8CC79B;
+  width: 100%;
+  max-width: var(--nav-max, 1228px); /* the edges of the app bar and the footer */
+  margin: 0 auto;
+  padding: var(--sp-5) 0 0;
+  color: var(--ink);
+}
+[data-theme="light"] .cmp-page { --cmp-ok-ink: #2F6B42; }
+
+.cmp-head { margin-bottom: var(--sp-5); }
+.cmp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  font: var(--text-small);
+  color: var(--ink-secondary);
+  text-decoration: none;
+}
+.cmp-back:hover { color: var(--ink); }
+.cmp-title { font: var(--text-hero); color: var(--ink); overflow-wrap: anywhere; }
+.cmp-sub { margin-top: var(--sp-1); font: var(--text-small); color: var(--ink-secondary); }
+
+.cmp-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-inset);
+  font: var(--text-small);
+  color: var(--ink);
+}
+.cmp-note .ui-icon { flex: none; margin-top: 1px; color: var(--ink-secondary); }
+
+.cmp-card {
+  margin: 0 0 var(--sp-5);
+  padding: var(--sp-5);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+.cmp-card-title { font: var(--text-h2); color: var(--ink); }
+.cmp-card-text { font: var(--text-body); color: var(--ink-secondary); max-width: 62ch; }
+.cmp-card-title + .cmp-card-text { margin-top: var(--sp-2); }
+.cmp-btn { min-height: 44px; height: auto; padding-inline: var(--sp-5); }
+.cmp-btn--line { border: 1px solid var(--border-strong); color: var(--ink); }
+.cmp-btn:disabled, .cmp-add:disabled { opacity: 0.5; cursor: not-allowed; }
+.cmp-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+
+/* ---- The confirm step ---- */
+.cmp-start { max-width: 720px; }
+.cmp-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); margin: var(--sp-5) 0; }
+.cmp-field { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
+.cmp-field--wide { grid-column: 1 / -1; }
+.cmp-field-label { font: var(--text-small); color: var(--ink-secondary); }
+.cmp-field-value { font: var(--text-h3); color: var(--ink); }
+.cmp-field .input { height: 48px; padding-block: 0; border-radius: var(--r-md); color-scheme: dark; }
+[data-theme="light"] .cmp-field .input { color-scheme: light; }
+.cmp-error { margin: 0 0 var(--sp-4); font: var(--text-small); color: var(--error); }
+
+/* ---- Waiting, failed, loading ---- */
+.cmp-status { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-4); }
+.cmp-status .cmp-card-text { flex: 1 1 280px; max-width: none; color: var(--ink); }
+.cmp-loading { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-10) 0; font: var(--text-body); color: var(--ink-secondary); }
+.cmp-spinner {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--terracotta);
+  border-radius: 50%;
+  animation: cmpSpin 0.9s linear infinite;
+}
+@keyframes cmpSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cmp-spinner { animation: none; } }
+
+/* ---- Summary ---- */
+.cmp-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.cmp-table th, .cmp-table td { padding: var(--sp-2) var(--sp-3) var(--sp-2) 0; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.cmp-table thead th { font: var(--text-small); font-weight: 700; color: var(--ink); border-bottom: 1px solid var(--border-strong); }
+.cmp-table tbody th { font: var(--text-small); font-weight: 500; color: var(--ink-secondary); }
+.cmp-table tbody td { font: var(--text-body); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cmp-table tbody tr + tr > * { border-top: 1px solid var(--border); }
+.cmp-th-note { display: block; font: var(--text-caption); color: var(--ink-secondary); }
+.cmp-shared { margin-top: var(--sp-4); font: var(--text-small); color: var(--ink); }
+
+/* ---- The switch (phones only) ---- */
+.cmp-switch { display: none; }
+
+/* ---- Days ---- */
+.cmp-days { list-style: none; margin: 0; padding: 0; }
+.cmp-day { margin: 0 0 var(--sp-6); }
+.cmp-day-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sp-3); margin-bottom: var(--sp-3); font: var(--text-h2); color: var(--ink); }
+.cmp-day-date { font: var(--text-small); color: var(--ink-secondary); }
+/* One grid row per day: both panels stretch to the taller one, so the columns end level. */
+.cmp-day-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); align-items: stretch; }
+.cmp-side {
+  min-width: 0;
+  padding: var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-solid);
+}
+.cmp-side-label { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-2); font: var(--text-small); font-weight: 700; color: var(--ink); }
+.cmp-side-title { font-weight: 500; color: var(--ink-secondary); overflow-wrap: anywhere; }
+.cmp-empty { padding: var(--sp-3) 0; font: var(--text-small); color: var(--ink-secondary); }
+.cmp-stops { list-style: none; margin: 0; padding: 0; }
+.cmp-stop {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+.cmp-stop + .cmp-stop { border-top: 1px solid var(--border); }
+.cmp-stop-time { font: var(--text-small); color: var(--ink-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cmp-stop-main { min-width: 0; }
+.cmp-stop-name { display: block; font: var(--text-body); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.cmp-stop-meta { display: flex; flex-wrap: wrap; gap: 0 var(--sp-3); font: var(--text-small); color: var(--ink-secondary); }
+.cmp-both, .cmp-added {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--teal-light);
+  font: var(--text-caption);
+  font-weight: 600;
+  color: var(--cmp-ok-ink);
+  white-space: nowrap;
+}
+.cmp-add { min-height: 44px; height: auto; color: var(--cmp-ok-ink); }
+.cmp-add:hover:not(:disabled) { color: #FFFFFF; }
+
+/* ---- The end ---- */
+.cmp-end { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-4); margin-top: var(--sp-8); }
+.cmp-end-text { flex: 1 1 320px; min-width: 0; }
+
+@media (max-width: 767px) {
+  /* #app keeps 12 px on a phone, the app bar and the footer 16 px. */
+  .cmp-page { padding-inline: var(--sp-1); }
+  .cmp-card { padding: var(--sp-4); }
+  .cmp-fields { grid-template-columns: minmax(0, 1fr); }
+  .cmp-actions .cmp-btn { flex: 1 1 auto; }
+  .cmp-switch {
+    position: sticky;
+    top: calc(var(--nav-h) + var(--sp-2));
+    z-index: var(--z-sticky);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-1);
+    margin: 0 0 var(--sp-4);
+    padding: var(--sp-1);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-pill);
+    background: var(--surface-solid);
+    box-shadow: var(--shadow-md);
+  }
+  .cmp-switch-btn {
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    font: var(--text-small);
+    font-weight: 600;
+    color: var(--ink-secondary);
+    cursor: pointer;
+  }
+  .cmp-switch-btn[aria-pressed="true"] { background: var(--terracotta); color: #FFFFFF; }
+  .cmp-day-cols { grid-template-columns: minmax(0, 1fr); }
+  .cmp-day { scroll-margin-top: calc(var(--nav-h) + 72px); }
+  .cmp-page[data-side="mine"] .cmp-side--theirs,
+  .cmp-page[data-side="theirs"] .cmp-side--mine { display: none; }
+  .cmp-stop { grid-template-columns: 4.75rem minmax(0, 1fr); }
+  .cmp-stop > .cmp-both, .cmp-stop > .cmp-added, .cmp-stop > .cmp-add { grid-column: 2; justify-self: start; }
+}

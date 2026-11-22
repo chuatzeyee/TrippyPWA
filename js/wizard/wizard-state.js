@@ -1,6 +1,6 @@
 const SESSION_KEY = 'trippy_wizard_state';
 
-function defaultState() {
+export function defaultState() {
   return {
     currentStep: 1,
     furthestStep: 1,

@@ -4,6 +4,7 @@ import { formatCityList } from '../lib/locale.js';
 import { startMinutes, normStartTime, sortDayActivities } from '../lib/day-order.js';
 import { storedSessionUserId } from './profile-cache.js';
 import { removePhotosOfTrip, removeTripPhotos } from './account-repository.js';
+import { comparisonOf, orphanComparisons, NOT_A_COMPARISON } from '../lib/trip-compare.js';
 
 // Stored photos go before the trip rows (the owner storage policies need the
 // trip to exist). A failure is logged and never blocks the delete.
@@ -140,7 +141,11 @@ function saveTripOffline(userId, trip) {
   try { raw = JSON.stringify({ userId, savedAt, data: trip }); } catch { return; }
   if (raw.length > OFFLINE_MAX_TRIP_CHARS) return;
 
-  const entry = { id: trip.id, userId, savedAt, title: trip.title || '', start_date: trip.start_date || null, end_date: trip.end_date || null, chars: raw.length };
+  const entry = {
+    id: trip.id, userId, savedAt, title: trip.title || '', start_date: trip.start_date || null, end_date: trip.end_date || null, chars: raw.length,
+    // A comparison trip is kept for its comparison page and never listed (listOfflineTrips).
+    ...(comparisonOf(trip.wizard_state) ? { compareOf: comparisonOf(trip.wizard_state) } : {}),
+  };
   const ranked = [entry, ...readOfflineIndex().filter(e => e.id !== trip.id)];
   // Keep the newest copies that fit the count and the size budget, and drop the
   // older ones before writing rather than only when the store is already full.
@@ -218,7 +223,7 @@ export function listOfflineTrips() {
   const userId = deviceUserId();
   if (!userId) return [];
   return readOfflineIndex()
-    .filter(e => e.userId === userId)
+    .filter(e => e.userId === userId && !e.compareOf)
     .map(({ id, title, start_date, end_date, savedAt }) => ({ id, title, start_date, end_date, savedAt }));
 }
 
@@ -319,6 +324,29 @@ function dropAbandonedImports(userId, rows) {
     });
 }
 
+// Comparison trips (js/lib/trip-compare.js) are not in the list, so the ones left behind are found
+// here, once per session: see orphanComparisons(). Never blocks the list; a failed read deletes nothing.
+let orphansChecked = false;
+async function dropOrphanComparisons(userId) {
+  if (orphansChecked) return;
+  orphansChecked = true;
+  try {
+    const { data: hidden, error } = await supabase.from('trips').select('id, created_at, of:wizard_state->>compareOf')
+      .eq('user_id', userId).not(NOT_A_COMPARISON[0], 'is', null);
+    const named = (Array.isArray(hidden) ? hidden : []).filter(r => typeof r?.of === 'string' && r.of);
+    if (error || named.length === 0) return;
+    const { data: parents, error: parentsError } = await supabase.from('trips').select('id, compare:wizard_state->>compareTrip')
+      .in('id', [...new Set(named.map(r => r.of))]);
+    if (parentsError || !Array.isArray(parents)) return;
+    for (const id of orphanComparisons(named, parents)) {
+      const { error: gone } = await deleteTrip(id);
+      logger.warn('data', 'Orphan comparison trip removed', { tripId: id, error: gone });
+    }
+  } catch (e) {
+    logger.warn('data', 'Orphan comparison check failed', { error: e?.message });
+  }
+}
+
 /**
  * Trips for the dashboard: the user's own plus trips they were invited to
  * collaborate on (RLS lets an invitee read those, matched by login email).
@@ -341,6 +369,9 @@ export async function fetchAllTrips() {
     .from('trips')
     .select(TRIP_LIST_SELECT)
     .eq('user_id', user.id)
+    // The one place comparison trips (js/lib/trip-compare.js) leave the list: every card, count,
+    // stat, map and briefing reads the rows of this query.
+    .is(...NOT_A_COMPARISON)
     .order('created_at', { ascending: false });
   const sharedQuery = user.email
     ? supabase
@@ -363,6 +394,7 @@ export async function fetchAllTrips() {
 
   const ownRows = own.data || [];
   dropAbandonedImports(user.id, ownRows);
+  dropOrphanComparisons(user.id);
   const ownIds = new Set(ownRows.map(r => r.id));
   const rows = [
     ...ownRows.filter(r => !r.import_pending).map(r => toListRow(r, false)),
@@ -861,7 +893,10 @@ export async function deleteTrip(id) {
     .delete()
     .eq('id', id)
     .eq('user_id', user.id)
-    .select('id');
+    .select('id, compare:wizard_state->compareTrip');
+  // An imported trip takes its comparison trip (js/lib/trip-compare.js) with it.
+  const compare = data?.[0]?.compare;
+  const compareId = typeof compare === 'string' && compare && compare !== id ? compare : null;
 
   if (error) return { error: error.message };
   if (!data?.length) {
@@ -876,7 +911,28 @@ export async function deleteTrip(id) {
     if (row) return { error: row.user_id === user.id ? 'Could not delete the trip' : 'Only the trip owner can delete this trip.' };
   }
   forgetOfflineTrip(id);
+  // Only while that trip still is its comparison: one the user kept is a plan of its own.
+  const { data: other } = compareId
+    ? await supabase.from('trips').select('of:wizard_state->compareOf').eq('id', compareId).maybeSingle() : { data: null };
+  if (other?.of === id) {
+    const { error: compareError } = await deleteTrip(compareId);
+    if (compareError) logger.warn('data', 'Comparison trip could not be deleted', { tripId: id, compareId, error: compareError });
+  }
   return { error: null };
+}
+
+/**
+ * Saves the title and/or the wizard_state of a trip the user owns.
+ * @param {string} id
+ * @param {{ title?: string, wizard_state?: object }} fields
+ * @returns {Promise<{ error: string|null }>}
+ */
+export async function updateTripFields(id, { title, wizard_state } = {}) {
+  const user = getUser();
+  if (!user) return { error: 'Not authenticated' };
+  const fields = { ...(title !== undefined ? { title } : {}), ...(wizard_state !== undefined ? { wizard_state } : {}) };
+  const { error } = await supabase.from('trips').update(fields).eq('id', id).eq('user_id', user.id);
+  return { error: error?.message || null };
 }
 
 // Delete a single activity (used by edit mode so users can curate the itinerary

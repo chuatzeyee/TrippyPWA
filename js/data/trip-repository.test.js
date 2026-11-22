@@ -395,6 +395,8 @@ describe('fetchAllTrips', () => {
     expect(columns).toContain('cover_small:extras->cover->small');
     expect(columns).toContain('cover_large:extras->cover->large');
     expect(columns).toContain('cover_focus:extras->cover->focusY');
+    // Comparison trips (wizard_state.compareOf) never reach the list.
+    expect(op(tripsCall, 'is')).toEqual(['is', 'wizard_state->>compareOf', null]);
     const collabCall = fake.calls.find(c => c.table === 'trip_collaborators');
     expect(op(collabCall, 'eq')).toEqual(['eq', 'invited_email', 'me@example.com']);
   });
@@ -467,6 +469,25 @@ describe('deleteTrip', () => {
     await repo.fetchTripById('t1');
     fake.respond = () => ({ data: [{ id: 't1' }], error: null });
     expect(await repo.deleteTrip('t1')).toEqual({ error: null });
+    expect(repo.listOfflineTrips()).toEqual([]);
+  });
+
+  it('deletes the comparison trip of an imported trip, but not one the user kept as a plan of its own', async () => {
+    const run = async (of) => {
+      fake.calls.length = 0;
+      fake.respond = (call) => (op(call, 'delete') ? { data: [{ id: op(call, 'eq')[2], compare: op(call, 'eq')[2] === 'imp' ? 'cmp' : null }], error: null }
+        : call.table === 'trips' ? { data: { of }, error: null } : { data: [], error: null });
+      expect(await repo.deleteTrip('imp')).toEqual({ error: null });
+      return fake.calls.filter((call) => op(call, 'delete')).map((call) => op(call, 'eq')[2]);
+    };
+    expect(await run('imp')).toEqual(['imp', 'cmp']);
+    expect(await run(null)).toEqual(['imp']);
+    expect(await run('another')).toEqual(['imp']);
+  });
+
+  it('keeps the saved copy of a comparison trip out of the offline list', async () => {
+    fake.respond = () => ({ data: { id: 'cmp', title: 'Porto', wizard_state: { compareOf: 'imp' }, itinerary_days: [] }, error: null, status: 200 });
+    expect((await repo.fetchTripById('cmp')).data.id).toBe('cmp');
     expect(repo.listOfflineTrips()).toEqual([]);
   });
 

@@ -532,6 +532,13 @@ addRoute('/trip/:id/read', async (params) => {
   await renderOwnerReadView(params.id);
 }, { title: 'Trip', titleFromHeading: true });
 
+// An imported trip next to the plan Trippy wrote for the same trip. Opens offline from saved copies.
+addRoute('/trip/:id/compare', async (params) => {
+  if (!(await ensureSignedIn({ requireOnline: false }))) return;
+  const { renderTripCompare } = await import('./components/trip-compare.js');
+  await renderTripCompare(params.id);
+}, { title: 'Compare plans', titleFromHeading: true });
+
 onNotFound(() => {
   const app = document.getElementById('app');
   app.innerHTML = `
