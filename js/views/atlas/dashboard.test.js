@@ -409,7 +409,7 @@ describe('beside the plate while no plan is live', () => {
     const [, second] = model.sections.upcoming;
     const row = one(region(draw(model), 'ahead'), '.atl-also');
     expect(attr(row, 'data-trip-id')).toBe(second.id);
-    expect(textOf(one(row, 'h3'))).toBe(`Then ${second.title}`);
+    expect(textOf(one(row, 'h3'))).toBe(`${second.title}`);
     expect(textOf(row)).toContain(`In ${second.daysToGo} days`);
     const [first] = model.sections.upcoming;
     const alone = { ...model, sections: { ...model.sections, upcoming: [first] }, cardsById: Object.fromEntries(Object.entries(model.cardsById).filter(([, card]) => card.phase !== 'upcoming' || card === first)) };

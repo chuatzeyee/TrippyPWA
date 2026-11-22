@@ -57,7 +57,7 @@ function thenHtml(card, ctx) {
   const when = inDaysText(card.daysToGo);
   return `<article class="atl-also"${tripAttrs(card)}>
     ${thumb}
-    <div class="atl-also-text"><h3 class="atl-also-title">Then ${esc(card.title)}</h3><p class="atl-also-note">${esc(when.charAt(0).toUpperCase() + when.slice(1))}${card.dates?.text ? `, ${esc(card.dates.text)}` : ''}</p></div>
+    <div class="atl-also-text"><h3 class="atl-also-title">${esc(card.title)}</h3><p class="atl-also-note">${esc(when.charAt(0).toUpperCase() + when.slice(1))}${card.dates?.text ? `, ${esc(card.dates.text)}` : ''}</p></div>
     ${link(card.href, 'Open', { cls: 'ui-btn atl-today', focusKey: `ahead-then-${card.id}`, attrs: { 'aria-label': `Open ${card.title}` } })}
     ${cardLink(card)}
   </article>`;
