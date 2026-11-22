@@ -4739,19 +4739,36 @@ a.td-activity-photo-credit:hover { text-decoration: underline; }
   .td-day-card-header--entering { animation: none; }
 }
 
-/* ===== Imported plan: the way into the comparison with a Trippy plan (trip-compare-html.js) ===== */
+/* ===== Imported plan: the way into the comparison with a Trippy plan (trip-compare-html.js) =====
+   An invitation, not a row of a form: the two-plans motif, what is on offer, one button. */
 .cmp-entry {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--sp-3);
+  gap: var(--sp-3) var(--sp-5);
   margin: 0 0 var(--sp-4);
-  padding: var(--sp-3) var(--sp-4);
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-5);
   border: 1px solid var(--border-strong);
   border-radius: var(--r-lg);
   background: var(--surface-solid);
 }
-.cmp-entry-text { flex: 1 1 240px; min-width: 0; font: var(--text-small); color: var(--ink); }
-.cmp-entry .btn { min-height: 44px; height: auto; padding-inline: var(--sp-5); }
+.cmp-entry-motif { flex: none; width: 104px; height: auto; }
+.cmp-entry-text { flex: 1 1 0; min-width: 0; }
+.cmp-entry-title { font: var(--text-h2); color: var(--ink); }
+.cmp-entry-sub {
+  display: -webkit-box;
+  margin-top: 2px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font: var(--text-small);
+  color: var(--ink-secondary);
+}
+.cmp-entry-btn { flex: none; min-height: 44px; height: auto; padding-inline: var(--sp-5) var(--sp-4); text-decoration: none; }
+@media (max-width: 767px) {
+  .cmp-entry { flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); }
+  .cmp-entry-motif, .cmp-entry-sub { display: none; }
+  .cmp-entry-title { font-size: 1.125rem; }
+  .cmp-entry-btn { flex: 1 1 100%; }
+}
 

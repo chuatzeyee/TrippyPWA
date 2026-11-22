@@ -4,10 +4,12 @@
 // Trippy's plan is a second trip row of the same owner, planned by the usual generation path. The
 // rows point at each other in wizard_state (compareTrip on the imported trip, compareOf on the
 // comparison). Nothing here keeps a run alive: generation-manager.js does, so leaving is safe.
+import '../views/shared/styles.js';
 import '../../css/components/trip-compare.css';
 import { navigate, onRouteLeave } from '../router.js';
 import { getUser } from '../lib/supabase.js';
 import { logger } from '../lib/logger.js';
+import { scrollBehavior } from '../lib/motion.js';
 import { getPrefs } from '../data/prefs-store.js';
 import { getHomeCurrency } from '../data/user-prefs.js';
 import { storedSessionUserId } from '../data/profile-cache.js';
@@ -16,7 +18,10 @@ import {
 } from '../data/trip-repository.js';
 import { buildComparison, compareInputs, comparisonOf, activityCopy } from '../lib/trip-compare.js';
 import { buildCompareWizardState, compareInputError } from '../wizard/compare-state.js';
-import { comparePageHtml } from './trip-compare-html.js';
+import { fixedDayCount } from '../wizard/wizard-state.js';
+import { comparePageHtml, progressHtml } from './trip-compare-html.js';
+import { bindStartControls } from './trip-compare-controls.js';
+import { mountPhotoFrames } from '../views/shared/photo-frame.js';
 import { confirmDialog } from '../views/shared/confirm-dialog.js';
 import { showToast } from './toast.js';
 
@@ -26,7 +31,15 @@ const pathOf = (tripId) => `/trip/${encodeURIComponent(tripId)}/compare`;
 const onRoute = (tripId) => { const path = location.hash.slice(1).split('?')[0]; return path === pathOf(tripId) || path === `/trip/${tripId}/compare`; };
 const isOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
 const without = (object, key) => Object.fromEntries(Object.entries(object ?? {}).filter(([name]) => name !== key));
-const money = () => ({ home: getHomeCurrency(), homeFirst: getPrefs()?.homeCurrencyFirst });
+const money = () => ({ home: getHomeCurrency(), homeFirst: getPrefs()?.homeCurrencyFirst, photos: getPrefs()?.showVenuePhotos !== false });
+const PROGRESS_EVERY_MS = 8000;
+// The pinned row (the day chips, the side switch) sits under the app bar: a day scrolled to clears both.
+// Where it ends once it is pinned, which is not where it is while the page is still near its top.
+function pinnedEdge(root) {
+  const bar = root.querySelector('[data-compare-bar]');
+  if (!bar) return 0;
+  return (parseFloat(getComputedStyle(bar).top) || 0) + bar.offsetHeight + 1;
+}
 
 /** @param {string} rawTripId the imported trip */
 export async function renderTripCompare(rawTripId) {
@@ -34,17 +47,22 @@ export async function renderTripCompare(rawTripId) {
   const app = document.getElementById('app');
   if (!app || !tripId) return;
   const token = ++renderToken;
-  const page = { tripId, token, mine: null, theirs: null, stopWatching: null, state: { tripId, title: '', status: 'loading', side: 'mine', added: new Set() } };
+  const page = { tripId, token, mine: null, theirs: null, stopWatching: null, unbind: null, state: { tripId, title: '', status: 'loading', side: 'mine', added: new Set() } };
   const alive = () => page.token === renderToken && onRoute(tripId);
-  onRouteLeave(() => { page.stopWatching?.(); if (page.token === renderToken) renderToken += 1; });
+  onRouteLeave(() => { page.stopWatching?.(); page.unbind?.(); if (page.token === renderToken) renderToken += 1; });
 
   const draw = (patch = {}) => {
     if (!alive()) return;
     page.state = { ...page.state, ...patch };
-    if (page.mine && ['waiting', 'failed', 'ready'].includes(page.state.status)) {
+    if (page.mine && ['start', 'waiting', 'failed', 'ready'].includes(page.state.status)) {
       page.state.model = buildComparison(page.mine, page.state.status === 'ready' ? page.theirs : null, money());
+      page.state.home = getHomeCurrency();
     }
+    // A redraw keeps the reader where they were: the same day under the pinned row.
+    const scrollY = window.scrollY;
+    page.unbind?.();
     app.innerHTML = comparePageHtml(page.state);
+    if (patch.status === undefined && scrollY > 0) window.scrollTo(0, scrollY);
     bind(app.querySelector('[data-compare-page]'), page, { draw, load, alive });
   };
 
@@ -100,11 +118,26 @@ async function watch(page, { draw, load, alive }) {
     const gen = await import('../services/generation-manager.js');
     if (!alive()) return;
     const tripId = page.theirs.id;
-    page.stopWatching = gen.onGenerationUpdate((id, status) => {
+    const unlisten = gen.onGenerationUpdate((id, status) => {
       if (id !== tripId || !status || !alive()) return;
       if (status.status === 'done') { page.stopWatching?.(); load(); }
       else if (status.status === 'failed') { page.stopWatching?.(); draw({ status: 'failed', error: status.error || '' }); }
     });
+    // Days written so far, from the worker's counter: the page says how far the plan is.
+    const total = fixedDayCount(page.theirs.wizard_state?.dates ?? {}) || 0;
+    const ask = async () => {
+      const done = await gen.fetchGenerationProgress(tripId).catch(() => null);
+      if (!alive() || page.state.status !== 'waiting' || done === null || total < 1) return;
+      const progress = { done: Math.min(total, done), total };
+      if (page.state.progress?.done === progress.done && page.state.progress?.total === total) return;
+      // Only the progress line changes: the rest of the page stays as it is being read.
+      page.state = { ...page.state, progress };
+      const shown = document.querySelector('[data-compare-page] [data-compare-progress]');
+      if (shown) shown.outerHTML = progressHtml(progress);
+    };
+    const timer = setInterval(ask, PROGRESS_EVERY_MS);
+    page.stopWatching = () => { unlisten(); clearInterval(timer); page.stopWatching = null; };
+    ask();
     await gen.resumeStaleGenerations([{ id: tripId, status: 'generating' }]);
   } catch (e) {
     logger.warn('generation', 'Comparison watch unavailable', { tripId: page.tripId, error: e?.message });
@@ -115,7 +148,7 @@ function readInputs(form, inputs) {
   const value = (name) => String(new FormData(form).get(name) ?? '').trim();
   return {
     ...inputs, start: value('start'), end: value('end'), travelers: Number(value('travelers')) || 1,
-    pace: Number(value('pace')) || inputs.pace, dailyAmount: Number(value('dailyAmount')) || 0,
+    pace: Number(value('pace')) || inputs.pace, dailyAmount: Number(value('dailyAmount').replace(/[^\d]/g, '')) || 0,
   };
 }
 
@@ -218,7 +251,7 @@ async function keepBoth(page) {
 // A phone shows one side at a time: keep the day the user is reading where it is on screen.
 function switchSide(root, page, side) {
   const days = [...root.querySelectorAll('[data-compare-day]')];
-  const edge = (root.querySelector('.cmp-switch')?.getBoundingClientRect().bottom ?? 0) + 1;
+  const edge = pinnedEdge(root);
   const anchor = days.find((day) => day.getBoundingClientRect().bottom > edge);
   const before = anchor?.getBoundingClientRect().top;
   page.state = { ...page.state, side };
@@ -227,8 +260,43 @@ function switchSide(root, page, side) {
   if (anchor && before < edge) window.scrollBy(0, anchor.getBoundingClientRect().top - before);
 }
 
+// The day chips follow the page: the chip of the day under the pinned row is the current one.
+function followDays(root, signal) {
+  const chips = [...root.querySelectorAll('[data-compare-jump]')];
+  const days = [...root.querySelectorAll('[data-compare-day]')];
+  if (chips.length === 0 || days.length === 0) return;
+  let queued = false;
+  const mark = () => {
+    queued = false;
+    const edge = pinnedEdge(root) + 8;
+    const current = (days.find((day) => day.getBoundingClientRect().bottom > edge) ?? days[days.length - 1]).dataset.compareDay;
+    chips.forEach((chip) => {
+      const on = chip.dataset.compareJump === current;
+      if (on === (chip.getAttribute('aria-current') === 'true')) return;
+      if (on) {
+        chip.setAttribute('aria-current', 'true');
+        const row = chip.parentElement;
+        row.scrollTo({ left: chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2 });
+      } else chip.removeAttribute('aria-current');
+    });
+  };
+  window.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(mark); } }, { passive: true, signal });
+  mark();
+}
+
+function jumpToDay(root, number) {
+  const day = root.querySelector(`[data-compare-day="${CSS.escape(number)}"]`);
+  if (!day) return;
+  window.scrollBy({ top: day.getBoundingClientRect().top - pinnedEdge(root) - 12, behavior: scrollBehavior() });
+}
+
 function bind(root, page, tools) {
   if (!root) return;
+  const control = new AbortController();
+  const stopFrames = mountPhotoFrames(root, { signal: control.signal });
+  page.unbind = () => { control.abort(); stopFrames(); page.unbind = null; };
+  bindStartControls(root, { signal: control.signal, home: page.state.home, inputs: page.state.inputs });
+  followDays(root, control.signal);
   root.querySelector('[data-compare-form]')?.addEventListener('submit', (event) => {
     event.preventDefault();
     if (page.state.busy || page.state.offline) return;
@@ -237,6 +305,8 @@ function bind(root, page, tools) {
   root.addEventListener('click', (event) => {
     const side = event.target.closest('[data-compare-side]');
     if (side) return switchSide(root, page, side.dataset.compareSide);
+    const jump = event.target.closest('[data-compare-jump]');
+    if (jump) return jumpToDay(root, jump.dataset.compareJump);
     if (page.state.offline) return undefined;
     const add = event.target.closest('[data-compare-add]');
     if (add) return addStop(page, add.dataset.compareAdd, add, tools);

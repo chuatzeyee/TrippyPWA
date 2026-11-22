@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { comparisonOf, compareInputs, buildComparison, nameKey, activityCopy, orphanComparisons } from './trip-compare.js';
+import { comparisonOf, compareInputs, buildComparison, nameKey, activityCopy, orphanComparisons, homeAmountText } from './trip-compare.js';
 import { compareInputError, buildCompareWizardState } from '../wizard/compare-state.js';
-import { comparePageHtml, compareEntryHtml } from '../components/trip-compare-html.js';
+import { comparePageHtml, compareEntryHtml, progressHtml } from '../components/trip-compare-html.js';
+import { dayCount, datesLabel } from '../components/trip-compare-start-html.js';
 
 // An invented pair of plans for a weekend in Porto.
 const stop = (id, start_time, title, extra = {}) => ({ id, start_time, title, venue_name: title, category: 'culture', cost_amount: 0, cost_currency: 'EUR', ...extra });
@@ -54,6 +55,26 @@ describe('the confirm inputs and the wizard state', () => {
     expect(inputs).toMatchObject({ destination: 'Porto', start: '2027-03-06', end: '2027-03-07', travelers: 2, pace: 3, currencyCode: 'EUR' });
     expect(inputs.dailyAmount).toBeGreaterThan(0);
     expect(compareInputs({ ...mine, budget_daily: 90 }).dailyAmount).toBe(90);
+  });
+  it('offers the wizard budget levels in the trip currency, as round sums', () => {
+    const { presets } = compareInputs(mine);
+    expect(presets.map((level) => level.label)).toEqual(['Backpacker', 'Comfortable', 'Luxury']);
+    expect(presets[0].amount).toBeLessThan(presets[1].amount);
+    expect(presets[1].amount).toBeLessThan(presets[2].amount);
+    for (const level of presets) expect(String(level.amount)).toMatch(/^\d{1,2}0*$/);
+    expect(compareInputs({ ...mine, budget_currency: 'XXX', wizard_state: { ...mine.wizard_state, destination: { name: 'Porto', currencyCode: 'XXX' } } }).presets).toEqual([]);
+  });
+  it('gives a budget in the home currency with a tilde, or nothing when there is nothing to convert', () => {
+    expect(homeAmountText(100, 'EUR', { code: 'SGD', symbol: 'S$' })).toMatch(/^~S\$\d/);
+    expect(homeAmountText(100, 'EUR', { code: 'EUR', symbol: '€' })).toBe('');
+    expect(homeAmountText(100, 'EUR', null)).toBe('');
+    expect(homeAmountText(0, 'EUR', { code: 'SGD', symbol: 'S$' })).toBe('');
+  });
+  it('prints the dates as the app does and counts the days', () => {
+    expect(dayCount('2027-03-06', '2027-03-07')).toBe(2);
+    expect(dayCount('2027-03-07', '2027-03-06')).toBe(0);
+    expect(datesLabel('2027-01-13', '2027-01-26')).toEqual({ text: '13 to 26 Jan 2027', days: '14 days' });
+    expect(datesLabel('', '2027-01-26')).toEqual({ text: 'Choose dates', days: '' });
   });
   it('asks for missing or impossible dates before anything starts', () => {
     const inputs = compareInputs(mine);
@@ -118,11 +139,30 @@ describe('buildComparison', () => {
     const converted = buildComparison(mine, theirs, { home: { code: 'SGD', symbol: 'S$' }, homeFirst: true });
     expect(converted.summary.find((row) => row.label === 'Estimated cost').mine).toMatch(/^~S\$\d/);
   });
+  it('carries the figures behind the texts, the overlap and what each plan is', () => {
+    const cell = (label) => model.summary.find((row) => row.label === label);
+    expect(cell('Stops')).toMatchObject({ mineValue: 2, theirsValue: 5 });
+    expect(cell('Estimated cost')).toMatchObject({ mineValue: 23, theirsValue: 65 });
+    expect(model.overlap).toEqual({ both: 2, onlyMine: 0, onlyTheirs: 3 });
+    expect(model.plans.mine).toMatchObject({ title: 'Porto weekend', destination: 'Porto', start: '2027-03-06', end: '2027-03-07', travelers: 2, days: 2, stops: 2 });
+    expect(model.plans.mine.cover.kind).toBe('none');
+    expect(model.plans.theirs).toMatchObject({ days: 3, stops: 5 });
+  });
+  it('says on which day of the other plan a shared stop is, and passes a safe photo on', () => {
+    const moved = { ...theirs, itinerary_days: [{ id: 'e1', day_number: 1, activities: [] }, { id: 'e2', day_number: 2, activities: [stop('b1', '10:00:00', 'Livraria Lello', { photo_url: 'https://img.example/lello.jpg' }), stop('b9', null, 'Foz', { photo_url: 'javascript:alert(1)' })] }] };
+    const days = buildComparison(mine, moved, {}).days;
+    expect(days[0].mine.stops[0]).toMatchObject({ inBoth: true, otherDay: 2, kind: 'culture' });
+    expect(days[1].theirs.stops[0]).toMatchObject({ inBoth: true, otherDay: 1, photo: 'https://img.example/lello.jpg' });
+    expect(days[1].theirs.stops[1]).toMatchObject({ inBoth: false, otherDay: 0, photo: '' });
+    expect(model.days[0].mine.stops[0].otherDay).toBe(0);
+    expect(buildComparison(mine, moved, { photos: false }).days[1].theirs.stops[0].photo).toBe('');
+  });
   it('shows only the imported side while the other plan is not there', () => {
     const alone = buildComparison(mine, null, {});
     expect(alone.days).toHaveLength(2);
     expect(alone.shared).toBe(0);
-    expect(alone.summary.every((row) => row.theirs === '')).toBe(true);
+    expect(alone.summary.every((row) => row.theirs === '' && row.theirsValue === 0)).toBe(true);
+    expect(alone.plans.theirs).toBeNull();
   });
   it('copies a stop into the fields of the activity create path', () => {
     expect(activityCopy(theirs.itinerary_days[0].activities[1], theirs)).toMatchObject({ title: 'Palácio da Bolsa', venueName: 'Palácio da Bolsa', startTime: '15:00:00', costAmount: 14, costCurrency: 'EUR' });
@@ -134,10 +174,22 @@ describe('the page', () => {
   it('draws both labelled sides, the summary, every day and the two endings', () => {
     const html = comparePageHtml(state());
     expect(html).toContain('<h1 class="cmp-title">Porto weekend</h1>');
-    for (const text of ['Your plan', "Trippy's plan", 'Estimated cost', '2 places appear in both plans.', 'Day 3', 'This plan has no day 3.',
+    for (const text of ['Your plan', "Trippy's plan", 'Estimated cost', '2 places in both', '3 only in Trippy', 'Day 3', 'This plan has no day 3.',
       'Nothing planned for this day.', 'In both', 'Keep only my plan', 'Keep both']) expect(html).toContain(text);
     expect(html.match(/data-compare-day=/g)).toHaveLength(3);
+    expect(html.match(/data-compare-jump=/g)).toHaveLength(3);
     expect(html).not.toMatch(BANNED);
+    expect(html).not.toContain('<table');
+    const none = comparePageHtml(state({ model: buildComparison(mine, { ...theirs, itinerary_days: [{ id: 'e1', day_number: 1, activities: [stop('z', null, 'Serralves')] }] }, {}) }));
+    expect(none).toContain('No place appears in both plans');
+  });
+  it('draws each stop with its time, the shared thumb, a lazy photo when it has one, and the mark of a shared stop', () => {
+    const photo = { ...theirs, itinerary_days: theirs.itinerary_days.map((day) => ({ ...day, activities: day.activities.map((a) => (a.id === 'b2' ? { ...a, photo_url: 'https://img.example/bolsa.jpg' } : a)) })) };
+    const html = comparePageHtml(state({ model: buildComparison(mine, photo, {}) }));
+    expect(html).toMatch(/<img class="ui-frame-img" src="https:\/\/img\.example\/bolsa\.jpg"[^>]* loading="lazy"/);
+    expect(html.match(/ui-thumb/g).length).toBe(7);
+    expect(html).toContain('<span class="cmp-stop-time cmp-mono">9:30 AM</span>');
+    expect(html.match(/cmp-stop--both/g)).toHaveLength(4);
   });
   it('offers Add to my plan only for Trippy stops that are new and have a day to go to', () => {
     const html = comparePageHtml(state());
@@ -151,16 +203,34 @@ describe('the page', () => {
     expect(waiting).toContain('Trippy is writing its plan.');
     expect(waiting).toContain('Being written.');
     expect(waiting).not.toContain('Keep both');
+    expect(waiting).toContain('role="status"');
+    expect(comparePageHtml(state({ status: 'waiting', model: buildComparison(mine, null, {}), progress: { done: 2, total: 5 } }))).toContain('2 of 5 days written');
+    expect(progressHtml({ done: 2, total: 5 })).toContain('aria-valuenow="2"');
+    expect(progressHtml(null)).not.toContain('role="progressbar"');
     const failed = comparePageHtml(state({ status: 'failed', model: buildComparison(mine, null, {}), error: '' }));
     expect(failed).toContain('data-compare-action="retry"');
     const offline = comparePageHtml(state({ offline: true }));
     expect(offline).toContain('You are offline.');
-    expect(offline.match(/data-compare-(?:add|action)="[^"]+" disabled/g)).toHaveLength(4);
+    // Two stops to add, and the two endings both in the head and at the end.
+    expect(offline.match(/data-compare-(?:add|action)="[^"]+" disabled/g)).toHaveLength(6);
+    expect(comparePageHtml(state({ status: 'loading', model: null }))).toContain('Loading the comparison');
+    expect(comparePageHtml(state({ status: 'error', model: null, error: '' }))).toContain('data-compare-action="reload"');
   });
   it('starts with a confirm step that shows the inputs and any problem with them', () => {
-    const html = comparePageHtml(state({ status: 'start', model: null, inputs: { ...compareInputs(mine), start: '' }, inputError: 'Add the start and end dates first.' }));
+    const html = comparePageHtml(state({ status: 'start', model: buildComparison(mine, null, {}), inputs: { ...compareInputs(mine), start: '' }, inputError: 'Add the start and end dates first.' }));
     for (const text of ['Compare with a Trippy plan', 'Your imported plan is not changed', 'Porto', 'name="start" value=""', 'name="end" value="2027-03-07"', 'Balanced', 'Add the start and end dates first.']) expect(html).toContain(text);
     expect(html).not.toMatch(BANNED);
+  });
+  it('shows the imported plan beside the inputs, and the inputs as the app controls', () => {
+    const html = comparePageHtml(state({ status: 'start', model: buildComparison(mine, null, {}), inputs: compareInputs(mine), inputError: '', home: { code: 'SGD', symbol: 'S$' } }));
+    for (const text of ['6 to 7 Mar 2027', '2 days', '2 travellers', 'Old town', '2 stops', 'Nothing planned', "Write Trippy's plan", 'Not now', 'a day each',
+      'name="travelers" value="2"', 'data-compare-step="-1"', 'data-compare-step="1"', 'data-compare-dates', 'data-compare-cal', 'data-compare-budget', 'data-compare-preset=']) expect(html).toContain(text);
+    expect(html).toMatch(/type="radio" name="pace" value="3" checked/);
+    expect(html).toMatch(/~S\$\d+ a day each/);
+    expect(html).not.toMatch(/type="(?:date|number)"|<select/);
+    expect(html).not.toMatch(/\d{2}\/\d{2}\/\d{4}/);
+    const off = comparePageHtml(state({ status: 'start', model: buildComparison(mine, null, {}), inputs: compareInputs(mine), offline: true }));
+    expect(off).toMatch(/<button type="submit"[^>]* disabled/);
   });
   it('names the entry by whether a comparison exists, and escapes what it is given', () => {
     expect(compareEntryHtml(mine)).toContain('Compare with a Trippy plan');
