@@ -302,6 +302,10 @@
 /* ---- Split-flap digits: the classic cells on a board that is dark in both themes ---- */
 [data-view] :where(.ui-flap) { display: inline-flex; font-size: 1.5rem; line-height: 1; }
 [data-view] :where(.ui-flap-cells) { display: inline-flex; gap: 0.08em; --ink: #E5E1D8; }
+/* A word before the first digit, on the same piece: the cell is wider and each of its faces carries the word, so it flips with the digit. */
+[data-view] :where(.ui-flap .flap-cell--lead) { width: 1.56em; }
+[data-view] :where(.ui-flap [data-word]) { gap: 0.14em; }
+[data-view] :where(.ui-flap [data-word])::before { content: attr(data-word); font: 600 0.4em/1 var(--font-body); letter-spacing: 0.04em; opacity: 0.72; }
 
 /* ---- Segments bar ---- */
 [data-view] :where(.ui-segs) { display: flex; gap: 3px; width: 100%; }

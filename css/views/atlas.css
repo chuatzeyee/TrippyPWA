@@ -817,9 +817,6 @@
 [data-view="atlas"][data-view] .atl-count-next { max-width: 280px; font: 400 12.5px/1.3 var(--font-body); color: color-mix(in srgb, var(--on-photo) 88%, transparent); overflow-wrap: anywhere; }
 [data-view="atlas"][data-view] .atl-flaps { font-size: 22px; }
 [data-view="atlas"][data-view] .atl-flaps > .ui-flap-cells { gap: 2px; }
-/* "IN" is a small mark in the top left corner of the first digit's cell. */
-[data-view="atlas"][data-view] .ui-flap-cells { position: relative; }
-[data-view="atlas"][data-view] .ui-flap-word { position: absolute; top: 0.07em; left: 0.1em; z-index: 3; font: 700 0.24em/1 var(--font-body); letter-spacing: 0.04em; color: var(--ink-secondary); pointer-events: none; }
 [data-view="atlas"][data-view] .atl-tu-in { display: inline-flex; align-items: center; gap: var(--sp-2); }
 [data-view="atlas"][data-view] .atl-tu-in .atl-in-flaps { font-size: 26px; }
 [data-view="atlas"][data-view] .atl-in-days { font: 400 14px/1 var(--font-body); color: var(--ink-secondary); }

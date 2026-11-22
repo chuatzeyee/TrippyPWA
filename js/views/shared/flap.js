@@ -8,7 +8,11 @@ const STEP_MS = 90;
 const FLIP_OUT_MS = 150;
 const FLIP_IN_MS = 200;
 
-const cellHtml = (ch, word = false) => `<span class="flap-cell${word ? ' flap-cell--word' : ''}"><span class="flap-face">${ch}</span><span class="flap-top"><span class="flap-top-text">${ch}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${ch}</span></span></span>`;
+// word: a short word set small before the character, on the same piece: each face carries it, so it flips with the digit.
+const cellHtml = (ch, word = '') => {
+  const lead = word ? ` data-word="${word}"` : '';
+  return `<span class="flap-cell${word ? ' flap-cell--lead' : ''}"><span class="flap-face"${lead}>${ch}</span><span class="flap-top"><span class="flap-top-text"${lead}>${ch}</span></span><span class="flap-bottom"><span class="flap-bottom-text"${lead}>${ch}</span></span></span>`;
+};
 
 function digitsOf(value, minDigits) {
   const number = Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
@@ -19,17 +23,16 @@ function digitsOf(value, minDigits) {
 /**
  * @param {number} value  a whole number, zero or more (anything else shows 0)
  * @param {{ minDigits?: number, cls?: any, word?: string }} [opts] minDigits pads with zeros, 1 to 6.
- *   word: a short word in small capitals in the top corner of the first digit's cell ("IN"), read
- *   out in lower case before the number; letters only, at most 6.
+ *   word: a short word in small capitals before the first digit, inside that digit's cell, which is
+ *   wider for it ("IN 9" on one piece); read out in lower case before the number; letters only, at most 6.
  * @returns {string} cells that are aria-hidden, plus the real number as hidden text
  */
 export function flapDigitsHtml(value, { minDigits, cls: extra, word } = {}) {
   const { number, digits } = digitsOf(value, minDigits);
   const letters = typeof word === 'string' && /^[A-Za-z]{1,6}$/.test(word) ? word.toUpperCase() : '';
-  // The word is a small mark in the top corner of the first digit's cell, not cells of its own.
-  const lead = letters ? `<span class="ui-flap-word">${letters}</span>` : '';
-  const cells = [...digits].map((ch) => cellHtml(ch)).join('');
-  return `<span class="${cls('ui-flap', extra)}" data-flap="${esc(number)}"><span class="ui-flap-cells" aria-hidden="true">${lead}${cells}</span>${visuallyHidden(letters ? `${letters.toLowerCase()} ${number}` : number)}</span>`;
+  // The word is set small before the first digit, inside that digit's cell: one wider piece that flips whole.
+  const cells = [...digits].map((ch, i) => cellHtml(ch, i === 0 ? letters : '')).join('');
+  return `<span class="${cls('ui-flap', extra)}" data-flap="${esc(number)}"><span class="ui-flap-cells" aria-hidden="true">${cells}</span>${visuallyHidden(letters ? `${letters.toLowerCase()} ${number}` : number)}</span>`;
 }
 
 /**
@@ -77,15 +80,10 @@ export function mountFlaps(root, { animate = false } = {}) {
   if (!animate || prefersReducedMotion()) return () => {};
   const timers = [];
   const flaps = [...root.querySelectorAll('.ui-flap[data-flap]')].map((el) => {
-    const cells = [...el.querySelectorAll('.flap-cell:not(.flap-cell--word)')];
+    const cells = [...el.querySelectorAll('.flap-cell')];
     const digits = cells.map((cell) => cell.querySelector('.flap-face')?.textContent ?? '0').join('');
     return { cells, digits, frames: flapFrames(digits) };
   }).filter((flap) => flap.frames.length > 1);
-  const words = [...root.querySelectorAll('.ui-flap[data-flap] .flap-cell--word')].map((cell) => ({ cell, ch: cell.querySelector('.flap-face')?.textContent ?? '' }));
-  for (const { cell, ch } of words) {
-    setCell(cell, '', false);
-    timers.push(setTimeout(() => timers.push(...setCell(cell, ch, true)), STEP_MS));
-  }
   for (const { cells, frames } of flaps) {
     cells.forEach((cell, i) => setCell(cell, frames[0][i], false));
     frames.slice(1).forEach((frame, k) => {
@@ -96,11 +94,6 @@ export function mountFlaps(root, { animate = false } = {}) {
   }
   return () => {
     timers.forEach(clearTimeout);
-    for (const { cell, ch } of words) {
-      setCell(cell, ch, false);
-      cell.querySelector('.flap-top')?.classList.remove('flap-flip-out');
-      cell.querySelector('.flap-bottom')?.classList.remove('flap-flip-in');
-    }
     for (const { cells, digits } of flaps) {
       cells.forEach((cell, i) => {
         setCell(cell, digits[i], false);
