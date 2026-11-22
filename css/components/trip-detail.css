@@ -2621,6 +2621,27 @@ body:has(.td-chat-drawer--open) .back-to-top { opacity: 0; pointer-events: none;
 .td-chat-fab:active { transform: translateY(0) scale(0.96); }
 .td-chat-fab:focus-visible { outline-color: var(--ink); outline-offset: 3px; }
 
+/* In the trip bar (the three views): one more control after "More", the height of the others. */
+.td-wrap[data-view] .td-chat-fab.td-chat-fab--bar {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  z-index: auto;
+  box-shadow: var(--td-cm-edge);
+}
+.td-wrap[data-view] .td-chat-fab.td-chat-fab--bar .td-cm { width: 26px; height: 26px; }
+.td-chat-fab--bar:hover { transform: none; }
+/* With the concierge in the bar, back to top goes back to its own corner. */
+body:has(.td-chat-fab--bar) .back-to-top {
+  right: var(--sp-6);
+  bottom: calc(var(--td-footer-h, 0px) + var(--sp-6));
+  width: 44px;
+  height: 44px;
+}
+
 /* First appearance in a session: the bell rings once and a soft ring spreads
    out from the button (itinerary-chat.js adds and removes the class). */
 .td-chat-fab--hello::after {

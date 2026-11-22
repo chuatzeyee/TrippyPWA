@@ -147,6 +147,24 @@ function sayHelloOnce(fab) {
   });
 }
 
+// The open button sits in the trip bar, after "More", where a view draws one (the three views);
+// on the classic page, which has no such bar, it floats in the corner.
+const fabWatchers = new WeakMap();
+function placeFab(root, fab) {
+  const place = () => {
+    const bar = root.querySelector('.tv-bar-actions');
+    if (fab.parentElement === (bar || root)) return;
+    fab.classList.toggle('td-chat-fab--bar', !!bar);
+    (bar || root).appendChild(fab);
+  };
+  place();
+  // A view redraws its bar (and so drops the button) when the trip changes: put it back.
+  fabWatchers.get(fab)?.disconnect();
+  const watcher = new MutationObserver(() => { if (root.isConnected) place(); else watcher.disconnect(); });
+  watcher.observe(root, { childList: true, subtree: true });
+  fabWatchers.set(fab, watcher);
+}
+
 /**
  * Mount Trippy Concierge: a docked side panel on desktop, a bottom sheet on
  * smaller screens (layout lives in trip-detail.css). `onApplied` refreshes the
@@ -195,7 +213,7 @@ export function mountItineraryChat(container, trip, onApplied) {
   `;
   drawer.id = `td-chat-drawer-${drawerSeq}`;
   fab.setAttribute('aria-controls', drawer.id);
-  container.appendChild(fab);
+  placeFab(container, fab);
   container.appendChild(drawer);
 
   const scroller = drawer.querySelector('.td-chat-scroll');
@@ -365,7 +383,7 @@ export function mountItineraryChat(container, trip, onApplied) {
     // Move the button and panel into a freshly rendered view root.
     attach(next) {
       if (!next) return;
-      next.appendChild(fab);
+      placeFab(next, fab);
       next.appendChild(drawer);
       // Detaching reset the log's scroll: back to the end, or where the
       // user had scrolled to.
