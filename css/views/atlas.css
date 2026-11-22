@@ -61,11 +61,12 @@
 [data-view="atlas"][data-view] .ui-btn--danger { background: transparent; color: var(--atl-error-ink); }
 [data-view="atlas"][data-view] .ui-flag { border-radius: 2px; box-shadow: 0 0 0 1px var(--atl-rule); }
 [data-view="atlas"][data-view] .atl-flags { display: inline-flex; gap: 4px; margin-left: 5px; vertical-align: -1px; }
-/* What a search or a filter found: a pill under the search box that fades in and out again. */
+/* What a search or a filter found: a pill that takes the place of the "Trips" label for a moment, then fades and the label is back. */
 [data-view="atlas"][data-view] .atl-trips-head { position: relative; }
-[data-view="atlas"][data-view] .atl-found { position: absolute; top: calc(100% + var(--sp-2)); left: 0; z-index: 2; margin: 0; pointer-events: none; }
-[data-view="atlas"][data-view] .atl-found-pill { display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--sp-4); border-radius: var(--r-pill); background: var(--ink); color: var(--parchment); font: 600 14px/1 var(--font-body); box-shadow: var(--shadow-md); opacity: 0; animation: atl-found 2.6s var(--ease-out) forwards; }
-@keyframes atl-found { 0% { opacity: 0; transform: translateY(-4px); } 10% { opacity: 1; transform: none; } 78% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
+[data-view="atlas"][data-view] .atl-found { position: absolute; top: 0; left: 0; z-index: 2; margin: 0; pointer-events: none; }
+[data-view="atlas"][data-view] .atl-found-cover { display: flex; align-items: center; height: 44px; min-width: 108px; background: var(--parchment); opacity: 0; animation: atl-found 2.6s var(--ease-out) forwards; }
+[data-view="atlas"][data-view] .atl-found-pill { display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--sp-4); border-radius: var(--r-pill); background: var(--ink); color: var(--parchment); font: 600 14px/1 var(--font-body); white-space: nowrap; }
+@keyframes atl-found { 0% { opacity: 0; } 10% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
 [data-view="atlas"][data-view] .atl-found:empty { display: none; }
 [data-view="atlas"][data-view] .atl-count {
   padding: 4px 6px;
@@ -285,6 +286,7 @@
 [data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-10) + 22px); }
 [data-view="atlas"][data-view] .atl-rg--past::before { bottom: 22px; background: color-mix(in srgb, var(--ink) 20%, transparent); }
 [data-view="atlas"][data-view] .atl-rg { position: relative; padding: 0 0 var(--sp-10) var(--atl-rail-pad); }
+[data-view="atlas"][data-view] .atl-rg--up:not(:has(*)) { display: none; }
 [data-view="atlas"][data-view] .atl-rg:empty { display: none; }
 [data-view="atlas"][data-view] .atl-rg--up { --atl-node: var(--terracotta); }
 [data-view="atlas"][data-view] .atl-rg--past { --atl-node: color-mix(in srgb, var(--ink) 52%, var(--parchment)); padding-bottom: 0; }
@@ -516,10 +518,14 @@
   [data-view="atlas"][data-view] .atl-ahead { float: left; width: calc(100% - (100% - var(--sp-6)) * 0.3816 - var(--atl-cols-gap)); min-width: 0; }
   /* The past clears the passport too: its rows are one width, the whole of the page, in every month. */
   [data-view="atlas"][data-view] .atl-rg--past { clear: both; }
+  /* With nothing ahead on the rail (the Past filter, a search that finds past plans only) Past starts at the top, beside the Passport panel, and keeps to its column. */
+  [data-view="atlas"][data-view] .atl-trips-grid:not(:has(.atl-tu, .atl-tg)) .atl-rg--past { clear: none; display: flow-root; margin-right: var(--atl-cols-gap); }
+  [data-view="atlas"][data-view] .atl-trips-grid:not(:has(.atl-tu, .atl-tg)) .atl-tp-meta { grid-template-columns: auto auto; align-items: center; }
   [data-view="atlas"][data-view] .atl-trips-grid:has(> .atl-rg--past:empty) .atl-ahead::before { bottom: calc(var(--sp-12) + 22px); }
   [data-view="atlas"][data-view] .atl-rg { padding-bottom: var(--sp-12); }
   [data-view="atlas"][data-view] .atl-rg--plan { padding-bottom: var(--sp-8); }
-  [data-view="atlas"][data-view] .atl-found { left: 124px; }
+  [data-view="atlas"][data-view] .atl-found { left: auto; right: calc(100% - 108px); }
+  [data-view="atlas"][data-view] .atl-found-cover { justify-content: flex-end; }
   [data-view="atlas"][data-view] .atl-rg--next,
   [data-view="atlas"][data-view] .atl-rg--past { padding-bottom: 0; }
   [data-view="atlas"][data-view] .atl-rg-title { font-size: 24px; }

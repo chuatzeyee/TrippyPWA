@@ -76,9 +76,9 @@ function foundText(model, groups) {
   const onRail = [...groups.upcoming, ...groups.past].reduce((sum, group) => sum + group.trips.length, 0);
   const found = onRail + groups.planning.length + list(model.sections?.live).length;
   if (!found) return '';
-  // A pill that fades in and out again. The key changes with what was asked, so a new answer is a new pill.
+  // A pill that stands in for the "Trips" label and fades out again. The key changes with what was asked, so a new answer is a new pill.
   const asked = `${found}:${String(model.filter?.query ?? '')}:${String(model.filter?.active ?? model.filter?.kind ?? '')}`;
-  return `<span class="atl-found-pill"${attr('data-key', asked)}>${esc(matchText(found))}</span>`;
+  return `<span class="atl-found-cover"${attr('data-key', asked)}><span class="atl-found-pill">${esc(matchText(found))}</span></span>`;
 }
 
 function tripsHtml(model, ctx, rows) {
