@@ -93,7 +93,8 @@ function pastRow(card, ctx, room) {
 }
 
 const markHtml = (group, key) => `<p class="atl-rm"${attr('data-key', key)}><span class="atl-rm-k">${esc(group.label)}</span></p>`;
-const headHtml = (title) => `<div class="atl-rg-head" data-key="head"><h3 class="atl-rg-title">${title}</h3></div>`;
+// quiet: the heading is kept for the page outline and screen readers, and takes no room on screen.
+const headHtml = (title, quiet = false) => `<div class="atl-rg-head${quiet ? ' atl-rg-head--quiet' : ''}" data-key="head"><h3 class="atl-rg-title${quiet ? ' ui-vh' : ''}">${title}</h3></div>`;
 
 /** Plans that are being planned, or whose planning stopped: not links, and first on the rail. */
 export function planningRegionHtml(groups) {
@@ -115,7 +116,7 @@ export function aheadRegionsHtml(model, groups, ctx) {
   const shown = Boolean(next) && groups.upcoming.some((group) => group.trips.some((card) => card.id === next.trip.id));
   const count = groups.upcoming.reduce((sum, group) => sum + group.trips.length, 0);
   const room = flagRoom(groups);
-  const head = count || !filter.expanded ? headHtml('Upcoming') : '';
+  const head = count || !filter.expanded ? headHtml('Upcoming', true) : '';
   const first = shown ? groups.upcoming.find((group) => group.trips.some((card) => card.id === next.trip.id)) : null;
   const nextHtml = shown ? `${head}${markHtml(first, 'mark')}${nextCard(next, ctx, room)}` : '';
   const rows = groups.upcoming.map((group) => {

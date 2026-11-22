@@ -283,6 +283,8 @@
 [data-view="atlas"][data-view] .atl-rg-head { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-3); }
 [data-view="atlas"][data-view] .atl-rg-head::before { content: ''; position: absolute; left: calc(var(--atl-rail-x) - var(--atl-rail-pad)); top: 12px; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--atl-node); box-shadow: 0 0 0 4px var(--parchment); }
 [data-view="atlas"][data-view] .atl-rg-title { font: 400 21px/1.15 var(--font-heading); }
+[data-view="atlas"][data-view] .atl-rg-head.atl-rg-head--quiet { height: 0; margin: 0; }
+[data-view="atlas"][data-view] .atl-rg-head--quiet::before { display: none; }
 [data-view="atlas"][data-view] .atl-rm { position: relative; display: flex; align-items: center; gap: var(--sp-3); min-height: 32px; margin: var(--sp-1) 0 0; color: var(--ink-secondary); list-style: none; }
 [data-view="atlas"][data-view] .atl-rm::-webkit-details-marker { display: none; }
 [data-view="atlas"][data-view] .atl-rm::before { content: ''; position: absolute; left: calc(var(--atl-rail-x) - var(--atl-rail-pad) - 5px); top: 50%; width: 10px; height: 2px; margin-top: -1px; background: var(--atl-node); }
