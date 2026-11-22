@@ -342,7 +342,8 @@
   .adm .adm-table--logs td.adm-td--time::before { content: none; }
   .adm .adm-table--logs tr.adm-row { grid-template-columns: auto minmax(0, 1fr); }
   .adm .adm-table--logs td.adm-td--time { justify-content: center; }
-  .adm .adm-tab { padding: 0 var(--sp-3); }
+  .adm .adm-tabs { display: flex; }
+  .adm .adm-tab { flex: 1 1 auto; justify-content: center; padding: 0 var(--sp-2); }
   .adm .adm-table thead tr::before { content: 'Sort by'; flex: none; align-self: center; padding-right: var(--sp-1); font: var(--text-caption); color: var(--ink-secondary); }
   .adm .adm-table--logs td:last-of-type.adm-td--labelled,
   .adm .adm-table--logs td.adm-td--trip { grid-column: 1 / -1; }
