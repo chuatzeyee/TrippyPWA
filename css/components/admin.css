@@ -189,7 +189,7 @@
 
 .adm-tab--active {
   color: var(--terracotta);
-  border-bottom-color: var(--terracotta);
+  border-bottom-color: var(--ink);
 }
 
 .adm-tab-count {

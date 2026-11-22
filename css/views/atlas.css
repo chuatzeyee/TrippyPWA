@@ -719,11 +719,12 @@
   [data-view="atlas"][data-view] .atl-ap-stamps { padding: var(--sp-8) var(--sp-6); }
 }
 @media (min-width: 1280px) {
-  [data-view="atlas"][data-view] .atl-ap-stage { grid-template-columns: minmax(0, 840fr) minmax(0, 368fr); grid-template-areas: 'map card' 'places card'; align-items: start; gap: var(--sp-4) var(--sp-6); }
+  [data-view="atlas"][data-view] .atl-ap-stage { grid-template-columns: minmax(0, 840fr) minmax(0, 368fr); grid-template-areas: 'map card' 'places places'; align-items: start; gap: var(--sp-4) var(--sp-6); }
   [data-view="atlas"][data-view] .atl-ap-map { grid-area: map; }
   [data-view="atlas"][data-view] .atl-ap-places { grid-area: places; }
-  [data-view="atlas"][data-view] .atl-ap-card { grid-area: card; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'ph' 'text' 'act' 'steps' 'hint'; gap: var(--sp-4); border-left: 1px solid var(--atl-rule); border-top: 3px solid var(--live); }
-  [data-view="atlas"][data-view] .atl-ap-card-ph { width: 100%; aspect-ratio: 3 / 2; }
+  [data-view="atlas"][data-view] .atl-ap-card { grid-area: card; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'ph' 'text' 'act' 'steps' 'hint'; grid-template-rows: minmax(0, 1fr) auto auto auto auto; gap: var(--sp-4); align-self: stretch; }
+  /* The card is as tall as the map beside it: the photo takes the height that is left. */
+  [data-view="atlas"][data-view] .atl-ap-card-ph { width: 100%; height: 100%; min-height: 160px; aspect-ratio: auto; }
   [data-view="atlas"][data-view] .atl-ap-card-title { font-size: 26px; }
   [data-view="atlas"][data-view] .atl-ap-card-text { gap: var(--sp-1); }
   [data-view="atlas"][data-view] .atl-ap-pass-grid { grid-template-columns: minmax(0, 840fr) minmax(0, 368fr); align-items: start; gap: var(--sp-6); }
