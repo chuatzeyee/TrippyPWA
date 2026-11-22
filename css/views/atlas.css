@@ -773,6 +773,11 @@
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
 }
+/* Air above the bar at rest, as much as below it; a margin, so the pinned bar still sits right under the app bar. */
+[data-view="atlas"][data-view].td-wrap > .tv-bar { margin-top: var(--sp-3); }
+@media (min-width: 1024px) {
+  [data-view="atlas"][data-view].td-wrap > .tv-bar { margin-top: var(--sp-6); }
+}
 [data-view="atlas"][data-view] .tv-back { gap: 6px; padding: 0 var(--sp-3) 0 var(--sp-2); background: color-mix(in srgb, var(--ink) 3%, transparent); font: 600 15px/1.2 var(--font-body); }
 [data-view="atlas"][data-view] .tv-back:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
 [data-view="atlas"][data-view] .tv-bar .ui-menu-btn { padding: 0 var(--sp-3); background: color-mix(in srgb, var(--ink) 3%, transparent); font: 600 15px/1.2 var(--font-body); }
