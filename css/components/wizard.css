@@ -242,6 +242,9 @@
   margin: 0 auto;
 }
 
+/* Step 1: the search sits under the title, above the carousel, so its list opens over the cards. */
+.dest-search-wrap--top { margin: var(--sp-4) auto var(--sp-6); z-index: 5; }
+
 .dest-search-icon {
   position: absolute;
   left: var(--sp-4);

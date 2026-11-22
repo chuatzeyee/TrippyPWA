@@ -647,17 +647,16 @@ function renderStep1(el) {
 
   el.innerHTML = `
     <h2 class="wizard-step-title">Where to?</h2>
-    <p class="wizard-step-subtitle">Search or pick from our favorites</p>
+    <div class="dest-search-wrap dest-search-wrap--top">
+      <span class="dest-search-icon">&#x1F50D;</span>
+      <input class="input" type="text" placeholder="${state.multiCity ? 'Add another city...' : 'Search cities...'}" id="dest-search" aria-label="Search cities"
+        value="${!state.multiCity ? escapeHtml(state.destination?.name || '') : ''}" autocomplete="off">
+      <div class="dest-dropdown" id="dest-dropdown"></div>
+    </div>
     ${hasSelection ? renderSelectedBanners() : renderCoverflow(popular, isSelected)}
     <div class="multi-city-toggle">
       <button class="chip ${!state.multiCity ? 'chip--active' : ''}" data-mode="single">One city</button>
       <button class="chip ${state.multiCity ? 'chip--active' : ''}" data-mode="multi">Multi-city</button>
-    </div>
-    <div class="dest-search-wrap">
-      <span class="dest-search-icon">&#x1F50D;</span>
-      <input class="input" type="text" placeholder="${state.multiCity ? 'Add another city...' : 'Search cities...'}" id="dest-search"
-        value="${!state.multiCity ? escapeHtml(state.destination?.name || '') : ''}" autocomplete="off">
-      <div class="dest-dropdown" id="dest-dropdown"></div>
     </div>
   `;
 
