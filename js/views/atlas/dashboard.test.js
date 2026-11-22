@@ -142,7 +142,7 @@ describe.each(READY)('ready fixture %s', (key) => {
       const card = one(next, '[data-trip-id]');
       const words = textOf(card);
       expect(words).toContain('Next departure');
-      expect(words).toMatch(model.next.daysToGo === 1 ? /1 day to go/ : new RegExp(`${model.next.daysToGo} days to go`));
+      expect(words).toMatch(model.next.daysToGo === 1 ? /in 1 day\b/ : new RegExp(`in ${model.next.daysToGo} days`));
       expect(words).toContain(model.next.trip.dates.text);
       expect(textOf(one(card, '.atl-pill'))).toContain(`${model.next.trip.dates.dayCount} day`);
       expect(words).not.toMatch(/per person|about [^\d\s]/);
@@ -155,7 +155,7 @@ describe.each(READY)('ready fixture %s', (key) => {
     }
     for (const card of others) {
       const row = one(rest, `[data-trip-id="${card.id}"]`);
-      expect(textOf(row)).toMatch(/\d+ days? to go/);
+      expect(textOf(row)).toMatch(/in \d+ days?\b/);
     }
     // The rail carries no readiness chip: what is open is the checklist of the next departure alone.
     for (const part of [next, rest]) {
@@ -388,7 +388,7 @@ describe('beside the plate while no plan is live', () => {
     // The days to go are flap digits (the cells plus the real number as hidden text), then the words.
     const toGo = one(one(card, '.atl-togo'), 'strong');
     expect(one(toGo, '.ui-flap')).toBeTruthy();
-    expect(textOf(toGo)).toMatch(new RegExp(`${daysToGo}.*days to go$`));
+    expect(textOf(toGo)).toMatch(new RegExp(`in ${daysToGo} days$`));
     expect(textOf(card)).toContain(trip.dates.text);
     // The length is two figures with a sign each and no cost; the words are the label.
     void lengthText;

@@ -10,6 +10,7 @@ import { failedCardHtml, generatingCardHtml } from '../shared/state-cards.js';
 import { costFigures } from '../../lib/money.js';
 import { flagsHtml, placeName, toneOf } from './parts.js';
 import { monthNames } from './rail.js';
+import { flapDigitsHtml } from '../shared/flap.js';
 import { costShort, daysText, fullDate, sharedLine, toGoText, weatherLine } from './words.js';
 
 const cardLink = (card) => `<a class="trip-card-link" href="${esc(card.href)}"${attr('aria-label', `Open ${card.title}`)}${attr('data-focus-key', `open-${card.id}`)}></a>`;
@@ -21,7 +22,7 @@ const frameOpts = (card, ctx) => ({ credit: false, animate: Boolean(ctx?.animate
 function toGoHtml(card) {
   const toGo = card.phase === 'upcoming' ? toGoText(card.daysToGo) : null;
   if (!toGo) return '<span class="atl-tu-in atl-tu-in--none">No dates yet</span>';
-  return `<span class="atl-tu-in"><b>${esc(toGo.count)}</b> ${toGo.words}</span>`;
+  return `<span class="atl-tu-in">${flapDigitsHtml(card.daysToGo, { cls: 'atl-flaps atl-in-flaps', word: 'in' })}<span class="atl-in-days">${card.daysToGo === 1 ? 'day' : 'days'}</span></span>`;
 }
 
 /** The pill of a row: the cost and the length with a thin rule between them, or the one there is. */

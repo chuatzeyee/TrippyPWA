@@ -40,7 +40,7 @@ function nextHtml(next, ctx) {
   return `<article class="atl-lead atl-lead--ahead"${tripAttrs(card)}>
     ${coverBlockHtml(card.cover, { cls: 'atl-now-photo', over: `<h3 class="atl-now-title">${esc(card.title)}</h3>`, frame: { ...frameOf(card, ctx), priority: true, sizes: SIZES } })}
     <div class="atl-now-body">
-      <p class="atl-dayline atl-togo">${toGo ? `<strong>${flapDigitsHtml(next.daysToGo, { cls: 'atl-flaps atl-togo-flaps' })} ${toGo.words}</strong>` : ''}<span><span>${esc(card.dates?.text)}</span>${span}</span></p>
+      <p class="atl-dayline atl-togo">${toGo ? `<strong>${flapDigitsHtml(next.daysToGo, { cls: 'atl-flaps atl-togo-flaps', word: 'in' })} ${next.daysToGo === 1 ? 'day' : 'days'}</strong>` : ''}<span><span>${esc(card.dates?.text)}</span>${span}</span></p>
       ${lateHtml(next)}
       ${card.shared ? `<p class="atl-now-shared">${esc(sharedLine(card))}</p>` : ''}
       <p class="atl-now-actions">${link(card.href, 'Open trip', { cls: 'ui-btn ui-btn--primary atl-today', focusKey: `ahead-open-${card.id}` })}${checklist}</p>

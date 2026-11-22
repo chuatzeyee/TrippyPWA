@@ -8,7 +8,7 @@ const STEP_MS = 90;
 const FLIP_OUT_MS = 150;
 const FLIP_IN_MS = 200;
 
-const cellHtml = (ch) => `<span class="flap-cell"><span class="flap-face">${ch}</span><span class="flap-top"><span class="flap-top-text">${ch}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${ch}</span></span></span>`;
+const cellHtml = (ch, word = false) => `<span class="flap-cell${word ? ' flap-cell--word' : ''}"><span class="flap-face">${ch}</span><span class="flap-top"><span class="flap-top-text">${ch}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${ch}</span></span></span>`;
 
 function digitsOf(value, minDigits) {
   const number = Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
@@ -18,13 +18,17 @@ function digitsOf(value, minDigits) {
 
 /**
  * @param {number} value  a whole number, zero or more (anything else shows 0)
- * @param {{ minDigits?: number, cls?: any }} [opts] minDigits pads with zeros, 1 to 6
+ * @param {{ minDigits?: number, cls?: any, word?: string }} [opts] minDigits pads with zeros, 1 to 6.
+ *   word: a short word in capital letters on flap cells of its own before the digits ("IN"), read out
+ *   in lower case before the number; letters only, at most 6.
  * @returns {string} cells that are aria-hidden, plus the real number as hidden text
  */
-export function flapDigitsHtml(value, { minDigits, cls: extra } = {}) {
+export function flapDigitsHtml(value, { minDigits, cls: extra, word } = {}) {
   const { number, digits } = digitsOf(value, minDigits);
-  const cells = [...digits].map(cellHtml).join('');
-  return `<span class="${cls('ui-flap', extra)}" data-flap="${esc(number)}"><span class="ui-flap-cells" aria-hidden="true">${cells}</span>${visuallyHidden(number)}</span>`;
+  const letters = typeof word === 'string' && /^[A-Za-z]{1,6}$/.test(word) ? word.toUpperCase() : '';
+  const lead = letters ? `<span class="ui-flap-word">${[...letters].map((ch) => cellHtml(ch, true)).join('')}</span>` : '';
+  const cells = [...digits].map((ch) => cellHtml(ch)).join('');
+  return `<span class="${cls('ui-flap', extra)}" data-flap="${esc(number)}"><span class="ui-flap-cells" aria-hidden="true">${lead}${cells}</span>${visuallyHidden(letters ? `${letters.toLowerCase()} ${number}` : number)}</span>`;
 }
 
 /**
@@ -72,10 +76,15 @@ export function mountFlaps(root, { animate = false } = {}) {
   if (!animate || prefersReducedMotion()) return () => {};
   const timers = [];
   const flaps = [...root.querySelectorAll('.ui-flap[data-flap]')].map((el) => {
-    const cells = [...el.querySelectorAll('.flap-cell')];
+    const cells = [...el.querySelectorAll('.flap-cell:not(.flap-cell--word)')];
     const digits = cells.map((cell) => cell.querySelector('.flap-face')?.textContent ?? '0').join('');
     return { cells, digits, frames: flapFrames(digits) };
   }).filter((flap) => flap.frames.length > 1);
+  const words = [...root.querySelectorAll('.ui-flap[data-flap] .flap-cell--word')].map((cell) => ({ cell, ch: cell.querySelector('.flap-face')?.textContent ?? '' }));
+  for (const { cell, ch } of words) {
+    setCell(cell, '', false);
+    timers.push(setTimeout(() => timers.push(...setCell(cell, ch, true)), STEP_MS));
+  }
   for (const { cells, frames } of flaps) {
     cells.forEach((cell, i) => setCell(cell, frames[0][i], false));
     frames.slice(1).forEach((frame, k) => {
@@ -86,6 +95,11 @@ export function mountFlaps(root, { animate = false } = {}) {
   }
   return () => {
     timers.forEach(clearTimeout);
+    for (const { cell, ch } of words) {
+      setCell(cell, ch, false);
+      cell.querySelector('.flap-top')?.classList.remove('flap-flip-out');
+      cell.querySelector('.flap-bottom')?.classList.remove('flap-flip-in');
+    }
     for (const { cells, digits } of flaps) {
       cells.forEach((cell, i) => {
         setCell(cell, digits[i], false);

@@ -19,7 +19,7 @@ function statusHtml(model) {
   const status = statusParts(model);
   const words = (value) => `<span class="atl-count-words">${esc(value)}</span>`;
   let inner = words(status.words);
-  if (status.kind === 'countdown') inner = `${flapDigitsHtml(status.value, { cls: 'atl-flaps' })}${words(status.words)}`;
+  if (status.kind === 'countdown') inner = `${flapDigitsHtml(status.value, { cls: 'atl-flaps', word: 'in' })}${words(status.value === 1 ? 'day' : 'days')}`;
   if (status.kind === 'day') {
     inner = `<span class="atl-count-row">${words('Day')}${flapDigitsHtml(status.value, { cls: 'atl-flaps' })}${words(`of ${status.total}`)}</span>`
       + `${status.next ? `<span class="atl-count-next">${esc(status.next)}</span>` : ''}`;

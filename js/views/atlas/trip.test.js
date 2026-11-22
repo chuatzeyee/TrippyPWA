@@ -63,7 +63,7 @@ describe.each(KEYS)('fixture %s', (key) => {
       expect(words).toBe('Planning stopped');
     } else if (model.phase === 'upcoming') {
       expect(attr(flap, 'data-flap')).toBe(String(model.daysToGo));
-      expect(words).toContain(model.daysToGo === 1 ? 'day to go' : 'days to go');
+      expect(words).toMatch(model.daysToGo === 1 ? /in 1 day$/ : new RegExp(`in ${model.daysToGo} days$`));
     } else if (model.phase === 'live') {
       expect(attr(flap, 'data-flap')).toBe(String(model.live.dayNumber));
       expect(words).toMatch(new RegExp(`^Day .* of ${model.live.dayCount}`));
