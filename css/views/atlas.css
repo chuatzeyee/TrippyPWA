@@ -464,7 +464,7 @@
 /* The credits of the page (photos, the map outline) stay in the markup, where they are patched as photos
    arrive, and are read by the photo credits dialog the site footer opens (js/site/credits-dialog.js). */
 [data-view="atlas"][data-view] .atl-foot { display: none; }
-[data-view="atlas"][data-view] .atl-empty { max-width: 720px; margin: var(--sp-2) auto 0; border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--plate); overflow: hidden; }
+[data-view="atlas"][data-view] .atl-empty { margin: var(--sp-2) 0 0; border: 1px solid var(--atl-rule); border-radius: var(--r-lg); background: var(--plate); overflow: hidden; }
 [data-view="atlas"][data-view] .atl-empty-map { position: relative; aspect-ratio: 520 / 220; }
 [data-view="atlas"][data-view] .atl-empty-body { display: grid; gap: var(--sp-3); padding: var(--sp-5) var(--sp-4); border-top: 1px solid var(--atl-rule); background: var(--surface-solid); }
 [data-view="atlas"][data-view] .atl-empty-title { font: 400 25px/1.15 var(--font-heading); text-wrap: balance; color: var(--ink); }
@@ -479,6 +479,9 @@
   [data-view="atlas"][data-view] .atl-band-map { aspect-ratio: 3 / 1; }
   [data-view="atlas"][data-view] .atl-acts--phone { display: flex; }
   [data-view="atlas"][data-view] .atl-acts--phone > .ui-btn { flex: 0 1 220px; }
+  /* The empty plate spans the column like the dashboard's map band, so it is as short as that band. */
+  [data-view="atlas"][data-view] .atl-empty-map { aspect-ratio: 3 / 1; }
+  [data-view="atlas"][data-view] .atl-acts--empty > .ui-btn { flex: 0 1 220px; }
   [data-view="atlas"][data-view] .atl-hop-item { flex-basis: 164px; }
 }
 @media (min-width: 1024px) {
