@@ -330,14 +330,14 @@ function renderShell() {
       <div class="wizard-header">
         <button class="wizard-back btn btn--ghost btn--pill ${stepNum > 1 ? '' : 'wizard-back--hidden'}" data-wizard="back" aria-label="Go back" ${stepNum > 1 ? '' : 'tabindex="-1" aria-hidden="true"'}>Back</button>
         <div class="wizard-header-center">
-          <span class="wizard-progress-count">Step ${displayStep} of ${visibleTotal}</span>
-          <div class="wizard-progress">
+          <span class="wizard-progress-count wizard-progress-count--hidden">Step ${displayStep} of ${visibleTotal}</span>
+          <div class="wizard-progress wizard-progress--roundels" aria-hidden="true">
             ${Array.from({ length: visibleTotal }, (_, i) => {
               const step = i + 1;
               let cls = 'wizard-progress-seg';
               if (step < displayStep) cls += ' wizard-progress-seg--done';
               else if (step === displayStep) cls += ' wizard-progress-seg--active';
-              return `<div class="${cls}"></div>`;
+              return `<div class="${cls}">${step}</div>`;
             }).join('')}
           </div>
         </div>
@@ -389,7 +389,7 @@ function updateShellChrome() {
   if (progress) {
     let segs = [...progress.children];
     if (segs.length !== visibleTotal) {
-      progress.innerHTML = Array.from({ length: visibleTotal }, () => '<div class="wizard-progress-seg"></div>').join('');
+      progress.innerHTML = Array.from({ length: visibleTotal }, (_, i) => `<div class="wizard-progress-seg">${i + 1}</div>`).join('');
       segs = [...progress.children];
     }
     segs.forEach((seg, i) => {

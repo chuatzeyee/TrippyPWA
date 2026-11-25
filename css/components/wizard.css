@@ -95,6 +95,49 @@
   margin-right: 4px;
 }
 
+/* ===== Plan wizard: numbered roundels =====
+   One roundel per step with its number. Only the current step lights up (orange, with a glow);
+   every other step, done or still to come, stays dimmed. The "Step n of m" text stays for screen
+   readers only. The import guide keeps the plain segments below. */
+.wizard-progress-count--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wizard-progress--roundels { gap: var(--sp-2); }
+
+.wizard-progress--roundels .wizard-progress-seg,
+.wizard-progress--roundels .wizard-progress-seg--done {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  box-shadow: none;
+  font: 600 12px/1 var(--font-mono);
+  color: var(--ink-ghost);
+  opacity: 0.55;
+  transition: background var(--duration-normal) var(--ease-out),
+              color var(--duration-normal) var(--ease-out),
+              opacity var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.wizard-progress--roundels .wizard-progress-seg--active {
+  border-color: var(--terracotta);
+  background: var(--terracotta);
+  color: #fff;
+  opacity: 1;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--terracotta) 22%, transparent),
+              0 0 14px color-mix(in srgb, var(--terracotta) 55%, transparent);
+}
+
 /* ===== Progress Segments ===== */
 .wizard-progress-seg {
   width: 24px;
@@ -2145,11 +2188,11 @@
   background: rgba(44, 42, 37, 0.06);
 }
 
-[data-theme="light"] .wizard-progress-seg {
+[data-theme="light"] .wizard-progress-seg:not(.wizard-progress--roundels > *) {
   background: rgba(44, 42, 37, 0.12);
 }
 
-[data-theme="light"] .wizard-progress-seg--done {
+[data-theme="light"] .wizard-progress-seg--done:not(.wizard-progress--roundels > *) {
   background: var(--sage);
 }
 
