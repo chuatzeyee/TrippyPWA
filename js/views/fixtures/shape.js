@@ -146,7 +146,7 @@ export const DayAsideModel = {
   areas: arr(S), book: arr({ label: S, booked: B }), list: arr({ id: S, at: N, number: N, time: S, title: S }),
 };
 export const TripAction = {
-  key: one('share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete'), label: S, hint: S, href: S, danger: B,
+  key: one('share', 'pdf', 'edit', 'tune', 'read-view', 'regenerate', 'delete'), label: S, hint: S, href: S, danger: B,
 };
 export const TripOverviewModel = {
   id: S, title: S, placeLine: S, flags: arr(S), status: one('ok', 'generating', 'failed', 'empty'),
@@ -280,7 +280,7 @@ export function checkTripModel(model) {
   if (model.role === 'viewer' && keys.some((key) => key === 'edit' || key === 'share')) out.push('actions: a viewer cannot edit or share');
   if (model.imported && keys.includes('regenerate')) out.push('actions: no regenerate on an imported trip');
   model.actions.forEach((action) => {
-    const wanted = action.key === 'read-view' ? `#/trip/${encodeURIComponent(model.id)}/read` : '';
+    const wanted = action.key === 'read-view' ? `#/trip/${encodeURIComponent(model.id)}/read` : action.key === 'tune' ? `#/trip/${encodeURIComponent(model.id)}/tune` : '';
     if (action.href !== wanted) out.push(`actions.${action.key}.href: expected "${wanted}"`);
   });
   if (model.tips.shown.length > model.tips.total) out.push('tips.total: smaller than the tips shown');

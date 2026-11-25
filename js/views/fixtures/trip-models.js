@@ -40,12 +40,13 @@ const ACTION = {
   share: { label: 'Share', hint: 'Invite someone or copy a link', danger: false },
   pdf: { label: 'Export PDF', hint: 'A printable copy with photos', danger: false },
   edit: { label: 'Edit trip', hint: 'Move, change or remove stops', danger: false },
+  tune: { label: 'Fine-tune', hint: 'Swap stops, see paid and free', danger: false },
   'read-view': { label: 'Reader view', hint: 'A plain page that is easy to read', danger: false },
   regenerate: { label: 'Regenerate trip', hint: 'Plan the days again from your answers', danger: false },
   delete: { label: 'Delete trip', hint: 'Remove this plan for good', danger: true },
 };
-const actions = (id, ...keys) => keys.map((key) => ({ key, ...ACTION[key], href: key === 'read-view' ? `#/trip/${encodeURIComponent(id)}/read` : '' }));
-const OWNER = ['share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete'];
+const actions = (id, ...keys) => keys.map((key) => ({ key, ...ACTION[key], href: key === 'read-view' ? `#/trip/${encodeURIComponent(id)}/read` : key === 'tune' ? `#/trip/${encodeURIComponent(id)}/tune` : '' }));
+const OWNER = ['share', 'pdf', 'edit', 'tune', 'read-view', 'regenerate', 'delete'];
 
 const READINESS = (collapsed) => readinessOf([
   ready('flights', 'todo', 'Not booked yet', 'Suggested direct flights, about 1h 35m each way.'),
@@ -136,9 +137,9 @@ export const TRIP_FIXTURES = {
   failed: trip({ ...bare, status: 'failed', statusText: 'Planning stopped', actions: actions('s-marrakech', 'delete') }),
   empty: trip({ ...bare, status: 'empty', actions: actions('s-marrakech', 'regenerate', 'delete') }),
   viewer: trip({ role: 'viewer', actions: actions('s-marrakech', 'pdf', 'read-view') }),
-  editor: trip({ role: 'editor', actions: actions('s-marrakech', 'share', 'pdf', 'edit', 'read-view') }),
+  editor: trip({ role: 'editor', actions: actions('s-marrakech', 'share', 'pdf', 'edit', 'tune', 'read-view') }),
   imported: trip({
-    imported: true, glance: without('pace', 'stay'), actions: actions('s-marrakech', 'share', 'pdf', 'edit', 'read-view', 'delete'),
+    imported: true, glance: without('pace', 'stay'), actions: actions('s-marrakech', 'share', 'pdf', 'edit', 'tune', 'read-view', 'delete'),
     brief: { pace: '', interests: [], areaCount: 3, firstArea: 'Medina', lastArea: 'Ourika valley' },
     readiness: readinessOf([
       ready('flights', 'done', 'Booked', 'Lisbon to Marrakech, booked both ways.'),

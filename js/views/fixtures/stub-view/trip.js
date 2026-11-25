@@ -13,7 +13,7 @@ const SECTIONS = ['flights', 'transport', 'accommodation', 'entry', 'checklist']
 function actionControl(action, where, role = '') {
   const key = esc(action.key);
   const roleAttr = role ? ` role="${role}"` : '';
-  if (action.key === 'read-view') return `<a href="${esc(action.href)}" data-focus-key="${where}-${key}"${roleAttr}>${esc(action.label)}</a>`;
+  if (action.key === 'read-view' || action.key === 'tune') return `<a href="${esc(action.href)}" data-focus-key="${where}-${key}"${roleAttr}>${esc(action.label)}</a>`;
   return `<button type="button" data-action="${key}" data-focus-key="${where}-${key}"${roleAttr}>${action.key === 'pdf' ? `<span data-pdf-label>${esc(action.label)}</span>` : esc(action.label)}</button>`;
 }
 

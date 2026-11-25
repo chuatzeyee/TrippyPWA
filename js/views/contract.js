@@ -301,10 +301,10 @@
 
 /**
  * @typedef {Object} TripAction
- * @property {'share'|'pdf'|'edit'|'read-view'|'regenerate'|'delete'} key
+ * @property {'share'|'pdf'|'edit'|'tune'|'read-view'|'regenerate'|'delete'} key
  * @property {string} label           "Share", "Export PDF", "Edit trip", "Reader view", "Regenerate trip", "Delete trip"
  * @property {string} hint            one line for the More menu
- * @property {string} href            only for read-view: "#/trip/<id>/read"
+ * @property {string} href            only for the pages: "#/trip/<id>/read", "#/trip/<id>/tune"
  * @property {boolean} danger
  */
 

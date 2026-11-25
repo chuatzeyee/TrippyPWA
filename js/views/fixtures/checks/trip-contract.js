@@ -6,7 +6,8 @@ import { markupRules, regionRules } from './markup-rules.js';
 const STRING_PARTS = ['bar', 'hero', 'tabs', 'planIntro', 'between', 'planOutro'];
 const PART_KEYS = [...STRING_PARTS, 'openSections', 'openSectionsMinWidth', 'dayAside'];
 const OPENABLE = ['flights', 'transport', 'entry', 'accommodation'];
-const ACTION_KEYS = ['share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete'];
+const ACTION_KEYS = ['share', 'pdf', 'edit', 'tune', 'read-view', 'regenerate', 'delete'];
+const LINK_KEYS = ['tune', 'read-view'];
 const TAB_KEYS = ['plan', 'spending', 'prep', 'towns'];
 const SECTION_TARGETS = ['flights', 'transport', 'accommodation', 'entry', 'checklist'];
 const NOT_IN_REGION = ['h1', '[data-trip-search]', '[data-slot="chooser"]', '[data-map-slot]', '[data-tabs-slot]'];
@@ -93,11 +94,11 @@ function actionRules(whole, model) {
   const out = [];
   const offered = model.actions.map((action) => action.key);
   for (const action of model.actions) {
-    const controls = action.key === 'read-view'
+    const controls = LINK_KEYS.includes(action.key)
       ? all(whole, 'a').filter((a) => attr(a, 'href') === action.href)
       : all(whole, `[data-action="${action.key}"]`);
     if (!controls.length) out.push(`action ${action.key}: not reachable`);
-    if (action.key !== 'read-view' && controls.some((el) => el.tag !== 'button')) out.push(`action ${action.key}: must be a button`);
+    if (!LINK_KEYS.includes(action.key) && controls.some((el) => el.tag !== 'button')) out.push(`action ${action.key}: must be a button`);
   }
   for (const key of ACTION_KEYS.filter((name) => !offered.includes(name))) {
     if (all(whole, `[data-action="${key}"]`).length) out.push(`action ${key}: drawn although the model does not offer it`);

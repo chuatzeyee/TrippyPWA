@@ -34,7 +34,7 @@ describe.each(KEYS)('fixture %s', (key) => {
   it('bar: Trips, the name, a tabs slot from 1024 px, the actions and More', () => {
     const header = one(bar, 'header.tv-bar');
     expect(attr(one(header, '[data-tabs-slot]'), 'data-slot-from')).toBe('1024');
-    for (const action of model.actions.filter((a) => a.key !== 'read-view')) {
+    for (const action of model.actions.filter((a) => a.key !== 'read-view' && a.key !== 'tune')) {
       expect(all(header, `[data-action="${action.key}"]`).length, action.key).toBeGreaterThan(0);
     }
     expect(all(header, '[data-menu-open]')).toHaveLength(1);

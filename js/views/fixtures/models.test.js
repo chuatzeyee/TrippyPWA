@@ -74,7 +74,7 @@ describe('the trip fixtures', () => {
   it('each fixture is the state its name says', () => {
     const keys = (model) => model.actions.map((action) => action.key);
     expect(T.upcoming).toMatchObject({ phase: 'upcoming', status: 'ok', role: 'owner' });
-    expect(keys(T.upcoming)).toEqual(['share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete']);
+    expect(keys(T.upcoming)).toEqual(['share', 'pdf', 'edit', 'tune', 'read-view', 'regenerate', 'delete']);
     expect(T.tomorrow).toMatchObject({ daysToGo: 1, statusText: 'Tomorrow' });
     expect(T.live.live.today.nextStop).not.toBeNull();
     expect(T.live.readiness.collapsed).toBe(true);
@@ -88,7 +88,7 @@ describe('the trip fixtures', () => {
     expect(keys(T.failed)).toEqual(['delete']);
     expect(T.empty).toMatchObject({ status: 'empty', days: [] });
     expect(keys(T.viewer)).toEqual(['pdf', 'read-view']);
-    expect(keys(T.editor)).toEqual(['share', 'pdf', 'edit', 'read-view']);
+    expect(keys(T.editor)).toEqual(['share', 'pdf', 'edit', 'tune', 'read-view']);
     expect(T.imported.imported).toBe(true);
     expect(T.imported.glance.map((fact) => fact.key)).not.toEqual(expect.arrayContaining(['pace', 'stay']));
     expect(T.ground.route).toMatchObject({ kind: 'ground', mode: 'train' });

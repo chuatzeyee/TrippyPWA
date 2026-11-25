@@ -26,7 +26,7 @@ export const MORE_MENU_ID = 'tv-more';
 const ID = /^[A-Za-z][\w-]*$/;
 const pick = (wanted, fallback) => (ICON_NAMES.includes(wanted) ? wanted : fallback);
 const ICONS = Object.freeze({
-  share: 'share', pdf: 'file', edit: 'edit', 'read-view': pick('book', 'file'), regenerate: 'refresh', delete: 'trash',
+  share: 'share', pdf: 'file', edit: 'edit', tune: 'settings', 'read-view': pick('book', 'file'), regenerate: 'refresh', delete: 'trash',
 });
 const SETTINGS = Object.freeze({ key: 'settings', label: 'Settings', hint: 'Look, units and your account', href: '#/settings', icon: 'settings' });
 
@@ -48,7 +48,7 @@ function actionHtml(action, { where, extra, inMenu }) {
   const focusKey = `${where}-${action.key}`;
   const glyph = icon(ICONS[action.key], 18);
   const mark = attr('data-in-menu', inMenu);
-  if (action.key === 'read-view') {
+  if (action.key === 'read-view' || action.key === 'tune') {
     const href = safeHref(action.href);
     if (!href) return '';
     return `<a class="${cls('ui-btn', 'tv-action', extra)}" href="${esc(href)}"${attr('data-focus-key', focusKey)}${mark}>${glyph}<span>${esc(action.label)}</span></a>`;
@@ -85,7 +85,7 @@ export function actionButtonsHtml(actions, { keys, where = 'bar', cls: extra, in
  */
 export function moreMenuHtml(actions, { keys, id, label = 'More', settings = true, cls: extra } = {}) {
   const items = chosen(listOf(actions), keys).map((action) => ({
-    key: action.key, label: action.label, hint: action.hint, href: action.key === 'read-view' ? action.href : '', danger: Boolean(action.danger), icon: ICONS[action.key],
+    key: action.key, label: action.label, hint: action.hint, href: action.key === 'read-view' || action.key === 'tune' ? action.href : '', danger: Boolean(action.danger), icon: ICONS[action.key],
   }));
   return menuHtml({ id: idOf(id), label, items: settings ? [...items, SETTINGS] : items, cls: extra });
 }

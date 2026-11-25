@@ -532,6 +532,13 @@ addRoute('/trip/:id/read', async (params) => {
   await renderOwnerReadView(params.id);
 }, { title: 'Trip', titleFromHeading: true });
 
+// Fine-tune: the plan as a list, with a filter for paid and free stops, Swap and Remove on each.
+addRoute('/trip/:id/tune', async (params) => {
+  if (!(await ensureSignedIn())) return;
+  const { renderTripTune } = await import('./components/trip-tune.js');
+  await renderTripTune(params.id);
+}, { title: 'Fine-tune', titleFromHeading: true });
+
 // An imported trip next to the plan Trippy wrote for the same trip. Opens offline from saved copies.
 addRoute('/trip/:id/compare', async (params) => {
   if (!(await ensureSignedIn({ requireOnline: false }))) return;

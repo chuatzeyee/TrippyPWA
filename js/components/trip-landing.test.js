@@ -640,7 +640,7 @@ describe('buildLanding on the frozen stub view', () => {
     const { model } = view.landing;
     expect(model.title).toBe('Ten days of soup');
     expect(model.role).toBe('owner');
-    expect(model.actions.map((action) => action.key)).toEqual(['share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete']);
+    expect(model.actions.map((action) => action.key)).toEqual(['share', 'pdf', 'edit', 'tune', 'read-view', 'regenerate', 'delete']);
     expect(model.glance.map((fact) => fact.key)).toEqual(expect.arrayContaining(['ready', 'stops', 'cost']));
     expect(model.readiness.items.map((item) => item.area)).toEqual(['travel', 'entry']);
     expect(model.map.points).toHaveLength(1);
@@ -694,7 +694,7 @@ describe('buildLanding on the frozen stub view', () => {
     const keys = (who) => { const view = viewOf(STUB); buildLanding(view, PORTO, landingOpts(who)); return view.landing.model.actions.map((action) => action.key); };
     expect(keys({ userId: 'someone', role: null })).toEqual(['pdf', 'read-view']);
     expect(keys({ userId: 'someone', role: 'viewer' })).toEqual(['pdf', 'read-view']);
-    expect(keys({ userId: 'someone', role: 'editor' })).toEqual(['share', 'pdf', 'edit', 'read-view']);
+    expect(keys({ userId: 'someone', role: 'editor' })).toEqual(['share', 'pdf', 'edit', 'tune', 'read-view']);
   });
   it('carries one h1 with the title and a day row for every itinerary day', () => {
     const view = viewOf(STUB);

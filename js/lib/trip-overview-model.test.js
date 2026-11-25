@@ -240,7 +240,7 @@ describe('the live day', () => {
 });
 
 describe('actions', () => {
-  const owner = ['share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete'];
+  const owner = ['share', 'pdf', 'edit', 'tune', 'read-view', 'regenerate', 'delete'];
   it('gives the owner all six, in the order of the bar', () => {
     const model = build(upcoming());
     expect(model.role).toBe('owner');
@@ -255,13 +255,13 @@ describe('actions', () => {
     expect(keysOf(build(shared))).toEqual(['pdf', 'read-view']);
     expect(keysOf(build(shared, { role: 'viewer' }))).toEqual(['pdf', 'read-view']);
     expect(build(shared, { role: 'editor' }).role).toBe('editor');
-    expect(keysOf(build(shared, { role: 'editor' }))).toEqual(['share', 'pdf', 'edit', 'read-view']);
+    expect(keysOf(build(shared, { role: 'editor' }))).toEqual(['share', 'pdf', 'edit', 'tune', 'read-view']);
     expect(keysOf(build(upcoming(), { userId: null }))).toEqual(['pdf', 'read-view']);
   });
   it('never offers to regenerate an imported plan', () => {
     const imported = upcoming({ wizard_state: { multiCity: false, destination: CITY, imported: true } });
     expect(build(imported).imported).toBe(true);
-    expect(keysOf(build(imported))).toEqual(['share', 'pdf', 'edit', 'read-view', 'delete']);
+    expect(keysOf(build(imported))).toEqual(['share', 'pdf', 'edit', 'tune', 'read-view', 'delete']);
   });
   it('leaves a stopped plan its delete, and a plan with no days nothing to share, print, edit or read', () => {
     expect(keysOf(build(upcoming({ status: 'failed', itinerary_days: [] })))).toEqual(['delete']);

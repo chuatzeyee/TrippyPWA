@@ -8,7 +8,8 @@ import { markupRules, regionRules } from '../fixtures/checks/markup-rules.js';
 
 const HOSTILE = `"><img src=x onerror=alert(1)>&'`;
 const BANNED = /[\u2013\u2014\u00b7\u2022\u2026\u2192]/;
-const ALL_KEYS = ['share', 'pdf', 'edit', 'read-view', 'regenerate', 'delete'];
+const ALL_KEYS = ['share', 'pdf', 'edit', 'tune', 'read-view', 'regenerate', 'delete'];
+const LINK_KEYS = ['tune', 'read-view'];
 const tree = (html) => {
   const { root, errors } = parseHtml(html);
   expect(errors).toEqual([]);
@@ -24,18 +25,18 @@ const SPLITS = {
   'nothing in the bar': { barKeys: [] },
   'everything in the bar': { barKeys: ALL_KEYS },
   'an empty menu list': { menuKeys: [] },
-  'the previews: three in the bar, the rest in More': { barKeys: ['share', 'pdf', 'edit'], menuKeys: ['read-view', 'regenerate', 'delete'] },
+  'the previews: three in the bar, the rest in More': { barKeys: ['share', 'pdf', 'edit'], menuKeys: ['tune', 'read-view', 'regenerate', 'delete'] },
   'a split that names neither Edit nor Reader view': { barKeys: ['delete'], menuKeys: ['share'] },
   'both lists empty': { barKeys: [], menuKeys: [] },
   'unknown and repeated keys': { barKeys: ['share', 'share', 'fly', HOSTILE], menuKeys: ['pdf', 'pdf', 'nope'] },
 };
 const regionOf = (root) => all(root, '[data-region="bar-actions"]');
-const controlsFor = (scope, action) => (action.key === 'read-view'
+const controlsFor = (scope, action) => (LINK_KEYS.includes(action.key)
   ? all(scope, 'a').filter((a) => attr(a, 'href') === action.href)
   : all(scope, `[data-action="${action.key}"]`));
 const menuItems = (root) => all(root, '[role="menuitem"]');
 const barButtons = (root) => all(root, '.tv-action');
-const keyOf = (el) => attr(el, 'data-action') ?? (/\/read$/.test(attr(el, 'href') ?? '') ? 'read-view' : attr(el, 'href') === '#/settings' ? 'settings' : null);
+const keyOf = (el) => attr(el, 'data-action') ?? (/\/read$/.test(attr(el, 'href') ?? '') ? 'read-view' : /\/tune$/.test(attr(el, 'href') ?? '') ? 'tune' : attr(el, 'href') === '#/settings' ? 'settings' : null);
 
 describe('topbarHtml: the bar', () => {
   it('is exactly one header.tv-bar', () => {
@@ -129,7 +130,7 @@ describe.each(Object.entries(CASES))('topbarHtml: the actions of the %s fixture'
     for (const action of model.actions) {
       const controls = controlsFor(region, action);
       expect(controls.length, `${name}: ${action.key}`).toBeGreaterThan(0);
-      if (action.key !== 'read-view') expect(controls.every((el) => el.tag === 'button' && attr(el, 'type') === 'button')).toBe(true);
+      if (!LINK_KEYS.includes(action.key)) expect(controls.every((el) => el.tag === 'button' && attr(el, 'type') === 'button')).toBe(true);
     }
     // Nothing the model does not offer, and nothing outside the region.
     const offered = model.actions.map((action) => action.key);

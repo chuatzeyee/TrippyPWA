@@ -33,10 +33,13 @@ const ACTIONS = {
   share: { label: 'Share', hint: 'Invite someone or copy a link', danger: false },
   pdf: { label: 'Export PDF', hint: 'A printable copy with photos', danger: false },
   edit: { label: 'Edit trip', hint: 'Move, change or remove stops', danger: false },
+  tune: { label: 'Fine-tune', hint: 'Swap stops, see paid and free', danger: false },
   'read-view': { label: 'Reader view', hint: 'A plain page that is easy to read', danger: false },
   regenerate: { label: 'Regenerate trip', hint: 'Plan the days again from your answers', danger: false },
   delete: { label: 'Delete trip', hint: 'Remove this plan for good', danger: true },
 };
+/** The actions that are pages of their own: the last part of their address. */
+const LINK_ACTIONS = { tune: 'tune', 'read-view': 'read' };
 
 // The city of an airport, for a route stored as codes only when neither the home city nor the
 // destination can stand beside the code (the profile summary can arrive after the first draw).
@@ -247,11 +250,12 @@ function actionsFor(trip, role, { hasDays, imported }) {
   const building = trip.status === 'generating';
   const canEdit = role !== 'viewer';
   const can = {
-    share: canEdit && hasDays && !failed, pdf: hasDays && !failed, edit: canEdit && hasDays && !failed && !building, 'read-view': hasDays,
+    share: canEdit && hasDays && !failed, pdf: hasDays && !failed, edit: canEdit && hasDays && !failed && !building,
+    tune: canEdit && hasDays && !failed && !building, 'read-view': hasDays,
     regenerate: role === 'owner' && !failed && !building && !imported, delete: role === 'owner',
   };
   return Object.keys(ACTIONS).filter((key) => can[key])
-    .map((key) => ({ key, ...ACTIONS[key], href: key === 'read-view' ? `#/trip/${encodeURIComponent(text(trip.id))}/read` : '' }));
+    .map((key) => ({ key, ...ACTIONS[key], href: LINK_ACTIONS[key] ? `#/trip/${encodeURIComponent(text(trip.id))}/${LINK_ACTIONS[key]}` : '' }));
 }
 
 /** The day rows of a plan in day order, each with its stops in the order of the day. New objects. */

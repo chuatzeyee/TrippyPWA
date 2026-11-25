@@ -20,7 +20,7 @@ function usedVenues(trip) {
 // Alternatives are priced in the activity's own currency (the trip's when it
 // has none), so the cost sent, the cost returned and the stored cost_currency
 // always agree, whatever currency the activity was imported or planned in.
-function activityCurrency(trip, activity) {
+export function activityCurrency(trip, activity) {
   const own = String(activity?.cost_currency || '').trim().toUpperCase();
   if (/^[A-Z]{3}$/.test(own)) return own;
   const ws = trip.wizard_state;
@@ -28,7 +28,7 @@ function activityCurrency(trip, activity) {
   return String(dest?.currencyCode || trip.budget_currency || 'USD').toUpperCase();
 }
 
-async function fetchAlternatives(trip, activity, currency) {
+export async function fetchAlternatives(trip, activity, currency) {
   const ws = trip.wizard_state;
   const dest = ws?.multiCity ? ws?.destinations?.[0] : ws?.destination;
   const { data, error } = await supabase.functions.invoke('suggest-alternatives', {
@@ -60,7 +60,7 @@ async function dailyLimitText(error) {
 
 // Applies a chosen alternative onto the activity (DB + in-memory). `currency`
 // is the one the alternatives were priced in.
-async function applyAlternative(activity, alt, currency) {
+export async function applyAlternative(activity, alt, currency) {
   const updates = {
     title: alt.title, venueName: alt.venueName, description: alt.description || '',
     category: alt.category || activity.category, costAmount: alt.costAmount ?? activity.cost_amount,

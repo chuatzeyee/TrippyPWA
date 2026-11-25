@@ -42,7 +42,7 @@ const EXPECTED = {
     cost: '~S$1,099 per person, activities only. HKD 6,347', budget: 'HKD 17,900', budgetHome: 'S$3,098',
     route: { kind: 'flight', mode: 'plane', codes: true, booked: false, times: false, suggested: true },
     glance: 'ready stops cost weather pace stay', weather: '16 to 23°C', pace: 'Relaxed', stay: true, interests: 3, areas: [9, 9], tips: [2, 4],
-    map: 61, photos: [10, 39], credits: 30, cover: 'v2', actions: 'share pdf edit read-view regenerate delete', role: 'owner', imported: false,
+    map: 61, photos: [10, 39], credits: 30, cover: 'v2', actions: 'share pdf edit tune read-view regenerate delete', role: 'owner', imported: false,
     before: ['In 30 days', '1 of 4 ready', 'Flights: Not booked yet', 'Stay: None booked', 'Entry requirements: Nothing to file', 'Reservations: 2 to book'],
   },
   // Live on the fixed date: day 10 of 12, at ten past three in the morning there, so the whole day is still ahead.
@@ -54,7 +54,7 @@ const EXPECTED = {
     cost: '~S$3,040 per person, activities only. NOK 21,846', budget: 'NOK 5,760', budgetHome: 'S$802',
     route: { kind: 'multi', mode: 'plane', codes: false, booked: false, times: false, suggested: false },
     glance: 'stops cost weather pace stay', weather: '-7 to 5°C', pace: 'Active', stay: true, interests: 7, areas: [8, 8], tips: [2, 5],
-    map: 46, photos: [11, 36], credits: 1, cover: 'v2', actions: 'share pdf edit read-view regenerate delete', role: 'owner', imported: false,
+    map: 46, photos: [11, 36], credits: 1, cover: 'v2', actions: 'share pdf edit tune read-view regenerate delete', role: 'owner', imported: false,
     before: ['In 30 days', '1 of 4 ready', 'Flights: Not booked yet', 'Stay: None booked', 'Entry requirements: Nothing to file', 'Reservations: 7 to book'],
   },
   // Three cities, past: no readiness today, the route runs from the first city to the last.
@@ -65,7 +65,7 @@ const EXPECTED = {
     cost: '~S$2,907 per person, activities only. €1,981', budget: '€4,416', budgetHome: 'S$6,480',
     route: { kind: 'multi', mode: 'plane', codes: false, booked: false, times: false, suggested: false },
     glance: 'stops cost weather pace stay', weather: '9 to 23°C', pace: 'Packed', stay: true, interests: 7, areas: [23, 19], tips: [2, 6],
-    map: 103, photos: [12, 48], credits: 1, cover: 'legacy', actions: 'share pdf edit read-view regenerate delete', role: 'owner', imported: false,
+    map: 103, photos: [12, 48], credits: 1, cover: 'legacy', actions: 'share pdf edit tune read-view regenerate delete', role: 'owner', imported: false,
     before: ['In 30 days', '1 of 4 ready', 'Flights: Not booked yet', 'Stay: None booked', 'Entry requirements: Nothing to file', 'Reservations: 8 to book'],
   },
   // A coach journey: a ground route, and Transport instead of Flights before departure.
@@ -76,7 +76,7 @@ const EXPECTED = {
     cost: '~S$593 per person, activities only. RM2,065', budget: 'RM5,170', budgetHome: 'S$1,485',
     route: { kind: 'ground', mode: 'bus', codes: false, booked: false, times: false, suggested: false },
     glance: 'stops cost weather pace stay', weather: '16 to 24°C', pace: 'Balanced', stay: true, interests: 2, areas: [3, 3], tips: [2, 6],
-    map: 39, photos: [5, 19], credits: 1, cover: 'v2', actions: 'share pdf edit read-view regenerate delete', role: 'owner', imported: false,
+    map: 39, photos: [5, 19], credits: 1, cover: 'v2', actions: 'share pdf edit tune read-view regenerate delete', role: 'owner', imported: false,
     before: ['In 30 days', '1 of 4 ready', 'Transport: Not arranged yet', 'Stay: None booked', 'Entry requirements: Nothing to file', 'Reservations: 7 to book'],
   },
   // A plan in the home city: at home, priced in the home currency, only reservations to arrange.
@@ -87,7 +87,7 @@ const EXPECTED = {
     cost: 'S$4,628 per person, activities only', budget: 'S$6,480', budgetHome: null,
     route: { kind: 'home', mode: 'car', codes: false, booked: false, times: false, suggested: false },
     glance: 'stops cost weather pace stay', weather: '24 to 32°C', pace: 'Packed', stay: true, interests: 6, areas: [14, 12], tips: [2, 5],
-    map: 88, photos: [12, 48], credits: 1, cover: 'v2', actions: 'share pdf edit read-view regenerate delete', role: 'owner', imported: false,
+    map: 88, photos: [12, 48], credits: 1, cover: 'v2', actions: 'share pdf edit tune read-view regenerate delete', role: 'owner', imported: false,
     before: ['In 30 days', '0 of 1 ready', 'Reservations: 10 to book'],
   },
   // Imported with booked flights that carry their times: no pace, no stay fact, no regenerate, spend above the budget.
@@ -98,7 +98,7 @@ const EXPECTED = {
     cost: '~S$4,228 per person, activities only. ¥485,400', budget: '¥294,000', budgetHome: 'S$2,561',
     route: { kind: 'flight', mode: 'plane', codes: true, booked: true, times: true, suggested: false },
     glance: 'ready stops cost weather', weather: '-18 to 0°C', pace: '', stay: false, interests: 0, areas: [0, 0], tips: [2, 6],
-    map: 43, photos: [13, 42], credits: 33, cover: 'v2', actions: 'share pdf edit read-view delete', role: 'owner', imported: true,
+    map: 43, photos: [13, 42], credits: 33, cover: 'v2', actions: 'share pdf edit tune read-view delete', role: 'owner', imported: true,
     before: ['In 30 days', '2 of 4 ready', 'Flights: Booked', 'Stay: None booked', 'Entry requirements: Nothing to file', 'Reservations: 10 to book'],
   },
   // Nine itinerary rows over ten calendar days; flights and stay arranged before planning, so the flight is not called suggested.
@@ -109,7 +109,7 @@ const EXPECTED = {
     cost: '~S$2,316 per person, activities only. A$2,659', budget: 'A$50', budgetHome: 'S$44',
     route: { kind: 'flight', mode: 'plane', codes: true, booked: false, times: false, suggested: false },
     glance: 'stops cost weather pace stay', weather: '10 to 19°C', pace: 'Active', stay: true, interests: 6, areas: [20, 17], tips: [2, 6],
-    map: 84, photos: [9, 36], credits: 1, cover: 'v2', actions: 'share pdf edit read-view regenerate delete', role: 'owner', imported: false,
+    map: 84, photos: [9, 36], credits: 1, cover: 'v2', actions: 'share pdf edit tune read-view regenerate delete', role: 'owner', imported: false,
     before: ['In 30 days', '2 of 4 ready', 'Flights: Sorted', 'Stay: Sorted', 'Entry requirements: 2 things to do', 'Reservations: 8 to book'],
   },
 };
