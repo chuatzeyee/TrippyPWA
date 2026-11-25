@@ -2724,12 +2724,10 @@ body:has(.td-chat-fab--bar) .back-to-top {
   position: fixed;
   left: 0;
   right: 0;
-  /* --td-chat-kb and --td-chat-room: the part of the screen the keyboard covers and the part left
-     visible, set by itinerary-chat.js while the sheet is open (iPhone Safari does not resize the page). */
-  bottom: var(--td-chat-kb, 0px);
+  bottom: 0;
   z-index: var(--z-panel);
   max-height: 75vh;
-  max-height: min(75dvh, calc(var(--td-chat-room, 100dvh) - var(--sp-2)));
+  max-height: 75dvh;
   display: flex;
   flex-direction: column;
   /* If the keyboard leaves too little room, the header is what gets cut, so
@@ -2746,7 +2744,6 @@ body:has(.td-chat-fab--bar) .back-to-top {
   transform: translateY(100%);
   transition: transform var(--duration-slow) var(--ease-out), visibility 0s linear var(--duration-slow);
 }
-.td-chat-drawer--kb { padding-bottom: 0; } /* the keyboard hides the home bar */
 .td-chat-drawer--open {
   visibility: visible;
   transform: none;
@@ -2754,7 +2751,7 @@ body:has(.td-chat-fab--bar) .back-to-top {
 }
 [data-theme="light"] .td-chat-drawer { --td-chat-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12); }
 /* Square screens are short: let the sheet use everything below the nav. */
-[data-square-mode="on"] .td-chat-drawer { max-height: min(calc(100dvh - var(--nav-h) - var(--sp-2)), calc(var(--td-chat-room, 100dvh) - var(--sp-2))); }
+[data-square-mode="on"] .td-chat-drawer { max-height: calc(100dvh - var(--nav-h) - var(--sp-2)); }
 /* Square mode forced on a wide screen: a phone-width sheet, not edge to edge. */
 @media (min-width: 1024px) {
   [data-square-mode="on"] .td-chat-drawer { max-width: 560px; margin-inline: auto; }
