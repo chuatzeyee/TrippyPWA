@@ -120,7 +120,7 @@ describe.each(READY)('ready fixture %s', (key) => {
     expect(textOf(passport)).toContain(`${model.stats.calendarDays} days, overlaps counted once`);
     expect(textOf(passport)).toContain('Calendar days with a plan');
     expect(texts(passport, 'dt')).toEqual(['Furthest north', 'Furthest south', 'Furthest from home', 'Most planned']);
-    expect(textOf(passport)).toMatch(/about [\d,]+ km/);
+    expect(textOf(passport)).toMatch(/~[\d,]+ km/);
   });
   it('ends with the outline credit', () => {
     expect(textOf(one(root, 'footer'))).toContain('Map outline: Natural Earth, public domain.');

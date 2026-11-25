@@ -45,7 +45,7 @@ describe('factRows', () => {
     expect(byLabel['Furthest north'].value).toBe('Edinburgh');
     expect(byLabel['Furthest north'].note).toBe('55.95° N');
     expect(byLabel['Furthest south'].note).toMatch(/^\d+\.\d{2}° S$/);
-    expect(byLabel['Furthest from home'].value).toMatch(/^[A-Z].+, about [\d,]+ km$/);
+    expect(byLabel['Furthest from home'].value).toMatch(/^[A-Z].+, ~[\d,]+ km$/);
     expect(byLabel['Furthest from home'].note).toBe('A straight line from home');
   });
   it('counts plans for the country named most often', () => {

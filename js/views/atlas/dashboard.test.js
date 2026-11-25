@@ -202,7 +202,7 @@ describe.each(READY)('ready fixture %s', (key) => {
     const buttons = all(hops, 'button[data-action="plan-city"]');
     expect(buttons.map((button) => attr(button, 'data-city'))).toEqual(model.hops.map((hop) => hop.name));
     model.hops.forEach((hop, i) => {
-      expect(textOf(buttons[i])).toContain(`about ${hop.km} km`);
+      expect(textOf(buttons[i])).toContain(`~${hop.km} km`);
       expect(textOf(buttons[i])).toContain(hop.note);
     });
     const section = one(root, 'section.atl-hops');

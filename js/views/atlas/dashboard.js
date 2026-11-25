@@ -107,7 +107,7 @@ function hopsHtml(model, ctx) {
   const items = hops.map((hop) => `<li class="atl-hop-item"${attr('data-key', hop.name)}>
       <button type="button" class="atl-hop" data-action="plan-city"${attr('data-city', hop.name)}${attr('data-focus-key', `hop-${hop.name}`)}>
         ${tileFrameHtml(hop.cover, { credit: false, tag: 'span', animate: Boolean(ctx?.animate), name: hop.name, flag: hop.flag, cls: 'atl-hop-ph' })}
-        <span class="atl-hop-body"><span class="atl-hop-km">about ${esc(numberText(hop.km))} km</span><span class="atl-hop-name">${esc(hop.name)} ${flagsHtml([hop.flag], { size: 18 })}</span><span class="atl-hop-country">${esc(hop.country)}</span><span class="${cls('atl-hop-note', { 'is-planned': /^planned/i.test(hop.note ?? '') })}">${esc(hop.note)}</span></span>
+        <span class="atl-hop-body"><span class="atl-hop-km">~${esc(numberText(hop.km))} km</span><span class="atl-hop-name">${esc(hop.name)} ${flagsHtml([hop.flag], { size: 18 })}</span><span class="atl-hop-country">${esc(hop.country)}</span><span class="${cls('atl-hop-note', { 'is-planned': /^planned/i.test(hop.note ?? '') })}">${esc(hop.note)}</span></span>
       </button>
     </li>`).join('');
   return `<section class="atl-hops" data-atl-hops aria-labelledby="atl-hops-h">

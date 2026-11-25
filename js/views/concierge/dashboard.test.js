@@ -320,7 +320,7 @@ describe('states', () => {
     const first = all(hops, 'li.con-hop')[0];
     const hop = D.ready.hops[0];
     expect(textOf(first)).toContain(hop.name);
-    expect(textOf(first)).toContain(`${hop.country}, about ${hop.km} km`);
+    expect(textOf(first)).toContain(`${hop.country}, ~${hop.km} km`);
     expect(textOf(first)).toContain(hop.note);
     expect(attr(one(first, 'button[data-action="plan-city"]'), 'data-city')).toBe(hop.name);
     expect(textOf(one(tree('ready'), 'section.con-hops-sec'))).toContain('Nearest first. Distances are straight lines from home.');

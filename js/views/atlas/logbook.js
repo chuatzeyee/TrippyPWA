@@ -57,7 +57,7 @@ export function factRows(stats, pins) {
     hasLat(north) ? { label: 'Furthest north', value: placed(north.name), note: degrees(north.lat) } : null,
     hasLat(south) ? { label: 'Furthest south', value: placed(south.name), note: degrees(south.lat) } : null,
     farthest && text(farthest.name) !== '' && Number.isFinite(farthest.km)
-      ? { label: 'Furthest from home', value: `${farthest.name}, about ${numberText(roundKm(farthest.km))} km`, note: 'A straight line from home' } : null,
+      ? { label: 'Furthest from home', value: `${farthest.name}, ~${numberText(roundKm(farthest.km))} km`, note: 'A straight line from home' } : null,
     most && text(most.country) !== '' ? { label: 'Most planned', value: most.country, note: plansText(most.trips) } : null,
   ].filter(Boolean);
 }

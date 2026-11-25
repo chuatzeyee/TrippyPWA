@@ -97,7 +97,7 @@ export function pastSection(model, ctx) {
 // --- Short hops ---------------------------------------------------------------------------------------
 
 function hopHtml(hop, ctx, { compact }) {
-  const where = `${hop.country}, about ${hop.km} km`;
+  const where = `${hop.country}, ~${hop.km} km`;
   const lines = compact ? '' : `<span class="con-hop-line">${esc(where)}</span><span class="con-hop-line">${esc(hop.note)}</span>`;
   const tile = tileFrameHtml(hop.cover, {
     tag: 'span', animate: ctx.animate, scrim: true, credit: false, tone: 7, sizes: '(min-width: 900px) 280px, 45vw',

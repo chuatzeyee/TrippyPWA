@@ -58,7 +58,7 @@ function hopTile(hop, ctx) {
       ${tileFrameHtml(hop.cover, { animate: ctx.animate, name: hop.name, flag: hop.flag, tone: toneOf(hop.name), alt: '', cls: 'dep-hop-ph' })}
       <button type="button" class="dep-hop-link" data-action="plan-city"${attr('data-city', hop.name)}${attr('data-focus-key', `hop-${hop.name}`)}${attr('aria-label', `Plan a trip to ${hop.name}`)}><span class="dep-hop-name">${esc(hop.name)}</span></button>
       <span class="dep-hop-sub">${flagChip(hop.flag, { size: 20 })}<span>${esc(hop.country)}</span></span>
-      <span class="dep-hop-mode">${icon('pin', 16)}<span>about ${mono(hop.km)} km</span></span>
+      <span class="dep-hop-mode">${icon('pin', 16)}<span>~${mono(hop.km)} km</span></span>
       <span class="dep-hop-note">${esc(hop.note)}</span>
     </li>`;
 }
@@ -79,7 +79,7 @@ export function hopsHtml(model, ctx) {
 export function hopListHtml(model, max = 3) {
   const hops = model.hops.slice(0, max);
   if (!hops.length) return '';
-  const rows = hops.map((hop) => `<li${attr('data-key', hop.name)}><button type="button" class="dep-hoprow" data-action="plan-city"${attr('data-city', hop.name)}${attr('data-focus-key', `hop-${hop.name}`)}${attr('aria-label', `Plan a trip to ${hop.name}`)}><span class="dep-hop-name">${esc(hop.name)}</span><span class="dep-hop-mode">${icon('pin', 16)}<span>about ${mono(hop.km)} km</span></span></button></li>`).join('');
+  const rows = hops.map((hop) => `<li${attr('data-key', hop.name)}><button type="button" class="dep-hoprow" data-action="plan-city"${attr('data-city', hop.name)}${attr('data-focus-key', `hop-${hop.name}`)}${attr('aria-label', `Plan a trip to ${hop.name}`)}><span class="dep-hop-name">${esc(hop.name)}</span><span class="dep-hop-mode">${icon('pin', 16)}<span>~${mono(hop.km)} km</span></span></button></li>`).join('');
   return `<section class="dep-starts" aria-labelledby="dep-hops-h">
     <h2 class="dep-lbl" id="dep-hops-h">Or start with a short hop from ${esc(model.user.homeCity)}</h2>
     <ul class="dep-hoplist" data-region="hops">${rows}</ul>
