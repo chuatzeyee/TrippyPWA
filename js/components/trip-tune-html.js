@@ -49,7 +49,7 @@ export function tunePageHtml(model, tripId) {
   const back = `#/trip/${encodeURIComponent(tripId)}`;
   const legs = model.days.map(() => '<span class="tune-route-leg"></span>').join('');
   return `<div class="tune-page">
-    <a class="tune-back" href="${esc(back)}">${icon('back', 18)}<span>Back to the trip</span></a>
+    <a class="tune-back" href="${esc(back)}">${icon('back', 18)}<span>Trip</span></a>
     <div class="tune-card">
       <div class="tune-head">
         <p class="tune-kicker">Fine-tune</p>

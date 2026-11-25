@@ -8,8 +8,22 @@
   color: var(--ink);
 }
 .tune-loading { padding: var(--sp-10) 0 var(--sp-4); color: var(--ink-secondary); }
-.tune-back { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 44px; margin-bottom: var(--sp-2); color: var(--teal); font: 500 0.9375rem/1 var(--font-body); text-decoration: none; }
-.tune-back:hover { text-decoration: underline; }
+.tune-back { /* the trip page's back button (css/views/shared/trip.css .tv-back) */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 44px;
+  min-height: 44px;
+  margin-bottom: var(--sp-4);
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  color: var(--ink);
+  font: var(--text-small);
+  font-weight: 600;
+  text-decoration: none;
+}
+.tune-back:hover { background: var(--border); text-decoration: none; }
 
 .tune-card {
   border: 1px solid var(--border-strong);
