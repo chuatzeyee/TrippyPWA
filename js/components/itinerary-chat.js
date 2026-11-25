@@ -236,9 +236,29 @@ export function mountItineraryChat(container, trip, onApplied) {
     reveal(bubble);
   };
 
+  // iPhone Safari lays the keyboard over the page instead of shortening it, so a sheet pinned to the
+  // bottom sits under the keyboard. While open, the sheet follows the visible part of the page.
+  const viewport = window.visualViewport;
+  const fitKeyboard = () => {
+    if (!drawer.isConnected) { followKeyboard(false); return; } // the page went with the sheet open
+    const covered = Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop));
+    drawer.style.setProperty('--td-chat-kb', `${covered}px`);
+    drawer.style.setProperty('--td-chat-room', `${Math.round(viewport.height)}px`);
+    drawer.classList.toggle('td-chat-drawer--kb', covered > 0);
+  };
+  const followKeyboard = (on) => {
+    if (!viewport) return;
+    const method = on ? 'addEventListener' : 'removeEventListener';
+    viewport[method]('resize', fitKeyboard);
+    viewport[method]('scroll', fitKeyboard);
+    if (on) fitKeyboard();
+    else { drawer.style.removeProperty('--td-chat-kb'); drawer.style.removeProperty('--td-chat-room'); drawer.classList.remove('td-chat-drawer--kb'); }
+  };
+
   const isOpen = () => drawer.classList.contains('td-chat-drawer--open');
   const setOpen = (open) => {
     drawer.classList.toggle('td-chat-drawer--open', open);
+    followKeyboard(open);
     fab.classList.remove('td-chat-fab--hello');
     fab.setAttribute('aria-expanded', String(open));
     if (open) input.focus({ preventScroll: true });
