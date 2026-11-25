@@ -1,5 +1,5 @@
-// The app bar (blueprint 4.3): a static wordmark, labelled links, and on the right either the avatar
-// (its menu holds theme, square layout, admin and sign out) or, when no avatar menu is drawn, the
+// The app bar (blueprint 4.3): a split-flap wordmark that flips to a city and back, labelled links,
+// and on the right either the avatar (its menu holds theme, square layout, admin and sign out) or, when no avatar menu is drawn, the
 // bare theme button and square toggle. The avatar and its menu are drawn by js/auth/auth-ui.js.
 // Owner: F8.
 import { navigate, reloadCurrentRoute } from '../router.js';
@@ -9,6 +9,7 @@ import { getUser, hasLocalSession } from '../lib/supabase.js';
 import { setPref } from '../data/prefs-store.js';
 import { effectiveTheme, THEME_EVENT } from '../lib/theme.js';
 import { activeViewId } from '../views/registry.js';
+import { prefersReducedMotion } from '../lib/motion.js';
 
 const SQUARE_LABELS = {
   auto: 'Square layout: auto (tap to force on)',
@@ -17,6 +18,11 @@ const SQUARE_LABELS = {
 };
 const THEME_LABELS = { dark: 'Switch to light theme', light: 'Switch to dark theme' };
 const HOME_TEXT = 'TRIPPY';
+// The wordmark flips to one of these and back, like a departures board. Nine letters at most, so the
+// widest still fits beside the Trips and Atlas switch on a phone.
+const FLAP_CITIES = ['SINGAPORE', 'JAKARTA', 'HELSINKI', 'STOCKHOLM', 'OSLO', 'SEOUL', 'TOKYO', 'MELBOURNE', 'BANGKOK'];
+const FLAP_INTERVAL_MS = 4000;
+let flapTimer = null;
 const LINKS = [
   { label: 'Trips', href: '#/', path: '/' },
   { label: 'Atlas', href: '#/atlas', path: '/atlas' },
@@ -27,6 +33,50 @@ const LINKS = [
 function flapCell(ch) {
   const d = escapeHtml(ch);
   return `<span class="flap-cell"><span class="flap-face">${d}</span><span class="flap-top"><span class="flap-top-text">${d}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${d}</span></span></span>`;
+}
+
+/** Flips the cells of `container` from `oldText` to `newText`, one cell after another. */
+function flipTo(container, oldText, newText) {
+  const width = Math.max(oldText.length, newText.length);
+  const oldPad = oldText.padEnd(width);
+  container.style.setProperty('--flap-len', String(newText.length)); // phones scale the cells by it
+  container.innerHTML = '';
+  for (let i = 0; i < newText.length; i += 1) {
+    const oldD = oldPad[i] === ' ' ? '&nbsp;' : escapeHtml(oldPad[i]);
+    const newD = escapeHtml(newText[i]);
+    const cell = document.createElement('span');
+    cell.className = 'flap-cell';
+    cell.innerHTML = `<span class="flap-face">${oldD}</span><span class="flap-top"><span class="flap-top-text">${oldD}</span></span><span class="flap-bottom"><span class="flap-bottom-text">${newD}</span></span>`;
+    container.appendChild(cell);
+    setTimeout(() => {
+      const top = cell.querySelector('.flap-top');
+      const bottom = cell.querySelector('.flap-bottom');
+      top.classList.add('flap-flip-out');
+      setTimeout(() => {
+        cell.querySelector('.flap-face').innerHTML = newD;
+        top.querySelector('.flap-top-text').innerHTML = newD;
+        top.classList.remove('flap-flip-out');
+        bottom.classList.add('flap-flip-in');
+        setTimeout(() => bottom.classList.remove('flap-flip-in'), 200);
+      }, 150);
+    }, i * 40);
+  }
+}
+
+/** Starts the wordmark's flips between TRIPPY and a city. One timer at most; none with reduced motion. */
+function startLogoFlaps(container) {
+  clearInterval(flapTimer);
+  flapTimer = null;
+  if (!container || prefersReducedMotion()) return;
+  let current = HOME_TEXT;
+  let next = 0;
+  flapTimer = setInterval(() => {
+    if (!container.isConnected) { clearInterval(flapTimer); return; }
+    if (document.hidden) return;
+    const target = current === HOME_TEXT ? FLAP_CITIES[next++ % FLAP_CITIES.length] : HOME_TEXT;
+    flipTo(container, current, target);
+    current = target;
+  }, FLAP_INTERVAL_MS);
 }
 
 /**
@@ -211,6 +261,7 @@ export function renderNav() {
     </div>
   `;
   bindOnce(nav);
+  startLogoFlaps(nav.querySelector('.nav-logo-flaps'));
   if (pending) loadAuthUi(); // on its way, so the next render draws the avatar in the same frame
   else drawAuthSlot();
 }

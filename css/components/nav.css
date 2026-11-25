@@ -57,6 +57,12 @@ html[data-view-pref="concierge"] { --nav-max: 1040px; }
   transition: font-size 0.3s ease;
 }
 
+/* On a phone the wordmark keeps about the width of TRIPPY while it shows a longer city (nav.js
+   sets --flap-len to the letters shown), so it never pushes the bar wider than the screen. */
+@media (max-width: 479px) {
+  .nav-logo-flaps .flap-cell { font-size: min(1rem, calc(1rem * 6 / var(--flap-len, 6))); }
+}
+
 /* The page links (nav.js navLinksHtml): one two-part control beside the account, Trips on the left
    and Atlas on the right, the open page filled. A bar with a single link draws no control: the
    wordmark already leads home. */
