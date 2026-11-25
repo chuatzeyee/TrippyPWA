@@ -236,9 +236,36 @@ export function mountItineraryChat(container, trip, onApplied) {
     reveal(bubble);
   };
 
+  // iPhone Safari lays the keyboard over the page instead of shortening it, so a sheet pinned to the
+  // bottom ends up under it. While the keyboard is up, the sheet fills exactly the part of the screen
+  // that is still visible (visualViewport), in pixels; when it goes down, the CSS takes over again.
+  const viewport = window.visualViewport;
+  const subtitle = drawer.querySelector('.td-chat-subtitle');
+  const KEYBOARD_MIN = 120; // smaller differences are toolbars, not a keyboard
+  const fitKeyboard = () => {
+    if (!viewport) return;
+    if (!drawer.isConnected) { // the trip page went: stop listening
+      viewport.removeEventListener('resize', fitKeyboard);
+      viewport.removeEventListener('scroll', fitKeyboard);
+      return;
+    }
+    const covered = window.innerHeight - viewport.height - viewport.offsetTop;
+    const up = isOpen() && covered > KEYBOARD_MIN && viewport.height > 200;
+    drawer.classList.toggle('td-chat-drawer--kb', up);
+    drawer.style.top = up ? `${Math.round(viewport.offsetTop)}px` : '';
+    drawer.style.height = up ? `${Math.round(viewport.height)}px` : '';
+    // TEMPORARY readout for the iPhone keyboard fix; remove once confirmed.
+    if (subtitle) subtitle.textContent = `At your service (${Math.round(window.innerHeight)} ${Math.round(viewport.height)} ${Math.round(viewport.offsetTop)} ${up ? 'up' : 'down'})`;
+  };
+  if (viewport) {
+    viewport.addEventListener('resize', fitKeyboard);
+    viewport.addEventListener('scroll', fitKeyboard);
+  }
+
   const isOpen = () => drawer.classList.contains('td-chat-drawer--open');
   const setOpen = (open) => {
     drawer.classList.toggle('td-chat-drawer--open', open);
+    fitKeyboard();
     fab.classList.remove('td-chat-fab--hello');
     fab.setAttribute('aria-expanded', String(open));
     if (open) input.focus({ preventScroll: true });

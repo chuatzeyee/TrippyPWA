@@ -2744,6 +2744,13 @@ body:has(.td-chat-fab--bar) .back-to-top {
   transform: translateY(100%);
   transition: transform var(--duration-slow) var(--ease-out), visibility 0s linear var(--duration-slow);
 }
+/* Keyboard up on a phone: itinerary-chat.js sets top and height to the visible part of the screen. */
+.td-chat-drawer--kb {
+  bottom: auto;
+  max-height: none;
+  padding-bottom: 0;
+  border-radius: 0;
+}
 .td-chat-drawer--open {
   visibility: visible;
   transform: none;
