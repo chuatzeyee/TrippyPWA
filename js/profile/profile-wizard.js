@@ -31,6 +31,18 @@ const FLAG_TO_CURRENCY = {
   kh: 'KHR', la: 'LAK',
 };
 
+/**
+ * The currency of a home city: the catalogue's own code when the city has one, else the country's.
+ * null when neither is in the currency list.
+ * @param {{ flag?: string, currencyCode?: string }} city
+ * @returns {{ code: string, symbol: string }|null}
+ */
+export function currencyForCity(city) {
+  const code = city?.currencyCode || FLAG_TO_CURRENCY[city?.flag];
+  const entry = CURRENCIES.find(c => c.code === code);
+  return entry ? { code: entry.code, symbol: entry.symbol } : null;
+}
+
 function sortedCurrencies(flagCode) {
   const localCode = FLAG_TO_CURRENCY[flagCode];
   if (!localCode) return CURRENCIES;
@@ -46,6 +58,9 @@ let profileState = {
   homeFlag: '',
   isNomad: false,
   currency: null,
+  // True once the currency is the user's own choice. A new profile row arrives with the database
+  // default (USD), which must not stop the home city from setting the currency.
+  currencyChosen: false,
   nationality: '',
 };
 
@@ -64,6 +79,7 @@ export async function renderProfileWizard() {
     currency: profile?.home_currency
       ? { code: profile.home_currency, symbol: profile.home_currency_symbol || '$' }
       : null,
+    currencyChosen: Boolean(profile?.home_city || profile?.is_nomad),
     nationality: profile?.nationality || '',
   };
   if (profileState.currency) {
@@ -198,7 +214,7 @@ function bindProfileEvents(app) {
         return;
       }
       cityDropdown.innerHTML = matches.map(d => `
-        <div class="profile-city-item" data-city='${JSON.stringify({ name: d.name, country: d.country, flag: d.flag }).replace(/'/g, "&#39;")}'>
+        <div class="profile-city-item" data-city='${JSON.stringify({ name: d.name, country: d.country, flag: d.flag, currencyCode: d.currencyCode }).replace(/'/g, "&#39;")}'>
           ${flagImg(d.flag, 20)}
           <span>${esc(d.name)}, ${esc(d.country)}</span>
         </div>
@@ -208,21 +224,15 @@ function bindProfileEvents(app) {
       cityDropdown.querySelectorAll('.profile-city-item').forEach(item => {
         item.addEventListener('click', () => {
           const city = JSON.parse(item.dataset.city);
-          const hadCurrency = profileState.currency;
+          const cityCurrency = profileState.currencyChosen ? null : currencyForCity(city);
           profileState = {
             ...profileState,
             homeCity: city.name,
             homeCountry: city.country,
             homeFlag: city.flag,
+            ...(cityCurrency ? { currency: cityCurrency } : {}),
           };
           setLocaleFromFlag(city.flag);
-          if (!hadCurrency) {
-            const localCode = FLAG_TO_CURRENCY[city.flag];
-            const localCur = CURRENCIES.find(c => c.code === localCode);
-            if (localCur) {
-              profileState = { ...profileState, currency: { code: localCur.code, symbol: localCur.symbol } };
-            }
-          }
           renderForm(app);
         });
       });
@@ -278,6 +288,7 @@ function bindProfileEvents(app) {
       profileState = {
         ...profileState,
         currency: { code: btn.dataset.curCode, symbol: btn.dataset.curSymbol },
+        currencyChosen: true,
       };
       renderForm(app);
     });

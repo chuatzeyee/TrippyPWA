@@ -15,7 +15,7 @@ vi.mock('../components/toast.js', () => ({ showToast: (text, kind) => fake.toast
 vi.mock('../lib/logger.js', () => ({ logger: { error() {}, warn() {}, info() {}, debug() {} } }));
 vi.mock('../data/user-prefs.js', () => ({ setHomeCurrency() {} }));
 
-const { renderProfileWizard } = await import('./profile-wizard.js');
+const { renderProfileWizard, currencyForCity } = await import('./profile-wizard.js');
 const { getProfileSummary, saveProfileSummary, clearProfileSummary } = await import('../data/profile-cache.js');
 
 function memoryStorage() {
@@ -115,5 +115,18 @@ describe('saving the onboarding page', () => {
     expect(fake.writes).toHaveLength(1);
     expect(getProfileSummary()).toEqual(before);
     expect(fake.toasts).toEqual([['Failed to save profile', 'error']]);
+  });
+});
+
+describe('the currency a home city suggests', () => {
+  it("uses the city's own currency from the catalogue", () => {
+    expect(currencyForCity({ name: 'Singapore', flag: 'sg', currencyCode: 'SGD' })).toMatchObject({ code: 'SGD' });
+  });
+  it("falls back to the country's currency when the city has none", () => {
+    expect(currencyForCity({ name: 'Somewhere', flag: 'jp' })).toMatchObject({ code: 'JPY' });
+  });
+  it('gives null for a country it does not know', () => {
+    expect(currencyForCity({ name: 'Nowhere', flag: 'zz' })).toBeNull();
+    expect(currencyForCity(null)).toBeNull();
   });
 });
