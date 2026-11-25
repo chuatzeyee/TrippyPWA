@@ -2748,6 +2748,7 @@ body:has(.td-chat-fab--bar) .back-to-top {
 .td-chat-drawer--kb {
   bottom: auto;
   max-height: none;
+  padding-top: env(safe-area-inset-top, 0px); /* clear of the status bar and the notch */
   padding-bottom: 0;
   border-radius: 0;
 }

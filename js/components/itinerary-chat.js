@@ -240,7 +240,6 @@ export function mountItineraryChat(container, trip, onApplied) {
   // bottom ends up under it. While the keyboard is up, the sheet fills exactly the part of the screen
   // that is still visible (visualViewport), in pixels; when it goes down, the CSS takes over again.
   const viewport = window.visualViewport;
-  const subtitle = drawer.querySelector('.td-chat-subtitle');
   const KEYBOARD_MIN = 120; // smaller differences are toolbars, not a keyboard
   const fitKeyboard = () => {
     if (!viewport) return;
@@ -254,8 +253,6 @@ export function mountItineraryChat(container, trip, onApplied) {
     drawer.classList.toggle('td-chat-drawer--kb', up);
     drawer.style.top = up ? `${Math.round(viewport.offsetTop)}px` : '';
     drawer.style.height = up ? `${Math.round(viewport.height)}px` : '';
-    // TEMPORARY readout for the iPhone keyboard fix; remove once confirmed.
-    if (subtitle) subtitle.textContent = `At your service (${Math.round(window.innerHeight)} ${Math.round(viewport.height)} ${Math.round(viewport.offsetTop)} ${up ? 'up' : 'down'})`;
   };
   if (viewport) {
     viewport.addEventListener('resize', fitKeyboard);
